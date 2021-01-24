@@ -28,32 +28,32 @@ Have fun and make something useful!
 
 ### Get Screenplay Content
 
-`Beat.lines()` – all line objects in the script
-`Beat.scenes()` – scene objects
-`Beat.outline()` – all outline objects, including synopsis & heading markers
-`Beat.linesForScene(scene)` – lines for a specified scene
-`Beat.getText()` — whole document as string
+`Beat.lines()` – all line objects in the script  
+`Beat.scenes()` – scene objects  
+`Beat.outline()` – all outline objects, including synopsis & heading markers  
+`Beat.linesForScene(scene)` – lines for a specified scene  
+`Beat.getText()` — whole document as string  
 
 ### Navigate Through The Document
 
-`Beat.setSelectedRange(start, length)` – select a range in the document (**always** double-check that the values are in document range)
-`Beat.scrollTo(index)` – scroll to character index
-`Beat.scrollToScene(scene)` – scroll to a scene object
-`Beat.scrollToLine(line)` – scroll to line
+`Beat.setSelectedRange(start, length)` – select a range in the document (**always** double-check that the values are in document range)  
+`Beat.scrollTo(index)` – scroll to character index  
+`Beat.scrollToScene(scene)` – scroll to a scene object  
+`Beat.scrollToLine(line)` – scroll to line  
  
 ### User Interaction
 
-`Beat.alert("Alert title", "Informative Text")` – simple alert box
-`Beat.confirm("Title", "Informative text")` — get user confirmation, returns `true` or `false`
-`Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string
-`Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string 
+`Beat.alert("Alert title", "Informative Text")` – simple alert box  
+`Beat.confirm("Title", "Informative text")` — get user confirmation, returns `true` or `false`  
+`Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string  
+`Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
-For more elaborate inputs it is wiser to use `Beat.htmlPanel()`. 
+For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
 
 ### Save Plugin Defaults
 
-`Beat.getUserDefault("setting name")` – get a value
-`Beat.setUserDefault("setting name", value)` – save a value
+`Beat.getUserDefault("setting name")` – get a value  
+`Beat.setUserDefault("setting name", value)` – save a value  
 
   
 ## Manipulating the Document
@@ -66,14 +66,14 @@ Beat parser uses `Line` and `Scene` objects to store the screenplay content. To 
 
 ### Adding and Removing Content
 
-`Beat.addString(String, index)` – add string at some index
-`Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty)
-`Beat.parse()` – parse changes you've made and update the lines/scenes arrays
+`Beat.addString(String, index)` – add string at some index  
+`Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty)  
+`Beat.parse()` – parse changes you've made and update the lines/scenes arrays  
 
 ### Get and Set Selection
 
-`Beat.selectedRange()` – returns a range object with `.location` and `.length` properties
-`Beat.setSelectedRange(location, length)` – set user selection 
+`Beat.selectedRange()` – returns a range object with `.location` and `.length` properties  
+`Beat.setSelectedRange(location, length)` – set user selection  
 
 ### Lines
 
@@ -81,30 +81,30 @@ Beat parser uses `Line` and `Scene` objects to store the screenplay content. To 
 
 Lines array contains all the lines in the script as objects. A line object contains multiple values, including but not limited to:
 
-`line.string` —	string content
-`line.position` — starting index of line
-`line.typeAsString()` — "Heading" / "Action" / "Dialogue" / "Parenthetical" etc.
-`line.isTitlePage()` — true/false
-`line.isInvisible()` — true/false
-`line.cleanedString()` — non-printing stuff removed
+`line.string` —	string content  
+`line.position` — starting index of line  
+`line.typeAsString()` — "Heading" / "Action" / "Dialogue" / "Parenthetical" etc.  
+`line.isTitlePage()` — true/false  
+`line.isInvisible()` — true/false  
+`line.cleanedString()` — non-printing stuff removed  
 
 Iterate through lines:
 ```
-for (const line of Beat.lines()) {
-	// Do something
-}
+for (const line of Beat.lines()) {  
+	// Do something  
+}  
 ```	
 
 ### Scenes
 
-`scene.sceneStart` — starting index
-`scene.sceneLength` — length of the whole scene in characters
-`scene.string` — scene heading (eg. INT. HOUSE - DAY)
-`scene.color` — scene color as string
-`scene.omited()` — true/false
-`scene.typeAsString()` — scene type (heading, section, synopse)
+`scene.sceneStart` — starting index  
+`scene.sceneLength` — length of the whole scene in characters  
+`scene.string` — scene heading (eg. INT. HOUSE - DAY)  
+`scene.color` — scene color as string  
+`scene.omited()` — true/false  
+`scene.typeAsString()` — scene type (heading, section, synopse)  
 	
-Iterate through scenes:
+Iterate through scenes:  
 
 ```
 for (const scene of Beat.scenes()) {
@@ -122,13 +122,13 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 ### Import Data
 
-`beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback
-`beat.fileToString(path)` – file contents as string
-`beat.pdfToString(path)` – converts PDF file contents into a string
+`beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
+`beat.fileToString(path)` – file contents as string  
+`beat.pdfToString(path)` – converts PDF file contents into a string  
 
 ### HTML Panel
 
-`Beat.htmlPanel(htmlContent, width, height, callback)` 
+`Beat.htmlPanel(htmlContent, width, height, callback)`   
 
 Displays HTML content with preloaded CSS. You can fetch data from here using two ways. Callback function receives an object, which contains keys `data` and `inputData`. 
 
