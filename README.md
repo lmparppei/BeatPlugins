@@ -6,6 +6,7 @@ To install plugins, open Beat and navigate to *Tools → Plugins → Open Plugin
 
 **NOTE:** Requires Beat 1.7.2 or later.
 
+---
 
 #  Beat Plugin API
 
@@ -15,8 +16,6 @@ If anybody ever writes a plugin, *please, please, please* be nice to people and 
 
 There is a sample plugin included at the end to act as a starting point.
 
----
-  
 
 ## Basics
 
