@@ -1,0 +1,60 @@
+/*
+
+Update Draft Date
+© Lauri-Matti Parppei
+
+*/
+
+let defaultValue = Beat.getUserDefault("date format");
+if (!defaultValue) defaultValue = "dd.mm.yyyy";
+
+let dateFormat = Beat.prompt("Date Format", "Input default date format in letters, ie. dd.mm.yyyy or mm.dd.yyyy.\n", "ie. dd-mm-yyyy", defaultValue);
+dateFormat = dateFormat.toLowerCase();
+
+if (dateFormat == "" || dateFormat == null) return;
+
+let date = "";
+let today = new Date();
+const dd = String(today.getDate()).padStart(2, '0');
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const yy = today.getFullYear().toString().substring(2);
+const yyyy = today.getFullYear();
+
+
+// Replace the values
+date = dateFormat;
+date = date.replace("dd", dd);
+date = date.replace("mm", mm);
+date = date.replace("yyyy", yyyy);
+date = date.replace("yy", yy);
+
+// Save user defaults
+Beat.setUserDefault("date format", dateFormat);
+
+let found = false;
+let foundTitlePage = false;
+let lastTitlePageIndex = -1;
+
+for (let line of Beat.lines()) {
+	if (line.typeAsString().substring(0, 10) == "Title Page") foundTitlePage = true;
+
+	if (line.typeAsString() == "Title Page Draft Date") {
+		Beat.replaceRange(line.position, line.string.length, "Draft Date: " + date);
+		found = true;
+		break;
+	}
+
+	if (line.string == "" && foundTitlePage) {
+		lastTitlePageIndex = line.position;
+		break;
+	}
+}
+
+if (!found && foundTitlePage && lastTitlePageIndex > 0) {
+	// Let's add the draft date
+	Beat.replaceRange(lastTitlePageIndex, 0, "Draft Date: " + date + "\n");
+}
+else if (!found) {
+	// Alert the user that we didn't do any changes
+	Beat.alert("No draft date found", "Your title page doesn't contain a draft date value. Add a title page first.")
+}

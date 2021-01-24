@@ -1,0 +1,41 @@
+/*
+
+Gather scenes by storyline
+© Lauri-Matti Parppei
+
+*/
+
+let storylines = [];
+let scenes = [];
+
+// Gather storylines
+for (const scene of Beat.scenes()) {
+	for (const storyline of scene.storylines) {
+		if (!storylines.includes(storyline)) storylines.push(storyline);
+	}
+}
+
+if (!storylines.length) {
+	Beat.alert("No Storylines Found", "Add some storylines to your scenes first");
+	return;
+}
+
+const storyline = Beat.dropdownPrompt("Gather Scenes by Storyline", "Select a storyline to create a new document", storylines);
+if (storyline == "" || storyline == null) return;
+
+// Iterate through the storylines again
+for (const scene of Beat.scenes()) {
+	if (scene.storylines.includes(storyline)) scenes.push(scene);
+}
+
+// Iterate through scenes to get their content
+const screenplay = Beat.getText();
+let result = "";
+
+for (const scene of scenes) {
+	const sceneText = screenplay.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";
+	result += sceneText;
+}
+
+if (result.length == 0)  Beat.alert("No Scenes Found", "Something went wrong.");
+else Beat.newDocument(result);

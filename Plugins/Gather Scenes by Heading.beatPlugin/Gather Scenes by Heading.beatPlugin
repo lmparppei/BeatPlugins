@@ -1,0 +1,32 @@
+/*
+
+Gather Scenes by Heading
+© Lauri-Matti Parppei
+
+*/
+
+let scenes = [];
+
+let keyword = Beat.prompt("Gather Scenes by Heading", "If a scene heading contains the keyword, the scene will be included in the new document.", "ie. int./ext./home etc.", "keyword");
+keyword = keyword.toLowerCase()
+if (keyword == "" || keyword == null) return;
+
+// Iterate through the storylines again
+for (const scene of Beat.scenes()) {
+	const string = scene.string.toLowerCase()
+	if (string.indexOf(keyword) >= 0) {
+		scenes.push(scene)
+	}
+}
+
+// Iterate through scenes to get their content
+const screenplay = Beat.getText();
+let result = "";
+
+for (const scene of scenes) {
+	const sceneText = screenplay.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";
+	result += sceneText;
+}
+
+if (result.length == 0)  Beat.alert("No Scenes Found", "There are no scenes which contain '" + keyword + "' in the heading.");
+else Beat.newDocument(result);

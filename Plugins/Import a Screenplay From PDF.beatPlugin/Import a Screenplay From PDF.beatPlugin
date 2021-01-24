@@ -1,0 +1,223 @@
+/*
+
+Copy-paste a screenplay from PDF
+© Lauri-Matti Parppei
+
+Plugin Type: Import
+
+*/
+
+importPDF();
+
+function importPDF() {
+	Beat.openFile(["pdf"], function (file) {
+		if (!file) return;
+		const content = Beat.pdfToString(file);
+		const screenplay = parse(content)
+
+		Beat.alert("PDF Import Completed", "NOTE: Results may vary depending on the software used to create the PDF document. Manual cleanup and double-checking is always required.");
+		Beat.newDocument(screenplay);
+	});
+}
+
+function parse (rawText) {
+	const patterns = {
+		//^([0-9]+)\s+([INT]|[EXT]).*( [0-9]+)$
+		heading: /^((INT|EXT|EST|I]\.?\/E\.?)([^\n]+))/g,
+		
+		headingWithNumber: /^([0-9]+) (INT|EXT|EST)/gi,
+		headingWithNumberAtEnd: /(^\d+) ((INT|EXT|EST|I\.\/E\.).*?)(\d+$)/,
+		leftoverNumber: /^([0-9]*)/gi,
+		character: /([ \t]*[^<>a-z\s\/\n][^<>a-z:!\?\n]*[^<>a-z\(!\?:,\n\.][ \t]?)/,
+		characterWithLine: /^([ \t]*[^<>a-z\s\/\n][^<>a-z:!\?\n]*[^<>a-z\(!\?:,\n\.][ \t]?) (.*)/
+	}
+	const ignore = ["CONTINUED:", "(CONTINUED)", "(CONT'D)", "(MORE)"];
+
+	const lines = rawText.split("\n");
+	let text = "";
+
+	let names = [];
+	let pageNumber = 1;
+
+	let dialogue = false;
+	let previousLine;
+	let previousSceneNumber = "";
+
+	let x = 0;
+
+	for (let line of lines) {
+		x++;
+
+		line = line.trim()
+
+		// Clean possible page numbers
+		if (line == pageNumber + ".") {
+			pageNumber++;
+			continue;
+		}
+		// Also, on some apps, page numbering starts from 2.
+		if (pageNumber == 1 && line.pageNumber == "2.") {
+			pageNumber = 3;
+			continue;
+		}
+
+		// Clean possible leftover scene numbers
+		if (line == previousSceneNumber) continue;
+		if (line == previousSceneNumber + " CONTINUED: " + previousSceneNumber) continue;
+
+		if (ignore.includes(line)) continue;
+		
+
+		// Catch possible parentheticals
+		if (line.slice(1) == "(") {
+			 if (text.slice(-1) == "\n") text = text.slice(text.length - 1);
+			 dialogue = true;
+			 text += line + "\n";
+		}
+
+		// Recognize elements
+
+		// HEADING
+		if (line.match(patterns.heading)) {
+			if (x < 500) Beat.log(" - heading: " + line);
+			text += "\n" + findActionInHeading(line) + "\n\n";
+
+			previousLine = line;
+			continue;
+		}
+
+		// HEADING WITH SCENE NUMBER
+		if (line.match(patterns.headingWithNumber)) {
+			if (x < 500) Beat.log(" - number+heading: " + line);
+			dialogue = false;
+
+			let newLine = line;
+
+			// Catch scene number from the end
+			const res = line.match(patterns.headingWithNumber);
+			const sceneNumber = res[0];
+			if (line.slice(-sceneNumber.length) == sceneNumber) {
+				newLine = newLine.slice(newLine.length - sceneNumber.length);
+			}
+			previousSceneNumber = sceneNumber;
+
+			newLine = newLine.replace(/^[0-9].*INT/, "INT");
+			newLine = newLine.replace(/^[0-9].*EXT/, "EXT");
+			newLine = newLine.toUpperCase();
+			text += "\n" + findActionInHeading(newLine) + "\n\n";
+			
+			previousLine = line;
+			continue;
+		}
+
+		// start a dialogue block and memorize character name
+		else if (match(line, patterns.character)) {
+			dialogue = true;
+			
+			if (!names.includes(line)) names.push(line);
+
+			text += "\n\n" + line;
+
+			previousLine = line;
+			continue;
+		}
+
+		// This is probably a character with a dialogue line
+		else if (match(line, patterns.characterWithLine)) {
+			dialogue = false;
+
+			let result = line.match(patterns.characterWithLine);
+			let character = result[1];
+			let lineOfDialogue = result[2];
+
+			let firstChr = lineOfDialogue.substr(0,1);
+
+			let isFirstCapitalized = lineOfDialogue.match(/^[^<>a-z\s\/\n]/);
+			if (isFirstCapitalized || firstChr == "." || firstChr == "¿" || firstChr == "…" || firstChr == "-") {
+				// memorize character name
+				if (!names.includes(character)) names.push(character);
+
+				// format to Fountain
+				text += "\n" + character + "\n" + lineOfDialogue + "\n\n";
+
+				previousLine = line;
+				continue;
+			}
+		}
+
+		if (dialogue) {
+			// Look for parenthetical
+			if (line.indexOf("(") > 0) {
+				let i = line.indexOf("(");
+				line = line.substr(0, i) + "\n" + line.substr(i);
+			}
+			if (line.indexOf(")") > 0) {
+				let i = line.indexOf(")");
+				line = line.substr(0, i + 1) + "\n" + line.substr(i + 1).trim();
+			}
+
+			let lastChr = line.slice(-1);
+
+			// Look for terminator
+			if (lastChr == "." || lastChr == "…" || lastChr == "?" || lastChr == "!" || lastChr == "-" || lastChr == "\"" || lastChr == "'") {
+				text += line + "\n\n";
+				dialogue = false;
+
+				previousLine = line;
+				continue;
+			} else {
+				text += line;
+				
+				previousLine = line;
+				continue;
+			}
+		}
+
+		// This is probably an action
+		dialogue = false;
+		text += line + "\n\n";
+	}
+
+	// After we are done, let's find possible check character
+	// cues using names caught from other dialogue blocks
+	let parsedLines = text.split("\n");
+	let index = 0;
+	for (let line of parsedLines) {
+		for (let name of names) {
+			if (line.indexOf(name) == 0 && line.length > name.length) {
+				let firstChr = line.substr(name.length, 1);
+				if (firstChr != " " && firstChr != "," && firstChr != "!") {
+					parsedLines[index] = line.substr(0, name.length) + "\n" + line.substr(name.length);
+				}
+			}
+		}
+		index++;
+	}
+	text = parsedLines.join("\n");
+
+	// Some manual cleanup
+	text = text.replace(/\n\n\n\n/g, "\n\n");
+	text = text.replace(/\n\n\n/g, "\n\n");
+
+	return text;
+}
+
+function findActionInHeading(string) {
+	let regex = /([a-z]+)/
+	const result = string.match(regex)
+	
+	if (result) {
+		return string.substr(0, result.index - 1) + "\n\n" + string.substr(result.index - 1);
+	} else {
+		return string;
+	}
+}
+
+
+function match(line, regex) {
+	let result = line.match(regex);
+	if (!result) return false;
+
+	if (result[0] == line) return true;
+	else return false;
+}

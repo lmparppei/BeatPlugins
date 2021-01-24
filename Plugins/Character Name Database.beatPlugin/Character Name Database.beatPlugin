@@ -1,0 +1,28 @@
+/*
+
+Character Name Database
+Released Under Public Domain
+
+Plugin for using Trelby's name database inside Beat.
+
+Note that because of Beat's design ethics, we should avoid determining 
+sex (male/female) by a character's name. Hence the change to gender (man/woman)
+rather than sex.
+
+Plugins CAN'T write files for security reasons. If you want to implement adding
+custom names to the database, you should use Beat.setUserDefault() and Beat.getUserDefault(). 
+Then somehow concat the results into the loaded data.
+
+*/
+
+let nameData = Beat.assetAsString("names.txt")
+let ui = Beat.assetAsString("ui.html")
+let names = nameData.split("\n")
+
+// Custom names could be implemented like this:
+// let customNames = Beat.getUserDefault("Custom Names")
+
+// Inject name data intto the HTML template
+ui = ui.replace("#DATA#", JSON.stringify(names))
+
+Beat.htmlPanel(ui, 600, 450, function (data) {} )

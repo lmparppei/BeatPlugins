@@ -1,0 +1,119 @@
+/*
+
+Map Character Appearances
+© Lauri-Matti Parppei 2021
+
+*/
+
+function stripSuffix(line) {
+    return line.replace(/\(.*\)/gm, '');
+}
+function titleCase(str) {
+   var splitStr = str.toLowerCase().split(' ');
+   for (var i = 0; i < splitStr.length; i++) {
+       splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+   }
+   return splitStr.join(' '); 
+}
+
+function addSceneForCharacter(name, index) {
+    if (!scenesForCharacter[name]) scenesForCharacter[name] = [] 
+    if (!scenesForCharacter[name].includes(index)) scenesForCharacter[name].push(index)
+}
+
+let scenesForCharacter = {}
+let index = 0
+
+let template = Beat.assetAsString("ui.html")
+let names = []
+
+// First get all characters who have dialogue
+for (const line of Beat.lines()) {
+    if (line.typeAsString() == "Character") {
+        let name = stripSuffix(line.string).trim()
+        if (!names.includes(name)) names.push(name)
+    }
+}
+
+for (const scene of Beat.scenes()) {
+    // Process one scene at a time.
+    const lines = Beat.linesForScene(scene)
+    
+    // First, create a copy of the names array and remove name one by one after it's found.
+    let availableNames = [...names]
+
+    for (const line of lines) {
+        // Character cue
+        if (line.typeAsString() == "Character") {
+            let name = stripSuffix(line.string).trim() // Remove (V.O.) etc
+            addSceneForCharacter(name, index)
+            availableNames = availableNames.filter(e => e !== name) // Remove from available names
+        }
+
+        // Try to determine if we have the person somewhere in action
+        else if (line.typeAsString() == "Action") {
+            const string = " " + line.string;
+            
+            for (const name of availableNames) {
+                // Title-cased name for actions
+                const nameInAction = titleCase(name);
+
+                // If the line contains either "NAME" or " Name", the character is probably doing something here, or at least referenced to.
+                if (string.indexOf(name.toUpperCase()) >= 0 || 
+                string.indexOf(" " + nameInAction) >= 0)
+                {
+                    addSceneForCharacter(name, index)
+                    availableNames = availableNames.filter(e => e !== name) // Remove from available names
+                }
+            }
+        }
+    }
+    
+    index++
+}
+
+let scenes = Beat.scenes().length
+let style = "width: " + Math.floor(680 / scenes) + "px"
+let html = "<table cellspacing='0'>"
+
+index = 0;
+let separators = Math.floor(scenes / 10);
+
+html += "<tr><td class='sceneNumber'>Scene</td>"
+// Draw header
+for (let hi = 0; hi < scenes; hi++) {
+    let h = "<td class='sceneNumber'>"
+    if (hi % separators == 0) h += "<div class='number'>" + (hi + 1) + "</div>";
+    h += "</td>"
+
+    html += h
+}
+html += "</tr>"
+
+// Draw the table
+for (const [key, value] of Object.entries(scenesForCharacter)) {
+
+    let rowClass = ''
+    if (index % 2 == 1) rowClass = "odd"
+
+    let h = "<tr class='" + rowClass + "'><td class='name'>" + key + "</td>"
+
+    for (let i=0; i < scenes; i++) {
+        let className = '';
+        if (i > 0 && i % separators == 0) className += ' separator';
+
+        if (value.includes(i)) h += "<td class='appearance present " + className + "' style='" + style + "'><div class='line blue'></div></td>"
+        else h += "<td class='appearance " + className + "' style='" + style + "'>&nbsp;</td>"
+    }
+    h += "</tr>\n"
+
+    html += h
+    index++;
+}
+
+html += '</table>'
+
+// Display results
+Beat.htmlPanel(template.replace("#DATA#", html), 800, 500, function () {
+    Beat.end()
+});

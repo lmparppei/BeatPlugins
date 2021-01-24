@@ -1,0 +1,193 @@
+<!--
+
+Character Name Database
+
+-->
+<style>
+	* {
+		box-sizing: border-box;
+	}
+	body {
+		overflow-y: hidden;
+	}
+	section {
+		position: relative;
+	}
+	#mid, #top {
+		padding: .5rem 0 .5rem 0;
+		display: flex;
+		justify-content: top;
+	}
+	#mid {
+
+	}
+
+	#cultures {
+		width: 200px;
+	}
+	#cultures {
+		height: 360px;
+	}
+	#content {
+		flex: 1;
+		background: #f0f0f0;
+		padding: 1rem;
+		overflow-y: scroll;
+		height: 360px;
+	}
+	#names  {
+		width: 100%;
+	}
+	td { padding-top: .1em; padding-bottom: .1em; }
+	.name { width: 80%; }
+	.gender { width: 20%; }
+</style>
+
+<div id='top'><form action=''>
+	Search <input type='text' id='searchBox' onkeyup="searchName()">
+	<input type='radio' name='gender' value='any' checked>  Any <input type='radio' name='gender' value='women'> Women <input type='radio' name='gender' value='men'> Men 
+</form></div>
+
+<div id='mid'>
+	<section id='sidebar'>
+		<select id="cultures" size="25" onchange="selectCulture()"> 
+		</select>
+	</section>
+	<section id='content'>
+		<table id='names'>
+		</table>
+	</section>
+</div>
+
+<script>
+let data = #DATA#
+// Comment above line and uncomment the one below to debug in a browser
+//let data = ["NTest Culture", "FWoman's Name", "MMan's Name"];
+
+	let names = {};
+	let filteredNames = [];
+	let searchString = "";
+
+	let searchBox = document.getElementById("searchBox")
+
+	// Disable enter key
+	window.onkeydown = function (e) {
+		if (e.keyCode == 13) {
+			event.preventDefault()
+			return false
+		}
+	}
+
+	function gatherNames (data) {
+		let currentCulture = "";
+
+		function newCulture () {
+			let item = {
+				men: [],
+				women: [],
+				any: []
+			}
+			return item;
+		}
+
+		for (let line of data) {
+			const id = line.substr(0,1);
+			const body = line.substr(1);
+
+			// #: Comment
+			// N: New culture
+			// M: Man
+			// F: Woman
+			// (Trelby had male/female dichotomy, which we won't use here, as Beat is gender-sensitive as fuck)
+
+			if (id == "#") continue;
+			else if (id == "N") {
+				names[body] = newCulture();
+				currentCulture = body;
+			}
+			else if (id == "A") {
+				names[currentCulture]["any"].push({ gender: "man", name: body });
+			}
+			else if (id == "M") {
+				names[currentCulture]["men"].push({ gender: "man", name: body });
+			} else if (id == "F") {
+				names[currentCulture]["women"].push({ gender: "woman", name: body });
+			}
+		}
+	}
+
+	function filterNames(cultures, gender) {
+		// If you want to display ALL names.
+		// This should be cached/made async before implementing.
+		// if (!cultures) cultures = Object.keys(names);
+
+		if (!gender) {
+			const gSelect = document.querySelectorAll("[name='gender']");
+			for (const input of gSelect) {
+				if (input.checked) gender = input.value;
+			}
+		}
+
+		filteredNames = [];
+
+		for (const [key, value] of Object.entries(names)) {
+			if (cultures.includes(key)) {
+				if (gender == "women") filteredNames = filterNames.concat(value.women);
+				else if (gender == "men") filteredNames = filterNames.concat(value.men);
+				else {
+					filteredNames = filteredNames.concat(value.men);
+					filteredNames = filteredNames.concat(value.women);
+				}
+			}
+		}
+		
+		searchName()
+	}
+
+	function searchName() {
+		let results = [];
+		let term = searchBox.value;
+
+		for (let item of filteredNames) {
+			if (term.length) { if (item.name.toLowerCase().indexOf(term.toLowerCase()) == 0) results.push(item); }
+			else results.push(item)
+		}
+
+		let n = document.getElementById('names');
+		let html = "";
+		for (let name of results) {
+			html += "<tr><td class='name'>" + name.name + "</td><td class='gender'>" + name.gender + "</td></tr>"
+		}
+		
+		n.innerHTML = html;
+	}
+
+	function setUI() {
+		let datalist = document.getElementById('cultures');
+		datalist.innerHTML = "";
+
+		let html = "";
+
+		for (const [key, value] of Object.entries(names)) {
+			html += "<option value='" + key + "'>" + key + "</option>\n";
+		}
+
+		datalist.innerHTML = html;
+
+		// display all names
+		filterNames(null, "any");
+	}
+
+	function selectCulture (el) {
+		let datalist = document.getElementById('cultures');
+		let value = datalist.value;
+
+		filterNames([value]);
+	}
+
+	gatherNames(data);
+	setUI();
+
+
+</script>
+
