@@ -2,7 +2,7 @@
 
 This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/).
 
-To install plugins, open Beat and navigate to *Tools → Plugins → Open Plugin Folder...*. Then just drag plugin files into the opened folder.
+To install plugins, open Beat and navigate to *Tools → Plugins → Open Plugin Folder...*. Then just drag plugin files into the opened folder. If you write your own plugin, feel free to submit it either through pull request or e-mail.
 
 **NOTE:** Requires Beat 1.7.2 or later.
 
@@ -14,7 +14,7 @@ Plugins are written in JavaScript and Beat provides a simple API to interact wit
 
 If anybody ever writes a plugin, *please, please, please* be nice to people and test your code thoroughly before deploying it. Loss of work hurts and it might be completely possible to crash the whole app with plugin code. I'm doing my best to stay backwards-compatible 
 
-There is a sample plugin included at the end to act as a starting point.
+The included sample plugin demonstrates the basic logic behind plugins.
 
 
 ## Basics
@@ -161,112 +161,12 @@ Be careful not to overwrite the `Beat` object inside the page, as it can cause t
 
 **NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`. Otherwise you might end up draining the user's memory. 
 
-## Sample Plugin
 
-This plugin doesn't really do anything, just demonstrates some plugin features.
-It should act as a starting-point to begin writing your own extensions for Beat.
+# Plugin Guidelines
 
-```
-let confirm = Beat.confirm("This is a sample plugin", "Do you want to continue running it?")
+* **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
 
-// User hit Cancel
-if (!confirm) {
-	Beat.alert("Sad to see you go", "Plugin will now terminate")
-	return
-}
+* **Be Inclusive** – avoid discriminatory language. For example, don't refer to male/female names, but use women/men/other. Using gender-neutral pronouns native to the chosen language *(ie. they)* is recommended.
 
-// ########################################
-// USER INPUT
-// ########################################
+* **User Interface** – try to stay consistent. The HTML panel has a preloaded CSS, which might be modified at some point. It's very possible that the stylesheet is quite ugly in your case, so feel free to add some stylization. There are simple stylesheet examples within the existing plugins.
 
-let value, stringValue;
-
-value = Beat.dropdownPrompt(
-	"Select a value", 
-	"This is a drop-down menu with selectable items", 
-	["First Item", "Second Item", "Third Item"]
-)
-if (value == null) return;
-
-stringValue = Beat.prompt(
-	"Enter a string value",
-	"Type anything"
-)
-if (stringValue == null) return;
-
-
-// ########################################
-// INTERACTING WITH THE DOCUMENT
-// ########################################
-
-// Add a some text in the beginning of the document
-Beat.replaceRange(0, 0, "INT. SAMPLE SCENE\n\nThis is a sample script.\n\n")
-
-// Parse any changes we've made
-Beat.parse()
-
-// Get line content
-const lines = Beat.lines()
-const scenes = Beat.scenes()
-
-// Scroll to scene (ie. select the range)
-Beat.scrollToScene(scenes[0])
-
-// Go through the lines
-for (const line of lines) {
-	let content = line.string
-	let position = line.position
-	let type = line.typeAsString()
-
-	// Do something with this data
-}
-
-for (const scene of scenes) {
-	let start = scene.sceneStart
-	let length = scene.sceneLength
-
-	let lines = Beat.linesForScene(scene)
-}
-
-// ########################################
-// MORE UI STUFF
-// ########################################
-
-let html = 
-	"<h1>Hello World</h1>\
-	<h2>User Input</h2>\
-	<p>Dropdown value: " + value + "<br>\
-	String value: " + stringValue + "</p> \
-	<p>Input something:<br>\
-	<input name='input' rel='beat' type='text'></input></p>"
-
-// Inject some script. Beat.data is an object you can pass onto callback function
-html += "<script>Beat.data = { hello: 'World' }</script>"
-
-Beat.htmlPanel(html, 400, 300,
-	function (data) {
-		Beat.log("here?")
-		// The data can be passed here
-		Beat.alert("Data from HTML panel:", JSON.stringify(data));
-		openFile()
-	}
-);
-
-function openFile() {
-	Beat.openFile(["fountain"], // Allowed file extensions
-		function (path) { // Callback
-			if (!path) return
-
-			let content = Beat.fileToString(path)
-			
-			// Do something with the string. 
-			// In this sample we create a new document with the file contents.
-			// NOTE NOTE NOTE: Never call newDocument while a modal is displayed.
-			Beat.newDocument(content)
-			Beat.end()
-		}
-	)
-}
-
-
-```
