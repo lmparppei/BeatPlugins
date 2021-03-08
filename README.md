@@ -25,7 +25,7 @@ You can use any supported JavaScript features in WebKit, but the script is confi
 
 Have fun and make something useful!
 
-### Get Screenplay Content
+### Access Screenplay Content
 
 `Beat.lines()` – all line objects in the script  
 `Beat.scenes()` – scene objects  
@@ -53,6 +53,15 @@ For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.
 
 `Beat.getUserDefault("setting name")` – get a value  
 `Beat.setUserDefault("setting name", value)` – save a value  
+
+
+### Tagging Data
+
+`Beat.tagsForScene(scene)` — returns a dictionary of tagged items in the scene.
+
+Tags have `.name` and `.range` properties, and a method for getting the type, `.typeAsString()`. Tagging dictionary is structured by type: `{ "Cast": [...], "Prop": [...] }`
+
+***Note**: Requires 1.7.4 or later*
 
   
 ## Manipulating the Document
@@ -121,9 +130,14 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 ### Import Data
 
-`beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
-`beat.fileToString(path)` – file contents as string  
-`beat.pdfToString(path)` – converts PDF file contents into a string  
+`Beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
+`Beat.fileToString(path)` – file contents as string  
+`Beat.pdfToString(path)` – converts PDF file contents into a string  
+
+### Export Data
+
+`Beat.saveFile(extension, function (filePath) { })` – displays a save dialog and returns the path to callback  
+`Beat.writeToFile(path, content)` – write a string to path. macOS will confirm file access from the user. Please don't try to do anything malicious.
 
 ### HTML Panel
 
@@ -140,8 +154,8 @@ Beat.htmlPanel(
 	function (data) {
 		/*
 		
-		Returned data in this case:
-		{
+		In this case, callback receives:
+		data = {
 			data: { hello: 'world' },
 			inputData: { name: 'textInput', value: '' }
 		}
@@ -159,14 +173,43 @@ Beat.htmlPanel(html, 500, 300, null);
 
 Be careful not to overwrite the `Beat` object inside the page, as it can cause the app to be unresponsive to user. Also, only store **an object** in `Beat.data`. You can add your own CSS alongside the HTML if you so will — the current CSS is still under development. Just remember to add `!important` when needed.
 
-**NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`. Otherwise you might end up draining the user's memory. 
+**NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`. Otherwise you might end up draining the user's memory.
+
+#### Custom Actions in the Panel
+
+You can't run regular plugin code from inside the HTML panel, so some hacky solutions are needed.
+
+You can set the `Beat.data` object and send it to the callback without the user pressing *Close* button using `Beat.closeAndSendData()`.
+
+HTML code:  
+````
+<script>
+	Beat.data = { customData: "This will be sent to the callback." }
+</script>
+<button onclick='Beat.closeAndSendData()'>Send Data</button>
+````
+
+Plugin code:  
+````
+Beat.htmlPanel(html, 400, 400, function (htmlData) {
+	// We will now receive any data set in the HTML panel
+	Beat.alert("This is what we got:", htmlData.data.customData)
+})
+````
+
+The above method will also receive all the normal data, such as form elements with `rel='beat'` attached to them.
+
+
+### Logging in Xcode 
+
+If you are running a development version of Beat in Xcode, you can log messages into the console using `Beat.log("Hello World")`. Logs by plugin scripts are prefixed with `#`.
 
 
 # Plugin Guidelines
 
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
 
-* **Be Inclusive** – avoid discriminatory language. For example, don't refer to male/female names, but use women/men/other. Using gender-neutral pronouns native to the chosen language *(ie. they)* is recommended.
+* **Be Inclusive** – avoid discriminatory language. For example, use women/men/other rather than male/female. Using gender-neutral pronouns in any language *(ie. they)* is recommended when gender is ambiguous.
 
 * **User Interface** – try to stay consistent. The HTML panel has a preloaded CSS, which might be modified at some point. It's very possible that the stylesheet is quite ugly in your case, so feel free to add some stylization. There are simple stylesheet examples within the existing plugins.
 
