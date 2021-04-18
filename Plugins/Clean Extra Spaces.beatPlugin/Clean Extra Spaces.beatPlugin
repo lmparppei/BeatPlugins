@@ -1,0 +1,21 @@
+/*
+
+Clean extra spaces
+© Lauri-Matti Parppei 2021
+
+*/
+
+const lines = Beat.lines()
+
+let offset = 0
+
+for (let line of lines) {
+	if (line.typeAsString == "Empty") continue
+
+	let string = line.string.trim()
+
+	let diff = line.string.length - string.length
+	if (diff > 0) {
+		Beat.replaceRange(line.position, line.string.length, string)	
+	}
+}
