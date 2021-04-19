@@ -3,7 +3,7 @@
 Map Character Appearances
 Copyright: Lauri-Matti Parppei
 Description: A visual timeline of character appearances
-Version: 1.0
+Version: 1.1
 
 */
 
@@ -32,7 +32,8 @@ let names = []
 // First get all characters who have dialogue
 for (const line of Beat.lines()) {
     if (line.typeAsString() == "Character") {
-        let name = stripSuffix(line.string).trim()
+        //let name = stripSuffix(line.string).trim()
+        let name = line.characterName().trim();
         if (!names.includes(name)) names.push(name)
     }
 }
