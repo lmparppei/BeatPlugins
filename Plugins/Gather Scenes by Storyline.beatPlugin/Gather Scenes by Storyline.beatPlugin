@@ -1,7 +1,9 @@
 /*
 
 Gather scenes by storyline
-© Lauri-Matti Parppei
+Copyright: Lauri-Matti Parppei
+Description: Creates a new document with scenes containing the given storyline
+Version: 1.0
 
 */
 

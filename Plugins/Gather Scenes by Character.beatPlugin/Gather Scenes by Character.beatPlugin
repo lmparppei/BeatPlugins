@@ -1,7 +1,9 @@
 /*
 
 Gather scenes by character
-© Lauri-Matti Parppei
+Copyright: Lauri-Matti Parppei
+Description: Creates a new document with only the scenes which include selected character
+Version: 1.0
 
 */
 

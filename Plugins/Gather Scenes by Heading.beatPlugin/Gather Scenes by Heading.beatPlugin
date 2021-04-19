@@ -1,7 +1,9 @@
 /*
 
 Gather Scenes by Heading
-© Lauri-Matti Parppei
+Copyright: Lauri-Matti Parppei
+Description: Creates a new document with scenes containing a given text in heading
+Version: 1.0
 
 */
 
