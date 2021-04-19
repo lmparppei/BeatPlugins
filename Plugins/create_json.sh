@@ -36,3 +36,4 @@ json+="}"
 
 echo $json > "../Dist/Beat Plugins.json"
 echo "Written JSON file"
+git add ../

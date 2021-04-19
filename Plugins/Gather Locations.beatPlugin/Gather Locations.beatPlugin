@@ -1,0 +1,81 @@
+/*
+
+Gather locations
+Description: Quick and dirty list of shooting locations
+Version: 0.5
+Copyright: Lauri-Matti Parppei
+
+*/
+
+let scenes = Beat.scenes()
+
+let locations = {}
+
+function newLocation(name) {
+	locations[name] = []
+}
+
+function csv() {
+	let data = "Location,Scenes\n"
+	
+	for (let location in locations) {
+		let scenes = locations[location]
+
+		//  Replace double quotes
+		if (location.indexOf('"') >= 0) {
+			location = location.replaceAll('""', '"')
+			location = location.replaceAll('"', '""')
+		}
+
+		
+		data += location
+		data += ',\"'
+		data += scenes.join(", ")
+		data += '"\n'
+	}
+	return data
+}
+
+for (let scene of scenes) {
+	let string = scene.line.cleanedString().toUpperCase()
+	let headings = string.substring(string.indexOf(" ")).split(" - ")
+
+	let location = ""
+
+	if (headings.length > 1) {
+		for (let i = 0; i < headings.length - 1; i++) {
+			location += headings[i] + " "
+			if (i != headings.length - 2) location += "- "
+		}
+	} else {
+		location = headings[0]
+	}
+
+	location = location.trim()
+
+	if (!locations[location]) newLocation(location)
+	locations[location].push(scene.sceneNumber)
+}
+
+let html = "<h1>Locations</h1>\
+			<button id='saveCSV' onclick='saveCSV()'>Save CSV</button>\
+			<table cellspacing=0>"
+
+for (let location in locations) {
+	html += "<tr><td>" + location + "</td><td>" + locations[location].join(", ") + "</td></tr>"
+}
+html += "<script>function saveCSV() { Beat.data = { saveCSV: 'yes' }; sendBeatData() }</script>"
+html += "</html>"
+
+Beat.htmlPanel(html, 800, 600, function (data) {
+	if (!data || !data.data) {
+		Beat.end()
+	}
+	else if (data.data.saveCSV) {
+		Beat.saveFile("csv", function (path) {
+			Beat.writeToFile(path, csv())
+			Beat.end()
+		})
+	}
+})
+
