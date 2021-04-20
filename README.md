@@ -122,11 +122,31 @@ for (const scene of Beat.scenes()) {
 
 ## Advanced
 
+### Plugin Info
+
+If you want your plugin to be distributed, you should add a block of information at the beginning of your file:
+
+```
+/*
+
+Name: Plugin Name
+Copyright: Copyright Holder
+Description: A short description of what the plugin does
+Version: 1.0
+
+*/
+```
+
+Version numbers should use **ONLY** numbers, and preferrably just a single dot, as in `1.1` or `2.12`. If a more recent version of the plugin is available in this repository, the Plugin Manager will show an option to update it.
+
+
 ### Folder-type Plugin
 
 Plugin can be just a single script, but sometimes plugins require supporting files. Place the script inside a folder of the same name, for example `Plugin.beatPlugin/Plugin.beatPlugin`. The plugin can then access files inside its folder using `Beat.assetAsString(filename)`.
 
 `let text = Beat.assetAsString('text.txt')` – get plugin asset as string
+
+**Note:** For the sake of clarity, the distributed plugins are all wrapped in folders.
 
 ### Import Data
 
