@@ -170,13 +170,21 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 `Beat.htmlPanel(htmlContent, width, height, callback)`   
 
-Displays HTML content with preloaded CSS. You can fetch data from here using two ways. Callback function receives an object, which contains keys `data` and `inputData`. 
+Displays HTML content with preloaded CSS. Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page. 
 
-You can store an object (***note**: only an object*) in `Beat.data` inside your HTML, which will be returned in the callback. You can also use inputs, just add `rel='beat'` to their attributes. The received object will then contain  `inputData` object, which contains every input with their respective name and value (and `checked` value, too).
+There are two ways to fetch data from `htmlPanel`:
+
+1) Storing an object (***note**: only an object*) in `Beat.data` inside your HTML, which will be returned in the callback.
+
+2) Using HTML inputs. Just remember to add `rel='beat'` attribute. The received object will then contain  `inputData` object, which contains every input with their respective name and value (and `checked` value, too).
+
+The `callback` function receives an object, which contains two keys, `data` and `inputData`. You can use both if you want to.
 
 ```
 Beat.htmlPanel(
-	"<h1>Hello World</h1><input type='text' rel='beat' name='textInput'><script>Beat.data = { 'hello': 'world' }</script>",
+	"<h1>Hello World</h1>\
+	<input type='text' rel='beat' name='textInput'>\
+	<script>Beat.data = { 'hello': 'world' }</script>",
 	600, 300,
 	function (data) {
 		/*
@@ -193,21 +201,21 @@ Beat.htmlPanel(
 )
 ```
 
-Easiest way to use HTML panels is to create a folder-type plugin containing a template:
+Be careful not to overwrite the `Beat` object inside the page, as it can cause the app to be unresponsive to user. Also, only store **an object** in `Beat.data`. You can add your own CSS alongside the HTML if you so will — the current CSS is still under development. Just remember to add `!important` when needed.
+
+The easiest way to use HTML panels is to create a folder-type plugin and loading a template:  
 ```
 let html = Beat.assetAsString("template.html");
 Beat.htmlPanel(html, 500, 300, null);
 ```
 
-Be careful not to overwrite the `Beat` object inside the page, as it can cause the app to be unresponsive to user. Also, only store **an object** in `Beat.data`. You can add your own CSS alongside the HTML if you so will — the current CSS is still under development. Just remember to add `!important` when needed.
-
-**NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`. Otherwise you might end up draining the user's memory.
+**NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`, as in the example above. Otherwise you might end up draining the user's memory.
 
 #### Custom Actions in the Panel
 
-You can't run regular plugin code from inside the HTML panel, so some hacky solutions are needed.
+Beat plugin code can't be run from inside the HTML panel, so some hacky solutions are needed to communicate with the app. 
 
-You can set the `Beat.data` object and send it to the callback without the user pressing *Close* button using `Beat.closeAndSendData()`.
+You can run regular JavaScript, however, and set the `Beat.data` object. The object is sent to the parser when user presses *Close*, but if you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
 
 HTML code:  
 ````
@@ -227,17 +235,15 @@ Beat.htmlPanel(html, 400, 400, function (htmlData) {
 
 The above method will also receive all the normal data, such as form elements with `rel='beat'` attached to them.
 
+This is a hacky and weird scheme. Beat Discord has a channel devoted to plugin development, so drop by to learn more.
 
-### Logging in Xcode 
-
-If you are running a development version of Beat in Xcode, you can log messages into the console using `Beat.log("Hello World")`. Logs by plugin scripts are prefixed with `#`.
 
 
 # Plugin Guidelines
 
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
 
-* **Be Inclusive** – avoid discriminatory language. For example, use women/men/other rather than male/female. Using gender-neutral pronouns in any language *(ie. they)* is recommended when gender is ambiguous.
+* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns in any language *(ie. they)* is recommended when gender is ambiguous.
 
 * **User Interface** – try to stay consistent. The HTML panel has a preloaded CSS, which might be modified at some point. It's very possible that the stylesheet is quite ugly in your case, so feel free to add some stylization. There are simple stylesheet examples within the existing plugins.
 
