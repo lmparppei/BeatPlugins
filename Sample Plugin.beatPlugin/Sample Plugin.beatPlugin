@@ -7,12 +7,19 @@ It should act as a starting-point to begin writing your own extensions for Beat.
 
 */
 
+// Open development console
+Beat.openConsole()
+Beat.log("This is a console message from the Sample Plugin.")
+
 let confirm = Beat.confirm("This is a sample plugin", "Do you want to continue running it?")
 
 // User hit Cancel
 if (!confirm) {
+	Beat.log("User pressed Cancel")
 	Beat.alert("Sad to see you go", "Plugin will now terminate")
 	return
+} else {
+	Beat.log("User pressed OK")
 }
 
 
@@ -23,15 +30,15 @@ if (!confirm) {
 let value, stringValue;
 
 value = Beat.dropdownPrompt(
-	"Select a value", 
-	"This is a drop-down menu with selectable items", 
+	"Select a value", // Title
+	"This is a drop-down menu with selectable items", // Info text
 	["First Item", "Second Item", "Third Item"]
 )
 if (value == null) return
 
 stringValue = Beat.prompt(
-	"Enter a string value",
-	"Type anything"
+	"Enter a string value", // Title
+	"Type anything" // Info text
 )
 if (stringValue == null) return
 
@@ -40,13 +47,10 @@ if (stringValue == null) return
 // INTERACTING WITH THE DOCUMENT
 // ########################################
 
-// Replace the whole text in the document with sample text
+// Add some text in the beginning of the document (position 0, length 0)
 Beat.replaceRange(0, 0, "INT. SAMPLE SCENE\n\nThis is a sample script.\n\n")
 
-// Parse any changes we've made
-Beat.parse()
-
-// Get line content
+// Get screenplay content
 const lines = Beat.lines()
 const scenes = Beat.scenes()
 
@@ -60,6 +64,7 @@ for (const line of lines) {
 	let type = line.typeAsString()
 
 	// Do something with this data
+	Beat.log("Line type: " + type + " / Location: " + position)
 }
 
 for (const scene of scenes) {
@@ -67,6 +72,9 @@ for (const scene of scenes) {
 	let length = scene.sceneLength
 
 	let lines = Beat.linesForScene(scene)
+
+	// Do something
+	Beat.log("Scene heading: " + scene.string)
 }
 
 // ########################################
@@ -104,6 +112,9 @@ function openFile() {
 			// In this sample we create a new document with the file contents.
 			// NOTE NOTE NOTE: Never call newDocument while a modal is displayed.
 			Beat.newDocument(content)
+			
+			// Remember to terminate plugins using asynchronous calls (such as this) 
+			// using Beat.end(). Otherwise you might end up draining the user's memory.
 			Beat.end()
 		}
 	)

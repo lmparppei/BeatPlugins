@@ -2,17 +2,19 @@
 
 This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/).
 
-To install plugins, open Beat and navigate to *Tools → Plugins → Open Plugin Folder...*. Then just drag plugin files into the opened folder. If you write your own plugin, feel free to submit it either through pull request or e-mail.
+To install plugins, open Beat and navigate to *Tools → Manage Plugins...*. You can download official plugins right from the app. To install custom ones or create your own, click on the folder icon to open the plugin folder.
 
-**NOTE:** Requires Beat 1.7.2 or later.
+If you write your own plugin, feel free to submit it either through pull request or e-mail.
+
+Official plugins in this repository are released under **MIT License**.
 
 ---
 
 #  Beat Plugin API
 
-Plugins are written in JavaScript and Beat provides a simple API to interact with the app. A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing a script by the same name (ie. `Plugin.beatPlugin`. Supporting files contained in the folder can then be accessed by the plugin. 
+Plugins are written in JavaScript and Beat provides a simple API to interact with the app. A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing script file by the same name (ie. `Plugin.beatPlugin/Plugin.beatPlugin`. In the folder model, plugins can access supporting asset files. 
 
-If anybody ever writes a plugin, *please, please, please* be nice to people and test your code thoroughly before deploying it. Loss of work hurts and it might be completely possible to crash the whole app with plugin code. I'm doing my best to stay backwards-compatible 
+If anybody ever writes a plugin, *please, please, please* be nice to people and test your code thoroughly before deploying it. Loss of work hurts a lot, and it might be completely possible to crash the whole app with plugin code. I'm doing my best to stay backwards-compatible.
 
 The included sample plugin demonstrates the basic logic behind plugins.
 
@@ -24,6 +26,11 @@ The included sample plugin demonstrates the basic logic behind plugins.
 You can use any supported JavaScript features in WebKit, but the script is confined to run inside the app, so you can't access the web, for instance. Scripts run as functions, so they can be terminated any time using `return` when outside any other function scope. It's also advised to **always** end your scripts using `Beat.end()`, especially when using asynchronous methods. 
 
 Have fun and make something useful!
+
+### Debugging
+
+`Beat.openConsole()` — opens a (global) console for plugin development. Never leave this on for released plugins.
+`Beat.log("Message")` — log messages into the console 
 
 ### Access Screenplay Content
 
@@ -181,6 +188,7 @@ Beat.htmlPanel(
 		}
 		
 		*/
+		Beat.end()
 	}
 )
 ```
