@@ -16,21 +16,23 @@ Plugins are written in JavaScript and Beat provides a simple API to interact wit
 
 If anybody ever writes a plugin, *please, please, please* be nice to people and test your code thoroughly before deploying it. Loss of work hurts a lot, and it might be completely possible to crash the whole app with plugin code. I'm doing my best to stay backwards-compatible.
 
-The included sample plugin demonstrates the basic logic behind plugins.
+The included sample plugin demonstrates basic logic behind plugins.
 
 
 ## Basics
 
 ### Writing Plugins
 
-You can use any supported JavaScript features in WebKit, but the script is confined to run inside the app, so you can't access the web, for instance. Scripts run as functions, so they can be terminated any time using `return` when outside any other function scope. It's also advised to **always** end your scripts using `Beat.end()`, especially when using asynchronous methods. 
+You can use any supported JavaScript features in WebKit, but the script is confined to run inside the app. You can't access the web, for instance. Scripts run as functions, so they can be terminated any time using `return` when outside any other function scope. It's also advised to **always** terminate your scripts using `Beat.end()`, especially when using asynchronous methods. 
 
 Have fun and make something useful!
 
+
 ### Debugging
 
-`Beat.openConsole()` — opens a (global) console for plugin development. Never leave this on for released plugins.
+`Beat.openConsole()` — opens a console for plugin development. Never leave this on for released plugins.
 `Beat.log("Message")` — log messages into the console 
+
 
 ### Access Screenplay Content
 
@@ -40,6 +42,7 @@ Have fun and make something useful!
 `Beat.linesForScene(scene)` – lines for a specified scene  
 `Beat.getText()` — whole document as string  
 
+
 ### Navigate Through The Document
 
 `Beat.setSelectedRange(start, length)` – select a range in the document (**always** double-check that the values are in document range)  
@@ -47,14 +50,16 @@ Have fun and make something useful!
 `Beat.scrollToScene(scene)` – scroll to a scene object  
 `Beat.scrollToLine(line)` – scroll to line  
  
+
 ### User Interaction
 
 `Beat.alert("Alert title", "Informative Text")` – simple alert box  
-`Beat.confirm("Title", "Informative text")` — get user confirmation, returns `true` or `false`  
+`Beat.confirm("Title", "Informative text")` — ask for confirmation, returns `true` or `false`  
 `Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string  
 `Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
 For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
+
 
 ### Save Plugin Defaults
 
@@ -127,27 +132,9 @@ for (const scene of Beat.scenes()) {
 }
 ```
 
-## Advanced
+# Advanced
 
-### Plugin Info
-
-If you want your plugin to be distributed, you should add a block of information at the beginning of your file:
-
-```
-/*
-
-Name: Plugin Name
-Copyright: Copyright Holder
-Description: A short description of what the plugin does
-Version: 1.0
-
-*/
-```
-
-Version numbers should use **ONLY** numbers, and preferrably just a single dot, as in `1.1` or `2.12`. If a more recent version of the plugin is available in this repository, the Plugin Manager will show an option to update it.
-
-
-### Folder-type Plugin
+## Folder-type Plugin
 
 Plugin can be just a single script, but sometimes plugins require supporting files. Place the script inside a folder of the same name, for example `Plugin.beatPlugin/Plugin.beatPlugin`. The plugin can then access files inside its folder using `Beat.assetAsString(filename)`.
 
@@ -155,28 +142,39 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 **Note:** For the sake of clarity, the distributed plugins are all wrapped in folders.
 
-### Import Data
 
-`Beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
-`Beat.fileToString(path)` – file contents as string  
-`Beat.pdfToString(path)` – converts PDF file contents into a string  
+## Resident Plugins
 
-### Export Data
+Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. Update method receives location and length of the latest change.
 
-`Beat.saveFile(extension, function (filePath) { })` – displays a save dialog and returns the path to callback  
-`Beat.writeToFile(path, content)` – write a string to path. macOS will confirm file access from the user. Please don't try to do anything malicious.
+```
+Beat.setUpdate(
+	function (location, length) {
+		Beat.log("Edited at " + location + " (length: " + length +")")
+	}
+);
+```
 
-### HTML Panel
+This function is run whenever the document is edited. The update method has to be **very** efficient, so it won't slow down the UI. Resident plugins remain in memory even after using `return`, and they should be terminated using `Beat.end()`. 
+
+ 
+## Displaying Content
+
+### HTML Panel 
+
+Displays HTML a **modal** window with preloaded CSS.
 
 `Beat.htmlPanel(htmlContent, width, height, callback)`   
 
-Displays HTML content with preloaded CSS. Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page. 
+Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page without using a special evaluation method, `Beat.call()`.
 
-There are two ways to fetch data from `htmlPanel`:
+There are three ways to fetch data from `htmlPanel`:
 
 1) Storing an object (***note**: only an object*) in `Beat.data` inside your HTML, which will be returned in the callback.
 
 2) Using HTML inputs. Just remember to add `rel='beat'` attribute. The received object will then contain  `inputData` object, which contains every input with their respective name and value (and `checked` value, too).
+
+3) Calling `Beat.call("javaScriptString")` inside the HTML sends code to be evaluated by the main plugin. **Note** that the JS parameter needs to be a string, ie. `Beat.call("Beat.log('Hello world');")`. 
 
 The `callback` function receives an object, which contains two keys, `data` and `inputData`. You can use both if you want to.
 
@@ -186,11 +184,11 @@ Beat.htmlPanel(
 	<input type='text' rel='beat' name='textInput'>\
 	<script>Beat.data = { 'hello': 'world' }</script>",
 	600, 300,
-	function (data) {
+	function (result) {
 		/*
 		
 		In this case, callback receives:
-		data = {
+		result = {
 			data: { hello: 'world' },
 			inputData: { name: 'textInput', value: '' }
 		}
@@ -201,7 +199,7 @@ Beat.htmlPanel(
 )
 ```
 
-Be careful not to overwrite the `Beat` object inside the page, as it can cause the app to be unresponsive to user. Also, only store **an object** in `Beat.data`. You can add your own CSS alongside the HTML if you so will — the current CSS is still under development. Just remember to add `!important` when needed.
+Be careful not to overwrite `Beat` object inside the page, as it can cause the app to be unresponsive to user. Also, only store **an object** in `Beat.data`. You can add your own CSS alongside the HTML if you so will — the current CSS is still under development. Just remember to add `!important` when needed.
 
 The easiest way to use HTML panels is to create a folder-type plugin and loading a template:  
 ```
@@ -211,11 +209,52 @@ Beat.htmlPanel(html, 500, 300, null);
 
 **NOTE:** When using asynchronous methods and callbacks in plugins, you **HAVE** to end its execution using `Beat.end()`, as in the example above. Otherwise you might end up draining the user's memory.
 
-#### Custom Actions in the Panel
+### HTML Window
 
-Beat plugin code can't be run from inside the HTML panel, so some hacky solutions are needed to communicate with the app. 
+*Requires Beat 1.86+*
 
-You can run regular JavaScript, however, and set the `Beat.data` object. The object is sent to the parser when user presses *Close*, but if you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
+A standalone, floating window. Creating the window will make the plugin reside in memory, so remember to terminate it using `Beat.end()` in the callback, if needed.
+
+`let htmlWindow = Beat.htmlWindow(htmlContent, width, height, callback)`   
+
+The biggest difference to `htmlPanel` is, that you can transfer data in real time between plugin and its HTML window. Use `Beat.call("evaluatedJavaScript")` inside HTML to access Beat, and `htmlWindow.runJS("evaluatedJavaScript")` inside the plugin itself, to evaluate JavaScript in the window.
+
+```
+let htmlWindow = Beat.htmlWindow(
+	"<div id='ctx'></div>\
+	<script>\
+		let ctx = document.getElementById('ctx')\
+		Beat.call(\"Beat.log('Hello world')\")
+	</script>", 
+	300, 200,
+	function () { Beat.end() }
+)
+
+Beat.setUpdate(function (loc, len) {
+	htmlWindow.runJS("ctx.innerHTML += 'change at " + loc + ' (length ' + len + ")<br>'")
+})
+```
+
+The code above creates a floating HTML window, logs a confirmation message from inside the HTML, and will display every change to the document. 
+
+**Always** remember to terminate the plugin using `Beat.end()` in the callback if you don't want to leave it running in the background.
+
+
+#### Interacting With Window
+
+`htmlWindow.setHTML(htmlString)` — sets the window content
+`htmlWindow.close()` — close the window and run callback
+`htmlWindow.setFrame(x, y, width, height)` — set window position and size
+
+
+### Custom Actions in the HTML
+
+You can run any regular JavaScript inside HTML panel/window, but not your normal Beat plugin code. To access the app, you can either use `Beat.call()` which evaluates a string as JavaScript code, or fetch data through callbacks. 
+
+
+#### Callbacks
+
+In **HTML panel**, set `Beat.data` object. The object is sent to the parser when user presses *Close*, but if you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
 
 HTML code:  
 ````
@@ -235,15 +274,91 @@ Beat.htmlPanel(html, 400, 400, function (htmlData) {
 
 The above method will also receive all the normal data, such as form elements with `rel='beat'` attached to them.
 
-This is a hacky and weird scheme. Beat Discord has a channel devoted to plugin development, so drop by to learn more.
+
+#### Calling Plugin Methods
+
+Because of Beat scope, you can't run normal functions through evaluation. For example, this **WILL NOT WORK**:
+
+HTML:  
+```
+<script>Beat.call("hello()");</script>
+```
+
+Plugin:  
+```
+function hello() {
+	Beat.alert("Hello World")
+}
+```
+
+**Instead**, To call a custom function from inside the HTML, you need to register a custom `Beat` object.
+
+Plugin:  
+```
+Beat.custom = {
+	hello: function () {
+		Beat.alert("Hello World!")
+	}
+}
+```
+
+HTML:  
+```
+<script>Beat.call("Beat.custom.hello()");</script>
+```
+
+Communicating with the window is a constant ping-pong of evaluations and stringified data. Look through existing plugin code, or drop by Beat Discord to ask for help.
+
+
+## File Access
+
+### Import Data
+
+`Beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
+`Beat.fileToString(path)` – file contents as string  
+`Beat.pdfToString(path)` – converts PDF file contents into a string  
+
+### Export Data
+
+`Beat.saveFile(extension, function (filePath) { })` – displays a save dialog and returns the path to callback  
+`Beat.writeToFile(path, content)` – write a string to path. macOS will confirm file access from the user. Please don't try to do anything malicious.
+
+
+## Standalone Plugins
+
+In the future, you will be able to create standalone plugins, which run independently and are not attached to a document. The feature will be used for file import plugins, but can be exploited to create other tools, too. 
 
 
 
 # Plugin Guidelines
 
+
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
 
-* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns in any language *(ie. they)* is recommended when gender is ambiguous.
+* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns *(ie. they)* is recommended when gender is ambiguous.
 
 * **User Interface** – try to stay consistent. The HTML panel has a preloaded CSS, which might be modified at some point. It's very possible that the stylesheet is quite ugly in your case, so feel free to add some stylization. There are simple stylesheet examples within the existing plugins.
+
+* Preferrably distribute your plugins **free of charge**. Beat is a non-profit and anti-capitalist venture, and not a platform for making profits. Nothing prevents you from making money out of making custom plugins, but sharing your creations would be greatly appreciated!
+
+
+## Plugin Info
+
+If you want your plugin to be distributed, you should add a block of information at the beginning of your file:
+
+```
+/*
+
+Name: Plugin Name
+Copyright: Copyright Holder
+Description: A short description of what the plugin does
+Version: 1.0
+Type: Plugin Type
+
+*/
+```
+
+Version numbers should use **ONLY** numbers, and preferrably just a single dot, as in `1.1` or `2.12`. If a more recent version of the plugin is available in this repository, the Plugin Manager will show an option to update it.
+
+Allowed plugin types are `Tool`, `Export`, `Import` and `Standalone`. 
 
