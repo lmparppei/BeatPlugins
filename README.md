@@ -117,20 +117,30 @@ for (const line of Beat.lines()) {
 
 ### Scenes
 
+`scene.line` – line object which begins the scene (ie. heading)  
 `scene.sceneStart` — starting index  
 `scene.sceneLength` — length of the whole scene in characters  
 `scene.string` — scene heading (eg. INT. HOUSE - DAY)  
 `scene.color` — scene color as string  
-`scene.omited()` — true/false  
+`scene.omited` — true/false  
+`scene.storylines` — storylines for the scene  
+`scene.sectionDepth` – depth of a section element  
 `scene.typeAsString()` — scene type (heading, section, synopse)  
 	
-Iterate through scenes:  
+Iterate through the outline (includes sections and synopsis markers):  
+```
+for (const scene of Beat.outline()) {
+	// ...
+}
+```
 
+Iterate through **scenes only**:  
 ```
 for (const scene of Beat.scenes()) {
 	// ...
 }
 ```
+
 
 # Advanced
 
@@ -242,19 +252,24 @@ The code above creates a floating HTML window, logs a confirmation message from 
 
 #### Interacting With Window
 
-`htmlWindow.setHTML(htmlString)` — sets the window content
-`htmlWindow.close()` — close the window and run callback
-`htmlWindow.setFrame(x, y, width, height)` — set window position and size
+`htmlWindow.setHTML(htmlString)` — set window content  
+`htmlWindow.close()` — close the window and run callback  
+`htmlWindow.setFrame(x, y, width, height)` — set window position and size  
+`htmlWindow.getFrame()` — returns position and size for the window  
+`htmlWindow.screenSize()` — returns size for the screen window has appeared on 
+`htmlWindow.runJS(javascriptString)` — sends JavaScript to be evaluated in the window 
 
 
-### Custom Actions in the HTML
+### Communicating With HTML Windows
 
-You can run any regular JavaScript inside HTML panel/window, but not your normal Beat plugin code. To access the app, you can either use `Beat.call()` which evaluates a string as JavaScript code, or fetch data through callbacks. 
+You can run any regular JavaScript inside HTML panel/window, but **NOT** your normal Beat plugin code. Think of it as host/client situation: plugin is the host, HTML window is the client. Communication is done using strings containing JavaScript code. HTML window provides couple of methods for this.
+
+To access the app or send and fetch data, you can either use `Beat.call()` which evaluates a JavaScript code string, or send data through callbacks. 
 
 
 #### Callbacks
 
-In **HTML panel**, set `Beat.data` object. The object is sent to the parser when user presses *Close*, but if you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
+Inside **HTML panel**, set `Beat.data` object to be another object. This object is sent to the parser when user presses *Close*. If you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
 
 HTML code:  
 ````
@@ -277,7 +292,9 @@ The above method will also receive all the normal data, such as form elements wi
 
 #### Calling Plugin Methods
 
-Because of Beat scope, you can't run normal functions through evaluation. For example, this **WILL NOT WORK**:
+If you want to run plugin code from inside an HTML window/panel, you need to send it to the plugin for evaluation using `Beat.call`, ie. `Beat.call("Beat.log('Hello')")`.
+
+There are some quirks because of JavaScript scope and asynchronous communication. This is why you **can't** run plain functions through evaluation. For example, this **WILL NOT WORK**:
 
 HTML:  
 ```
@@ -307,7 +324,7 @@ HTML:
 <script>Beat.call("Beat.custom.hello()");</script>
 ```
 
-Communicating with the window is a constant ping-pong of evaluations and stringified data. Look through existing plugin code, or drop by Beat Discord to ask for help.
+Communicating with the window is a constant ping-pong of evaluations and stringified data. Look through existing plugin code, or drop by Beat Discord to ask for help. 
 
 
 ## File Access
