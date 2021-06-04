@@ -176,7 +176,7 @@ Displays HTML a **modal** window with preloaded CSS.
 
 `Beat.htmlPanel(htmlContent, width, height, callback)`   
 
-Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page without using a special evaluation method, `Beat.call()`.
+Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page without using a special evaluation method, `Beat.call()`. *(**NOTE**: `call` is unavailable in HTML panel until 1.89)*
 
 There are three ways to fetch data from `htmlPanel`:
 
@@ -269,14 +269,14 @@ To access the app or send and fetch data, you can either use `Beat.call()` which
 
 #### Callbacks
 
-Inside **HTML panel**, set `Beat.data` object to be another object. This object is sent to the parser when user presses *Close*. If you want to create your own submit button, use `Beat.closeAndSendData()` method in your JavaScript. 
+Inside **HTML panel**, set `Beat.data` object to be another object. This object is sent to the parser when user presses *Close*. If you want to create your own submit button, use `sendBeatData()` method in your JavaScript. 
 
 HTML code:  
 ````
 <script>
 	Beat.data = { customData: "This will be sent to the callback." }
 </script>
-<button onclick='Beat.closeAndSendData()'>Send Data</button>
+<button onclick='sendBeatData()'>Send Data</button>
 ````
 
 Plugin code:  

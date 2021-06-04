@@ -1,0 +1,57 @@
+/*
+
+Name: Cherry-Pick Scenes
+Version: 0.9
+Copyright: Lauri-Matti Parppei 2021
+
+*/
+
+Beat.openConsole()
+
+let ui = Beat.assetAsString("ui.html")
+let scenes = []
+let i = 0;
+
+for (let scene of Beat.scenes()) {
+	if (!scene.omited) {
+		scenes.push({
+			name: scene.line.cleanedString(),
+			sceneNumber: scene.sceneNumber,
+			index: i
+		});
+	}
+
+	i++;
+}
+let data = JSON.stringify(scenes)
+
+ui = ui.replace("##DATA##", data);
+
+Beat.htmlPanel(ui, 600,500, function(data) {
+	let text = ""
+	const scenes = Beat.scenes()
+	const script = Beat.getText()
+
+	for (const input of data.inputData) {
+		if (input.checked) {
+			let index = parseInt(input.name.replace("scene-", ""))
+			
+			if (index >= 0) {
+				let scene = scenes[index]
+				const sceneText = script.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";
+				text += sceneText
+			}
+		}
+	}
+
+	// Remove extra line breaks
+	text = text.replace(/\n{3,}/g, '\n\n\n');
+	
+	// Create a new document if there is something to create it from
+	if (text.length > 1) {
+		Beat.newDocument(text)			
+	}
+
+	Beat.end()
+}, true)
+
