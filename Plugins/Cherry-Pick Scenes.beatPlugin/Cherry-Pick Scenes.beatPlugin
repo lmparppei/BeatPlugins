@@ -1,13 +1,11 @@
 /*
 
 Name: Cherry-Pick Scenes
-Version: 1.0
+Version: 1.1
 Copyright: Lauri-Matti Parppei 2021
 Description: Create a new document with selected scenes
 
 */
-
-Beat.openConsole()
 
 let ui = Beat.assetAsString("ui.html")
 let scenes = []
