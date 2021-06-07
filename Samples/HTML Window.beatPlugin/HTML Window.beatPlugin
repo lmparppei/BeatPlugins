@@ -1,0 +1,35 @@
+/*
+
+HTML Window
+
+A floating HTML window which can communicate with the host plugin
+
+*/
+
+Beat.openConsole()
+
+let html = Beat.assetAsString("ui.html")
+let htmlWindow = Beat.htmlWindow(html, 300, 200, function () {
+	// Remember to terminate the plugin when window closes
+	Beat.end()
+})
+
+let screenSize = htmlWindow.screenSize() // { width: ..., height: ... }
+let frame = htmlWindow.getFrame() // { x: ..., y: ..., width: ..., height: ... }
+
+// Register a custom method which can be called from the window
+Beat.custom = {
+	hello: function() {
+		Beat.log("This method is called from the HTML window")	
+		
+		// Move window into corner
+		// Note that in macOS, y is calculated from bottom to top
+		htmlWindow.setFrame(0, 0, 300, 200) 
+	}	
+}
+
+// Update window when user types something
+Beat.setUpdate(function (loc, len) {
+	// This string will be evaluated in the window
+	htmlWindow.runJS("updateText(" + loc + ", " + len + ")")
+})

@@ -1,0 +1,28 @@
+/*
+
+This plugin demonstrates how to leave a plugin running in the background.
+Register an update method using setUpdate() or setSelectionUpdate(),
+or use both if needed.
+
+A resident plugin is terminated either by unchecking it in the Tools menu
+or calling Beat.end()
+
+*/
+
+Beat.openConsole()
+Beat.log("Resident plugin launched")
+
+Beat.setUpdate(function (loc, len) {
+	Beat.log(Beat.currentLine.string)
+	Beat.log("   " + JSON.stringify(Beat.currentLine.textRange))
+})
+
+Beat.setSelectionUpdate(function (loc, len) {
+	Beat.log("Selected " + loc + "/" + len)
+	checkType()
+})
+
+function checkType() {
+	Beat.log("Current line type: " + Beat.currentLine.typeAsString())
+}
+

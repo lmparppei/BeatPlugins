@@ -1,0 +1,20 @@
+
+<h1>HTML Window</h1>
+
+<button onclick='callBeat()'>Call Plugin</button>
+
+<div id='context'></div>
+
+<script>
+	
+	let context = document.getElementById('context')
+
+	function updateText(loc, len) {
+		context.innerHTML += "Edited at: " + loc + " (length: " + len + ")<br>"
+	}
+
+	function callBeat() {
+		Beat.call("Beat.custom.hello()")
+	}
+
+</script>

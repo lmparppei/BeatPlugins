@@ -93,10 +93,9 @@ let html =
 html += "<script>Beat.data = { hello: 'World' }</script>"
 
 Beat.htmlPanel(html, 400, 300,
-	function (data) {
-		Beat.log("here?")
+	function (htmlData) {
 		// The data can be passed here
-		Beat.alert("Data from HTML panel:", JSON.stringify(data));
+		Beat.alert("Data from HTML panel:", JSON.stringify(htmlData));
 		openFile()
 	}
 );

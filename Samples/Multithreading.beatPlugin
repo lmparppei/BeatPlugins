@@ -1,0 +1,42 @@
+
+const htmlWindow = Beat.htmlWindow("", 200, 80, function () {
+	Beat.end()
+})
+
+function runInBackround() {
+	// A weird quirk: Beat.scenes() refers to the actual array in the parser.
+	// To use it in a background thread, we need to make a copy.
+	const scenes = [...Beat.scenes()]
+	let fullLength = 0
+
+	// Dispatch to background thread
+	Beat.dispatch(function () {
+		for (let scene of scenes) {
+			let lines = Beat.linesForScene(scene)
+			let length = 0
+
+			for (let line of lines) {
+				length += line.string.length
+			}
+
+			fullLength += length
+		}
+
+		// Anything UI-related SHOULD NOT be accessed from a background thread.
+		// It might work, but it might also crash the app. To avoid the risk
+		// of data loss, dispatch any UI code back to main thread:
+		Beat.dispatch_sync(function () {
+			let range = Beat.selectedRange()
+			htmlWindow.setHTML("<p>Full length is " + 
+				"<b>" + fullLength + "</b> "+
+				"(cursor at " + range.location + ")")
+		})
+	})
+}
+
+Beat.setUpdate(function () {
+	runInBackround()
+})
+
+
+

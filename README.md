@@ -2,19 +2,20 @@
 
 This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/).
 
-To install plugins, open Beat and navigate to *Tools → Manage Plugins...*. You can download official plugins right from the app. To install custom ones or create your own, click on the folder icon to open the plugin folder.
+To install plugins, open Beat and navigate to *Tools → Plugin Library...* (*Manage Plugins* in older versions). You can download official plugins right from the app. To install custom ones or create your own, click on the folder icon to open the plugin folder.
 
-If you write your own plugin, feel free to submit it either through pull request or e-mail.
+If you write your own plugin, feel free to submit it either through pull request or e-mail. Sometimes, some of the stuff documented here might only work in the latest development build. 
 
 Official plugins in this repository are released under **MIT License**.
+
 
 ---
 
 #  Beat Plugin API
 
-Plugins are written in JavaScript and Beat provides a simple API to interact with the app. A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing script file by the same name (ie. `Plugin.beatPlugin/Plugin.beatPlugin`. In the folder model, plugins can access supporting asset files. 
+Plugins are written in JavaScript. Beat provides a simple API to interact with the app.
 
-If anybody ever writes a plugin, *please, please, please* be nice to people and test your code thoroughly before deploying it. Loss of work hurts a lot, and it might be completely possible to crash the whole app with plugin code. I'm doing my best to stay backwards-compatible.
+A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing script file by the same name (ie. `Plugin.beatPlugin/Plugin.beatPlugin`. In the folder model, plugins can access supporting asset files, such as HTML templates.
 
 The included sample plugin demonstrates basic logic behind plugins.
 
@@ -41,14 +42,16 @@ Have fun and make something useful!
 `Beat.outline()` – all outline objects, including synopsis & heading markers  
 `Beat.linesForScene(scene)` – lines for a specified scene  
 `Beat.getText()` — whole document as string  
+`Beat.currentLine` — line which has the caret
 
 
 ### Navigate Through The Document
 
-`Beat.setSelectedRange(start, length)` – select a range in the document (**always** double-check that the values are in document range)  
+`Beat.selectedRange()` – returns a range object with `.location` and `.length` properties  
+`Beat.setSelectedRange(location, length)` – set user selection (make sure you don't go out of range)  
 `Beat.scrollTo(index)` – scroll to character index  
 `Beat.scrollToScene(scene)` – scroll to a scene object  
-`Beat.scrollToLine(line)` – scroll to line  
+`Beat.scrollToLine(line)` – scroll to a line object  
  
 
 ### User Interaction
@@ -90,10 +93,6 @@ Beat parser uses `Line` and `Scene` objects to store the screenplay content. To 
 `Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty)  
 `Beat.parse()` – parse changes you've made and update the lines/scenes arrays  
 
-### Get and Set Selection
-
-`Beat.selectedRange()` – returns a range object with `.location` and `.length` properties  
-`Beat.setSelectedRange(location, length)` – set user selection  
 
 ### Lines
 
@@ -103,6 +102,8 @@ Lines array contains all the lines in the script as objects. A line object conta
 
 `line.string` —	string content  
 `line.position` — starting index of line  
+`line.textRange` — range of the line `{ location: ..., range: ... }`
+`line.range` — full location and length INCLUDING line break
 `line.typeAsString()` — "Heading" / "Action" / "Dialogue" / "Parenthetical" etc.  
 `line.isTitlePage()` — true/false  
 `line.isInvisible()` — true/false  
@@ -141,6 +142,33 @@ for (const scene of Beat.scenes()) {
 }
 ```
 
+**NOTE**: Avoid calling `Beat.scenes()` and `Beat.outline()` too often. Both build the whole outline from scratch and can slow down your performance. Instead, save the structure into a variable in the beginning: `const scenes = Beat.scenes()`
+
+
+### Paginator
+
+You can calculate page lengths for lines using the paginator. It can return either a number of pages used, or page length in eights. Paginator uses page size (A4/US Letter) from the print dialog.
+
+`const paginator = Beat.paginator()` — create new paginator instance  
+`paginator.paginateLines(lines)` — paginate given lines  
+`paginator.numberOfPages` — full number of pages  
+`paginator.lengthInEights` — page length in eights, returns `[fullPages, eights]`  
+
+Calculate individual scene lengths in eights:
+
+```
+const paginator = Beat.paginator() // Create new paginator instance
+const scenes = Beat.scenes()
+
+for (const scene of scenes) {
+	const lines = Beat.linesForScene(scene)
+	paginator.paginateLines(lines)
+	
+	let eights = paginator.lengthInEights() // Returns [pages, eights]
+}
+``` 
+
+
 
 # Advanced
 
@@ -155,7 +183,13 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 ## Resident Plugins
 
-Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. Update method receives location and length of the latest change.
+Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. 
+
+Update methods have to be **very** efficient, not to slow down the UI. Resident plugins remain in memory even after using `return`. They can be terminated with `Beat.end()` or by unchecking the plugin from *Tools* menu.
+
+### Text Change Update
+
+Default update method is run whenever the screenplay is edited, and receives location and length of the latest change.
 
 ```
 Beat.setUpdate(
@@ -165,7 +199,17 @@ Beat.setUpdate(
 );
 ```
 
-This function is run whenever the document is edited. The update method has to be **very** efficient, so it won't slow down the UI. Resident plugins remain in memory even after using `return`, and they should be terminated using `Beat.end()`. 
+### Selection Change Update
+
+You can listen to selection changes with `setSelectionUpdate()`. Note that this method is also run when the text changes. Make your update method as snappy as possible.
+
+```
+Beat.setSelectionUpdate(
+	function (location, length) {
+		Beat.log("Selection changed to " + location + "/" + length)
+	}
+)
+```
 
  
 ## Displaying Content
@@ -174,13 +218,15 @@ This function is run whenever the document is edited. The update method has to b
 
 Displays HTML a **modal** window with preloaded CSS.
 
-`Beat.htmlPanel(htmlContent, width, height, callback)`   
+`Beat.htmlPanel(htmlContent, width, height, callback, okButton)`
 
-Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page without using a special evaluation method, `Beat.call()`. *(**NOTE**: `call` is unavailable in HTML panel until 1.89)*
+Please note that HTML panel is just a normal web page, and you **can't** run regular plugin code from inside the page without using a special evaluation method, `Beat.call()`. *(**NOTE**: `call` is unavailable in HTML panel until 1.87.3)*
+
+Last parameter, `okButton` is a boolean value. If set to `true`, HTML panel displays *Cancel* and *OK* buttons instead of the standard *Close*. Pressing *OK* then submits data and runs callback, while *Cancel* just closes the panel.
 
 There are three ways to fetch data from `htmlPanel`:
 
-1) Storing an object (***note**: only an object*) in `Beat.data` inside your HTML, which will be returned in the callback.
+1) Storing an object (***note**: only an object*) into `Beat.data` inside your HTML. It will be returned in the callback alongside other data.
 
 2) Using HTML inputs. Just remember to add `rel='beat'` attribute. The received object will then contain  `inputData` object, which contains every input with their respective name and value (and `checked` value, too).
 
@@ -221,9 +267,7 @@ Beat.htmlPanel(html, 500, 300, null);
 
 ### HTML Window
 
-*Requires Beat 1.86+*
-
-A standalone, floating window. Creating the window will make the plugin reside in memory, so remember to terminate it using `Beat.end()` in the callback, if needed.
+A standalone, floating window. Creating a window will make the plugin reside in memory, so remember to terminate using `Beat.end()` in the callback, if needed.
 
 `let htmlWindow = Beat.htmlWindow(htmlContent, width, height, callback)`   
 
@@ -250,7 +294,7 @@ The code above creates a floating HTML window, logs a confirmation message from 
 **Always** remember to terminate the plugin using `Beat.end()` in the callback if you don't want to leave it running in the background.
 
 
-#### Interacting With Window
+#### Interacting With Windows
 
 `htmlWindow.setHTML(htmlString)` — set window content  
 `htmlWindow.close()` — close the window and run callback  
@@ -260,9 +304,11 @@ The code above creates a floating HTML window, logs a confirmation message from 
 `htmlWindow.runJS(javascriptString)` — sends JavaScript to be evaluated in the window 
 
 
-### Communicating With HTML Windows
+### Communicating With Plugin
 
-You can run any regular JavaScript inside HTML panel/window, but **NOT** your normal Beat plugin code. Think of it as host/client situation: plugin is the host, HTML window is the client. Communication is done using strings containing JavaScript code. HTML window provides couple of methods for this.
+You can run any regular JavaScript inside HTML panel/window, but **NOT** your normal Beat plugin code
+
+Think of it as host/client situation: plugin is the host, HTML window is the client. Communication is handled using strings containing JavaScript code. HTML window provides couple of methods for this.
 
 To access the app or send and fetch data, you can either use `Beat.call()` which evaluates a JavaScript code string, or send data through callbacks. 
 
@@ -346,17 +392,48 @@ Communicating with the window is a constant ping-pong of evaluations and stringi
 In the future, you will be able to create standalone plugins, which run independently and are not attached to a document. The feature will be used for file import plugins, but can be exploited to create other tools, too. 
 
 
+## Background Threading
+
+While running a resident plugin (ie. something with either `setUpdate`, `setSelectionUpdate` or `htmlWindow`), you might want to run more demanding processes in the background. You can then use `Beat.dispatch()` to run a background worker, and then `Beat.dispatch_sync()` to return its results to main thread.
+
+`Beat.dispatch(function)` — run a function in a background thread
+`Beat.dispatch_sync(function)` — run a function in the main thread
+
+**NOTE:** You CANNOT call anything UI-related from a background thread. Be sure to fetch any required synchronous data (such as selected range, scenes, lines etc.) before entering a background thread. **Never** access anything synchronous while processing something in the background.
+
+Using background threads in plugins is highly experimental and unrecommended, but I can't stop you anymore. Just be careful and dread lightly.
+
+Example:  
+```
+// Load any required data
+const scenes = Beat.scenes()
+const lines = Beat.lines()
+
+// Dispatch to a background thread
+Beat.dispatch(function () {
+	// Do something with the data
+	for (let line of lines) {
+		// ...
+	}
+
+	// Return the results to UI in main thread
+	dispatch_sync(function () {
+		htmlWindow.setHTML("Results: ... ")
+	})
+})
+```
+
+
+
 
 # Plugin Guidelines
 
 
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
 
-* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns *(ie. they)* is recommended when gender is ambiguous.
+* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns *(ie. they, hen, etc.)* is recommended when gender is ambiguous.
 
-* **User Interface** – try to stay consistent. The HTML panel has a preloaded CSS, which might be modified at some point. It's very possible that the stylesheet is quite ugly in your case, so feel free to add some stylization. There are simple stylesheet examples within the existing plugins.
-
-* Preferrably distribute your plugins **free of charge**. Beat is a non-profit and anti-capitalist venture, and not a platform for making profits. Nothing prevents you from making money out of making custom plugins, but sharing your creations would be greatly appreciated!
+* Preferrably distribute your plugins **free of charge** and make them open source. Beat is a non-profit and anti-capitalist venture, and not a platform for making profits. Nothing prevents you from making money out of making custom plugins, but sharing your creations would be greatly appreciated!
 
 
 ## Plugin Info
@@ -378,4 +455,6 @@ Type: Plugin Type
 Version numbers should use **ONLY** numbers, and preferrably just a single dot, as in `1.1` or `2.12`. If a more recent version of the plugin is available in this repository, the Plugin Manager will show an option to update it.
 
 Allowed plugin types are `Tool`, `Export`, `Import` and `Standalone`. 
+
+To get your plugin published in the Plugin Library, either submit a pull request, or send your plugin via e-mail: beat@kapitan.fi 
 
