@@ -27,7 +27,7 @@ The included sample plugin demonstrates basic logic behind plugins.
 You can use any supported JavaScript features in WebKit, but the script is confined to run inside the app. You can't access the web, for instance. Scripts run as functions, so they can be terminated any time using `return` when outside any other function scope. It's also advised to **always** terminate your scripts using `Beat.end()`, especially when using asynchronous methods. 
 
 Have fun and make something useful!
-
+  
 
 ### Debugging
 
@@ -43,7 +43,7 @@ Have fun and make something useful!
 `Beat.linesForScene(scene)` – lines for a specified scene  
 `Beat.getText()` — whole document as string  
 `Beat.currentLine` — line which has the caret
-
+  
 
 ### Navigate Through The Document
 
@@ -52,7 +52,7 @@ Have fun and make something useful!
 `Beat.scrollTo(index)` – scroll to character index  
 `Beat.scrollToScene(scene)` – scroll to a scene object  
 `Beat.scrollToLine(line)` – scroll to a line object  
- 
+   
 
 ### User Interaction
 
@@ -62,13 +62,13 @@ Have fun and make something useful!
 `Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
 For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
-
+  
 
 ### Save Plugin Defaults
 
 `Beat.getUserDefault("setting name")` – get a value  
 `Beat.setUserDefault("setting name", value)` – save a value  
-
+  
 
 ### Tagging Data
 
@@ -87,12 +87,13 @@ Beat parser uses `Line` and `Scene` objects to store the screenplay content. To 
 
 `Scene` is more of an abstraction. It's used to determine where a scene starts, its total length in characters, its color and if it is visible or not. Its `string` property contains the scene heading. 
 
+
 ### Adding and Removing Content
 
 `Beat.addString(String, index)` – add string at some index  
 `Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty)  
 `Beat.parse()` – parse changes you've made and update the lines/scenes arrays  
-
+  
 
 ### Lines
 
@@ -115,6 +116,7 @@ for (const line of Beat.lines()) {
 	// Do something  
 }  
 ```	
+
 
 ### Scenes
 
@@ -143,7 +145,7 @@ for (const scene of Beat.scenes()) {
 ```
 
 **NOTE**: Avoid calling `Beat.scenes()` and `Beat.outline()` too often. Both build the whole outline from scratch and can slow down your performance. Instead, save the structure into a variable in the beginning: `const scenes = Beat.scenes()`
-
+  
 
 ### Paginator
 
@@ -168,7 +170,7 @@ for (const scene of scenes) {
 }
 ``` 
 
-
+  
 
 # Advanced
 
@@ -180,6 +182,7 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
 **Note:** For the sake of clarity, the distributed plugins are all wrapped in folders.
 
+  
 
 ## Resident Plugins
 
