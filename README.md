@@ -76,7 +76,7 @@ For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.
 
 Tags have `.name` and `.range` properties, and a method for getting the type, `.typeAsString()`. Tagging dictionary is structured by type: `{ "Cast": [...], "Prop": [...] }`
 
-***Note**: Requires 1.7.4 or later*
+***Note**: Tagging is unavailable on UI side, for now*
 
   
 ## Manipulating the Document
@@ -97,14 +97,14 @@ Beat parser uses `Line` and `Scene` objects to store the screenplay content. To 
 
 ### Lines
 
-**PLEASE NOTE:** You can't just make changes to the line string objects. Every change to the screenplay has to go through the parser, which means using `Beat.addString`, `Beat.replaceRange` etc. to change the document and then parsing your changes.
+**PLEASE NOTE:** You can't just make changes to the line string objects. Every change to the screenplay has to go through the parser, which means using `Beat.addString`, `Beat.replaceRange` etc. to change the document and then parsing your changes. Just read values and never change them.
 
 Lines array contains all the lines in the script as objects. A line object contains multiple values, including but not limited to:
 
 `line.string` —	string content  
 `line.position` — starting index of line  
-`line.textRange` — range of the line `{ location: ..., range: ... }`
-`line.range` — full location and length INCLUDING line break
+`line.textRange` — range of the line `{ location: ..., range: ... }`  
+`line.range` — full location and length INCLUDING line break  
 `line.typeAsString()` — "Heading" / "Action" / "Dialogue" / "Parenthetical" etc.  
 `line.isTitlePage()` — true/false  
 `line.isInvisible()` — true/false  
@@ -404,7 +404,7 @@ While running a resident plugin (ie. something with either `setUpdate`, `setSele
 
 **NOTE:** You CANNOT call anything UI-related from a background thread. Be sure to fetch any required synchronous data (such as selected range, scenes, lines etc.) before entering a background thread. **Never** access anything synchronous while processing something in the background.
 
-Using background threads in plugins is highly experimental and unrecommended, but I can't stop you anymore. Just be careful and dread lightly.
+Using background threads in plugins is highly experimental and unrecommended, but I can't stop you anymore. Just be careful, dread lightly and **test** your code thoroughly.
 
 Example:  
 ```
@@ -427,7 +427,7 @@ Beat.dispatch(function () {
 ```
 
 
-
+  
 
 # Plugin Guidelines
 

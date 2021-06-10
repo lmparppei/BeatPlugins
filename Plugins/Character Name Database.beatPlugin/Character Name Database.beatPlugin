@@ -9,13 +9,13 @@ Released Under Public Domain
 
 Plugin for using Trelby's name database inside Beat.
 
-Note that because of Beat's design ethics, we should avoid determining 
+Note that, because of Beat's design ethics, we should avoid determining 
 sex (male/female) by a character's name. Hence the change to gender (man/woman)
 rather than sex.
 
-Plugins CAN'T write files for security reasons. If you want to implement adding
-custom names to the database, you should use Beat.setUserDefault() and Beat.getUserDefault(). 
-Then somehow concat the results into the loaded data.
+If you want to implement adding custom names to the database, you should use
+Beat.setUserDefault() and Beat.getUserDefault(). Then somehow concat the results
+into preloaded data. Or just reload htmlWindow
 
 */
 
@@ -23,10 +23,20 @@ let nameData = Beat.assetAsString("names.txt")
 let ui = Beat.assetAsString("ui.html")
 let names = nameData.split("\n")
 
-// Custom names could be implemented like this:
-// let customNames = Beat.getUserDefault("Custom Names")
+// Custom names could be implemented as follows.
+// Then create a Beat.call() request to access this code from the window.
+let customNames = Beat.getUserDefault("Custom Names")
+Beat.custom = {
+	addName: function (name, gender) {
+		customNames.push(gender + name)
+		Beat.setUserDefault("Custom Names", customNames)
+	}
+}
 
-// Inject name data intto the HTML template
+// Inject name data into the HTML template
 ui = ui.replace("#DATA#", JSON.stringify(names))
 
-Beat.htmlPanel(ui, 600, 450, function (data) {} )
+Beat.htmlWindow(ui, 600, 450, function (data) {
+	Beat.end()
+})
+
