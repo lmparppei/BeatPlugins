@@ -43,6 +43,7 @@ Have fun and make something useful!
 `Beat.linesForScene(scene)` – lines for a specified scene  
 `Beat.getText()` — whole document as string  
 `Beat.currentLine` — line which has the caret
+`Beat.setColorForScene(scene, color)` — set color for a scene object
   
 
 ### Navigate Through The Document
@@ -184,35 +185,77 @@ Plugin can be just a single script, but sometimes plugins require supporting fil
 
   
 
-## Resident Plugins
+## Resident Plugins & Listeners
 
 Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. 
 
 Update methods have to be **very** efficient, not to slow down the UI. Resident plugins remain in memory even after using `return`. They can be terminated with `Beat.end()` or by unchecking the plugin from *Tools* menu.
 
-### Text Change Update
+### Listen to Text Change
 
-Default update method is run whenever the screenplay is edited, and receives location and length of the latest change.
+Runs whenever the screenplay is edited, and receives location and length of the latest change.
 
 ```
-Beat.setUpdate(
+Beat.onTextChange(
 	function (location, length) {
 		Beat.log("Edited at " + location + " (length: " + length +")")
 	}
 );
 ```
 
-### Selection Change Update
+### Listen to Selection Change
 
 You can listen to selection changes with `setSelectionUpdate()`. Note that this method is also run when the text changes. Make your update method as snappy as possible.
 
 ```
-Beat.setSelectionUpdate(
+Beat.onSelectionChange(
 	function (location, length) {
 		Beat.log("Selection changed to " + location + "/" + length)
 	}
 )
 ```
+
+### Listen to Changes in Outline
+
+`onOutlineChange()` fires when a scene is added — or something is edited on the edge of a scene.
+
+```
+Beat.onOutlineChange(
+	function (...outline) {
+		for (let i=0; i < outline.length; i++) {
+			// Do something with the new outline
+		}
+	}
+)
+```
+
+### Listen to Current Scene
+
+Instead of listening to changes in selection and figuring out current scene, you can ask for current scene index. Like `.onSelectionChange()`, `.onSceneIndexChange(...)` runs whenever the user selects anything, but only gives you index for the current scene/outline item. It can be the same as before.
+
+This should only be used for updating something in your UI. For example, if you have created a visual representation of the screenplay using `Beat.outline()` and keep it updated using `Beat.onOutlineChange()`, you current scene index can be used to highlight the scene being edited.
+
+**NOTE**: Index is valid only for the full outline (`Beat.outline()`) and **not** just scenes (`Beat.scenes()`). 
+
+```
+const scenes = Beat.outline()
+Beat.onSceneIndexChange(
+	function (sceneIndex) {
+		let currentScene = scenes[sceneIndex]
+	}
+)
+```
+
+## Timer
+
+When using a **resident plugin**, you can set a timer for a single interval. The timer **will not** repeat itself.
+
+```
+Beat.timer(1.0, function () {
+	Beat.log("One second elapsed.")
+})
+```
+
 
  
 ## Displaying Content
@@ -299,6 +342,8 @@ The code above creates a floating HTML window, logs a confirmation message from 
 
 #### Interacting With Windows
 
+`htmlWindow.title` — window title
+`htmlWindow.setTitle(string)` — set window title  
 `htmlWindow.setHTML(htmlString)` — set window content  
 `htmlWindow.close()` — close the window and run callback  
 `htmlWindow.setFrame(x, y, width, height)` — set window position and size  

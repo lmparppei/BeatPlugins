@@ -10,12 +10,20 @@ Beat.openConsole()
 
 let html = Beat.assetAsString("ui.html")
 let htmlWindow = Beat.htmlWindow(html, 300, 200, function () {
+	// You can save window position when window closes
+	Beat.setUserDefault("frame", htmlWindow.getFrame())
+
 	// Remember to terminate the plugin when window closes
 	Beat.end()
 })
 
-let screenSize = htmlWindow.screenSize() // { width: ..., height: ... }
-let frame = htmlWindow.getFrame() // { x: ..., y: ..., width: ..., height: ... }
+// Getting screen size and window frame size
+const screenSize = htmlWindow.screenSize() // { width: ..., height: ... }
+const frame = htmlWindow.getFrame() // { x: ..., y: ..., width: ..., height: ... }
+
+// Recalling window position from user settings
+const userFrame = Beat.getUserDefault("frame")
+if (frame) htmlWindow.setFrame(frame.x, frame.y, frame.width, frame.height);
 
 // Register a custom method which can be called from the window
 Beat.custom = {
