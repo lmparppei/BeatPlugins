@@ -104,12 +104,14 @@ Lines array contains all the lines in the script as objects. A line object conta
 
 `line.string` —	string content  
 `line.position` — starting index of line  
-`line.textRange` — range of the line `{ location: ..., range: ... }`  
+`line.textRange` — range of the line (`{ location: ..., range: ... }`)  
 `line.range` — full location and length INCLUDING line break  
 `line.typeAsString()` — "Heading" / "Action" / "Dialogue" / "Parenthetical" etc.  
 `line.isTitlePage()` — true/false  
 `line.isInvisible()` — true/false  
 `line.cleanedString()` — non-printing stuff removed  
+`line.omitted`— true/false  
+`line.note` — if the line is a note (wrapped in `[[]]`), true/false  
 
 Iterate through lines:
 ```
@@ -471,7 +473,26 @@ Beat.dispatch(function () {
 })
 ```
 
+## Parsing Fountain Files
 
+You can also create a new, static parser to parse external Fountain files, with access to their line and scene objects.
+
+```
+let parser = Beat.parser(stringToParse)
+
+for (let line of parser.lines) {
+	// ...
+}
+```
+
+There are some property/method inconsistencies between the normal Beat parser access and the parser object. Most property names are the same, however.
+
+`parser.lines` — line objects  
+`parser.outline` — all scene objects, including synopsis lines and sections  
+`parser.scenes` — scene objects only  
+`parser.titlePage` — title page elements  
+`parser.linesInRange({ location: x, length: y })` — get all lines in the selected range (**note:** parameter has to be a range object)  
+`parser.lineAtPosition(index)` — get line item at given index  
   
 
 # Plugin Guidelines
