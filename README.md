@@ -152,12 +152,13 @@ for (const scene of Beat.scenes()) {
 
 ### Paginator
 
-You can calculate page lengths for lines using the paginator. It can return either a number of pages used, or page length in eights. Paginator uses page size (A4/US Letter) from the print dialog.
+You can calculate page lengths for lines using the paginator. It can return either a number of pages used, or page length in eights. By default, paginator uses page size (A4/US Letter) from the print dialog.
 
-`const paginator = Beat.paginator()` — create new paginator instance  
+`const paginator = Beat.paginator()` — create a new paginator instance  
 `paginator.paginateLines(lines)` — paginate given lines  
 `paginator.numberOfPages` — full number of pages  
 `paginator.lengthInEights` — page length in eights, returns `[fullPages, eights]`  
+`paginator.setPageSize(0)` — set page size, `0` for A4, `1` for US Letter  
 
 Calculate individual scene lengths in eights:
 
@@ -444,12 +445,14 @@ In the future, you will be able to create standalone plugins, which run independ
 
 ## Background Threading
 
-While running a resident plugin (ie. something with either `setUpdate`, `setSelectionUpdate` or `htmlWindow`), you might want to run more demanding processes in the background. You can then use `Beat.dispatch()` to run a background worker, and then `Beat.dispatch_sync()` to return its results to main thread.
+While running a resident plugin (ie. something with either `onTextChange`, `onSelectionChange`, `onOutlineChange` or `htmlWindow`), you might want to run more demanding processes in the background. Using background threads requires some minor knowledge on how threading works on macOS.
 
-`Beat.dispatch(function)` — run a function in a background thread
-`Beat.dispatch_sync(function)` — run a function in the main thread
+You can use `Beat.dispatch()` to run a background worker, and then `Beat.dispatch_sync()` to return its results to main thread.
 
-**NOTE:** You CANNOT call anything UI-related from a background thread. Be sure to fetch any required synchronous data (such as selected range, scenes, lines etc.) before entering a background thread. **Never** access anything synchronous while processing something in the background.
+`Beat.dispatch(function)` — run a function in a background thread  
+`Beat.dispatch_sync(function)` — run a function in the main thread  
+
+**WARNING:** You CANNOT call anything UI-related from a background thread. Be sure to fetch any required synchronous data (such as selected range, scenes, lines etc.) before entering a background thread. **Never** access anything synchronous while processing something in the background, or you might risk crashing the app.
 
 Using background threads in plugins is highly experimental and unrecommended, but I can't stop you anymore. Just be careful, dread lightly and **test** your code thoroughly.
 

@@ -3,7 +3,7 @@
 Gather scenes by character
 Copyright: Lauri-Matti Parppei
 Description: Creates a new document with scenes involving the selected character
-Version: 1.0
+Version: 1.1
 
 */
 
@@ -25,7 +25,7 @@ function titleCase(str) {
 // Gather characters (by dialogue)
 for (const line of Beat.lines()) {
 	if (line.typeAsString() == "Character") {
-		const character = line.string.toUpperCase();
+		const character = line.characterName().toUpperCase();
 		if (!characters.includes(character)) characters.push(character);
 	}
 }
@@ -51,9 +51,10 @@ for (const scene of Beat.scenes()) {
 		// Immediately add this scene if it contains dialogue with the person
 		if ((type == "Character" || type == "Double Dialogue Character")) {
 			// Strip V.O. etc.
-			const charLine = stripSuffix(line.string).trim();
-			
-			if (charLine == characterName) {
+			//const charLine = stripSuffix(line.string).trim();
+			const characterCue = line.characterName()
+
+			if (characterCue == characterName) {
 				scenes.push(scene);
 				break;
 			}
