@@ -1,0 +1,56 @@
+/*
+
+Shuffle Scenes
+Copyright: 2021 Lauri-Matti Parppei
+Description: Randomize the order of your scenes and create a new, twisted version of your story.
+
+*/
+
+
+// Get text and init 
+let text = Beat.getText()
+let scenes = []
+
+// Get text content for scenes
+for (let scene of Beat.scenes()) {
+	let textForScene = text.substr(scene.sceneStart, scene.sceneLength)
+
+	textForScene = textForScene.trim()
+	scenes.push(textForScene)	
+}
+
+// Shuffle, join and create a new document
+shuffle(scenes)
+
+let result = ""
+
+for (let scene of scenes) {
+	if (scene.length < 2) continue;
+
+	let trail = scene.substr(-2)
+	if (trail != "\n\n") scene += "\n\n"
+
+	result += scene
+}
+
+Beat.newDocument(result)
+
+
+// Supplementary shuffle function, thanks to stackoverflow
+function shuffle(array) {
+  var currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}

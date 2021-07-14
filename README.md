@@ -43,7 +43,7 @@ Have fun and make something useful!
 `Beat.linesForScene(scene)` – lines for a specified scene  
 `Beat.getText()` — whole document as string  
 `Beat.currentLine` — line which has the caret
-`Beat.setColorForScene(scene, color)` — set color for a scene object
+`Beat.setColorForScene(scene, color)` — set color for a scene object (use `"none"` to remove any existing color)  
   
 
 ### Navigate Through The Document
@@ -248,6 +248,23 @@ Beat.onSceneIndexChange(
 	}
 )
 ```
+
+### Tips and Tricks
+
+To avoid weird causality loops when using listeners, you can predefine the callback block, and set it to `null` while changing stuff.
+
+```
+function action() {
+	Beat.onOutlineChange(null)
+	// Do something which changes the outline
+	Beat.onOutlineChange(callback)
+}
+
+let callback = function (outline) { 
+	action()
+}
+```
+
 
 ## Timer
 
@@ -476,7 +493,16 @@ Beat.dispatch(function () {
 })
 ```
 
-## Parsing Fountain Files
+## Accessing the Parser
+
+Most of the methods here are wrappers for the parser associated with current document. The actual underlying parser is accessed through `Beat.currentParser`:  
+
+```
+let parser = Beat.currentParser
+for (let line of parser.lines) {
+	//...
+}
+``` 
 
 You can also create a new, static parser to parse external Fountain files, with access to their line and scene objects.
 
@@ -488,14 +514,15 @@ for (let line of parser.lines) {
 }
 ```
 
-There are some property/method inconsistencies between the normal Beat parser access and the parser object. Most property names are the same, however.
+There are some property/method inconsistencies between the normal Beat parser access and the core parser object. Most property names are the same, however.
 
-`parser.lines` — line objects  
-`parser.outline` — all scene objects, including synopsis lines and sections  
-`parser.scenes` — scene objects only  
+`parser.lines` — line objects *(note: property, not a method)*  
+`parser.outline` — all scene objects, including synopsis lines and sections *(note: property, not a method)*  
+`parser.scenes` — scene objects only *(note: property, not a method)*  
 `parser.titlePage` — title page elements  
 `parser.linesInRange({ location: x, length: y })` — get all lines in the selected range (**note:** parameter has to be a range object)  
-`parser.lineAtPosition(index)` — get line item at given index  
+`parser.lineAtIndex(index)` — get line item at given index  
+`parser.sceneAtIndex(index)` — get outline item at given index  
   
 
 # Plugin Guidelines
