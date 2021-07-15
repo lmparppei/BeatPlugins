@@ -37,6 +37,7 @@ Have fun and make something useful!
 
 ### Access Screenplay Content
 
+|Method/Property/| 
 |`Beat.lines()` | all line objects in the script
 |`Beat.scenes()` | scene objects 
 |`Beat.outline()` | all outline objects, including synopsis & heading markers
