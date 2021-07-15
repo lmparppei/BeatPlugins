@@ -1,0 +1,66 @@
+/*
+
+Merge Screenplays
+Version: 1.0
+Description: Quickly merge multiple screenplays together
+Copyright: Lauri-Matti Parppei 2021
+Type: Standalone
+
+*/
+
+let screenplays = []
+
+let ui = Beat.assetAsString("ui.html")
+let htmlWindow = Beat.htmlWindow(ui, 300, 500, function () {
+	Beat.end()
+})
+
+Beat.custom = {
+	addFile: function() {
+		let filename = Beat.openFiles(["fountain"], function (filenames) {
+			if (!filenames || filenames.length <= 0) return
+
+			let files = addFiles(filenames)
+			htmlWindow.runJS('addToList(' + JSON.stringify(files) + ')')
+		})
+	},
+	merge: function (files) {
+		merge(files)
+	}
+}
+
+function addFiles(files) {
+	let newFiles = []
+	for (let file of files) {
+		let screenplayFile = {
+			filename: file
+		}
+
+		newFiles.push(screenplayFile)
+		screenplays.push(screenplayFile)
+	}
+
+	return newFiles
+}
+
+function merge (files) {
+	let text = ""
+
+	for (let i=0; i < files.length; i++) {
+		let file = files[i]
+		let contents = Beat.fileToString(file)
+		let parser = Beat.parser(contents)
+
+		for (let line of parser.lines) {
+			// Ignore data block
+			if (line.string.indexOf("/* If you're seeing this, you can remove the following stuff - BEAT:") >= 0) continue;
+			// Ignore title page lines
+			if (line.isTitlePage()) continue; 
+			
+			text += line.string + "\n"
+		}
+	}
+
+	Beat.newDocument(text)
+	Beat.end()
+}

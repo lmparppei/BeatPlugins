@@ -1,0 +1,173 @@
+<style>
+[draggable] {
+  user-select: none;
+}
+
+#filelist {
+	padding: 0;
+	margin: 0;
+}
+#filelist li {
+	font-family: inherit;
+	list-style-type: none;
+}
+
+.file {
+	width: 100%;
+	text-align: center;
+	cursor: move;
+}
+.file header {
+  background-color: #eee;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+  cursor: move;
+}
+
+.file.dragElem {
+  opacity: 0.4;
+}
+.file.over {
+  border-top: 2px solid blue;
+}
+
+#placeholder {
+	text-align: center;
+	color: gray;
+}
+#placeholder.hidden { display: none; }
+#toolbar {
+	display: flex;
+	margin-bottom: .25rem;
+	padding-bottom: .25rem;
+}
+#merge { margin-left: auto; }
+
+
+</style>
+
+<div id='toolbar'>
+	<button onclick='selectFile()'>Add File</button>
+	<button id='merge' onclick='merge()'>Merge</button>
+</div>
+
+<p id='placeholder'>Add files to merge them together</p>
+
+<ul id='filelist'>
+</ul>
+
+
+<script>
+
+const filelist = document.getElementById('filelist')
+const placeholder = document.getElementById('placeholder')
+
+function selectFile() {
+	Beat.call("Beat.custom.addFile()")
+}
+
+function addToList(files) {
+	placeholder.innerHTML = ""
+	placeholder.className = "hidden"
+
+	for (let i = 0; i < files.length; i++) {
+		let file = files[i]
+		let name = file.filename.substring(file.filename.lastIndexOf("/") + 1)
+
+		const item = document.createElement("li")
+		item.draggable = true
+		item.setAttribute("filename", file.filename)
+		item.className = "file"
+		item.innerHTML = "<header>" + name + "</header>"
+
+		filelist.appendChild(item)
+	}
+
+	makeDraggable()
+}
+
+function merge() {
+	let items = document.querySelectorAll(".file")
+	let order = []
+
+	for (let item of items) {
+		let filename = item.getAttribute("filename")
+		order.push(filename)
+	}
+
+	Beat.call("Beat.custom.merge(" + JSON.stringify(order) + ")")
+}
+
+/* DRAG & DROP */
+
+let dragSrcEl = null;
+
+function handleDragStart(e) {
+	// Target (this) element is the source node.
+	dragSrcEl = this;
+
+	e.dataTransfer.effectAllowed = 'move';
+	e.dataTransfer.setData('text/html', this.outerHTML);
+
+	this.classList.add('dragElem');
+}
+function handleDragOver(e) {
+	if (e.preventDefault) {
+	e.preventDefault(); // Necessary. Allows us to drop.
+	}
+	this.classList.add('over');
+
+	e.dataTransfer.dropEffect = 'move';  // See the section on the DataTransfer object.
+
+	return false;
+}
+
+function handleDragEnter(e) {
+  // this / e.target is the current hover target.
+}
+
+function handleDragLeave(e) {
+	this.classList.remove('over');  // this / e.target is previous target element.
+}
+
+function handleDrop(e) {
+  // this/e.target is current target element.
+
+	if (e.stopPropagation) {
+		e.stopPropagation(); // Stops some browsers from redirecting.
+	}
+
+	// Don't do anything if dropping the same column we're dragging.
+	if (dragSrcEl != this) {
+		// Set the source column's HTML to the HTML of the column we dropped on.
+		this.parentNode.removeChild(dragSrcEl);
+		var dropHTML = e.dataTransfer.getData('text/html');
+		this.insertAdjacentHTML('beforebegin',dropHTML);
+		var dropElem = this.previousSibling;
+		addDnDHandlers(dropElem);
+	}
+	this.classList.remove('over');
+	return false;
+}
+
+function handleDragEnd(e) {
+	// this/e.target is the source node.
+	this.classList.remove('over');
+}
+
+function addDnDHandlers(elem) {
+	elem.addEventListener('dragstart', handleDragStart, false);
+	elem.addEventListener('dragenter', handleDragEnter, false)
+	elem.addEventListener('dragover', handleDragOver, false);
+	elem.addEventListener('dragleave', handleDragLeave, false);
+	elem.addEventListener('drop', handleDrop, false);
+	elem.addEventListener('dragend', handleDragEnd, false);
+}
+
+function makeDraggable() {
+	let fileItems = document.querySelectorAll('.file');
+	[].forEach.call(fileItems, addDnDHandlers);
+}
+
+
+</script>

@@ -123,9 +123,11 @@ for (const line of Beat.lines()) {
 
 ### Scenes
 
+**NOTE:** `sceneStart` and `sceneLength` are now `position` and `length`. The former are still supported for backwards compatilibity, but deprecated as of 1.89.2 (July 2021).
+
 `scene.line` – line object which begins the scene (ie. heading)  
-`scene.sceneStart` — starting index  
-`scene.sceneLength` — length of the whole scene in characters  
+`scene.position` — starting index  
+`scene.length` — scene length in characters  
 `scene.string` — scene heading (eg. INT. HOUSE - DAY)  
 `scene.color` — scene color as string  
 `scene.omited` — true/false  
@@ -234,36 +236,45 @@ Beat.onOutlineChange(
 
 ### Listen to Current Scene
 
-Instead of listening to changes in selection and figuring out current scene, you can ask for current scene index. Like `.onSelectionChange()`, `.onSceneIndexChange(...)` runs whenever the user selects anything, but only gives you index for the current scene/outline item. It can be the same as before.
+Instead of listening to changes in selection and figuring out current scene, you can ask for current scene index. Like `.onSelectionChange()`, `.onSceneIndexUpdate(...)` runs whenever the user selects anything, but only returns the **index** for current scene/outline item. It can be the same as before.
 
 This should only be used for updating something in your UI. For example, if you have created a visual representation of the screenplay using `Beat.outline()` and keep it updated using `Beat.onOutlineChange()`, you current scene index can be used to highlight the scene being edited.
 
-**NOTE**: Index is valid only for the full outline (`Beat.outline()`) and **not** just scenes (`Beat.scenes()`). 
+**NOTE**: Index is valid **ONLY** for the full outline (`Beat.outline()`) 
 
 ```
 const scenes = Beat.outline()
-Beat.onSceneIndexChange(
+Beat.onSceneIndexUpdate(
 	function (sceneIndex) {
 		let currentScene = scenes[sceneIndex]
 	}
 )
 ```
 
-### Tips and Tricks
+### Disable Change Listeners
 
-To avoid weird causality loops when using listeners, you can predefine the callback block, and set it to `null` while changing stuff.
+If you are listening to text changes, and would like to make changes to the text on some event, your original update function will be called again. This can cause an infinite loop.
+
+To avoid strange loops, you can disable the listeners when needed:  
 
 ```
-function action() {
-	Beat.onOutlineChange(null)
-	// Do something which changes the outline
-	Beat.onOutlineChange(callback)
-}
-
-let callback = function (outline) { 
-	action()
-}
+Beat.onTextChange(function (len, loc) {
+	Beat.onTextChangeDisabled = true
+	Beat.replaceRange(0,0, "Hello World! ")
+	Beat.onTextChangeDisabled = false
+})
 ```
+
+Property names for disabling change listeners correspond to their setter methods. 
+
+```
+Beat.onTextChangeDisabled = true/false
+Beat.onOutlineChangeDisabled = true/false
+Beat.onSelectionChangeDisabled = true/false
+Beat.onSceneIndexChangeDisabled = true/false
+```
+
+
 
 
 ## Timer
@@ -443,22 +454,23 @@ Communicating with the window is a constant ping-pong of evaluations and stringi
 
 ## File Access
 
+Because Beat is sandboxed, the user has to confirm file access. Please don't try to do anything malicious. 
+
 ### Import Data
 
-`Beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path to the callback  
+`Beat.openFile([extensions], function (filePath) { })` – displays an open dialog for an array of extensions and returns a path  
+`Beat.openFiles([extensions], function ([filePaths]) { })` — as above, but allows selecting multiple files and returns an **array** of paths  
 `Beat.fileToString(path)` – file contents as string  
 `Beat.pdfToString(path)` – converts PDF file contents into a string  
 
 ### Export Data
 
 `Beat.saveFile(extension, function (filePath) { })` – displays a save dialog and returns the path to callback  
-`Beat.writeToFile(path, content)` – write a string to path. macOS will confirm file access from the user. Please don't try to do anything malicious.
-
+`Beat.writeToFile(path, content)` – write a string to path
 
 ## Standalone Plugins
 
 In the future, you will be able to create standalone plugins, which run independently and are not attached to a document. The feature will be used for file import plugins, but can be exploited to create other tools, too. 
-
 
 ## Background Threading
 
@@ -528,11 +540,11 @@ There are some property/method inconsistencies between the normal Beat parser ac
 # Plugin Guidelines
 
 
-* **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly if they make any changes to the screenplay itself. Also take edge cases into account.
+* **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly, especially if they make any changes to the screenplay itself. Try to take edge cases into account.
 
-* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns *(ie. they, hen, etc.)* is recommended when gender is ambiguous.
+* **Be Inclusive** – avoid discriminatory language. For example, use *women/men/other* rather than male/female. Using gender-neutral pronouns *(ie. they, hän, hen, etc.)* is recommended when gender is ambiguous.
 
-* Preferrably distribute your plugins **free of charge** and make them open source. Beat is a non-profit and anti-capitalist venture, and not a platform for making profits. Nothing prevents you from making money out of making custom plugins, but sharing your creations would be greatly appreciated!
+* Preferrably distribute your plugins **free of charge** and make them open source. Beat is a non-profit and anti-capitalist venture, and not a platform for finding loose change. Nothing prevents you from making money out of custom plugins, but sharing your creations would be greatly appreciated!
 
 
 ## Plugin Info
