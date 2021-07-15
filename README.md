@@ -37,13 +37,13 @@ Have fun and make something useful!
 
 ### Access Screenplay Content
 
-`Beat.lines()` – all line objects in the script  
-`Beat.scenes()` – scene objects  
-`Beat.outline()` – all outline objects, including synopsis & heading markers  
-`Beat.linesForScene(scene)` – lines for a specified scene  
-`Beat.getText()` — whole document as string  
-`Beat.currentLine` — line which has the caret
-`Beat.setColorForScene(scene, color)` — set color for a scene object (use `"none"` to remove any existing color)  
+|`Beat.lines()` | all line objects in the script  |
+|`Beat.scenes()` | scene objects  |
+|`Beat.outline()` | all outline objects, including synopsis & heading markers  |
+|`Beat.linesForScene(scene)` | lines for a specified scene  |
+|`Beat.getText()` | whole document as string  |
+|`Beat.currentLine` — line which has the caret  |
+|`Beat.setColorForScene(scene, color)` — set color for a scene object (use `"none"` to remove any existing color)  |
   
 
 ### Navigate Through The Document
