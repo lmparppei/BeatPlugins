@@ -37,36 +37,30 @@ Have fun and make something useful!
 
 ### Access Screenplay Content
 
-|Method/Property|Description
-|-|-
-|`Beat.lines()` | all line objects in the script
-|`Beat.scenes()` | scene objects 
-|`Beat.outline()` | all outline objects, including synopsis & heading markers
-|`Beat.linesForScene(scene)` | lines for a specified scene
-|`Beat.getText()` | whole document as string
-|`Beat.currentLine` | line which has the caret
-|`Beat.setColorForScene(scene, color)` | set color for a scene object (use `"none"` to remove any existing color)
+`Beat.lines()` – all line objects in the script  
+`Beat.scenes()` – scene objects  
+`Beat.outline()` – all outline objects, including synopsis & heading markers  
+`Beat.linesForScene(scene)` – lines for a specified scene  
+`Beat.getText()` — whole document as string  
+`Beat.currentLine` — line which has the caret  
+`Beat.setColorForScene(scene, color)` — set color for a scene object (use `"none"` to remove any existing color)  
   
 
 ### Navigate Through The Document
 
-|Method|Description
-|-|-
-|`Beat.selectedRange()` | returns a range object with `.location` and `.length` properties  
-|`Beat.setSelectedRange(location, length)` | set user selection (make sure you don't go out of range)  
-|`Beat.scrollTo(index)` | scroll to character index  
-|`Beat.scrollToScene(scene)` | scroll to a scene object  
-|`Beat.scrollToLine(line)` | scroll to a line object  
+`Beat.selectedRange()` – returns a range object with `.location` and `.length` properties  
+`Beat.setSelectedRange(location, length)` – set user selection (make sure you don't go out of range)  
+`Beat.scrollTo(index)` – scroll to character index  
+`Beat.scrollToScene(scene)` – scroll to a scene object  
+`Beat.scrollToLine(line)` – scroll to a line object  
    
 
 ### User Interaction
 
-|Method|Description
-|-|-
-|`Beat.alert("Alert title", "Informative Text")` | simple alert box  
-|`Beat.confirm("Title", "Informative text")` | ask for confirmation, returns `true` or `false`  
-|`Beat.prompt("Title", "Informative Text", "Placeholder string")` | get text input from the user, returns a string  
-|`Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` | allow the user to select a value from an array, returns a string   
+`Beat.alert("Alert title", "Informative Text")` – simple alert box  
+`Beat.confirm("Title", "Informative text")` — ask for confirmation, returns `true` or `false`  
+`Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string  
+`Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
 For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
   
