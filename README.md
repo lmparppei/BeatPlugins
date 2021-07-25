@@ -67,9 +67,21 @@ For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.
 
 ### Save Plugin Defaults
 
-`Beat.getUserDefault("setting name")` – get a value  
-`Beat.setUserDefault("setting name", value)` – save a value  
-  
+#### App-wide settings
+
+`Beat.getUserDefault("setting name")` – get a user setting  
+`Beat.setUserDefault("setting name", value)` – save a user setting  
+
+#### Document-specific settings
+
+These settings are saved alongside the document, and ignored by other Fountain apps.
+
+`Beat.getDocumentSetting("setting name")` – get a document setting  
+`Beat.setDocumentSetting("setting name", value)` – set a document setting  
+
+The methods above have a prefix which prevent them from overwriting document settings saved by Beat.
+
+If you *really* know what you are doing, you *can* access those using `Beat.setRawDocumentSetting()` and `Beat.getRawDocumentSetting()`. Open a Fountain file created by Beat and see the JSON block at the end of the file, to get a clue about the values.
 
 ### Tagging Data
 
@@ -84,23 +96,26 @@ Tags have `.name` and `.range` properties, and a method for getting the type, `.
 
 ### Document Model
 
-Beat parser uses `Line` and `Scene` objects to store the screenplay content. To manipulate the document, you make direct changes to the plain-text screenplay content and parse your changes. `Line` object contains useful information about the parsed line, such as line type, position, if it is a Title Page element etc. The `string` property contains its plain-text contents.
+Beat parser uses `Line` and `Scene` objects to store the screenplay content. To manipulate the document, you make direct changes to the plain-text screenplay content and parse your changes. `Line` object contains useful information about the parsed line, such as line type, position, if it is a Title Page element etc. `line.string` contains the plain-text contents.
 
-`Scene` is more of an abstraction. It's used to determine where a scene starts, its total length in characters, its color and if it is visible or not. Its `string` property contains the scene heading. 
+`Scene` is more of an abstraction. It's used to determine where a scene starts, its total length in characters, its color and if it is visible or not. `scene.string` property contains the scene heading. A `Scene` object can be either a normal scene heading, section heading (of any level) or a synopsis line. You can filter out sections and synopsis lines by using `Beat.scenes()`.
+
+You **cannot** add text by manipulating these objects, and the plugin API won't let you do that, either, as the values are read-only. If you want to add, remove or replace some text in the screenplay, you will need to add it manually using indexes.
 
 
 ### Adding and Removing Content
 
 `Beat.addString(String, index)` – add string at some index  
-`Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty)  
-`Beat.parse()` – parse changes you've made and update the lines/scenes arrays  
+`Beat.replaceRange(index, length, string)` – replace a range with a string (which can be empty to remove text)  
+
+Any changes you make are directly represented in the `Line` objects. That's why you can iterate through lines, make changes on the run, and the positions are kept up to date during iteration, as long as you don't add multiple lines.
   
 
 ### Lines
 
-**PLEASE NOTE:** You can't just make changes to the line string objects. Every change to the screenplay has to go through the parser, which means using `Beat.addString`, `Beat.replaceRange` etc. to change the document and then parsing your changes. Just read values and never change them.
+**PLEASE NOTE:** You can't just make changes to the line string objects. Every change to the screenplay has to go through the parser, which means using `Beat.addString`, `Beat.replaceRange` etc. to change the document. Never change the values, just read them.
 
-Lines array contains all the lines in the script as objects. A line object contains multiple values, including but not limited to:
+`Beat.lines()` array contains all the lines in the script as objects. This is not a copy of the array, but the actual line array from parser. A line object contains multiple values, including but not limited to:
 
 `line.string` —	string content  
 `line.position` — starting index of line  
@@ -110,8 +125,10 @@ Lines array contains all the lines in the script as objects. A line object conta
 `line.isTitlePage()` — true/false  
 `line.isInvisible()` — true/false  
 `line.cleanedString()` — non-printing stuff removed  
+`line.stripFormatting()` – non-printing suff and any Fountain formatting removed  
 `line.omitted`— true/false  
 `line.note` — if the line is a note (wrapped in `[[]]`), true/false  
+`line.clone()` — make a copy of the line into memory  
 
 Iterate through lines:
 ```
@@ -149,7 +166,7 @@ for (const scene of Beat.scenes()) {
 }
 ```
 
-**NOTE**: Avoid calling `Beat.scenes()` and `Beat.outline()` too often. Both build the whole outline from scratch and can slow down your performance. Instead, save the structure into a variable in the beginning: `const scenes = Beat.scenes()`
+**NOTE**: Avoid calling `Beat.scenes()` and `Beat.outline()` too often. Both build the whole outline from scratch and can slow down your performance. If possible, save the structure into a variable in the beginning: `const scenes = Beat.scenes()`
   
 
 ### Paginator
@@ -176,6 +193,7 @@ for (const scene of scenes) {
 }
 ``` 
 
+**NOTE**: The plan is to deprecate the current paginator as soon as possible. This can be either next week or two years from now. The new paginator will still have the same methods and keywords, and I'll try to keep it backwards-compatible.
   
 
 # Advanced
