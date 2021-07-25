@@ -193,26 +193,29 @@ for (const scene of scenes) {
 }
 ``` 
 
-**NOTE**: The plan is to deprecate the current paginator as soon as possible. This can be either next week or two years from now. The new paginator will still have the same methods and keywords, and I'll try to keep it backwards-compatible.
+**NOTE**: Plan is to deprecate the current paginator as soon as possible. This can be either next week or two years from now. Future paginator will still have the same methods and keywords, and I'll try to keep it backwards-compatible.
   
 
 # Advanced
 
 ## Folder-type Plugin
 
-Plugin can be just a single script, but sometimes plugins require supporting files. Place the script inside a folder of the same name, for example `Plugin.beatPlugin/Plugin.beatPlugin`. The plugin can then access files inside its folder using `Beat.assetAsString(filename)`.
+Plugin can be just a single script, but sometimes plugins require supporting assets.
+
+To use additional assets, place the script file inside a folder with the same name, for example `Plugin.beatPlugin/Plugin.beatPlugin`. Plugin can then access any file in the folder using `Beat.assetAsString(filename)`.
 
 `let text = Beat.assetAsString('text.txt')` – get plugin asset as string
 
-**Note:** For the sake of clarity, the distributed plugins are all wrapped in folders.
+**Note:** For the sake of clarity, distributed plugins are all wrapped in folders.
 
   
 
 ## Resident Plugins & Listeners
 
-Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. 
+Usually plugins are just run once, and not left in the memory. If you want the plugin to remain active and track changes to the document, you need to set up an update function. Resident plugins remain in memory even after using `return`, and can be terminated with `Beat.end()` or by unchecking the plugin from *Tools* menu.
 
-Update methods have to be **very** efficient, not to slow down the UI. Resident plugins remain in memory even after using `return`. They can be terminated with `Beat.end()` or by unchecking the plugin from *Tools* menu.
+Update methods have to be **very** efficient, so they won't slow down the UI. 
+
 
 ### Listen to Text Change
 
@@ -269,9 +272,9 @@ Beat.onSceneIndexUpdate(
 )
 ```
 
-### Disable Change Listeners
+### Disabling Listeners
 
-If you are listening to text changes, and would like to make changes to the text on some event, your original update function will be called again. This can cause an infinite loop.
+If you are listening to text changes and would like to make changes to the text on some event, your original update function will be called again. This can cause an infinite loop.
 
 To avoid strange loops, you can disable the listeners when needed:  
 
@@ -311,7 +314,7 @@ Beat.timer(1.0, function () {
 
 ### HTML Panel 
 
-Displays HTML a **modal** window with preloaded CSS.
+Displays HTML in a **modal** window with preloaded CSS.
 
 `Beat.htmlPanel(htmlContent, width, height, callback, okButton)`
 
@@ -467,7 +470,7 @@ HTML:
 <script>Beat.call("Beat.custom.hello()");</script>
 ```
 
-Communicating with the window is a constant ping-pong of evaluations and stringified data. Look through existing plugin code, or drop by Beat Discord to ask for help. 
+Communicating with the window is a constant and convoluted ping-pong of evaluations and stringified data. Look through existing plugin code or drop by Beat Discord to ask for help. 
 
 
 ## File Access
@@ -525,7 +528,7 @@ Beat.dispatch(function () {
 
 ## Accessing the Parser
 
-Most of the methods here are wrappers for the parser associated with current document. The actual underlying parser is accessed through `Beat.currentParser`:  
+Most of the methods here are wrappers for the parser associated with current document. The actual, underlying parser for the host document can be accessed through `Beat.currentParser`:  
 
 ```
 let parser = Beat.currentParser
@@ -546,13 +549,13 @@ for (let line of parser.lines) {
 
 There are some property/method inconsistencies between the normal Beat parser access and the core parser object. Most property names are the same, however.
 
-`parser.lines` — line objects *(note: property, not a method)*  
+`parser.lines` — line objects *(**note**: property, not a method)*  
 `parser.outline` — all scene objects, including synopsis lines and sections *(note: property, not a method)*  
-`parser.scenes` — scene objects only *(note: property, not a method)*  
+`parser.scenes` — scene objects only *(**note**: property, not a method)*  
 `parser.titlePage` — title page elements  
-`parser.linesInRange({ location: x, length: y })` — get all lines in the selected range (**note:** parameter has to be a range object)  
-`parser.lineAtIndex(index)` — get line item at given index  
-`parser.sceneAtIndex(index)` — get outline item at given index  
+`parser.linesInRange({ location: x, length: y })` — get all lines in the selected range *(**note:** parameter has to be a range object)*  
+`parser.lineAtIndex(index)` — get line item at given character index  
+`parser.sceneAtIndex(index)` — get outline item at given character index  
   
 
 # Plugin Guidelines
