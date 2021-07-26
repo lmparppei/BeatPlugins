@@ -1,0 +1,381 @@
+/*
+
+Plugin name: F.T.Outliner
+Description: A Flexible Time Outliner for viewing/navigating your screenplay. Scenes are divided into one column per act, and dynamically sized corresponding to their length.
+Copyright: Fredrik T Olsson 2021
+Version: 1.0
+Type: Tool
+
+*/
+
+//Beat.openConsole();
+
+// Some initial settings
+
+var css = Beat.assetAsString("outline.css")
+var template = Beat.assetAsString("outline.html")
+var dialogs = Beat.assetAsString("dialogs.html")
+var charactertracking = Beat.assetAsString("charactertracking.html")
+var contextmenu = Beat.assetAsString("contextmenu.html")
+var thePanelWidth, thePanelHeight
+var storingDefaultsHTML = makeStoringDefaultsDiv()
+var location, length
+var html
+
+var fullUpdateInProgress = false
+var smallUpdateInProgress = false
+var anOutlineChangeWasTriggered = false //an effort to skip repagination while someone types
+
+var	html = storingDefaultsHTML +
+	css +
+	dialogs +
+	charactertracking +
+	contextmenu + 
+	template
+
+var smallStartTime, smallEndTime, BigEndTime
+var bigStartTime = new Date()
+var recolorInProgress = false, firstTimeRedraw = true
+
+var charactersArray, scenesWithCharactersArray
+
+var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
+
+// ===================================================================
+// THIS ENDS THE (UNCONDITIONAL) RUN-ONCE STUFF. THE REST IS FUNCTIONS
+// ===================================================================
+
+Beat.custom = {};
+
+Beat.custom.updateVariables = function (location, length) {
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').classList.add('animate')");
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').style.display = 'block'");
+
+			bigStartTime = new Date()
+
+	let json = makeJSON()
+
+	anOutlineChangeWasTriggered = false //an effort to skip repagination while someone types
+
+	let pages = []
+		for (scene of Beat.scenes()){
+			if (anOutlineChangeWasTriggered == true){continue} //this is under evaluation but seems not to help
+	 		pages[scene.sceneNumber] = this.paginateThis(scene)
+		}
+
+	pages=JSON.stringify(pages)
+
+			bigEndTime = new Date()
+			htmlWindow.runJS("document.getElementById('speedReport').innerHTML = 'BIG<br/>" + (bigEndTime - bigStartTime) + "<br/>ms'")
+			htmlWindow.runJS("document.getElementById('speedReport').classList.remove('red')")
+
+	htmlWindow.runJS("updateEverything(" + json + "," + location + "," + length + "," + pages + ")")
+	
+	fullUpdateInProgress = false
+}
+
+Beat.custom.updateOnlyOne = function (whichSceneAreWeIn, location, length) {
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').classList.add('animate')");
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').style.display = 'block'");
+
+			smallStartTime = new Date()
+
+	let json = makeJSON() 	// Yes, I do fetch the entire script even for in-scene changes because it's faster than anything I can do.
+							// But I will not call paginator for more than the very changed scene.
+
+	scene = Beat.outline()[whichSceneAreWeIn]
+	pages = Beat.custom.paginateThis(scene)
+
+			smallEndTime = new Date()
+			htmlWindow.runJS("document.getElementById('speedReport').innerHTML = 'SML<br/>" + (smallEndTime - smallStartTime) + "<br/>ms'")
+			htmlWindow.runJS("document.getElementById('speedReport').classList.remove('red')")
+
+		
+	htmlWindow.runJS("updateOneScene(" + json + "," + whichSceneAreWeIn + "," + pages + "," + location + "," + length + ")")
+}
+
+Beat.custom.paginateThis = function (scene) {
+
+	let content = Beat.linesForScene(scene)	
+
+	const paginator = Beat.paginator()
+		paginator.paginateLines(content)
+		pages = paginator.numberOfPages + paginator.lastPageHeight -1
+
+		smallUpdateInProgress = false
+
+	return pages
+}
+
+Beat.custom.setFrame = function (theWindowsPositionX, theWindowsPositionY, theDocumentsWidth, theDocumentsHeight){
+	htmlWindow.setFrame(theWindowsPositionX, theWindowsPositionY, theDocumentsWidth, theDocumentsHeight)
+}
+
+function makeJSON(){
+
+	let outlineItems = Beat.outlineAsJSON() 
+    let json = JSON.stringify(outlineItems)
+    return json
+}
+
+// A NOTE: Below are the three functions that trigger on changes in the document.
+// Because of how calling Beat from the HTMLWindow cannot (to my knowledge) return
+// any values, disallowing the use of ASYNC/AWAIT, two of the functions below will
+// trigger a somewhat convoluted chain reaction of functions calling functions. As 
+// far as I have been able to make out, this is the only way to make things run in
+// sequence and waiting for one thing to finish before the next. 
+
+// For reference, each function below has a summary of that path.
+
+
+Beat.onOutlineChange (function() { 
+
+	if (recolorInProgress){return}
+
+	fullUpdateInProgress = true		
+	anOutlineChangeWasTriggered = true //an effort to skip repagination while someone types
+
+	htmlWindow.runJS("needsFullUpdate()")
+
+// PLUGIN: onOutlineChange (THIS FUNCTION) will call...
+// HTMLWINDOW: needsFullUpdate, which will call...
+// PLUGIN: beat.custom.updateVariables, 
+//         makeJSON, then
+//         paginateThis, which returns to updateVariables, which will call...
+// HTMLWINDOW: updateEverything
+
+});
+	
+Beat.onTextChange(function (location, length) { 
+
+	if (fullUpdateInProgress == false){
+		smallUpdateInProgress = true
+			htmlWindow.runJS("document.getElementById('speedReport').innerHTML=''")
+			htmlWindow.runJS("document.getElementById('speedReport').classList.add('red')")
+		htmlWindow.runJS("needsSmallUpdate(" + location + "," + length + ")") 
+	}
+
+// PLUGIN: onTextChange (THIS FUNCTION) will call...
+// HTMLWINDOW: needsSmallUpdate, which will call...
+// PLUGIN: beat.custom.updateOnlyOne, which will call...
+//         makeJSON, then
+//         paginateThis, which returns to updateOnlyOne, which will call...
+// HTMLWINDOW: updateOneScene
+
+});
+
+Beat.onSelectionChange(function (location, length) {
+	if (fullUpdateInProgress == false && smallUpdateInProgress == false){
+	htmlWindow.runJS("youAreHere(" + location + "," + length + ")") }
+});
+
+// STARTUP STUFF
+
+function makeStoringDefaultsDiv(){
+
+	//THIS WORKS, but can be made more elegant. Very low priority.
+
+	// -- Check all stored settings
+	let realTimeUpdates = Beat.getUserDefault("realTimeUpdates");
+		if(realTimeUpdates != 0 && realTimeUpdates != 1){realTimeUpdates = 0}
+	let showProportional = Beat.getUserDefault("showProportional");
+		if(showProportional != 0 && showProportional != 1){showProportional = 1}
+	let showNumbers = Beat.getUserDefault("showNumbers");
+		if(showNumbers !== "none" && showNumbers !== "inline"){showNumbers = "none"}
+	let showLengths = Beat.getUserDefault("showLengths");
+		if(showLengths != "none" && showLengths != "inline"){showLengths = "none"}
+	let showPages = Beat.getUserDefault("showPages");
+		if(showPages != "none" && showPages != "inline"){showPages = "none"}
+	let colorScheme = Beat.getUserDefault("colorScheme");
+		if(colorScheme != "Beat" && colorScheme != "FTOutliner"){colorScheme = "FTOutliner"}
+	let oneColumnOutline = Beat.getUserDefault("oneColumnOutline");
+		if(oneColumnOutline != 1 && oneColumnOutline != 0){oneColumnOutline = 0}
+	
+	// -- sizes & position
+	thePanelWidth = Beat.getUserDefault("thePanelWidth");
+		if(!thePanelWidth){thePanelWidth = 800}
+	thePanelHeight = Beat.getUserDefault("thePanelHeight");
+		if(!thePanelHeight){thePanelHeight = 800}
+	thePanelX = Beat.getUserDefault("x-position");
+		if(!thePanelX){thePanelX = 500}
+	thePanelY = Beat.getUserDefault("y-position");
+		if(!thePanelY){thePanelY = 500}
+
+	// -- Pass on all settings into the non-static JS
+	let storingDefaultsHTML = "<div id='theDataDiv' class='theDataDivClass' data-showProportional='" + showProportional +
+		"' data-showNumbers='" + showNumbers + 
+		"' data-showLengths='" + showLengths + 
+		"' data-showPages='" + showPages + 
+		"' data-thePanelWidth='" + thePanelWidth + 
+		"' data-thePanelHeight='" + thePanelHeight + 
+		"' data-realTimeUpdates='" + realTimeUpdates + 
+		"' data-x-position='" + thePanelX + 
+		"' data-y-position='" + thePanelY + 
+		"' data-colorScheme='" + colorScheme +
+		"' data-oneColumnOutline='" + oneColumnOutline +
+		"'></div>"
+
+	return storingDefaultsHTML
+}
+
+// BELOW STUFF FOR TRACKING CHARACTERS
+
+Beat.custom.addCharacterClasses = function() {
+	//var endTime 
+	//var startTime = new Date();
+	//NOTE: On my computer, this function takes 70ms
+
+	let allLines = Beat.lines()
+	let allScenes = Beat.scenes()
+	charactersArray = []
+	let occurrencesForCharacter = []
+
+	for (line of allLines){
+		if (line.typeAsString() == "Character"){
+			let name = line.string
+			name = name.replace(/\(.*\)/gm, '');
+			name = titleCaseThis(name)
+			name = name.trim()
+			if (!charactersArray.includes(name)){
+				charactersArray.push(name)
+				occurrencesForCharacter.push(0)
+			}else{
+				occurrencesForCharacter[charactersArray.indexOf(name)] ++
+			}
+		}
+	}
+	
+	let temporarySortingArray = []
+	let biggestNumber
+	let index
+	for (i = 0; i < occurrencesForCharacter.length; i++){
+
+		biggestNumber = Math.max(...occurrencesForCharacter)
+		index = occurrencesForCharacter.indexOf(biggestNumber)
+		temporarySortingArray.push(charactersArray[index])
+		occurrencesForCharacter[index] = -1
+	}
+
+	charactersArray = temporarySortingArray
+	scenesWithCharactersArray = []
+
+	// I now have all characters. Time to evaluate scenes.
+
+	for (scene of allScenes){
+		const lines = Beat.linesForScene(scene)
+		const sceneNumber = scene.sceneNumber
+		let copyOfCharacters = [...charactersArray]
+		let charactersInScene = ""
+
+		for (line of lines){
+			if (line.typeAsString() == "Character") {
+				let name = titleCaseThis(line.string)
+				name = name.replace(/\(.*\)/gm, '');
+				name = name.trim()
+
+			 	if (copyOfCharacters.includes(name)){
+					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+					let spacelessName = name.replace(/ /g, "_")
+					charactersInScene += spacelessName + " "
+				}
+			}
+			if (line.typeAsString() == "Action") {
+				for (i=0; i<copyOfCharacters.length; i++){
+					let name = copyOfCharacters[i]
+					if (line.string.includes(name) || line.string.includes(name.toUpperCase())){
+						copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+						let spacelessName = name.replace(/ /g, "_")
+						charactersInScene += spacelessName + " "
+					}
+				}
+			}
+		}
+		scenesWithCharactersArray[sceneNumber]=charactersInScene	
+	}	
+	htmlWindow.runJS("makeCharacterMenu(" + JSON.stringify(charactersArray) + "," + JSON.stringify(scenesWithCharactersArray) + "); updateFilter()")
+}
+
+Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateTrueOrFalse){
+
+	const scene = Beat.outline()[outlineNumber]
+	const sceneNumber = Beat.outline()[outlineNumber].sceneNumber
+
+	const lines = Beat.linesForScene(scene)
+	let copyOfCharacters = [...charactersArray]
+	let charactersInScene = ""
+
+	for (line of lines){
+		if (line.typeAsString() == "Character") {
+			let name = titleCaseThis(line.string)
+			name = name.replace(/\(.*\)/gm, '');
+			name = name.trim()
+
+			 if (copyOfCharacters.includes(name)){
+				copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+				let spacelessName = name.replace(/ /g, "_")
+
+				charactersInScene += spacelessName + " "
+			}
+		}
+		if (line.typeAsString() == "Action") {
+			for (i=0; i<copyOfCharacters.length; i++){
+				let name = copyOfCharacters[i]
+				if (line.string.includes(name) || line.string.includes(name.toUpperCase())){
+					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+					let spacelessName = name.replace(/ /g, "_")
+
+					charactersInScene += spacelessName + " "
+				}
+			}
+		}
+	}
+	scenesWithCharactersArray[sceneNumber]=charactersInScene
+	if(sendToUpdateTrueOrFalse){htmlWindow.runJS("updateFilter(" + JSON.stringify(scenesWithCharactersArray) + ")")}
+}
+
+Beat.custom.manipulateDocument = function (index, rangeToRemove, stringToAdd){
+	Beat.replaceRange(index, rangeToRemove, "")
+	Beat.addString(stringToAdd, index)
+	Beat.parse()
+	Beat.custom.updateVariables(0,0)
+}
+
+Beat.custom.changeElementColor = function (element, newColor){	
+
+	htmlWindow.runJS("document.getElementById('speedReport').innerHTML='PLUGIN'")
+	let recolorstart = new Date()
+	recolorInProgress = true
+
+	Beat.onOutlineChangeDisabled = true
+
+	for (value of element){
+		Beat.setColorForScene(newColor, Beat.outline()[value])
+	}
+
+	let recolorend = new Date()
+	recolorInProgress = false
+	Beat.onOutlineChangeDisabled = false
+}
+
+function titleCaseThis(str) {
+	let upper = true;
+	let newStr = "";
+	for (let i = 0, l = str.length; i < l; i++) {
+	  if (str[i] == " ") {
+		upper = true;
+		  newStr += " ";
+		continue;
+	  }
+	  newStr += upper ? str[i].toUpperCase() : str[i].toLowerCase();
+	  upper = false;
+	}
+	return newStr;
+}
+
+Beat.custom.saveWindowSize = function() {
+	let a = htmlWindow.getFrame()
+	Beat.setUserDefault('thePanelHeight', a.height)
+	Beat.setUserDefault('thePanelWidth', a.width)
+}
+
+
