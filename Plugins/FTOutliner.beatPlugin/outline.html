@@ -1,0 +1,900 @@
+<!-- ================================================== -->
+<!--      THIS IS ALL THE HARD-CODED HTML WE GET:       -->
+<!-- ================================================== -->
+
+<div id="debug" class="debugWindow" style="display: none"></div>
+<div id="flexiContainer"></div>
+<div id="helpButton" class="bottomButton">&#9881;</div>
+<div id="characterButton" class="bottomButton"><svg width="90%" height="90%" viewBox="0 0 134 129" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(0.0914882,0,0,0.0914882,-55.722,-69.8855)">
+        <path d="M1460.88,1521.97L1460.88,1934.76L1215.5,2170.98L1215.5,1732.94C1170.4,1774.99 1109.91,1800.73 1043.45,1800.73C904.154,1800.73 791.064,1687.64 791.064,1548.35C791.064,1430.32 872.253,1331.11 981.765,1303.57L609.063,955.318L2067.32,955.318L1460.88,1521.97ZM1043.45,1418.32C1115.21,1418.32 1173.48,1476.58 1173.48,1548.35C1173.48,1620.11 1115.21,1678.38 1043.45,1678.38C971.685,1678.38 913.422,1620.11 913.422,1548.35C913.422,1476.58 971.685,1418.32 1043.45,1418.32ZM2067.32,763.875L609.063,763.875L609.063,931.696L2067.32,931.696L2067.32,763.875Z" style="fill:rgb(235,235,235);"/>
+    </g>
+</svg>
+<div id="selectedCharacterName"></div>
+</div>
+<div id="speedReport" class="bottomButton"></div>
+
+<!-- ================================================== -->
+<!--      HERE ENDS THE HTML PART, JAVASCRIPT BELOW     -->
+<!-- ================================================== -->
+
+
+<script>
+
+// GLOBAL UI VARIABLES
+
+var typeTimer = null; //setting initial timer to avoid errors	
+var debugContainerVisibility=0;
+var settingsContainerVisibility = 0;
+var trackingContainerVisibility = 0;
+var oneColumnOutline;
+var indexCardMode = 0;
+var debugContainer = document.getElementById('debug');
+var settingsContainer = document.getElementById('settings');
+var trackingContainer = document.getElementById('tracking');
+var coverContainer = document.getElementById('cover');
+var theRoot = document.querySelector(':root');
+var colorScheme
+var blockOrNone = ['block', 'none'];
+var flexOrInLineBlock = ['flex', 'inline-block']
+
+var classListArray = []
+
+var contextMenuIsOpen = false
+var weAreChangingColors = false
+
+
+// GLOBAL DEFAULT VARIABLES
+
+var areScenesProportional, whatAreSceneLengths, whatAreSceneNumbers, whatArePageNumbers, isRealTimeOn
+var theDocumentsWidth, theDocumentsHeight, theWindowsPositionX, theWindowsPositionY
+	
+
+// GLOBAL DOCUMENT-RELATED VARIABLES
+
+var outline, pages
+var heightFactor = 10 //initial value if all else fails
+
+var currentSectionDepth;
+var previousSectionDepth;
+var lastIndexOfScene;
+var currentLine;
+
+var lengthOfScene = [];
+var lengthOfSceneInEights = [];
+var outlineElementNumber
+var actNumber, endElement
+var location, length 
+
+var someoneResizedTheWindow = debounce(function() {
+	theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
+	theRoot.style.setProperty('--theDocumentHeight', window.innerHeight)
+	saveCurrentState()
+	recalculateHeights()
+}, 150);
+
+
+//	EVENTLISTENER ON LOAD: FETCH DATA FROM PLUGIN, THEN BUILD THE COMPLETE OUTLINE:
+
+window.addEventListener('load', function () {
+	completeRun()
+	getDefaults() 
+	
+	Beat.call("Beat.custom.setFrame("+ theWindowsPositionX + " ," + theWindowsPositionY + "," + theDocumentsWidth + "," + theDocumentsHeight + ")")
+})
+
+
+//	EVENTLISTENERS FOR keypresses and such
+	
+	document.addEventListener("keydown", checkWhatKeyGotPressed);
+	document.addEventListener("mouseup", somethingWasClicked);
+	window.addEventListener("resize", someoneResizedTheWindow);
+	window.addEventListener("focus", function () {
+		if(isRealTimeOn == 1){return}
+		document.getElementById('outOfSyncDiv').style.display = "none";
+		completeRun()
+		});
+	window.addEventListener("blur", function () {
+		saveCurrentState()
+		});	
+
+	window.addEventListener("dragstart", onDragStart);
+	window.addEventListener("dragend", onDragEnd);
+
+function onDragStart(event) {
+	let draggedStuff = event.target
+	draggedStuff.style.opacity = '0.8'
+}
+
+function onDragEnd(event) {
+	let draggedStuff = event.target
+	draggedStuff.style.opacity = '1'
+}
+
+
+// ==================================================
+//           END OF STUFF THAT RUNS ONCE.
+//          Everything below is functions.
+// ==================================================
+
+
+// ========== UPDATING THE TIMELINE ==========
+		
+function needsFullUpdate(location, length) {
+	//if (weAreChangingColors){return}
+	debugContainer.innerHTML += "[full uppdate called]"
+
+	if (isRealTimeOn == 1 || weAreChangingColors == true)
+		{
+		weAreChangingColors = false
+		document.getElementById('outOfSyncMessage').innerHTML = "";
+
+		clearTimeout(typeTimer);
+			typeTimer = setTimeout(
+				function(){
+
+					Beat.call("Beat.custom.updateVariables(" + location + "," + length + ")")
+
+				}, 500
+			);	
+		}
+	else
+		{
+		document.getElementById('outOfSyncMessage').innerHTML = "Click anywhere to refresh.";
+		document.getElementById("outOfSyncDiv").style.animation = "none";
+		document.getElementById("outOfSyncDiv").style.display = "block";
+		}
+}
+
+function needsSmallUpdate(location, length) {
+	if (isRealTimeOn == 1 || weAreChangingColors == true){	
+
+		weAreChangingColors = false
+		
+		let whichSceneAreWeIn = 0
+		while (outline[whichSceneAreWeIn].sceneStart + outline[whichSceneAreWeIn].sceneLength <= location){
+			whichSceneAreWeIn ++
+		}
+
+		clearTimeout(typeTimer);
+			typeTimer = setTimeout(
+				function(){
+					Beat.call("Beat.custom.updateOnlyOne(" + whichSceneAreWeIn + "," + location + "," + length + ")")
+				}, 500
+			); 		
+		}
+	else
+		{
+		document.getElementById('outOfSyncMessage').innerHTML = "Click anywhere to refresh.";
+		document.getElementById("outOfSyncDiv").style.animation = "none";
+		document.getElementById("outOfSyncDiv").style.display = "block";
+		}
+}
+
+function completeRun(location, length){ //Called AT STARTUP and (when non-realtime) AT FOCUS
+	Beat.call("Beat.custom.updateVariables(" + location + "," + length + ")")
+}
+
+function updateEverything(json, location, length, pagesAsString) {
+
+	pages = pagesAsString
+	outline = JSON.parse(json)
+
+	recalculatePages()
+	makeDivsFromOutline(-1, -1)
+
+	document.getElementById("flexiContainer").innerHTML = body
+
+	if (characterMenuList.selectedIndex != -1){
+
+		updateFilter("") //this call is unnecessary for functionality, but works to eliminate blinkage.
+		for (i=0; i<outline.length; i++) {
+			//debugContainer.innerHTML += (i == outline.length-1)
+			Beat.call("Beat.custom.reevaluateCharactersForScene(" + i + "," + (i == outline.length-1) + ")") //will send false except last time
+		}
+	}
+	recalculateHeights()
+	youAreHere(location + length, 0)
+
+	//the following clears the UPDATE animation (should only be visible on slower machines)
+	document.getElementById('outOfSyncDiv').style.display = 'none'
+	document.getElementById('outOfSyncDiv').classList.remove('animate')
+
+	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
+}
+
+function updateOneScene(json, scene, pagesForChangedScene, location, length){
+
+	let sceneNumber = outline[scene].sceneNumber
+
+	outline = JSON.parse(json)
+	pages[sceneNumber] = pagesForChangedScene
+
+	recalculatePages()
+	makeDivsFromOutline(-1, -1) //Note to self: will I ever NOT call this completely?
+
+	document.getElementById("flexiContainer").innerHTML = body
+
+	if (characterMenuList.selectedIndex != -1){
+		updateFilter() //again: unnecessary, but just to eliminate blinkage.
+
+		Beat.call("Beat.custom.reevaluateCharactersForScene(" + scene + "," + "true" + ")")
+	}
+	
+	recalculateHeights() 
+	youAreHere(location + length, 0) 
+
+	//the following clears the UPDATE animation (should only be visible on slower machines)
+	document.getElementById('outOfSyncDiv').style.display = 'none'
+	document.getElementById('outOfSyncDiv').classList.remove('animate')
+
+	//NOTE: here ends the chain of functions based on needSmallUpdate, now returning home
+}
+
+
+// ========== BUILDING THE TIMELINE ==========
+
+function makeDivsFromOutline(startElement, endElement){
+	
+	var lastElementNumberThatWasHeading
+	body = ""
+	actNumber = 0
+	nonSceneElementNumber = 0
+	currentPagenumber = 0 	//moving to top of scope or else cannot close last div
+	currentIndex = 0 		//moving to top of scope or else cannot close last div
+	currentSectionDepth = 0
+	previousSectionDepth = 0
+	divDepth = 0
+
+	// NOTE: the following is in preparation for only replacing SOME divs, when changes are made
+	// inside a scene only. But as discussed elsewhere, I'm not sure that will speed anything up.
+	if (!startElement || startElement == -1){startElement = 0} 
+	if (!endElement || endElement == -1){endElement = outline.length}
+
+	let theOutputLines = []
+
+	for (outlineElementNumber = startElement; outlineElementNumber < endElement; outlineElementNumber ++) {
+
+		currentLine = outline[outlineElementNumber]
+ 		theOutputLines[outlineElementNumber] = ""; 
+
+ 		switch(currentLine.typeAsString){
+ 			case "Section":
+ 				theOutputLines[outlineElementNumber] = makeSectionDiv(currentLine, outlineElementNumber)
+				break;
+			case "Heading":
+				theOutputLines[outlineElementNumber] = makeHeadingDiv(currentLine, outlineElementNumber)
+				lastElementNumberThatWasHeading = outlineElementNumber
+				break;
+			// case "Synopse":
+			// 	if(lastElementNumberThatWasHeading){
+			// 		theOutputLines[lastElementNumberThatWasHeading] = theOutputLines[lastElementNumberThatWasHeading].substr(0,theOutputLines[lastElementNumberThatWasHeading].length - 6)
+			// 		theOutputLines[lastElementNumberThatWasHeading] += 
+			// 			"<text class='noOverflow showSynopsis' data-line='" + 
+			// 			currentLine.sceneStart +
+			// 			"'>" + 
+			// 			currentLine.string + 
+			// 			"</text></div>"
+			// 		}
+			// 	break;
+ 		}
+ 	} 
+
+ 	for (let a = 0; a < theOutputLines.length; a++){  
+ 		body += theOutputLines[a]	 
+ 	}
+
+	//SEPARATELY CLOSING THE LAST DIV (and adding page number before it):
+	
+	body += "<div data-line='" + currentIndex + "' class='showActLength'>Pg " + 
+				Math.ceil(Math.max(currentPagenumber, 1)) + ".</div>"
+	body += "</div>"
+
+return body; 
+}
+
+function makeSectionDiv(currentLine, outlineElementNumber){
+	let classList = []
+	previousSectionDepth = currentSectionDepth; 
+	//currentSectionDepth = currentLine.sectionDepth //replaced with counting hashtags below bc not served in outlineAsJSON
+	currentSectionDepth = (currentLine.line.string.substring(0,10).split("#").length) - 1
+		//Note: should look to see that they are consecutive; weird things happen if another stray # is present within the 10 characters
+
+	theLineToReturn=""
+
+		//FIRST: Close the previous DIV(s) if we're in a lower now
+		if (previousSectionDepth >= currentSectionDepth){
+			for (a = 0; a < (previousSectionDepth - currentSectionDepth +1); a++) {
+
+				divDepth --
+				
+				if (divDepth == 0){ 
+					theLineToReturn += "<div data-line='" + currentIndex + "' class='showActLength'>Pg " + 
+						Math.ceil(Math.max(currentPagenumber, 1)) + ".</div>"
+				}
+
+				theLineToReturn += "</div>";
+			}
+
+		// THEN, IF NOT: Open appropriate new DIV(s)
+		} else {
+			for (a = 1; a < (currentSectionDepth - previousSectionDepth); a++) {
+				theLineToReturn += "<div class='aShyDiv'>";
+				divDepth ++
+			}
+		}
+
+		// Fill the div with classes & data
+		divDepth ++
+		nonSceneElementNumber ++
+		theLineToReturn += "<div "
+		//theLineToReturn += "draggable='true' " // for future use
+		theLineToReturn += "id ='outline" + nonSceneElementNumber + "' "
+		theLineToReturn += "data-elementCount='" + outlineElementNumber + "' "
+		theLineToReturn += "data-line='" + currentLine.sceneStart + "' "
+		classList.push("section", 
+			currentLine.color.toLowerCase(), 
+			"level"+currentSectionDepth)
+		theLineToReturn += "class ='" + classList.join(" ") + "' "
+
+		if (currentSectionDepth == 1){actNumber ++}
+		
+		theLineToReturn += "data-iAmInAct = '" + actNumber + "' "
+		theLineToReturn += ">" + "<p data-line='" + currentLine.sceneStart;
+		theLineToReturn += "' class='noOverflow text-shift sectiontext clickThru'>"; //sectiontext has no style, but must be included for right-click reasons
+	
+		if(currentSectionDepth > 1){
+			theLineToReturn += "<span class='showSectionPageNumber'>Pg " + Math.ceil(Math.max(currentLine.startsOnPage, 1)) + ".</span>";
+		}
+
+		// Finally: THE TITLE
+		theLineToReturn += currentLine.string.toUpperCase() + 
+		//outlineElementNumber + //for testing purposes
+		"&nbsp;</p>"; 
+
+	return theLineToReturn
+}
+
+function makeHeadingDiv(currentLine, outlineElementNumber){
+			
+			let theLineToReturn = "";
+	
+			var theSceneNumber = currentLine.sceneNumber;
+			var thisLinesIndex = currentLine.sceneStart;
+	
+			lastIndexOfScene = thisLinesIndex + currentLine.sceneLength -1
+			lengthOfScene[theSceneNumber] = currentLine.numberOfPages
+			lengthOfSceneInEights[theSceneNumber] = numberIntoEights(lengthOfScene[theSceneNumber])
+
+			if (currentLine.string.startsWith('.')){currentLine.string = currentLine.string.substring(1)}
+
+			//FIRST: The DIV for the SCENE CARD:
+			//----------------------------------
+				theLineToReturn += 
+					"<div " +
+					//"draggable='true' " + // for future use
+					"id='" + theSceneNumber + "' " +
+					"class='sceneheading ";
+					if (currentLine.omitted == 1){theLineToReturn += 
+						"isOmitted omittedScenesAreHidden "
+					}
+				theLineToReturn += currentLine.color.toLowerCase() + "' " +
+					"title='" + currentLine.string.toUpperCase() + "' " + 
+					// 	"(" + lengthOfSceneInEights[theSceneNumber] + ")' " +
+					"data-lengthOfScene='" + currentLine.numberOfPages + "' " +
+					"data-iAmInAct='" + actNumber + "' " +
+					"data-elementCount='" + outlineElementNumber + "' " +
+					"data-line='" + thisLinesIndex + "'>";
+
+				currentPagenumber = currentLine.startsOnPage + currentLine.numberOfPages 	// For distribution to the act end
+				currentIndex = thisLinesIndex + currentLine.sceneLength 					// Likewise
+
+			//THEN: The P for the text content:
+			//---------------------------------				
+				theLineToReturn += 
+					"<p " +
+					"class='noOverflow clickThru' " +
+					"data-line='" + thisLinesIndex + "'>" +
+					"<span class='showSceneLength'>"+ lengthOfSceneInEights[theSceneNumber] + "</span>" +	
+					"<span class='showSceneNum'>" + theSceneNumber + ". </span>" + 
+						//outlineElementNumber + // for testing purposes
+						currentLine.string.toUpperCase() + 
+					"</p>";
+			
+		// FINALLY: -- Let's close the current div and return
+	
+		theLineToReturn += "</div>";
+	
+		return theLineToReturn;
+	}
+
+function recalculatePages(){
+	
+	let startsOnPage = 1
+
+	for (line in outline){
+		let currentLine = outline[line]
+
+			if(currentLine.typeAsString != "Heading"){
+				outline[line].startsOnPage = startsOnPage
+			 	continue
+			}
+	
+	let thisScene = currentLine.sceneNumber
+	
+	outline[line].startsOnPage = startsOnPage
+	outline[line].numberOfPages = pages[thisScene]
+	startsOnPage += pages[thisScene]
+	}
+}
+
+function recalculateHeights(timeToWait){
+
+	let theIndicator = document.getElementById("youAreHere")
+	if(theIndicator){
+		var theIndicatorIsInScene = theIndicator.getAttribute('data-theSceneNumber');
+		var theIndicatorIsInElement = theIndicator.getAttribute('data-outlineElementCount');
+		var theIndicatorIsInId = document.querySelector("[data-elementCount='" + theIndicatorIsInElement + "']").id
+
+		//debugContainer.innerHTML += "<br/>the indicator is in: " + theIndicatorIsInId + "<br/>"
+
+		var theIndicatorPercentage = Number(theIndicator.getAttribute('data-percentageIntoScene'));
+	}
+
+	let allScenes = document.getElementsByClassName("sceneheading")
+	let allSections = document.getElementsByClassName("section")
+	let actLength = [0,0,0,0,0,0,0,0,0,0,0,0] //there MUST be a prettier way to do this, but I have found none!
+	let sectionsPerAct = [0,0,0,0,0,0,0,0,0,0,0,0]
+
+	if(areScenesProportional != 1){
+		for (scene of allScenes){
+			scene.style.height = "var(--fixedHeight)"
+		}
+		if(theIndicator){
+			let theIndicatorPosition = "calc(var(--fixedHeight)*2/3)"
+			theIndicator.style.top = theIndicatorPosition
+		}
+		return	
+	}
+
+	for (scene of allScenes){
+		let myLength = Number(scene.getAttribute('data-lengthOfScene'));
+		let thisAct = Number(scene.getAttribute('data-iAmInAct'));
+
+		actLength[thisAct] += myLength
+		let useThisHeight = "calc(" + myLength + "px * var(--heightFactor))"	
+		scene.style.height = useThisHeight
+	}
+
+	for (section of allSections) {
+		let thisAct = Number(section.getAttribute('data-iAmInAct'));
+		sectionsPerAct[thisAct] ++
+	}
+
+	let theLongestAct = Math.max(...actLength)
+	let theMostSections = Math.max(...sectionsPerAct)
+	let whichActHasLongestScenes = actLength.indexOf(theLongestAct)
+	let whichActHasMostSections = sectionsPerAct.indexOf(theMostSections)
+	let windowHeight = parseInt(window.getComputedStyle(document.getElementById('flexiContainer')).getPropertyValue("height"));
+		windowHeight -= 80 // this is very arbitrary. But I found it looks better
+	let scenesHaveMoreSpace = (windowHeight - 23 * sectionsPerAct[whichActHasLongestScenes]) / theLongestAct
+	let sectionsHaveMoreSpace = (windowHeight - 23 * theMostSections) / actLength[whichActHasMostSections]
+	
+	let heightFactor =  Math.min(scenesHaveMoreSpace, sectionsHaveMoreSpace)
+	theRoot.style.setProperty('--heightFactor', heightFactor);
+
+		for (scene of allScenes){
+			let slugHeight = parseInt(window.getComputedStyle(scene).getPropertyValue("height"));
+			if (slugHeight < 12) {
+				scene.classList.add("hideSlugIfSmall")
+				}else{
+				scene.classList.remove("hideSlugIfSmall")
+			}
+		}
+
+		if(theIndicator){
+			//let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(document.getElementById(theIndicatorIsInScene)).getPropertyValue("height")));
+			let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(document.getElementById(theIndicatorIsInId)).getPropertyValue("height")));
+			let theIndicatorPosition = theIndicatorParentHeight * theIndicatorPercentage
+			if (theIndicatorPercentage == -1) {theIndicatorPosition = 12}
+			theIndicator.style.top = theIndicatorPosition + "px"
+		}
+}
+
+function youAreHere(location, length){
+
+	if(!location){return}
+
+	if(document.getElementById('youAreHere')){document.getElementById('youAreHere').remove()}
+
+	let whichSceneAreWeIn = 0
+	let whichOutlineThen = 1
+		while (outline[whichSceneAreWeIn].sceneStart + outline[whichSceneAreWeIn].sceneLength <= location){
+			whichSceneAreWeIn ++
+			if (!outline[whichSceneAreWeIn].sceneNumber){
+				if(outline[whichSceneAreWeIn].typeAsString == "Section") {whichOutlineThen++}
+			}
+		}
+
+	// OLD METHOD with setting different style to sections instead of drawing indicator. Kept if I change my mind. 
+	// 		if(!outline[whichSceneAreWeIn].sceneNumber){
+	// 			whichOutlineThen = "outline" + whichOutlineThen
+	// 			document.getElementById(whichOutlineThen).classList.add("selectedOutline")
+	// 			return
+	// 		} 
+
+	whichSceneNumberAreWeIn = outline[whichSceneAreWeIn].sceneNumber
+
+	let thisScenesBeginning = outline[whichSceneAreWeIn].sceneStart
+	let thisScenesEnd = thisScenesBeginning + outline[whichSceneAreWeIn].sceneLength
+
+	var percentageIntoScene = (location - thisScenesBeginning) / (thisScenesEnd - thisScenesBeginning);
+	if(!outline[whichSceneAreWeIn].sceneNumber){percentageIntoScene = -1}
+
+	let theIndicatorHTML = "<div " + 
+		"id='youAreHere' " +
+		"class='indicator' " +
+		"data-percentageIntoScene='" + percentageIntoScene + "' " +
+		"data-outlineElementCount='" + whichSceneAreWeIn + "' " +
+		"data-theSceneNumber = '" + whichSceneNumberAreWeIn + "' " + 
+		">"+""+"</div>";
+	document.querySelector("[data-elementCount='" + whichSceneAreWeIn + "']").innerHTML += theIndicatorHTML
+
+	recalculateHeights()
+}
+
+function numberIntoEights(theNumber) {
+	
+	let theFraction = Math.floor((theNumber - Math.floor(theNumber))*8);
+	
+	let theNumberInEights = theFraction + "/8";
+	if(theNumberInEights == "0/8" && Math.floor(theNumber) > 0){theNumberInEights = "pgs"; if (Math.floor(theNumber)==1){theNumberInEights = "pg"}}
+	
+	if (Math.floor(theNumber) > 0){theNumberInEights = 	Math.floor(theNumber)+" " + theNumberInEights};
+	
+	return theNumberInEights;
+}
+
+
+// ========== UI-RELATED STUFF ==========
+
+function getDefaults(){
+
+areScenesProportional = document.getElementById('theDataDiv').getAttribute('data-showProportional');
+whatAreSceneLengths = document.getElementById('theDataDiv').getAttribute('data-showLengths');
+whatAreSceneNumbers = document.getElementById('theDataDiv').getAttribute('data-showNumbers');
+whatArePageNumbers = document.getElementById('theDataDiv').getAttribute('data-showPages');
+isRealTimeOn = document.getElementById('theDataDiv').getAttribute('data-realTimeUpdates');
+colorScheme = document.getElementById('theDataDiv').getAttribute('data-colorScheme');
+oneColumnOutline = document.getElementById('theDataDiv').getAttribute('data-oneColumnOutline');
+
+document.documentElement.setAttribute('data-theme', colorScheme)
+document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
+
+theDocumentsWidth = document.getElementById('theDataDiv').getAttribute('data-thePanelWidth');
+theDocumentsHeight = document.getElementById('theDataDiv').getAttribute('data-thePanelHeight');
+
+theWindowsPositionX = document.getElementById('theDataDiv').getAttribute('data-x-position');
+theWindowsPositionY = document.getElementById('theDataDiv').getAttribute('data-y-position');
+
+theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
+theRoot.style.setProperty('--showSceneLength', whatAreSceneLengths);
+theRoot.style.setProperty('--showSceneNum', whatAreSceneNumbers);
+theRoot.style.setProperty('--showPageNum', whatArePageNumbers);
+
+document.getElementById("buttonForLength").checked = (whatAreSceneLengths == 'inline');
+document.getElementById("buttonForNumbers").checked = (whatAreSceneNumbers == 'inline');
+document.getElementById("buttonForPages").checked = (whatArePageNumbers == 'inline');
+document.getElementById("buttonForProportional").checked = (areScenesProportional == 1);
+document.getElementById("buttonForRealTimeUpdates").checked = (isRealTimeOn == 1);
+document.getElementById("buttonForColors").checked = (colorScheme == 'Beat');
+document.getElementById("buttonForOneColumnOutline").checked = (oneColumnOutline == 1);
+
+}
+
+function checkWhatKeyGotPressed(someoneJustPressed) {
+	
+	//if (someoneJustPressed.key == "Enter") {event.preventDefault(); toggleDebugContainer()} // My OTHER private console. Everyone needs two.
+	if (someoneJustPressed.key == "Escape" && settingsContainerVisibility == 1) {event.preventDefault(); toggleSettingsContainer(); return false}
+	if (someoneJustPressed.key == "Escape" && trackingContainerVisibility == 1) {event.preventDefault(); toggleTrackingContainer(); return false}
+	if (someoneJustPressed.key == "Escape" && characterMenuList.selectedIndex != -1) {event.preventDefault(); deselectAllCharacters(); return false}
+	//if (someoneJustPressed.key == "Escape") {saveCurrentState()}
+	if (someoneJustPressed.key == "i") {event.preventDefault(); toggleSettingsContainer()}
+	if (someoneJustPressed.key == "t") {event.preventDefault(); toggleTrackingContainer()}
+	if (someoneJustPressed.key == "f") {event.preventDefault(); toggleProportional()}
+	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
+	if (someoneJustPressed.key == "l") {event.preventDefault(); toggleShowSceneLength()}
+	if (someoneJustPressed.key == "p") {event.preventDefault(); toggleShowPageNumbers()}
+	if (someoneJustPressed.key == "s") {event.preventDefault(); toggleShowSceneNumbers()}
+	if (someoneJustPressed.key == "c") {event.preventDefault(); toggleColorScheme()}
+	// if (someoneJustPressed.key == "y") {event.preventDefault(); toggleShowSynopsis()} // NOTE: Never connected!
+	// if (someoneJustPressed.key == "x") {event.preventDefault(); toggleIndexCardMode()}
+	// if (someoneJustPressed.key == "u") {event.preventDefault(); recalculateHeights()}
+	if (someoneJustPressed.key == "o") {event.preventDefault(); toggleOneColumnOutline()}
+	if (someoneJustPressed.key == "a" && event.ctrlKey) {event.preventDefault(); selectAllElements(true)}
+	if (someoneJustPressed.key == "a" && event.metaKey) {event.preventDefault(); selectAllElements(false)}
+
+	if (someoneJustPressed.code == "Digit0") {event.preventDefault(); deselectAllCharacters(); return false}
+	if(someoneJustPressed.code.startsWith("Digit")) {
+		event.preventDefault(); toggleSoloCharacter(someoneJustPressed.code.substr(-1,1))}
+		
+	//if (someoneJustPressed.key == "Shift") {ShowPopups()} // DISABLED
+}
+	
+// function checkWhatKeyWasReleased(someoneJustReleased){
+// if (someoneJustReleased.key == "Shift") {HidePopups()}	// DISABLED
+// }
+
+function HidePopups() { // DISABLED, perhaps for good.
+	theRoot.style.setProperty('--popupVisibility', 'hidden');
+}
+
+function ShowPopups() { // DISABLED, perhaps for good.
+	theRoot.style.setProperty('--popupVisibility', 'visible');
+}
+
+function toggleOneColumnOutline() { 
+	oneColumnOutline= 1 - oneColumnOutline;
+	document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
+	document.getElementById("buttonForOneColumnOutline").checked = (oneColumnOutline == 1);
+	saveCurrentState()
+}
+	
+function toggleDebugContainer() { 
+	debugContainerVisibility=1-debugContainerVisibility;
+	if (debugContainerVisibility == 1) {
+		debugContainer.style.display = "block";
+	}else {
+		debugContainer.style.display = "none";
+	}
+}
+
+function toggleIndexCardMode(){
+
+	if (areScenesProportional == 1){return}
+	
+		indexCardMode = 1 - indexCardMode;
+		if (indexCardMode == 1){
+			theRoot.style.setProperty('--fixedHeight', '72px');
+			let synopsisis = document.getElementsByClassName('showSynopsis')
+			for (synopse of synopsisis){
+				synopse.style.setProperty("display", "block	");
+			}
+		}else{
+			theRoot.style.setProperty('--fixedHeight', '14px');
+			let synopsisis = document.getElementsByClassName("showSynopsis")
+			for (synopse of synopsisis){
+				synopse.style.setProperty("display", "none")
+			}
+		}
+}
+	
+function toggleShowSceneNumbers() {
+	if (whatAreSceneNumbers == "inline") {
+		theRoot.style.setProperty('--showSceneNum', 'none');	
+		}else{
+		theRoot.style.setProperty('--showSceneNum', 'inline');	
+		}
+		
+	whatAreSceneNumbers = theRoot.style.getPropertyValue('--showSceneNum');
+	document.getElementById("buttonForNumbers").checked = (whatAreSceneNumbers == 'inline');
+	saveCurrentState()
+}
+
+function toggleShowPageNumbers() {
+	if (whatArePageNumbers == "inline") {
+		theRoot.style.setProperty('--showPageNum', 'none');	
+		}else{
+		theRoot.style.setProperty('--showPageNum', 'inline');	
+		saveCurrentState()
+	}
+		
+	whatArePageNumbers = theRoot.style.getPropertyValue('--showPageNum');
+	document.getElementById("buttonForPages").checked = (whatArePageNumbers == 'inline');
+}
+
+function toggleShowSceneLength() {
+	if (whatAreSceneLengths == "inline") {
+		theRoot.style.setProperty('--showSceneLength', 'none');	
+		}else{
+		theRoot.style.setProperty('--showSceneLength', 'inline');	
+	}
+		
+	whatAreSceneLengths = theRoot.style.getPropertyValue('--showSceneLength'); //double-check: Do I still use this?
+	document.getElementById("buttonForLength").checked = (whatAreSceneLengths == 'inline');
+	saveCurrentState()
+}
+	
+function toggleSettingsContainer() { 
+
+	if (trackingContainerVisibility == 1){toggleTrackingContainer()}
+
+	settingsContainerVisibility = 1 - settingsContainerVisibility;
+	settingsContainer.style.display = blockOrNone[1-settingsContainerVisibility];
+	coverContainer.style.display = blockOrNone[1-settingsContainerVisibility];
+}
+
+function toggleTrackingContainer() { 
+
+	if (settingsContainerVisibility == 1){toggleSettingsContainer()}
+
+	trackingContainerVisibility = 1 - trackingContainerVisibility;
+	if (trackingContainerVisibility == 1) {collectCharacters()}
+	trackingContainer.style.display = blockOrNone[1-trackingContainerVisibility];
+	coverContainer.style.display = blockOrNone[1-trackingContainerVisibility];
+}
+
+function toggleColorScheme() { 
+	colorScheme = 'FTOutlinerBeat'.replace(colorScheme, "")
+	document.documentElement.setAttribute('data-theme', colorScheme)
+	document.getElementById("buttonForColors").checked = (colorScheme == "Beat");
+	saveCurrentState()
+}
+	
+function toggleProportional() { 
+	areScenesProportional = 1 - areScenesProportional;
+	theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
+	document.getElementById("buttonForProportional").checked = (areScenesProportional == 1);
+
+	if(areScenesProportional==1){
+		let synopsisis = document.getElementsByClassName("showSynopsis")
+		for (synopse of synopsisis){
+			synopse.style.setProperty("display", "none")
+		}
+	}
+
+	recalculateHeights(400)
+			
+	document.querySelector('.omittedScenesAreHidden').style.setProperty('display', blockOrNone[areScenesProportional]);
+	saveCurrentState()
+}
+
+function toggleRealTime() { 
+	isRealTimeOn = 1 - isRealTimeOn;
+	document.getElementById("buttonForRealTimeUpdates").checked = (isRealTimeOn == 1);
+}
+	
+function saveCurrentState() {
+		
+	Beat.call("Beat.setUserDefault('showProportional', " + areScenesProportional + ")")
+	Beat.call("Beat.setUserDefault('showLengths', '" + whatAreSceneLengths + "')")
+	Beat.call("Beat.setUserDefault('showPages', '" + whatArePageNumbers + "')")
+	Beat.call("Beat.setUserDefault('showNumbers', '" + whatAreSceneNumbers + "')")
+	Beat.call("Beat.setUserDefault('realTimeUpdates', '" + isRealTimeOn + "')")
+	Beat.call("Beat.setUserDefault('x-position', '" + window.screenLeft + "')")
+	Beat.call("Beat.setUserDefault('y-position', '" + window.screenTop + "')")
+	Beat.call("Beat.setUserDefault('colorScheme', '" + colorScheme + "')")
+	Beat.call("Beat.setUserDefault('oneColumnOutline', '" + oneColumnOutline + "')")
+
+	Beat.call("Beat.custom.saveWindowSize()")		
+}
+	
+function somethingWasClicked() {
+		
+	let theClickedThing = event.target;
+	let theButton = event.button;
+	let rightClick = event.ctrlKey || theButton == 2
+	
+	if (rightClick || contextMenuIsOpen) {
+			x = event.clientX
+			y = event.clientY
+
+		contextMenu(theClickedThing, x, y, rightClick)
+		return
+	}
+
+	if (event.metaKey){
+		a = [...theClickedThing.classList]
+		if (a.includes("sceneheading") && a.includes("isSelected")) {
+			theClickedThing.classList.remove('isSelected')
+			return
+			}
+        if (a.includes("sectiontext") && [...theClickedThing.parentNode.classList].includes("isSelected")) {
+			theClickedThing.parentNode.classList.remove('isSelected')
+			return
+			}
+
+		if (a.includes("sceneheading")) {theClickedThing.classList.add('isSelected')}
+        if (a.includes("sectiontext")) {theClickedThing.parentNode.classList.add('isSelected')}
+		return
+	}
+
+	if (event.shiftKey){
+		let alreadySelectedElements = document.getElementsByClassName("isSelected")
+		if (alreadySelectedElements.length == 0){
+				if (document.getElementById("youAreHere")) {
+					let setCurrentElementToStartElement = document.getElementById("youAreHere").parentNode.getAttribute("data-elementCount")
+					document.querySelector("[data-elementCount='" + setCurrentElementToStartElement + "']").classList.add("isSelected")
+				}else{
+			theClickedThing.classList.add('isSelected')
+			return
+			}
+		}
+
+		let closestPredecessor = -1
+		let closestSuccessor = -1
+		let thisOne = Number(theClickedThing.getAttribute("data-elementCount"))
+
+		for (element of alreadySelectedElements){
+			a = Number(element.getAttribute("data-elementCount"))
+
+			if (a < thisOne){closestPredecessor = a;}
+			if (a > thisOne){closestSuccessor = a; break}
+		}
+
+		if (closestPredecessor < 0) {
+
+			for (i = thisOne; i <= closestSuccessor; i++){
+				let selectThis = document.querySelector("[data-elementCount='" + i + "']")
+				if (selectThis){
+					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection")){
+						selectThis.classList.add('isSelected')
+					}
+				}
+			}
+		}else{
+			for (i = closestPredecessor; i <= thisOne; i++){				
+				let selectThis = document.querySelector("[data-elementCount='" + i + "']")
+				if (selectThis){
+					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection")){
+						selectThis.classList.add('isSelected')
+					}
+				}
+			}
+		}
+		return
+	}
+
+	deselectAllElements()
+
+	var gotoIndex = theClickedThing.getAttribute("data-line");
+		
+	if (theClickedThing.id == "cover"){
+		if (settingsContainerVisibility==1){toggleSettingsContainer(); return;}
+		if (trackingContainerVisibility==1){toggleTrackingContainer(); return;}
+	}
+	if (theClickedThing.id == "helpButton"){toggleSettingsContainer(); return;}
+	if (theClickedThing.id == "characterButton"){toggleTrackingContainer(); return;}
+		
+	if (gotoIndex) {
+		Beat.call("Beat.scrollTo(" + gotoIndex + ")")
+		return;
+	}
+
+	//debugContainer.innerHTML += "if you see this, there was no gotoIndex and thus no return. You clicked " + theClickedThing.classList + theClickedThing.getAttribute("data-line")  + "<br/>";
+	
+}
+
+function selectAllElements(altWasPressed) {
+	let allElements = document.querySelectorAll("[data-elementCount]")
+	for (element of allElements){
+		if (![...element.classList].includes("dimmedScene") && ![...element.classList].includes("dimmedSection")){
+			if(altWasPressed && [...element.classList].includes("section")){continue}
+		element.classList.add("isSelected")
+		}
+	}
+}
+
+// Below is a function stolen from https://davidwalsh.name/javascript-debounce-function
+
+// Returns a function, that, as long as it continues to be invoked, will not be triggered. 
+// The function will be called after it stops being called for N milliseconds. 
+// If `immediate` is passed, trigger the function on the leading edge, instead of the trailing.
+
+function debounce(func, wait, immediate) {
+	var timeout;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+};
+
+</script>
+
