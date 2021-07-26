@@ -1,7 +1,7 @@
 /*
 
 Name: Cherry-Pick Scenes
-Version: 1.1
+Version: 1.2
 Copyright: Lauri-Matti Parppei 2021
 Description: Create a new document with selected scenes
 
@@ -37,7 +37,7 @@ Beat.htmlPanel(ui, 600,500, function(data) {
 			
 			if (index >= 0) {
 				let scene = scenes[index]
-				const sceneText = script.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";
+				const sceneText = script.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";				
 				text += sceneText
 			}
 		}

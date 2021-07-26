@@ -54,7 +54,7 @@
 	table.innerHTML = data
 
 	for (let scene of data) {
-		let line = "<tr id='scene-" + scene.index + "' sceneName='" + scene.name + "'><td class='sceneCheck'><input type='checkbox' name='scene-"+ scene.index +"'' rel='beat'></td><td class='sceneNumber' onclick='clickRow(this)'>" + scene.sceneNumber + "</td><td onclick='clickRow(this)' class='sceneName'>" + scene.name + "</td></tr>\n"
+		let line = "<tr id='scene-" + scene.index + "' sceneNumber='" + scene.sceneNumber + "' sceneName='" + scene.name + "'><td class='sceneCheck'><input type='checkbox' name='scene-"+ scene.index +"'' rel='beat'></td><td class='sceneNumber' onclick='clickRow(this)'>" + scene.sceneNumber + "</td><td onclick='clickRow(this)' class='sceneName'>" + scene.name + "</td></tr>\n"
 
 		html += line
 	}
@@ -75,8 +75,9 @@
 
 		for (const line of lines) {
 			const name = line.getAttribute("sceneName")
+			const number = line.getAttribute("sceneNumber")
 			
-			if (name.toLowerCase().indexOf(term.toLowerCase()) < 0) {
+			if (name.toLowerCase().indexOf(term.toLowerCase()) < 0 && number.toLowerCase().indexOf(term.toLowerCase()) < 0) {
 				line.className = "hidden"
 			} else {
 				line.className = ""
