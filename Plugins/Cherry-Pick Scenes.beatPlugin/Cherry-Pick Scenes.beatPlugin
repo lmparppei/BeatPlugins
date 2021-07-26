@@ -1,11 +1,13 @@
 /*
 
 Name: Cherry-Pick Scenes
-Version: 1.3
+Version: 1.4
 Copyright: Lauri-Matti Parppei 2021
 Description: Create a new document with selected scenes
 
 */
+
+Beat.openConsole()
 
 let ui = Beat.assetAsString("ui.html")
 let scenes = []
@@ -31,20 +33,59 @@ Beat.htmlPanel(ui, 600,500, function(data) {
 	const scenes = Beat.scenes()
 	const script = Beat.getText()
 
+	let includeTitlePage = false
+
 	for (const input of data.inputData) {
 		if (input.checked) {
+			// Check for title page setting
+			if (input.name == "includeTitlePage") {
+				includeTitlePage = true
+				continue
+			}
+
 			let index = parseInt(input.name.replace("scene-", ""))
 			
 			if (index >= 0) {
 				let scene = scenes[index]
-				const sceneText = script.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n";				
+				let sceneText = script.substring(scene.sceneStart, scene.sceneStart + scene.sceneLength) + "\n\n"
+
+				// Let's maintain scene numbers if they are not explicitly set
+				Beat.log(scene.line.string.indexOf("#" + scene.sceneNumber + "#"))
+				if (scene.line.string.indexOf("#" + scene.sceneNumber + "#") < 0) {
+					let heading = scene.line.string
+					if (scene.line.string.charAt(0) != ".") heading = heading.toUpperCase()
+					
+					sceneText = sceneText.replace(heading, heading + " #" + scene.sceneNumber + "#")
+				}
+				
 				text += sceneText
 			}
 		}
 	}
+	
+	if (includeTitlePage) {
+		// Get title page data
+		let parser = Beat.parser(Beat.getText())
+		let titleContent = ""
+
+		for (const item of parser.titlePage) {
+			let itemName = Object.keys(item)[0];
+			let lines = item[itemName].join("\n")
+
+			// Capitalize item
+			itemName = itemName.charAt(0).toUpperCase() + itemName.slice(1)
+
+			// Add title page line to the result
+			titleContent += itemName + ": " + lines + "\n"
+		}
+
+		// Add title page
+		text = titleContent + "\n\n\n" + text
+	}
 
 	// Remove extra line breaks
 	text = text.replace(/\n{3,}/g, '\n\n\n');
+
 	
 	// Create a new document if there is something to create it from
 	if (text.length > 1) {
