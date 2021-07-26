@@ -1,0 +1,170 @@
+<style>
+#contextmenu {
+    position: absolute;
+    background-color: rgba(192,192,192,0.95);
+    border-radius: 6px;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    padding: 6px 10px !important;
+    z-index: 9999;
+    border: 1px rgb(192, 192, 192) solid;
+    box-shadow: 5px 5px 10px rgba(0,0,0,0.3) !important;
+    min-width: 200px;
+
+    backdrop-filter: blur(10px) !important;
+}
+
+#contextmenu .visible {
+    display: block;
+}
+
+#contextmenu:not(.visible){
+    display: none;
+}
+
+#contextmenu li {
+    color: black;
+    list-style-type: none;
+    vertical-align: middle !important;
+    padding-top: 0px !important;
+}
+
+#contextmenu li:hover {
+    background-color: rgb(15,110,212);
+    color: white;
+    border-radius: 4px !important;
+    margin-left: -6px !important;
+    margin-right: -6px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+}
+
+.colorSquare {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 9px !important;
+    display: inline-block !important;
+    padding-top: 2px !important;
+    transform: translateY(3px);
+}
+
+</style>
+
+
+<div id="contextmenu" onblur="self.classList.remove('visible')"></div>
+
+<script>
+
+var colorsArray=[
+    "Remove Color",
+    "Red",
+    "Orange",
+    "Yellow",
+    "Green",
+    "Teal",
+    "Cyan",
+    "Blue",
+    "Purple",
+    "Magenta",
+    "Pink",
+    "Brown",
+    "Gray",
+    "White",
+    "Special"
+]
+
+function contextMenu(theRightClickedThing, x, y, rightClick){
+
+    a = [...theRightClickedThing.classList]
+
+    if ((rightClick) && (a.includes("sceneheading") || a.includes("section"))) {      
+        
+        if (!event.metaKey && !a.includes('isSelected')) {deselectAllElements()}
+        
+        createContextMenu()
+        theRightClickedThing.classList.add('isSelected')       
+        return
+    }
+
+
+    if ([...theRightClickedThing.classList].includes('colorListItem')) {
+
+        closeContextMenu()
+
+        let item = theRightClickedThing.id
+        if (item == "remove color") {item = "none"}
+
+        let selectedElements = document.getElementsByClassName('isSelected')
+        let elementCountArray = []
+
+            for (element of selectedElements) {
+                
+                let elementCount = element.getAttribute("data-elementCount")
+                elementCountArray.push(elementCount)
+
+            }
+        
+        weAreChangingColors = true
+        Beat.call("Beat.custom.changeElementColor(" + JSON.stringify(elementCountArray) + ", '" + item + "')")
+
+        deselectAllElements()
+    }   
+    closeContextMenu()
+}
+
+function setContextMenuPosition(event, contextMenu) {
+
+    var mousePosition = {};
+    var menuPosition = {};
+    var menuDimension = {};
+
+    menuDimension.x = window.getComputedStyle(contextMenu).width
+    menuDimension.y = window.getComputedStyle(contextMenu).height
+
+    mousePosition.x = event.pageX;
+    mousePosition.y = event.pageY;
+
+    menuPosition.x = mousePosition.x;
+
+    menuPosition.y = mousePosition.y;
+
+return menuPosition;
+}
+
+function deselectAllElements(){
+    let selectedElements = document.getElementsByClassName('isSelected')
+    let idToDeselect=[]
+    for (i=0; i < selectedElements.length; i++){
+        idToDeselect[i] = selectedElements[i].id
+    }
+    for (i=0; i < idToDeselect.length; i++){
+        document.getElementById(idToDeselect[i]).classList.remove('isSelected')
+    }
+}
+
+function createContextMenu(){    
+    let theContextMenu = document.getElementById('contextmenu')
+    theContextMenu.innerHTML = "" 
+    for (item of colorsArray) {
+        theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 
+            "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'></div>  &nbsp;&nbsp;" +
+            item + "</li>"
+    }
+
+    theContextMenu.classList.add('visible')
+    if (x + theContextMenu.offsetWidth > window.innerWidth - 20) {x = x - theContextMenu.offsetWidth}
+    if (y + theContextMenu.offsetHeight > window.innerHeight - 20) {y = y - theContextMenu.offsetHeight}
+    theContextMenu.style.top = y + "px"
+    theContextMenu.style.left = x + "px"
+
+    contextMenuIsOpen = true
+    
+}
+
+function closeContextMenu(){
+    let theContextMenu = document.getElementById('contextmenu')
+    contextMenuIsOpen = false
+    theContextMenu.classList.remove('visible')
+}
+
+</script>
