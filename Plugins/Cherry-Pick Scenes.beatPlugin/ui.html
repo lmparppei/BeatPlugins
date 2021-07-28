@@ -21,10 +21,15 @@
 	#toolbar {
 		display: flex;
 		margin-bottom: 5px;
+		align-items: center;
 	}
 
+	#includeTitlePage { margin-left: auto; }
+	#search { flex: 1; margin-right: 1rem; }
+	#pick { padding: .5rem; }
+
 	#toolbar button {
-		margin-left: auto;
+		margin-left: 1rem;
 	}
 
 	#container {
@@ -33,11 +38,12 @@
 		overflow: scroll;
 	}
 
+
 </style>
 
 <h1>Cherry-Pick Scenes</h1>
 
-<div id='toolbar'><input type='text' name='search' onkeyup='search(this)' placeholder="Search..."> <button onclick='pick()'>Pick Selected</button></div>
+<div id='toolbar'><input type='text' name='search' onkeyup='search(this)' placeholder="Search..." id='search'> <div id='includeTitlePage'><input type="checkbox" name="includeTitlePage" rel='beat'> Include Title Page</div> <button onclick='pick()'>Pick Selected</button></div>
 
 <div id='container'>
 	<table id='scenes'>
@@ -54,7 +60,7 @@
 	table.innerHTML = data
 
 	for (let scene of data) {
-		let line = "<tr id='scene-" + scene.index + "' sceneName='" + scene.name + "'><td class='sceneCheck'><input type='checkbox' name='scene-"+ scene.index +"'' rel='beat'></td><td class='sceneNumber' onclick='clickRow(this)'>" + scene.sceneNumber + "</td><td onclick='clickRow(this)' class='sceneName'>" + scene.name + "</td></tr>\n"
+		let line = "<tr id='scene-" + scene.index + "' sceneNumber='" + scene.sceneNumber + "' sceneName='" + scene.name + "'><td class='sceneCheck'><input type='checkbox' name='scene-"+ scene.index +"'' rel='beat'></td><td class='sceneNumber' onclick='clickRow(this)'>" + scene.sceneNumber + "</td><td onclick='clickRow(this)' class='sceneName'>" + scene.name + "</td></tr>\n"
 
 		html += line
 	}
@@ -75,8 +81,9 @@
 
 		for (const line of lines) {
 			const name = line.getAttribute("sceneName")
+			const number = line.getAttribute("sceneNumber")
 			
-			if (name.toLowerCase().indexOf(term.toLowerCase()) < 0) {
+			if (name.toLowerCase().indexOf(term.toLowerCase()) < 0 && number.toLowerCase().indexOf(term.toLowerCase()) < 0) {
 				line.className = "hidden"
 			} else {
 				line.className = ""
