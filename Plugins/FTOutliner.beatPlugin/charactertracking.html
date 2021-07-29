@@ -136,6 +136,7 @@ li {
     <div id="selectlistparent" class="rightfloat" style="height: calc(100% - 40px) !important; text-align: right !important;">
     <select style="height: 100% !important;" multiple onchange="updateFilter()" id="characterMenuList"></select><br/>
     <button id="deselectAllCharacters" onclick="deselectAllCharacters()">Deselect all</button>
+
     </div>
 
     <div  id="trackertext"><p class="normalWindowText"><span class="headline">Track characters</span><br/><br/>
@@ -181,10 +182,21 @@ function collectCharacters() {
 
 function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
 
-    if ((!scenesWithCharacters.length) && (scenesWithCharacters != scenesWithCharactersProxy)){
+    if ((!scenesWithCharacters.length) || (scenesWithCharacters != scenesWithCharactersProxy)){
+
+    let previouslySelectedCharacters
+    let reselectThese = []
 
         let itemNumber = 0
         scenesWithCharacters = scenesWithCharactersProxy //workaround to make this globally accessible
+
+        if (document.getElementById("characterMenuList").selectedOptions){
+             
+            previouslySelectedCharacters = document.getElementById("characterMenuList").selectedOptions
+            for (character of previouslySelectedCharacters){
+                reselectThese.push(character.value)
+            }
+        }
 
         document.getElementById("characterMenuList").innerHTML = "" 
 
@@ -196,6 +208,19 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
                 item +
                 "</option>"
         }
+
+        if (reselectThese.length){
+
+            for (character of reselectThese){
+                for (i = 0; i < characterMenuList.length; i++){
+                    if (characterMenuList[i].value == character){
+                        characterMenuList.options[i].selected = true;
+                    }
+                }
+            }
+        }
+
+
     }
     if (iCameFromToggleCharacter != -1){
         toggleSoloCharacter(iCameFromToggleCharacter)

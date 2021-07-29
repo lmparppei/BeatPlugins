@@ -1,0 +1,11 @@
+CHANGELOG
+
+v 1.01 (July 29, 2021)
+=====================
+* FIX: If screenplay does not start with an #ACT, scenes and ##sequences before any #ACT will now be stacked vertically too
+* IMPROVED: Character list updates every time the Tracking dialog is opened, with any character already currently selected for tracking automatically reselected.
+
+
+v 1.0 (July 27, 2021)
+=====================
+Initial release

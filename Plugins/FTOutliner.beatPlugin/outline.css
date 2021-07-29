@@ -142,7 +142,7 @@ body {
 
     flex-grow: 1 !important;
 	flex-basis: 0 !important;
-	min-width: 0 !important; /*without this, flex-boxes with long titles will get wider than those with short titles*/
+	min-width: 0px !important; /*without this, flex-boxes with long titles will get wider than those with short titles*/
 	}
 
 /* .section * {
@@ -184,8 +184,9 @@ p{
 	/*min-height: calc(var(--fixedHeight) * calc(1 - var(--proportionalScenes))) !important;*/
     
     flex-grow: 1 !important;
+	/* flex-wrap: wrap !important; */
 	flex-basis: 0 !important;
-    min-width: 0 !important;
+    min-width: 0px !important;
 
 	position: relative; /* DO CHANGE BACK IF RELATIVE/ABSOLUTE POSITIONING OF INDICATOR FAILS!*/
 	}
@@ -306,7 +307,7 @@ p{
 	text-align: center;
 	line-height: 30px !important;
 	background-image: none;
-	/* border: 1px solid orange !important; */
+	/*border: 4px solid orange !important; */
 	border: 0px none !important;
 
 	overflow: visible !important;
@@ -316,7 +317,7 @@ p{
 
 	flex-grow: 1 !important;
 	flex-basis: 0 !important;
-	min-width: 0 !important;
+	min-width: 0px !important;
 	}
 	
 .level2, .level3, .level4, .level5 {

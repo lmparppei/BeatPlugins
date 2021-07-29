@@ -43,7 +43,6 @@ var classListArray = []
 var contextMenuIsOpen = false
 var weAreChangingColors = false
 
-
 // GLOBAL DEFAULT VARIABLES
 
 var areScenesProportional, whatAreSceneLengths, whatAreSceneNumbers, whatArePageNumbers, isRealTimeOn
@@ -65,6 +64,8 @@ var lengthOfSceneInEights = [];
 var outlineElementNumber
 var actNumber, endElement
 var location, length 
+
+var firstLineThatIsNoSynopsis = 0
 
 var someoneResizedTheWindow = debounce(function() {
 	theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
@@ -245,6 +246,7 @@ function makeDivsFromOutline(startElement, endElement){
 	currentSectionDepth = 0
 	previousSectionDepth = 0
 	divDepth = 0
+	firstLineThatIsNoSynopsis = 0
 
 	// NOTE: the following is in preparation for only replacing SOME divs, when changes are made
 	// inside a scene only. But as discussed elsewhere, I'm not sure that will speed anything up.
@@ -266,7 +268,10 @@ function makeDivsFromOutline(startElement, endElement){
 				theOutputLines[outlineElementNumber] = makeHeadingDiv(currentLine, outlineElementNumber)
 				lastElementNumberThatWasHeading = outlineElementNumber
 				break;
-			// case "Synopse":
+			 case "Synopse":
+				if (currentSectionDepth == 0) {
+					 firstLineThatIsNoSynopsis ++
+				}
 			// 	if(lastElementNumberThatWasHeading){
 			// 		theOutputLines[lastElementNumberThatWasHeading] = theOutputLines[lastElementNumberThatWasHeading].substr(0,theOutputLines[lastElementNumberThatWasHeading].length - 6)
 			// 		theOutputLines[lastElementNumberThatWasHeading] += 
@@ -276,7 +281,7 @@ function makeDivsFromOutline(startElement, endElement){
 			// 			currentLine.string + 
 			// 			"</text></div>"
 			// 		}
-			// 	break;
+			 	break;
  		}
  	} 
 
@@ -301,6 +306,12 @@ function makeSectionDiv(currentLine, outlineElementNumber){
 		//Note: should look to see that they are consecutive; weird things happen if another stray # is present within the 10 characters
 
 	theLineToReturn=""
+
+		if (outlineElementNumber == firstLineThatIsNoSynopsis && currentSectionDepth > 1){ //ADD FAUX ACT if screenplay starts w/ section lower than act
+			previousSectionDepth = 1
+			divDepth ++
+			theLineToReturn = "<div class='section level1'><p class='noOverflow text-shift sectiontext clickThru'>&nbsp;</p>"
+		}
 
 		//FIRST: Close the previous DIV(s) if we're in a lower now
 		if (previousSectionDepth >= currentSectionDepth){
@@ -358,6 +369,11 @@ function makeSectionDiv(currentLine, outlineElementNumber){
 function makeHeadingDiv(currentLine, outlineElementNumber){
 			
 			let theLineToReturn = "";
+
+			if (currentSectionDepth == 0 && outlineElementNumber == firstLineThatIsNoSynopsis){ //ADD FAUX ACT if screenplay starts w/ scene
+					currentSectionDepth = 1
+					divDepth ++
+					theLineToReturn = "<div class='section level1'><p class='noOverflow text-shift sectiontext clickThru'>&nbsp;</p>"				}
 	
 			var theSceneNumber = currentLine.sceneNumber;
 			var thisLinesIndex = currentLine.sceneStart;
@@ -594,7 +610,7 @@ document.getElementById("buttonForOneColumnOutline").checked = (oneColumnOutline
 
 function checkWhatKeyGotPressed(someoneJustPressed) {
 	
-	//if (someoneJustPressed.key == "Enter") {event.preventDefault(); toggleDebugContainer()} // My OTHER private console. Everyone needs two.
+	//if (someoneJustPressed.key == "Enter") {event.preventDefault(); toggleDebugContainer()} // My private console.
 	if (someoneJustPressed.key == "Escape" && settingsContainerVisibility == 1) {event.preventDefault(); toggleSettingsContainer(); return false}
 	if (someoneJustPressed.key == "Escape" && trackingContainerVisibility == 1) {event.preventDefault(); toggleTrackingContainer(); return false}
 	if (someoneJustPressed.key == "Escape" && characterMenuList.selectedIndex != -1) {event.preventDefault(); deselectAllCharacters(); return false}
