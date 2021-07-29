@@ -1,12 +1,14 @@
 # Beat Plugins
 
-This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/).
+This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/). 
 
-To install plugins, open Beat and navigate to *Tools → Plugin Library...* (*Manage Plugins* in older versions). You can download official plugins right from the app. To install custom ones or create your own, click on the folder icon to open the plugin folder.
+These official and verified plugins can be downloaded directly inside the app. To browse the available plugins, open Beat and click *Tools → Plugin Library...*. 
 
-If you write your own plugin, feel free to submit it either through pull request or e-mail. Sometimes, some of the stuff documented here might only work in the latest development build. 
+To install custom plugins or create your own, click on the folder icon to open the plugin folder. Then just drag & drop a plugin container into the folder, and you are all set.
 
-Official plugins in this repository are released under **MIT License**.
+If you write your own plugin, feel free to submit it either through a pull request or e-mail. 
+
+Official plugins in this repository are released under **MIT License**. 
 
 
 ---
@@ -17,7 +19,7 @@ Plugins are written in JavaScript. Beat provides a simple API to interact with t
 
 A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing script file by the same name (ie. `Plugin.beatPlugin/Plugin.beatPlugin`. In the folder model, plugins can access supporting asset files, such as HTML templates.
 
-The included sample plugin demonstrates basic logic behind plugins.
+The included sample plugin demonstrates basic logic behind plugins. Documentation below is updated alongside new versions of the app. The best way learn plugin development is to study the existing ones.
 
 
 ## Basics
@@ -559,7 +561,6 @@ There are some property/method inconsistencies between the normal Beat parser ac
   
 
 # Plugin Guidelines
-
 
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly, especially if they make any changes to the screenplay itself. Try to take edge cases into account.
 
