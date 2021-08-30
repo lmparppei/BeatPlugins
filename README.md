@@ -75,42 +75,42 @@ See the example below to get an idea on how advanced modals work.
 
 ```
 Beat.modal({
-	title: "This is a test modal",
-	info: "You can input stuff into multiple types of fields",
-	items: [
-		{
-			type: "text",
-			name: "characterName",
-			label: "Character Name",
-			placeholder: "First Name"
-		},
-		{
-			type: "dropdown",
-			name: "characterRole",
-			label: "Role",
-			items: ["Protagonist", "Supporting Character", "Other"]
-		},
-		{
-			type: "space"
-		},
-		{
-			type: "checkbox",
-			name: "important",
-			label: "This is an important character"
-		},
-		{
-			type: "checkbox",
-			name: "recurring",
-			label: "Recurring character"
-		}
-	]
+    title: "This is a test modal",
+    info: "You can input stuff into multiple types of fields",
+    items: [
+        {
+            type: "text",
+            name: "characterName",
+            label: "Character Name",
+            placeholder: "First Name"
+        },
+        {
+            type: "dropdown",
+            name: "characterRole",
+            label: "Role",
+            items: ["Protagonist", "Supporting Character", "Other"]
+        },
+        {
+            type: "space"
+        },
+        {
+            type: "checkbox",
+            name: "important",
+            label: "This is an important character"
+        },
+        {
+            type: "checkbox",
+            name: "recurring",
+            label: "Recurring character"
+        }
+    ]
 }, function(response) {
-	if (response) {
-		// The user clicked OK
-		Beat.log(JSON.stringify(response))
-	} else {
-		// The user clicked CANCEL
-	}
+    if (response) {
+        // The user clicked OK
+        Beat.log(JSON.stringify(response))
+    } else {
+        // The user clicked CANCEL
+    }
 })
 ```
 
@@ -168,7 +168,7 @@ Any changes you make are directly represented in the `Line` objects. That's why 
 
 `Beat.lines()` array contains all the lines in the script as objects. This is not a copy of the array, but the actual line array from parser. A line object contains multiple values, including but not limited to:
 
-`line.string` —	string content  
+`line.string` — string content  
 `line.position` — starting index of line  
 `line.textRange` — range of the line (`{ location: ..., range: ... }`)  
 `line.range` — full location and length INCLUDING line break  
@@ -184,9 +184,9 @@ Any changes you make are directly represented in the `Line` objects. That's why 
 Iterate through lines:
 ```
 for (const line of Beat.lines()) {  
-	// Do something  
+    // Do something  
 }  
-```	
+``` 
 
 
 ### Scenes
@@ -202,18 +202,18 @@ for (const line of Beat.lines()) {
 `scene.storylines` — storylines for the scene  
 `scene.sectionDepth` – depth of a section element  
 `scene.typeAsString()` — scene type (heading, section, synopse)  
-	
+    
 Iterate through the outline (includes sections and synopsis markers):  
 ```
 for (const scene of Beat.outline()) {
-	// ...
+    // ...
 }
 ```
 
 Iterate through **scenes only**:  
 ```
 for (const scene of Beat.scenes()) {
-	// ...
+    // ...
 }
 ```
 
@@ -237,10 +237,10 @@ const paginator = Beat.paginator() // Create new paginator instance
 const scenes = Beat.scenes()
 
 for (const scene of scenes) {
-	const lines = Beat.linesForScene(scene)
-	paginator.paginateLines(lines)
-	
-	let eights = paginator.lengthInEights() // Returns [pages, eights]
+    const lines = Beat.linesForScene(scene)
+    paginator.paginateLines(lines)
+    
+    let eights = paginator.lengthInEights() // Returns [pages, eights]
 }
 ``` 
 
@@ -274,9 +274,9 @@ Runs whenever the screenplay is edited, and receives location and length of the 
 
 ```
 Beat.onTextChange(
-	function (location, length) {
-		Beat.log("Edited at " + location + " (length: " + length +")")
-	}
+    function (location, length) {
+        Beat.log("Edited at " + location + " (length: " + length +")")
+    }
 );
 ```
 
@@ -286,9 +286,9 @@ You can listen to selection changes with `setSelectionUpdate()`. Note that this 
 
 ```
 Beat.onSelectionChange(
-	function (location, length) {
-		Beat.log("Selection changed to " + location + "/" + length)
-	}
+    function (location, length) {
+        Beat.log("Selection changed to " + location + "/" + length)
+    }
 )
 ```
 
@@ -298,11 +298,11 @@ Beat.onSelectionChange(
 
 ```
 Beat.onOutlineChange(
-	function (...outline) {
-		for (let i=0; i < outline.length; i++) {
-			// Do something with the new outline
-		}
-	}
+    function (...outline) {
+        for (let i=0; i < outline.length; i++) {
+            // Do something with the new outline
+        }
+    }
 )
 ```
 
@@ -317,9 +317,9 @@ This should only be used for updating something in your UI. For example, if you 
 ```
 const scenes = Beat.outline()
 Beat.onSceneIndexUpdate(
-	function (sceneIndex) {
-		let currentScene = scenes[sceneIndex]
-	}
+    function (sceneIndex) {
+        let currentScene = scenes[sceneIndex]
+    }
 )
 ```
 
@@ -331,9 +331,9 @@ To avoid strange loops, you can disable the listeners when needed:
 
 ```
 Beat.onTextChange(function (len, loc) {
-	Beat.onTextChangeDisabled = true
-	Beat.replaceRange(0,0, "Hello World! ")
-	Beat.onTextChangeDisabled = false
+    Beat.onTextChangeDisabled = true
+    Beat.replaceRange(0,0, "Hello World! ")
+    Beat.onTextChangeDisabled = false
 })
 ```
 
@@ -355,7 +355,7 @@ When using a **resident plugin**, you can set a timer for a single interval. The
 
 ```
 Beat.timer(1.0, function () {
-	Beat.log("One second elapsed.")
+    Beat.log("One second elapsed.")
 })
 ```
 
@@ -385,22 +385,22 @@ The `callback` function receives an object, which contains two keys, `data` and 
 
 ```
 Beat.htmlPanel(
-	"<h1>Hello World</h1>\
-	<input type='text' rel='beat' name='textInput'>\
-	<script>Beat.data = { 'hello': 'world' }</script>",
-	600, 300,
-	function (result) {
-		/*
-		
-		In this case, callback receives:
-		result = {
-			data: { hello: 'world' },
-			inputData: { name: 'textInput', value: '' }
-		}
-		
-		*/
-		Beat.end()
-	}
+    "<h1>Hello World</h1>\
+    <input type='text' rel='beat' name='textInput'>\
+    <script>Beat.data = { 'hello': 'world' }</script>",
+    600, 300,
+    function (result) {
+        /*
+        
+        In this case, callback receives:
+        result = {
+            data: { hello: 'world' },
+            inputData: { name: 'textInput', value: '' }
+        }
+        
+        */
+        Beat.end()
+    }
 )
 ```
 
@@ -424,17 +424,17 @@ The biggest difference to `htmlPanel` is, that you can transfer data in real tim
 
 ```
 let htmlWindow = Beat.htmlWindow(
-	"<div id='ctx'></div>\
-	<script>\
-		let ctx = document.getElementById('ctx')\
-		Beat.call(\"Beat.log('Hello world')\")
-	</script>", 
-	300, 200,
-	function () { Beat.end() }
+    "<div id='ctx'></div>\
+    <script>\
+        let ctx = document.getElementById('ctx')\
+        Beat.call(\"Beat.log('Hello world')\")
+    </script>", 
+    300, 200,
+    function () { Beat.end() }
 )
 
 Beat.setUpdate(function (loc, len) {
-	htmlWindow.runJS("ctx.innerHTML += 'change at " + loc + ' (length ' + len + ")<br>'")
+    htmlWindow.runJS("ctx.innerHTML += 'change at " + loc + ' (length ' + len + ")<br>'")
 })
 ```
 
@@ -471,7 +471,7 @@ Inside **HTML panel**, set `Beat.data` object to be another object. This object 
 HTML code:  
 ````
 <script>
-	Beat.data = { customData: "This will be sent to the callback." }
+    Beat.data = { customData: "This will be sent to the callback." }
 </script>
 <button onclick='sendBeatData()'>Send Data</button>
 ````
@@ -479,8 +479,8 @@ HTML code:
 Plugin code:  
 ````
 Beat.htmlPanel(html, 400, 400, function (htmlData) {
-	// We will now receive any data set in the HTML panel
-	Beat.alert("This is what we got:", htmlData.data.customData)
+    // We will now receive any data set in the HTML panel
+    Beat.alert("This is what we got:", htmlData.data.customData)
 })
 ````
 
@@ -501,7 +501,7 @@ HTML:
 Plugin:  
 ```
 function hello() {
-	Beat.alert("Hello World")
+    Beat.alert("Hello World")
 }
 ```
 
@@ -510,9 +510,9 @@ function hello() {
 Plugin:  
 ```
 Beat.custom = {
-	hello: function () {
-		Beat.alert("Hello World!")
-	}
+    hello: function () {
+        Beat.alert("Hello World!")
+    }
 }
 ```
 
@@ -565,15 +565,15 @@ const lines = Beat.lines()
 
 // Dispatch to a background thread
 Beat.dispatch(function () {
-	// Do something with the data
-	for (let line of lines) {
-		// ...
-	}
+    // Do something with the data
+    for (let line of lines) {
+        // ...
+    }
 
-	// Return results to the main thread (UI)
-	Beat.dispatch_sync(function () {
-		htmlWindow.setHTML("Results: ... ")
-	})
+    // Return results to the main thread (UI)
+    Beat.dispatch_sync(function () {
+        htmlWindow.setHTML("Results: ... ")
+    })
 })
 ```
 
@@ -584,7 +584,7 @@ Most of the methods here are wrappers for the parser associated with current doc
 ```
 let parser = Beat.currentParser
 for (let line of parser.lines) {
-	//...
+    //...
 }
 ``` 
 
@@ -594,7 +594,7 @@ You can also create a new, static parser to parse external Fountain files, with 
 let parser = Beat.parser(stringToParse)
 
 for (let line of parser.lines) {
-	// ...
+    // ...
 }
 ```
 
