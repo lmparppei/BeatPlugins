@@ -64,8 +64,57 @@ Have fun and make something useful!
 `Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string  
 `Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
-For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
+For more elaborate inputs it is wiser to use `Beat.htmlPanel()` or `Beat.modal()`.  
   
+  
+### Advanced Modal Windows
+
+You can create more advanced modal windows with multiple types of inputs using `Beat.modal()`. It takes in an object with the following properties: `title` (title of the modal), `info` (informative text) and `items: []` (an array of inputs).
+
+See the example below to get an idea on how advanced modals work.
+
+```
+Beat.modal({
+	title: "This is a test modal",
+	info: "You can input stuff into multiple types of fields",
+	items: [
+		{
+			type: "text",
+			name: "characterName",
+			label: "Character Name",
+			placeholder: "First Name"
+		},
+		{
+			type: "dropdown",
+			name: "characterRole",
+			label: "Role",
+			items: ["Protagonist", "Supporting Character", "Other"]
+		},
+		{
+			type: "space"
+		},
+		{
+			type: "checkbox",
+			name: "important",
+			label: "This is an important character"
+		},
+		{
+			type: "checkbox",
+			name: "recurring",
+			label: "Recurring character"
+		}
+	]
+}, function(response) {
+	if (response) {
+		// The user clicked OK
+		Beat.log(JSON.stringify(response))
+	} else {
+		// The user clicked CANCEL
+	}
+})
+```
+
+
 
 ### Save Plugin Defaults
 
@@ -521,8 +570,8 @@ Beat.dispatch(function () {
 		// ...
 	}
 
-	// Return the results to UI in main thread
-	dispatch_sync(function () {
+	// Return results to the main thread (UI)
+	Beat.dispatch_sync(function () {
 		htmlWindow.setHTML("Results: ... ")
 	})
 })
