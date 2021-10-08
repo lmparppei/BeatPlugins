@@ -559,9 +559,10 @@ Using background threads in plugins is highly experimental and unrecommended, bu
 
 Example:  
 ```
-// Load any required data
-const scenes = Beat.scenes()
-const lines = Beat.lines()
+// Load any required data and make a copy of the array, 
+// so it won't be mutated while you are in a background thread
+const scenes = [... Beat.scenes()]
+const lines = [... Beat.lines()]
 
 // Dispatch to a background thread
 Beat.dispatch(function () {
