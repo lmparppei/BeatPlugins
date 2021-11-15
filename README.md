@@ -606,8 +606,8 @@ There are some property/method inconsistencies between the normal Beat parser ac
 `parser.scenes` — scene objects only *(**note**: property, not a method)*  
 `parser.titlePage` — title page elements  
 `parser.linesInRange({ location: x, length: y })` — get all lines in the selected range *(**note:** parameter has to be a range object)*  
-`parser.lineAtIndex(index)` — get line item at given character index  
-`parser.sceneAtIndex(index)` — get outline item at given character index  
+`parser.lineAtPosition(index)` — get line item at given character index (`.lineAtIndex()` prior to 1.90.4)  
+`parser.sceneAtPosition(index)` — get outline item at given character index (`.sceneAtIndex()` prior to 1.90.4)  
   
 
 # Plugin Guidelines
