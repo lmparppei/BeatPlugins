@@ -13,6 +13,12 @@ Official plugins in this repository are released under **MIT License**.
 
 ---
 
+## Documentation has moved to Wiki
+
+The documentation below might be outdated. See **[Plugin Wiki](https://github.com/lmparppei/BeatPlugins/wiki)** for up-to-date documentation of the Beat Plugin API!
+
+---
+
 #  Beat Plugin API
 
 Plugins are written in JavaScript. Beat provides a simple API to interact with the app.
