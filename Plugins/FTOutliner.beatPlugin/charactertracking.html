@@ -1,0 +1,347 @@
+<style>
+
+#tracking * {
+ /* transition: 1s !important; */
+ line-height: 16px !important;
+ white-space: normal;
+}
+
+.dimmedScene, .dimmedScene > p .padlockIcon {
+    /* opacity: 10% !important; */
+    background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important;
+    color: rgba(0,0,0,0.2) !important;
+    fill: rgba(0,0,0,0.2) !important;
+    transition: 0s !important;
+}
+
+.dimmedScene:hover, .dimmedScene:hover > p {
+    color: rgba(255,255,255,0.4) !important;
+}
+
+.section:not(.level1).dimmedSection:not(#flexiContainer.synopsisForSectionsIsOn .dimmedSection) {
+    
+    border-color:rgba(0, 0, 0, 0) !important;
+    background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
+    color:rgba(255, 255, 255, 0.10) !important;
+    /* border: 1px solid lime !important; */
+}
+
+.dimmedSection>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+    background-color: rgba(0,0,0,0) !important;
+}
+.section:not(.level1).dimmedSection:hover>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+    background-color: rgba(40,40,40,1) !important;
+}
+
+.rightfloat{
+    float: right;
+    width: 50% !important;
+    height: 100% !important; 
+    padding-right: 0px !important;
+}
+
+#tracking button {
+    text-align: right;
+}
+
+.buttonIsActive {
+    opacity: 100% !important;
+    /* transform: scale(0.8) !important; */
+}
+
+svg {
+    transition: 0.2s !important;
+    pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
+}
+
+.buttonIsActive svg {
+    transform: scale(0.7) translateY(5px) !important;
+    pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
+
+}
+
+#indexCardButton.buttonIsActive svg {
+    transform: scale(0.8) translateY(1.5px) !important;
+}
+
+.bullets {
+    margin-left: 20px;
+}
+
+.bullets::before{
+    content: "•";
+    margin-left: -20px;
+}
+
+#upperframe, #trackingoutro{
+    max-width: 560px;
+    margin-left: auto;
+	margin-right: auto;
+}
+
+#selectedCharacterName, #indexCardText{
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 10px;
+    text-transform: uppercase;
+    transform: translateY(calc(-100% - 25px)) translateX(calc(-50% + 16px));
+    /*transform: translateX(-50%);*/
+    width: 60px !important;
+    /* border: red 1px solid; */
+    /*border-right: red 1px solid; */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
+}
+
+#indexCardText{
+    transform: translateY(calc(-100% - 29px)) translateX(calc(-50% + 16px));
+
+}
+
+select, select * {
+
+    height: 100% !important;
+    width: 90% !important;
+    border-radius: 6px !important;
+    border: 1px inset;
+
+    overflow-y: scroll;
+    overflow-x: hidden;
+
+    font-size: 14px !important;
+	line-height: 18px !important;
+	font-weight: 500;
+
+    padding: 10px !important;
+
+    list-style-position: outside;
+}
+
+option {
+    line-height: 18px !important;
+}
+
+.normalWindowText li {
+    list-style-position: outside !important;
+}
+
+ul {
+    margin-left: -20px;
+}
+
+li {
+    /* padding: auto !important; */
+    margin-top: 6px !important;
+    display: list-item !important;
+    list-style-position: outside !important;
+}
+
+#okbutton2, #deselectAllCharacters {
+	font-size: 14px; 
+    margin-top: 15px; 
+    margin-bottom: 15px !important;
+	padding: 5px 0px 5px auto;
+}
+
+.scriptTextInWindow {
+    font-family:'Courier Prime','Courier New', Courier, monospace; 
+    font-size: 13.5px !important;
+    font-weight: bold;
+    letter-spacing: -0.3px;
+    padding-bottom: 0px !important;
+    padding-top: 1px !important;
+    line-height: 16px !important;
+    /* background-color: white; */
+}
+
+</style>
+
+<div id="tracking" class="settingsWindow" style="display: none;" onblur="toggleTrackingContainer()">
+   
+    <div id="upperframe">
+
+    <div id="selectlistparent" class="rightfloat" style="height: calc(100% - 40px) !important; text-align: right !important;">
+    <select style="height: 100% !important;" multiple onchange="updateFilter()" id="characterMenuList"></select><br/>
+    <button id="deselectAllCharacters" onclick="deselectAllCharacters()">Deselect all</button>
+
+    </div>
+
+    <div  id="trackertext"><p class="normalWindowText"><span class="headline">Track characters</span><br/><br/>
+
+        Select one or more characters to highlight scenes where they appear.<br/><br/>
+        <div id="hints">
+        <b>HINTS:</b>
+        <ul>
+        <li>To highlight your nine most frequent characters without opening this dialog, use keys 1&mdash;9. <br/>Deselect all highlights with 0 (zero).</li>
+        <li>To select two or more characters simultaneously, hold CMD while pressing the second character name</li>
+        <li>When more than one character is selected, scenes with BOTH (ALL) characters present are highlighted.</li>
+        <li>You can also open (and dismiss) this dialog by pressing T for ”track characters”.</li>
+        </ul>
+        </div>
+    </p>
+    </div>
+    
+    </div>
+    <div id="trackingoutro">
+        <br/>
+        <hr/>
+        <span class="shortcutText">
+        <b>NOTE: </b><br/>
+        Characters must be speaking at least once to appear in the list. Once they do, they are also recognized when mentioned in an action element.<br/>
+        To avoid false positives with names that are referred to in a scene where they are not present, as in <span class="scriptTextInWindow">she grabs the gun Frank gave her</span>, adding two asterisks inside a name <span class="scriptTextInWindow">(Fra**nk)</span> will allow it to pass under the radar without affecting the printed/exported text.
+    </div>
+    <div>
+        <br/>
+        <p id="okbuttonpara2" style="text-align: right;"><button id="okbutton2" type="button" onclick="toggleTrackingContainer()">Close</button></p>
+    </div>
+</div>
+
+
+<script>
+
+var iCameFromToggleCharacter = -1
+var scenesWithCharacters = []
+
+function collectCharacters() {
+    //first request the data, then have plugin send that data into makeCharacterMenu
+    Beat.call("Beat.custom.addCharacterClasses()")
+}
+
+function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
+
+    if ((!scenesWithCharacters.length) || (scenesWithCharacters != scenesWithCharactersProxy)){
+
+    let previouslySelectedCharacters
+    let reselectThese = []
+
+        let itemNumber = 0
+        scenesWithCharacters = scenesWithCharactersProxy //workaround to make this globally accessible
+
+        if (document.getElementById("characterMenuList").selectedOptions){
+             
+            previouslySelectedCharacters = document.getElementById("characterMenuList").selectedOptions
+            for (character of previouslySelectedCharacters){
+                reselectThese.push(character.value)
+            }
+        }
+
+        document.getElementById("characterMenuList").innerHTML = "" 
+
+        for (item of allCharacters){
+            itemNumber ++
+            document.getElementById("characterMenuList").innerHTML += 
+                "<option class='menuitem' value='" + item + "'>" + 
+                (itemNumber<10 ? "(" + itemNumber + ")  " : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") +
+                item +
+                "</option>"
+        }
+
+        if (reselectThese.length){
+
+            for (character of reselectThese){
+                for (i = 0; i < characterMenuList.length; i++){
+                    if (characterMenuList[i].value == character){
+                        characterMenuList.options[i].selected = true;
+                    }
+                }
+            }
+        }
+
+
+    }
+    if (iCameFromToggleCharacter != -1){
+        toggleSoloCharacter(iCameFromToggleCharacter)
+    }
+
+    document.getElementById("characterMenuList").focus()
+    //    updateFilter()
+}
+
+function updateFilter(scenesWithCharactersProxy){
+
+    let allScenes = document.getElementsByClassName('sceneheading')
+    let allSections = document.getElementsByClassName('section')
+
+    if (scenesWithCharactersProxy) {scenesWithCharacters = scenesWithCharactersProxy} //again making it global
+
+    let selectedCharacters = document.getElementById("characterMenuList").selectedOptions
+
+    if (selectedCharacters.length){
+
+        for (section of allSections){section.classList.add("dimmedSection")}
+        for (scene of allScenes){scene.classList.add("dimmedScene")}
+        
+            for (i=0; i<outline.length; i++){
+                if (outline[i].typeAsString == "Heading"){
+                    let num = outline[i].sceneNumber
+                    let removeDim = false
+                    if (scenesWithCharacters[num]){
+                        removeDim = true
+                        for (currentCharacter of selectedCharacters){
+                            let spacelessName = currentCharacter.value.replace(/ /g, "_")
+                            spacelessName = spacelessName.replace(/\'|\’|\"/g, "-")
+
+                            if (!scenesWithCharacters[num].includes(spacelessName)) {
+                            removeDim = false
+                            }
+                        }
+                    }
+                    if (removeDim == true){document.getElementById(num).classList.remove("dimmedScene")}
+                }
+            }
+    }
+    else
+    {
+        for (scene of allScenes){scene.classList.remove("dimmedScene")}
+        for (section of allSections){section.classList.remove("dimmedSection")}
+    }
+
+    if (characterMenuList.selectedIndex == -1){
+        document.getElementById("characterButton").classList.remove("buttonIsActive")
+        document.getElementById("selectedCharacterName").innerHTML = ""
+    }else{
+        document.getElementById("characterButton").classList.add("buttonIsActive")
+
+        let selectedCharacters = document.getElementById("characterMenuList").selectedOptions
+        document.getElementById("selectedCharacterName").innerHTML = ""
+        for (currentCharacter of selectedCharacters){
+            document.getElementById("selectedCharacterName").innerHTML += currentCharacter.value + "<br/>"
+        }
+    }
+}
+
+function deselectAllCharacters() {
+    characterMenuList.selectedIndex = -1; 
+    updateFilter()
+}
+
+function toggleSoloCharacter(theKey) {
+
+    theKey --
+
+    if (!characterMenuList || characterMenuList.length == 0) {
+
+        iCameFromToggleCharacter = theKey + 1
+        collectCharacters()
+        return
+    }
+
+    if (event && (event.shiftKey || event.metaKey)){
+        let a = characterMenuList.options[theKey].selected == false;
+        characterMenuList.options[theKey].selected = a;
+    }
+    else
+    {
+        if (characterMenuList.selectedIndex != theKey){
+            characterMenuList.selectedIndex = theKey 
+            }else{
+            characterMenuList.selectedIndex = -1; 
+        }
+    }
+    iCameFromToggleCharacter = -1
+    updateFilter()
+}
+
+</script>
+

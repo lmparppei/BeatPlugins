@@ -1,0 +1,605 @@
+<style>
+
+:root {
+    --note-bottom: rgba(255, 255, 0, 1);
+    --note-border: rgba(70, 70, 0, 1);
+    --note-border-light: rgb(191, 191, 2);
+}
+
+.alwaysOnTop{
+    z-index: 11000 !important;
+}
+
+.noteContainer {
+    position: relative !important;
+    float: right !important;
+     /* border: 1px red dotted;   */
+    height: 1px !important; 
+    margin-bottom: -1px !important;
+    width: auto !important;
+    pointer-events: none;
+    /* background-color: rgba(255,0,0,0.4) !important; */
+    z-index: 998 !important;
+    overflow: visible;
+
+    opacity: 1;
+}
+
+.marker {
+    background-color: transparent;
+    position: absolute;
+    right: -2px;
+    height: 0px;
+    width: 20px;
+    border-top: 6px solid grey;
+    border-bottom: 6px solid grey;
+    border-right: 7.5px solid grey;
+    border-left: 7.5px solid transparent;
+
+    box-shadow: 1.5px 1.5px 1.5px rgba(0,0,0,0.6);
+
+    pointer-events: all !important;
+}
+
+.marker::before {
+    position: absolute;
+    top: -6px;
+    left: -7px;
+    width: 19px;
+    height: 11px;
+    content: " ";
+
+    border-top: 0.5px solid white;
+    border-right: 1px solid #333;
+    border-bottom: 0.5px solid black; 
+    opacity: 0.4;
+}
+
+
+#flexiContainer.nonProportionalMode .marker {
+    background-color: transparent;
+    position: absolute;
+
+    top: 1px !important;
+    right: 2px; 
+    
+    height: 0px;
+    width: 12px;
+    border-top: 6px solid grey;
+    border-bottom: 6px solid grey;
+    border-right: 7.5px solid grey;
+    border-left: 7.5px solid transparent;
+
+    box-shadow: 0.5px 1px 1px rgba(0,0,0,0.4);
+    transform: rotate(-90deg) scaleY(0.8);
+
+    pointer-events: all !important;
+}
+
+#flexiContainer.nonProportionalMode .section>.marker {
+    top: -2px !important;
+    z-index: 9999 !important;
+}
+
+#flexiContainer.nonProportionalMode .marker:nth-of-type(2){
+    right: 2px;
+}
+#flexiContainer.nonProportionalMode .marker:nth-of-type(3){
+    right: 16px;
+}
+
+#flexiContainer.nonProportionalMode .marker::before {
+    position: absolute;
+    top: -6px;
+    left: -7px;
+    width: 14px;
+    height: 11px;
+    content: " ";
+
+    border-top: 0.5px solid white;
+    border-right: 1px solid #333;
+    border-bottom: 0.5px solid black; 
+    opacity: 0.4;
+}
+
+.marker:hover {
+    transform: translateX(-3px) scaleX(1.3);
+    transition: 0.05s; 
+}
+
+#flexiContainer.nonProportionalMode .marker:hover {
+    transform: translateY(2px) scaleY(1.3) scaleX(0.8) rotate(-90deg) !important;
+    transition: 0.1s;
+}
+
+.hideSlugIfSmall > .noteContainer {
+    height: 15px !important;
+}
+
+.note {
+
+    opacity: 0.8 !important;
+
+    position: relative !important;
+    float: left !important;
+    padding: 0 !important;
+    margin: 0 0px 0px 2px !important;
+    background-color: var(--note-bottom) !important;
+    border: 1px solid var(--note-border) !important; 
+    height: 15px !important;
+    width: 15px !important;
+    color: rgba(0,0,0,0);
+
+    z-index: 999 !important;
+    white-space: normal;
+
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%);
+
+    /* transform: rotate(-3deg);  */
+    pointer-events: all;
+    overflow: hidden;
+}
+
+#expandedNote .showSectionPageNumber{
+    font-size: 8px !important;
+    line-height: 8px !important;
+    margin-top: 2px !important;
+    padding-right: 10px !important;
+}
+
+/* .note:first-of-type {
+    margin-left: 60px !important;
+} */
+
+.selectedNote {
+	background-image: -webkit-linear-gradient(top, var(--note-border), var(--note-border)) !important; 
+    border-color: black !important; /* var(--note-bottom) !important; */
+}
+
+.note:before {
+  content: "";
+  position: absolute;
+  bottom: 0px !important;
+  right: 0px !important;
+  width: 3px !important;
+  height: 3px !important;
+  border-width: 1px 0 0 1px;
+  border-style: solid;
+  border-color: var(--note-border);
+  background-image: linear-gradient(to top left,var(--note-border) , var(--note-border) 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%); 
+}
+
+/* .note::after, .noteContainer::after, .sceneHeading::before, .sceneHeading>p::before, .sceneHeading>.showSceneNum::before{
+    clear: both;
+    display: block;
+
+} */
+
+.selectedNote:before {
+  border-color: black !important; /* var(--note-border) !important; */
+  background-image: linear-gradient(to top left,black , black 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%) !important; 
+}
+
+#expandedNote{
+
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-weight: normal !important;
+    text-align: left !important;
+    line-height: 12px !important;
+
+    opacity: 1 !important;
+
+    position: absolute;
+
+    /* height: auto; */
+    min-height: 50px;
+    
+    background-color: rgb(255,255,128);
+    color: var(--note-border);
+    border:1px solid var(--note-border);
+    border-radius: 5px !important;
+    
+    z-index: 10000 !important;
+    white-space: normal;
+    padding: 0px 8px 8px 8px !important;
+
+    background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, var(--note-border-light) 16px, var(--note-border-light) 17px) !important;
+
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.6);
+    overflow: hidden;
+
+    z-index: 11000 !important;
+}
+
+#expandedNote.omittedNote {
+
+    background-image: 	
+        repeating-linear-gradient(
+            180deg, 
+            rgba(0,0,0,0) 0%, 
+            rgba(0,0,0,0) 16px, 
+            var(--note-border-light) 16px, 
+            var(--note-border-light) 17px),
+        repeating-linear-gradient(
+			-45deg,
+			rgba(0,0,0,0.1) 0px,
+			rgba(0,0,0,0.1) 3px,
+			rgba(255,255,255,0.2) 3px,
+			rgba(255,255,255,0.2) 6px)
+            
+    !important; 
+}
+
+#expandedNote text{
+    font-size: 14px !important;
+    line-height: 17px !important;
+    margin-top: -3px; 
+    padding-top: 17px;
+    padding-bottom: 6px;
+    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    white-space: normal;
+    text-decoration: underline dotted var(--note-border);
+    display: block;
+}
+
+#expandedNote b{
+    font-size: 12px !important;
+    padding: 5px 9px 2px 9px;
+    margin: 0px -9px 0px -9px; 
+    line-height: 12px !important;
+    background-color: hsl(60, 50%, 50%);
+    color:var(--note-border);
+    display: block;
+    text-align: left;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trashNote {
+    height: 16px !important;
+    width: 16px !important;
+    line-height: 12px !important;
+    float: right !important;
+    /* border: 1px red solid !important;  */
+    overflow: visible !important;
+    margin-top: -3px !important;
+    pointer-events: all;
+
+}
+
+#trashbutton{
+    fill: var(--note-border);
+    pointer-events: none;
+    opacity: 0.6 !important;
+
+}
+#trashNote:hover > #trashbutton{
+    fill: rgb(186, 0, 0) !important;
+    opacity: 1 !important;
+}
+
+
+</style>
+
+<script>
+
+var trashIcon = `
+<svg id="trashbutton" width="110%" height="110%" viewBox="0 0 166 208" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-326.426,-1615.59)">
+        <path d="M485.852,1661.14C485.605,1661.17 485.355,1661.18 485.101,1661.18L335.155,1661.18L348.262,1815.91C348.581,1819.68 351.739,1822.59 355.527,1822.59L465.477,1822.59C469.266,1822.59 472.423,1819.68 472.743,1815.91L485.852,1661.14ZM450.143,1704.86L442.106,1795.83C441.803,1799.26 444.346,1802.3 447.782,1802.6C451.218,1802.9 454.254,1800.36 454.558,1796.92L462.595,1705.96C462.898,1702.52 460.355,1699.49 456.919,1699.18C453.483,1698.88 450.447,1701.42 450.143,1704.86ZM358.017,1705.96L366.054,1796.92C366.358,1800.36 369.394,1802.9 372.83,1802.6C376.266,1802.3 378.809,1799.26 378.506,1795.83L370.469,1704.86C370.165,1701.42 367.129,1698.88 363.693,1699.18C360.257,1699.49 357.714,1702.52 358.017,1705.96ZM389.597,1705.59L392.276,1796.56C392.378,1800.01 395.26,1802.72 398.708,1802.62C402.156,1802.52 404.873,1799.64 404.771,1796.19L402.092,1705.22C401.991,1701.78 399.109,1699.06 395.661,1699.16C392.213,1699.26 389.496,1702.14 389.597,1705.59ZM418.52,1705.22L415.841,1796.19C415.74,1799.64 418.456,1802.52 421.904,1802.62C425.352,1802.72 428.234,1800.01 428.336,1796.56L431.015,1705.59C431.116,1702.14 428.399,1699.26 424.951,1699.16C421.503,1699.06 418.622,1701.78 418.52,1705.22ZM384.347,1628.53L339.471,1628.53C336.877,1628.53 334.477,1629.91 333.171,1632.15L327.417,1642.03C326.103,1644.29 326.095,1647.07 327.396,1649.33C328.696,1651.6 331.107,1652.99 333.718,1652.99L485.101,1652.99C487.711,1652.99 490.122,1651.6 491.423,1649.33C492.724,1647.07 492.715,1644.29 491.401,1642.03L485.648,1632.15C484.341,1629.91 481.942,1628.53 479.347,1628.53L436.657,1628.53C435.606,1625.84 433.63,1623.32 430.704,1621.22C426.134,1617.93 418.817,1615.59 410.502,1615.59C402.188,1615.59 394.871,1617.93 390.3,1621.22C387.375,1623.32 385.399,1625.84 384.347,1628.53Z"/>
+    </g>
+</svg>
+`
+
+var hiddenIcon = `
+    <svg class="eyeWithCrossIcon" width="100%" height="100%" viewBox="0 0 191 163" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+       <g transform="matrix(1,0,0,1,-833.494,-1274.88)">
+            <path d="M958.327,1311.65L993.025,1277.01C995.873,1274.17 1000.49,1274.17 1003.34,1277.02C1006.18,1279.87 1006.18,1284.49 1003.33,1287.33L855.049,1435.38C852.201,1438.23 847.58,1438.22 844.737,1435.37C841.894,1432.53 841.897,1427.91 844.745,1425.06L872.284,1397.57C856.288,1388.88 843.263,1376.61 834.803,1362.1C833.977,1360.66 833.978,1358.88 834.806,1357.44C851.863,1328.17 887.485,1308.03 928.625,1308.03C938.942,1308.03 948.911,1309.29 958.327,1311.65ZM983.688,1321.29C1000.27,1330.01 1013.76,1342.54 1022.45,1357.44C1023.27,1358.88 1023.27,1360.66 1022.45,1362.1C1005.39,1391.37 969.765,1411.51 928.625,1411.51C917.74,1411.51 907.241,1410.1 897.364,1407.48L910.869,1394C916.185,1396.77 922.224,1398.33 928.625,1398.33C949.907,1398.33 967.184,1381.05 967.184,1359.77C967.184,1353.39 965.632,1347.37 962.882,1342.07L983.688,1321.29ZM954.311,1350.62C955.33,1353.48 955.885,1356.56 955.885,1359.77C955.885,1374.82 943.67,1387.03 928.625,1387.03C925.404,1387.03 922.313,1386.47 919.441,1385.44L954.311,1350.62ZM945.071,1324.89L936.331,1333.62C933.887,1332.9 931.301,1332.51 928.625,1332.51C913.58,1332.51 901.365,1344.73 901.365,1359.77C901.365,1362.43 901.747,1365 902.46,1367.44L893.719,1376.16C891.376,1371.19 890.066,1365.63 890.066,1359.77C890.066,1338.49 907.344,1321.21 928.625,1321.21C934.506,1321.21 940.082,1322.53 945.071,1324.89Z"/>
+        </g>
+    </svg>
+    `
+var showIcon = `
+    <svg class= "eyeIcon" width="100%" height="100%" viewBox="0 0 191 104" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+        <g transform="matrix(1,0,0,1,-833.494,-1154.68)">
+            <g transform="matrix(1,0,0,1,0,-153.352)">
+                <path d="M834.884,1362.24C834.004,1360.71 834.004,1358.83 834.884,1357.3C851.975,1328.11 887.549,1308.03 928.625,1308.03C969.627,1308.03 1005.15,1328.04 1022.27,1357.14C1023.21,1358.77 1023.21,1360.77 1022.27,1362.4C1005.15,1391.5 969.627,1411.51 928.625,1411.51C887.549,1411.51 851.975,1391.43 834.884,1362.24ZM928.625,1321.21C949.907,1321.21 967.184,1338.49 967.184,1359.77C967.184,1381.05 949.907,1398.33 928.625,1398.33C907.344,1398.33 890.066,1381.05 890.066,1359.77C890.066,1338.49 907.344,1321.21 928.625,1321.21ZM928.625,1332.51C943.67,1332.51 955.885,1344.73 955.885,1359.77C955.885,1374.82 943.67,1387.03 928.625,1387.03C913.58,1387.03 901.365,1374.82 901.365,1359.77C901.365,1344.73 913.58,1332.51 928.625,1332.51Z"/>
+            </g>
+        </g>
+</svg>
+    `
+
+let notesDivStart
+let notesDivEnd = "</div>"
+
+function collectNotes(){
+    mylog("collectnotes")
+    Beat.call("Beat.custom.collectNotes()")
+}
+
+function displayNotes(notesData, markerData){
+
+    mylog("displayNotes")
+
+    if(notesData){globalNotesData = notesData}
+    if(markerData){globalMarkerData = markerData}
+    notesData = globalNotesData
+
+    let existingNotes = document.querySelectorAll(".note, .noteContainer")
+    if(existingNotes){
+        for (existingNote of existingNotes){
+            existingNote.remove()
+        }
+    }
+
+    if(markersAreDisplayed){displayMarkers()}
+
+    //Deleted parsing markers because already served in markerData
+    // markers = [] //resetting markers every time we re-calculate notes, since markers are just notes
+
+    for (i=0; i<notesData.length; i++){
+
+    //     let tmpString = notesData[i].string.toLowerCase()
+    //     if(tmpString.startsWith("[[marker")){
+    //         let thisMarker = {}
+    //             thisMarker.outlineElementNumber = notesData[i].outlineElementNumber
+    //             thisMarker.position = notesData[i].position
+    //             // thisMarker.color = notesData[i].string.replace(/(\[|\]|marker\s*)/g, "")
+    //             thisMarker.color = tmpString.replace("[[marker ", "").replace("]]", "")
+    //             markers.push(thisMarker)
+    //         continue
+    //     }
+
+        if(!notesAreDisplayed){continue} //because markers are piggybacking on the notes function
+
+        if(!outline[notesData[i].outlineElementNumber]){
+            mylog("i is now " + i + "but number of outline elements is: " + outline.length)
+            //THIS IS A BUGGY SITUATION THAT SHOULD NOT OCCUR, yet does at times.
+            //previously also displayed this:
+            //Beat.call("Beat.alert('trying to reference a scene that does not exist!', '"+notesData[i].outlineElementNumber+"')"); break
+        }
+        mylog("now putting in place note #" + i + "; " + outline[notesData[i].outlineElementNumber].string)
+
+        let element = document.querySelector("[data-elementCount='" + notesData[i].outlineElementNumber + "']")
+        let thisNote = notesData[i].string.replace(/(\[|\])/g, "")
+        let notesDivStart = ""
+        let notesDivEnd = ""
+        let currentContainer = 'noteContainer' + notesData[i].outlineElementNumber
+        let parentSize = element.getBoundingClientRect()
+
+        let howFarBackWasPreviousNonMarker = 1
+        while(i > 0 && notesData[i - howFarBackWasPreviousNonMarker].string.toLowerCase().startsWith("[[marker")){howFarBackWasPreviousNonMarker ++}
+
+        if (i == 0 || i > 0 && notesData[i - howFarBackWasPreviousNonMarker].outlineElementNumber != notesData[i].outlineElementNumber) {
+        //if (i == notesData.length - 1 || i < notesData.length - 1 && notesData[i+1].outlineElementNumber != notesData[i].outlineElementNumber) {
+
+            element.innerHTML += "<div id='" + currentContainer + "' class='noteContainer clickThru'>" + "</div>"
+
+            document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")// was "0px"
+
+            if ([...element.classList].includes("hideSlugIfSmall") && areScenesProportional == 1) {
+                document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
+            }
+            if (areScenesProportional != 1) {
+                document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
+                document.getElementById(currentContainer).style.float = "none"
+            }
+            if (element.id.includes("outline")) {
+                document.getElementById(currentContainer).style.top = ((-1 * parentSize.height + 1) + "px")
+                document.getElementById(currentContainer).style.marginRight = "4px"
+            }
+
+        }
+
+        let percentageBasedPosition = Math.max(((notesData[i].position - outline[notesData[i].outlineElementNumber].sceneStart) / outline[notesData[i].outlineElementNumber].sceneLength) * (parentSize.height - (15 * currentZoomLevel) - 0),0) // the minus 0 used to be -12, now taking full height into use.
+
+        notesDivStart += "<div class='note collapsed' " 
+        notesDivStart += "data-line='" + notesData[i].position + "' " 
+        notesDivStart += "data-noteNumber='" + i + "' "
+        notesDivStart += "onmouseenter='expandNote()' " 
+        notesDivStart += "onmouseleave='collapseNote()'"
+        if (areScenesProportional == 1 && !element.id.includes("outline")) {
+            notesDivStart += "style='top: " + percentageBasedPosition + "px' " 
+        }
+        notesDivStart += ">"
+
+        notesDivEnd += "</div>"
+
+        document.getElementById(currentContainer).innerHTML += notesDivStart + thisNote + notesDivEnd
+
+        mylog("end of Note Loop")
+    }
+
+  mylog("end of collect and displayNotes()")
+}
+
+function displayMarkers(){
+
+    if (globalMarkerData.length < 1){return}
+
+    let currentMarkers = document.querySelectorAll(".marker")
+        for (currentMarker of currentMarkers){currentMarker.remove()}
+
+    mylog("display markers")
+
+
+    for (let im = 0; im < globalMarkerData.length; im++){
+
+        let element = document.querySelector("[data-elementCount='" + globalMarkerData[im].outlineElementNumber + "']")
+
+        theMarkerToAddAsCode = "<div id = 'marker" + im + "' class = 'marker' data-line = '" + globalMarkerData[im].position + "'></div>" 
+        element.innerHTML += theMarkerToAddAsCode
+
+        // theMarkerToAdd = document.createElement("div")
+        // theMarkerToAdd.id = "marker" + i
+        // theMarkerToAdd.classList.add("marker")
+        // theMarkerToAdd.dataset.line = markers[i].position
+
+        //theMarkerToAdd.onmouseover = function(){element.parentNode.classList.add("noHover")}
+        //theMarkerToAdd.onmouseout = function(){element.parentNode.classList.remove("noHover")}
+
+        theMarkerToAdd = document.getElementById("marker" +  im)
+
+        if (globalMarkerData[im].color && globalMarkerData[im].color != ""){
+            theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
+            theMarkerToAdd.style.borderTopColor = globalMarkerData[im].color
+            theMarkerToAdd.style.borderBottomColor = globalMarkerData[im].color
+        }
+        
+        let markerVerticalPosition = -2
+
+        if(outline[globalMarkerData[im].outlineElementNumber].typeAsString != "Section" && areScenesProportional == 1){
+            markerVerticalPosition = globalMarkerData[im].position - outline[globalMarkerData[im].outlineElementNumber].line.position
+            let percentageIntoScene = markerVerticalPosition / outline[globalMarkerData[im].outlineElementNumber].sceneLength
+
+            markerVerticalPosition = percentageIntoScene * (Number(element.getBoundingClientRect().height) - 12) //-14 is to fit entire marker inside
+            
+        }
+        
+        theMarkerToAdd.style.top = markerVerticalPosition + "px"
+        
+        //element.appendChild(theMarkerToAdd)
+        
+    }
+    
+    mylog("done in display marker territory")// at " + displayEnd + "(took " + (displayEnd-displayStart) + " ms)")
+}
+
+function expandNote(tabWasPressed){
+
+    exitEdit()
+
+    if (selectedNote > -1 && tabWasPressed){ //SELECTED THROUGH TAB
+        theNote = document.querySelector("[data-noteNumber='" + selectedNote + "']")
+
+            if(isThisOffScreen(theNote)){
+                scrollNicelyIntoView(theNote) 
+            }
+    }
+
+    if ([...event.target.classList].includes("note") && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
+        return
+    }
+
+    if ([...event.target.classList].includes("note") && (!tabWasPressed)) { //SELECTED BY HOVERING
+        collapseNote()
+        theNote = event.target
+        selectedNote = theNote.getAttribute("data-noteNumber")
+
+        // To prevent blinkage (and remove hover effect from parents when hovering note)
+        let bubbleProhibitor = theNote
+        while (bubbleProhibitor.parentNode.id != "flexiContainer"){
+            bubbleProhibitor = bubbleProhibitor.parentNode
+            bubbleProhibitor.classList.add("noHover")
+            mylog("ADDED noHover to " + bubbleProhibitor.id)
+        }
+    }
+
+    let noteToUnselect = document.querySelector('.selectedNote')
+    if (noteToUnselect) {
+        noteToUnselect.classList.remove('selectedNote')
+    }
+    theNote.classList.add('selectedNote')
+
+    let theNoteString = theNote.innerHTML
+    let expandedClassList = ""
+    let position = theNote.getBoundingClientRect()
+    if (position.top == 0 && position.left == 0) {
+        position = theNote.parentNode.parentNode.parentNode.getBoundingClientRect()
+        expandedClassList += "omittedNote "}
+    let y = parseInt(JSON.stringify(position.top))
+    let x = parseInt(JSON.stringify(position.left))
+    // let y = position.top
+    // let x = position.left
+    let yOrigo = document.getElementById('flexiContainer').scrollTop
+
+    let theFirstOutlineItemWidth = document.querySelector("[data-elementCount='0']").getBoundingClientRect()
+
+    let expandedWidth = Math.min(theFirstOutlineItemWidth.width, window.innerWidth/2)
+    
+    let sceneText = "scene " + theNote.parentNode.parentNode.id
+    if (sceneText.includes("outline")){
+        sceneText = 'section' + theNote.parentNode.parentNode.firstChild.innerHTML
+    }
+
+    let trashDiv = ""
+    if (tabWasPressed) {trashDiv = "<div id='trashNote' class='trashNote'>" + trashIcon + "</div>"}
+
+    document.getElementById('flexiContainer').innerHTML += 
+        "<div id='expandedNote' class='" + expandedClassList + "'>" +
+        "<b class='clickThru'>" +
+        trashDiv +
+        "Note in " + sceneText + " </b>" +
+        "<text class='clickThru' id='expandedNoteText'>" + theNoteString + "</text></div>"
+
+    let theExpandedNote = document.getElementById('expandedNote')
+    let currentIndex = theNote.getAttribute("data-line")
+    mylog(currentIndex)
+    theExpandedNote.setAttribute("data-line", currentIndex)
+    theExpandedNote.style.width = expandedWidth + "px"        
+
+    let sizeOfExpandedNote = theExpandedNote.getBoundingClientRect()
+
+    let xPos = Math.min((x + 7.5 - expandedWidth/2), (window.innerWidth - expandedWidth - 40))
+    let yPos = yOrigo + y + 25
+    xPos = Math.max(xPos, 20)
+    yPos = Math.max(yPos, 20)
+    if (xPos + sizeOfExpandedNote.width > window.innerWidth - 40) {xPos = window.innerWidth - sizeOfExpandedNote.height - 40}
+    if (yPos + sizeOfExpandedNote.height > document.getElementById('flexiContainer').scrollHeight - 40) {yPos = yOrigo + y - 10 - sizeOfExpandedNote.height}
+
+    theExpandedNote.style.top = yPos + "px"
+    theExpandedNote.style.left = xPos + "px"	
+
+}
+
+function collapseNote(){
+
+    mylog(event.type)
+
+    if (event.type == "mouseleave" && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
+        return
+    }
+
+    if (document.getElementById('expandedNote')){
+    document.getElementById('expandedNote').remove()
+
+    let makeRehoverable = document.querySelectorAll('.noHover')
+    for (i = makeRehoverable.length -1; i > -1; i-- ){
+        makeRehoverable[i].classList.remove('noHover')
+    }
+
+    let noteToUnselect = document.querySelector('.selectedNote')
+    if (noteToUnselect) {noteToUnselect.classList.remove('selectedNote')}
+    }
+}
+
+function cycleNotes(shift){
+
+    if(!notesAreDisplayed){
+        toggleDisplayNotes()
+        return
+    }
+
+    //IF a hovered note is open, tab solidifies that note (=trashnote on) instead of opening next
+    if (document.getElementById('expandedNote') && !document.getElementById('trashNote')){
+        selectedNote = shift ? (selectedNote + 1) : (selectedNote - 1)
+    }
+
+    if (document.getElementById('expandedNote')){
+        collapseNote()
+    }
+    
+    if (!shift){
+        selectedNote ++
+    } else {
+        selectedNote --
+    }
+
+    if (selectedNote > document.querySelectorAll(".note").length-1) {selectedNote = 0}
+    if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
+    
+    expandNote(true)
+    
+}
+
+</script>

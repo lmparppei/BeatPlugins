@@ -1,0 +1,1132 @@
+/*
+
+Plugin name: FTOutliner
+Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
+Copyright: Fredrik T Olsson 2021
+Version: 1.10
+Type: Tool
+
+*/ 
+
+// Beat.openConsole()
+
+var backgroundAlreadyRunning = false
+var queueOneMoreFullUpdate = false
+
+var css = Beat.assetAsString("outline.css")
+var globals = Beat.assetAsString("globals.html")
+var template = Beat.assetAsString("outline.html")
+var dnd = Beat.assetAsString("drag-and-drop.html")
+var dialogs = Beat.assetAsString("dialogs.html")
+var charactertracking = Beat.assetAsString("charactertracking.html")
+var displaynotes = Beat.assetAsString("displaynotes.html")
+var contextmenu = Beat.assetAsString("contextmenu.html")
+var editcontent = Beat.assetAsString("editcontent.html")
+var thePanelWidth, thePanelHeight
+var storingDefaultsHTML = makeStoringDefaultsDiv()
+var location, length
+var html
+
+var fullUpdateInProgress = false
+var smallUpdateInProgress = false
+
+var	html = storingDefaultsHTML +
+	css +
+	globals +
+	dialogs +
+	charactertracking +
+	displaynotes +
+	contextmenu + 
+	editcontent +
+	dnd +
+	template
+
+var recolorInProgress = false
+
+var charactersArray, scenesWithCharactersArray
+var repairSceneLengths = []
+var hackyAbsoluteHeightOfLine = 0.07195301353931427/2 // VERY HACKY: THIS IS TO ADD ONE EXTRA LINE AT TIMES
+
+
+var reallyDelete
+
+var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
+
+// =======================
+// END OF GLOBAL VARIABLES
+// =======================
+
+Beat.custom = {};
+
+Beat.custom.updateEntireOutline = function (location, length) {
+	//Beat.log("================================================================= UpdateEntireOutline")
+
+	if (backgroundAlreadyRunning){
+		//Beat.log("stopped because background already running! ")
+		return}
+
+	let jsToRun = `
+		document.getElementById('outOfSyncDiv').style.display = 'block';
+		document.getElementById('outOfSyncDiv').classList.add('animate');
+		`
+	htmlWindow.runJS(jsToRun)
+
+	if(!location){location = Beat.selectedRange().location}
+	
+	let outlineElements = [...Beat.outline()]
+	const paginator = Beat.paginator()
+	let json = makeJSON()
+
+	Beat.dispatch(function(){
+		//Beat.log("Now entering dispatch")
+
+		backgroundAlreadyRunning = true
+
+		let repairSceneLengths = []
+		let elementNumber = 0
+		let pagesForElements = []
+		let pages
+		let repairSceneLengthsAsString
+	
+		try{
+
+			for (scene of outlineElements){
+				pagesForElements[elementNumber] = 0
+
+				if(scene.typeAsString() != "Section"){
+				
+					pagesForElements[elementNumber] = paginateThis(scene, paginator)
+					
+					if(outlineElements[elementNumber + 1] && outlineElements[elementNumber + 1].typeAsString() == "Synopse"){
+						let value = putSynopsisInScene(elementNumber, outlineElements, paginator)
+							repairSceneLengths[elementNumber] = value[0]
+							pagesForElements[elementNumber] += value[1]
+					}
+				}
+				elementNumber ++
+			}
+
+
+			pages = JSON.stringify(pagesForElements)
+			repairSceneLengthsAsString = JSON.stringify(repairSceneLengths)
+
+		} catch(e) {
+			Beat.dispatch_sync(function(){	
+				htmlWindow.runJS(`mylog("There was an ERROR in the background: updateEntireOutline() ` + e + `", false, true)`)
+			})
+		}
+		
+		Beat.dispatch_sync(function(){	
+			//Beat.log("dispatch.sync, runJS")
+
+			htmlWindow.runJS("updateEverything(" + json + "," + location + "," + length + "," + pages + "," + repairSceneLengthsAsString + ")")
+
+			if(queueOneMoreFullUpdate){
+				queueOneMoreFullUpdate = false
+				//Beat.log("fired another round due to queued up outline change")
+				updateEntireOutline()
+			}
+
+			backgroundAlreadyRunning = false
+			fullUpdateInProgress = false
+			
+			//BELOW: small update immediately after FULL seems to mitigate anomaly when writing at end-of-scene
+			//Beat.log("running a small one too")
+			Beat.custom.updateOnlyOneScene(location, length)
+		})
+	})
+}
+
+Beat.custom.updateOnlyOneScene = function (location, length) {
+	//Beat.log("================================================================= updateOnlyOneScene")
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').classList.add('animate')");
+	htmlWindow.runJS("document.getElementById('outOfSyncDiv').style.display = 'block'");
+
+	if (backgroundAlreadyRunning){
+		//Beat.log("CANCELLED UPDATE ONLY ONE B/C BACKGROUND WAS RUNNING!")
+		return
+	}
+
+	let json = makeJSON() 	
+	
+	let outlineElements = Beat.outline()
+	let whichSceneAreWeIn = 0
+	while (outlineElements[whichSceneAreWeIn + 1] && outlineElements[whichSceneAreWeIn + 1].sceneStart < location){
+		whichSceneAreWeIn ++
+	}
+
+	while (outlineElements[whichSceneAreWeIn - 1] && outlineElements[whichSceneAreWeIn].typeAsString() == "Synopse"){whichSceneAreWeIn --} //added to fix static scenes if synopse 21'11'17
+
+	let scene = outlineElements[whichSceneAreWeIn]
+	const paginator = Beat.paginator()
+
+	let pages = paginateThis(scene, paginator)
+
+	if(outlineElements[whichSceneAreWeIn + 1] && outlineElements[whichSceneAreWeIn + 1].typeAsString() == "Synopse"){
+		let value = putSynopsisInScene(whichSceneAreWeIn, outlineElements, paginator)
+		repairSceneLengths[whichSceneAreWeIn] = value[0]
+		pages += value[1]
+	}
+
+	let repairSceneLengthsAsString = JSON.stringify(repairSceneLengths)
+	
+	htmlWindow.runJS("updateOneScene(" + json + "," + whichSceneAreWeIn + "," + pages + "," + location + "," + length + "," + repairSceneLengthsAsString + ")")
+}
+
+function putSynopsisInScene(elementNumber, outlineElements, paginator){
+
+	//Beat.log("PutSynopsisInScene")
+
+	if (outlineElements[elementNumber].typeAsString() != "Heading"){return [0,0]}
+
+	// This will put the length of any synopse into its corresponding scene but only when correct to do so. 
+	// (An extra line has then been added to the scene in a very hacky, hard-coded way, or else scenes with synopse(s) will be one line too short.)
+	// If changed in Beat so that all scenes will have their total length even if synopse present, this function must be disabled.
+		
+	try{
+	
+		let synopseLooper = 1
+		let collectedSynopseLength = 0
+		let collectedSynopseLengthInCharacters = 0
+		
+		while(outlineElements[elementNumber + synopseLooper] && outlineElements[elementNumber + synopseLooper].typeAsString() == "Synopse"){
+			let thisSynopseLength = paginateThis(outlineElements[elementNumber + synopseLooper], paginator)
+			collectedSynopseLength += thisSynopseLength
+			collectedSynopseLengthInCharacters += outlineElements[elementNumber + synopseLooper].length
+			if(outlineElements[elementNumber + synopseLooper].length == 0){return [0,0]}
+			synopseLooper++
+		}
+
+		if(collectedSynopseLength > 0){collectedSynopseLength += hackyAbsoluteHeightOfLine} // VERY HACKY: ADDS ONE EXTRA LINE IF SYNOPSIS PRESENT 
+		
+		return [collectedSynopseLengthInCharacters, collectedSynopseLength]
+
+	}catch(e){
+		Beat.dispatch_sync(function(){	
+			htmlWindow.runJS(`mylog("There was an ERROR in the background: putSynopsisInScene() ` + e + `", false, true)`)
+		})
+	}
+	//Beat.log("End of PutSynopsisInScene")
+}
+
+function paginateThis(scene, paginator, content) {
+
+	//Beat.log("PaginateThis")
+
+	let pageFix
+
+	try{
+
+		content = Beat.linesForScene(scene)	
+
+		paginator.paginateLines(content)
+
+		let reductionPages = (paginator.numberOfPages < 1)? 0 : 1
+		pageFix = paginator.numberOfPages + paginator.lastPageHeight - reductionPages
+
+		smallUpdateInProgress = false
+
+		pageFix += hackyAbsoluteHeightOfLine / 2 //adds a line before each scene. Since removed, and since changed to HALF a line.
+
+	} catch(e) {
+		Beat.dispatch_sync(function(){	
+			htmlWindow.runJS(`mylog("There was an ERROR in the background: paginatethis() ` + e + `", false, true)`)
+		})
+	}
+
+	//Beat.log("End of PaginateThis  -- result was " + pageFix)
+	return pageFix
+}
+
+Beat.custom.setFrame = function (theWindowsPositionX, theWindowsPositionY, theDocumentsWidth, theDocumentsHeight){
+	htmlWindow.setFrame(theWindowsPositionX, theWindowsPositionY, theDocumentsWidth, theDocumentsHeight)
+}
+
+function makeJSON(){
+
+	let outlineItems = Beat.outlineAsJSON() 
+    let json = JSON.stringify(outlineItems)
+    return json
+}
+
+// A NOTE: Below are the three functions that trigger on changes in the document.
+// Because of how calling Beat from the HTMLWindow cannot (to my knowledge) return
+// any values, disallowing the use of ASYNC/AWAIT, two of the functions below will
+// trigger a somewhat convoluted chain reaction of functions calling functions. As 
+// far as I have been able to make out, this is the only way to make things run in
+// sequence and waiting for one thing to finish before the next. 
+
+// For reference, each function below has a summary of that path.
+
+
+Beat.onOutlineChange (function() { 
+	//Beat.log("onOutlineChange")
+
+	if (recolorInProgress){return}
+
+	if(fullUpdateInProgress){
+		//Beat.log("fired outlineChange while already working, so queued")
+		queueOneMoreFullUpdate = true // at end of full update, will check for this and fire new round (but not until ready).
+		return
+	}
+
+	fullUpdateInProgress = true		
+
+	let jsToRun = `
+				startFullUpdate(null, null, 800)
+				`
+	htmlWindow.runJS(jsToRun)
+
+// PLUGIN: onOutlineChange (THIS FUNCTION) will call...
+// HTMLWINDOW: startFullUpdate, which will call...
+// PLUGIN: beat.custom.updateEntireOutline, 
+//         makeJSON, then
+//         paginateThis, which returns to updateEntireOutline, which will call...
+// HTMLWINDOW: updateEverything
+
+});
+	
+Beat.onTextChange(function (location, length) { 
+	//Beat.log("onTextChange -- full in progress is:" + fullUpdateInProgress)
+
+	if (!fullUpdateInProgress){
+		smallUpdateInProgress = true
+		htmlWindow.runJS("startSmallUpdate(" + location + "," + length + ")") 
+	}
+
+// PLUGIN: onTextChange (THIS FUNCTION) will call...
+// HTMLWINDOW: startSmallUpdate, which will call...
+// PLUGIN: beat.custom.updateOnlyOneScene, which will call...
+//         makeJSON, then
+//         paginateThis, which returns to updateOnlyOneScene, which will call...
+// HTMLWINDOW: updateOneScene
+
+});
+
+Beat.onSelectionChange(function (location, length) {
+	
+	if (fullUpdateInProgress || smallUpdateInProgress){return}
+
+	htmlWindow.runJS("youAreHere(" + location + "," + length + ")") 
+});
+
+function makeStoringDefaultsDiv(){
+
+	//THIS WORKS, but can be made more elegant. Very low priority.
+
+	// -- Check all stored settings
+	let realTimeUpdates = Beat.getUserDefault("realTimeUpdates");
+		if(realTimeUpdates != 0 && realTimeUpdates != 1){realTimeUpdates = 0}
+	let showProportional = Beat.getUserDefault("showProportional");
+		if(showProportional != 0 && showProportional != 1){showProportional = 1}
+	let showNumbers = Beat.getUserDefault("showNumbers");
+		if(showNumbers !== "none" && showNumbers !== "inline"){showNumbers = "none"}
+	let showLengths = Beat.getUserDefault("showLengths");
+		if(showLengths != "none" && showLengths != "inline"){showLengths = "none"}
+	let showPages = Beat.getUserDefault("showPages");
+		if(showPages != "none" && showPages != "inline"){showPages = "none"}
+	let colorScheme = Beat.getUserDefault("colorScheme");
+		if(colorScheme != "Beat" && colorScheme != "FTOutliner"){colorScheme = "FTOutliner"}
+	let oneColumnOutline = Beat.getUserDefault("oneColumnOutline");
+		if(oneColumnOutline != 1 && oneColumnOutline != 0){oneColumnOutline = 0}
+	let warningsAreOn = true 
+		warningsAreOn = Beat.getUserDefault("warningsAreOn")
+	let currentZoomLevel = Beat.getUserDefault("currentZoomLevel") || 1
+	
+	// -- sizes & position
+	thePanelWidth = Beat.getUserDefault("thePanelWidth");
+		if(!thePanelWidth){thePanelWidth = 800}
+	thePanelHeight = Beat.getUserDefault("thePanelHeight");
+		if(!thePanelHeight){thePanelHeight = 800}
+	thePanelX = Beat.getUserDefault("x-position");
+		if(!thePanelX){thePanelX = 500}
+	thePanelY = Beat.getUserDefault("y-position");
+		if(!thePanelY){thePanelY = 500}
+
+	// -- Pass on all settings into HTML Window
+	let storingDefaultsHTML = "<div id='theDataDiv' class='theDataDivClass' data-showProportional='" + showProportional +
+		"' data-showNumbers='" + showNumbers + 
+		"' data-showLengths='" + showLengths + 
+		"' data-showPages='" + showPages + 
+		"' data-thePanelWidth='" + thePanelWidth + 
+		"' data-thePanelHeight='" + thePanelHeight + 
+		"' data-realTimeUpdates='" + realTimeUpdates + 
+		"' data-x-position='" + thePanelX + 
+		"' data-y-position='" + thePanelY + 
+		"' data-colorScheme='" + colorScheme +
+		"' data-oneColumnOutline='" + oneColumnOutline +
+		"' data-warningsAreOn='" + warningsAreOn +
+		"' data-currentZoomLevel='" + currentZoomLevel +
+		"'></div>"
+
+	return storingDefaultsHTML
+}
+
+// BELOW STUFF FOR TRACKING CHARACTERS
+
+Beat.custom.addCharacterClasses = function() {
+
+	let allLines = Beat.lines()
+	let allScenes = Beat.scenes()
+	charactersArray = []
+	let occurrencesForCharacter = []
+
+	for (line of allLines){
+		if (line.typeAsString() == "Character"){
+			let name = line.string
+			name = name.replace(/\(.*\)/gm, '');
+			name = name.replace(/\'/gm, '´');
+			name = titleCaseThis(name)
+			name = name.trim()
+			if (!charactersArray.includes(name)){
+				charactersArray.push(name)
+				occurrencesForCharacter.push(0)
+			}else{
+				occurrencesForCharacter[charactersArray.indexOf(name)] ++
+			}
+		}
+	}
+	
+	let temporarySortingArray = []
+	let biggestNumber
+	let index
+	for (let i = 0; i < occurrencesForCharacter.length; i++){
+
+		biggestNumber = Math.max(...occurrencesForCharacter)
+		index = occurrencesForCharacter.indexOf(biggestNumber)
+		temporarySortingArray.push(charactersArray[index])
+		occurrencesForCharacter[index] = -1
+	}
+
+	charactersArray = temporarySortingArray
+	scenesWithCharactersArray = []
+
+	// I now have all characters. Time to evaluate scenes.
+
+	for (scene of allScenes){
+		const lines = Beat.linesForScene(scene)
+		const sceneNumber = scene.sceneNumber
+		let copyOfCharacters = [...charactersArray]
+		let charactersInScene = ""
+
+		for (line of lines){
+			if (line.typeAsString() == "Character") {
+				let name = titleCaseThis(line.string)
+				name = name.replace(/\(.*\)/gm, '');
+				name = name.replace(/\'/gm, '´');
+				name = name.trim()
+
+			 	if (copyOfCharacters.includes(name)){
+					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+					let spacelessName = name.replace(/ /g, "_")
+					spacelessName = spacelessName.replace(/\'|\"/g, "-")
+					charactersInScene += spacelessName + " "
+				}
+			}
+			if (line.typeAsString() == "Action") {
+				for (let i=0; i<copyOfCharacters.length; i++){
+					let name = copyOfCharacters[i]
+					if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+						copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+						let spacelessName = name.replace(/ /g, "_")
+						spacelessName = spacelessName.replace(/\'|\"/g, "-")
+						charactersInScene += spacelessName + " "
+					}
+				}
+			}
+		}
+		scenesWithCharactersArray[sceneNumber]=charactersInScene	
+	}	
+	htmlWindow.runJS("makeCharacterMenu(" + JSON.stringify(charactersArray) + "," + JSON.stringify(scenesWithCharactersArray) + "); updateFilter()")
+}
+
+Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateTrueOrFalse){
+
+	const scene = Beat.outline()[outlineNumber]
+	const sceneNumber = Beat.outline()[outlineNumber].sceneNumber
+
+	const lines = Beat.linesForScene(scene)
+	let copyOfCharacters = [...charactersArray]
+	let charactersInScene = ""
+
+	for (line of lines){
+		if (line.typeAsString() == "Character") {
+			let name = titleCaseThis(line.string)
+			name = name.replace(/\(.*\)/gm, '');
+			name = name.replace(/\'/gm, '´');
+			name = name.trim()
+
+			 if (copyOfCharacters.includes(name)){
+				copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+				let spacelessName = name.replace(/ /g, "_")
+				spacelessName = spacelessName.replace(/\'|\"/g, "-")
+
+				charactersInScene += spacelessName + " "
+			}
+		}
+		if (line.typeAsString() == "Action") {
+			for (let i=0; i<copyOfCharacters.length; i++){
+				let name = copyOfCharacters[i]
+				if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
+					let spacelessName = name.replace(/ /g, "_")
+					spacelessName = spacelessName.replace(/\'|\"/g, "-")
+
+					charactersInScene += spacelessName + " "
+				}
+			}
+		}
+	}
+	scenesWithCharactersArray[sceneNumber]=charactersInScene
+	if(sendToUpdateTrueOrFalse){htmlWindow.runJS("updateFilter(" + JSON.stringify(scenesWithCharactersArray) + ")")}
+}
+
+// Beat.custom.manipulateDocument = function (index, rangeToRemove, stringToAdd){ //we can remove this, right? Not in use?
+// 	Beat.replaceRange(index, rangeToRemove, "")
+// 	Beat.addString(stringToAdd, index)
+// 	Beat.parse()
+// 	Beat.custom.updateEntireOutline(0,0)
+// }
+
+Beat.custom.changeElementColor = function (elements, newColor){	
+
+	Beat.onTextChangeDisabled = true
+	Beat.onOutlineChangeDisabled = true
+	Beat.onSelectionChangeDisabled = true
+
+	recolorInProgress = true
+
+	const allOutlineElements = Beat.outline()
+	for (element of elements){
+		Beat.setColorForScene(newColor, allOutlineElements[element])
+	}
+
+	recolorInProgress = false
+	Beat.onTextChangeDisabled = false
+	Beat.onOutlineChangeDisabled = false
+	Beat.onSelectionChangeDisabled = false
+
+	htmlWindow.runJS("startSmallUpdate(false, false, 0)")
+}
+
+function titleCaseThis(str) {
+	let upper = true;
+	let newStr = "";
+	for (let i = 0, l = str.length; i < l; i++) {
+	  if (str[i] == " ") {
+		upper = true;
+		  newStr += " ";
+		continue;
+	  }
+	  newStr += upper ? str[i].toUpperCase() : str[i].toLowerCase();
+	  upper = false;
+	}
+	return newStr;
+}
+
+Beat.custom.saveWindowSize = function() {
+	let a = htmlWindow.getFrame()
+	
+	Beat.setUserDefault('thePanelX', a.x)
+	Beat.setUserDefault('thePanelY', a.y)
+	Beat.setUserDefault('thePanelHeight', a.height)
+	Beat.setUserDefault('thePanelWidth', a.width)
+}
+
+Beat.custom.collectNotes = function() {
+	let allOutlineElements = [...Beat.outline()]
+	let parser = Beat.currentParser 
+
+	Beat.dispatch(function(){
+
+		let note = []
+		let marker = []
+		let outlineElementNumber = 0
+		let lastElementThatWasScene = 0
+		let entry = 0
+		let markernumber = 0
+		//let avoidDoubleEntries = []
+		
+			for (OutlineElement of allOutlineElements){
+					let LinesInElement = Beat.linesForScene(OutlineElement)
+
+					if (OutlineElement.typeAsString() != "Synopse"){lastElementThatWasScene = outlineElementNumber}
+
+					class notesData{
+						constructor(position, string) {
+							this.outlineElementNumber = lastElementThatWasScene 
+							this.position = position
+							this.string = string
+						}
+					}
+
+					for (line of LinesInElement){
+						if(line.note) {
+
+							if(line.string.toLowerCase().startsWith("[[marker")){
+								let tmpString = line.string.toLowerCase().replace("[[marker ", "").replace("]]", "")
+								marker.push({
+									"color": tmpString,
+									"position": line.position,
+									"outlineElementNumber": lastElementThatWasScene
+								})
+								markernumber ++
+								continue
+							}
+
+							//if([...avoidDoubleEntries] && [...avoidDoubleEntries].includes(line.position)){continue}
+							
+							if(
+								// parser.lineAtPosition(line.position-1).position == avoidDoubleEntries[avoidDoubleEntries.length -1] 
+								// && 
+								!line.string.startsWith("[[")) {
+									try{note[entry-1].string += "<br/>" + line.string}
+									catch {
+										// Beat.dispatch_sync(function (){
+										// Beat.alert("hello")
+										// })
+										continue}
+								//avoidDoubleEntries.push(line.position)
+								continue
+							}
+							
+							//avoidDoubleEntries.push(line.position)
+							note[entry] = new notesData(line.position, line.string)
+							entry ++
+						}
+					}
+				outlineElementNumber ++
+			}
+
+			Beat.dispatch_sync(function (){
+					htmlWindow.runJS("displayNotes(" + JSON.stringify([...note]) + "," + JSON.stringify([...marker]) + ")")
+			})
+	})
+}
+
+Beat.custom.omitScene = function(areScenesProportional, scenesToOmit, updatesDisabled) { 
+
+	if (areScenesProportional == 1){
+		let plural = (scenesToOmit.length > 1) ? "s" : ""
+		Beat.alert("Where did my scene"+plural+" go?", "You are now in Flexible mode, and since omitted scenes literally takes up no space in the finished script, they are invisible in this view.\n\nToggle to non-flexible display (shortcut\xa0F) to see any omitted scenes." )
+	}
+
+	const outline = [...Beat.outline()]
+
+	Beat.onTextChangeDisabled = true
+	Beat.onOutlineChangeDisabled = true
+	Beat.onSelectionChangeDisabled = true
+
+	for (let i=0; i<scenesToOmit.length; i++){
+
+		nextScene = 1
+		while (outline[scenesToOmit[i]+nextScene] && outline[scenesToOmit[i]+nextScene].typeAsString() == "Synopse") {
+			nextScene ++
+		}
+
+		//first: check for any omissions INSIDE the scene we want to omit!
+		let omissionInsideScene = false
+		if (outline[scenesToOmit[i]].omitted == 0){
+			let loopToThisPoint = outline[scenesToOmit[i] + nextScene].line.position - 1 || Beat.getText().length - 1
+			let lineLooper = outline[scenesToOmit[i]].line.position
+			let parser = Beat.currentParser
+			while (lineLooper < loopToThisPoint){
+				lineLooper += parser.lineAtPosition(lineLooper).string.length + 1
+				if(parser.lineAtPosition(lineLooper).string.includes("*/")){
+					omissionInsideScene = true
+				}
+			}	
+		}
+		if (omissionInsideScene){
+			let headline = "Conflicting omission inside\n" 
+			headline += (scenesToOmit.length > 1) ? "": "the scene\n" + outline[scenesToOmit[i]].sceneNumber + ". "
+			headline += outline[scenesToOmit[i]].line.cleanedString().toUpperCase() 
+			headline += (scenesToOmit.length > 1) ? "\n(currently scene #" + outline[scenesToOmit[i]].sceneNumber + ")":""
+			let message = (scenesToOmit.length > 1) ? "One of the scenes": "The scene"  
+			message += " you are trying to omit already has an omitted/hidden chunk of text inside it.\n\nDue to how Fountain works, omitting the scene would only work up to the point where that chunk ends.\n\nThis scene is therefore left UN-OMITTED."
+			if (scenesToOmit.length > 1){message += "\n\nNOTE: FTOutliner will continue to try with the rest of your selected scenes.\nYou will be notified for every scene where this problem occurs."}
+			Beat.alert(headline, message)
+			continue
+		}
+
+		if (!outline[scenesToOmit[i] + nextScene] || !outline[scenesToOmit[i] + nextScene].omitted){Beat.addString("*/\n\n", (outline[scenesToOmit[i]].position + outline[scenesToOmit[i]].length))}
+		if (outline[scenesToOmit[i] + nextScene] && outline[scenesToOmit[i] + nextScene].omitted){
+			let parser = Beat.currentParser
+			let startMarkerFound = false
+			let position = (outline[scenesToOmit[i] + nextScene].line.position - 1)
+
+			while (position > outline[scenesToOmit[i]].position && !startMarkerFound){
+				position = parser.lineAtPosition(position).position //puts us at front of line
+				
+				if (parser.lineAtPosition(position).string.includes("/*")){
+					a = parser.lineAtPosition(position).string.replace("/*", "*/\n/*")
+					Beat.replaceRange(position, a.length - 3, a)
+					startMarkerFound = true
+				}
+				position--
+			}
+			if(!startMarkerFound){Beat.alert('Error finding starting point of omitted scene', 'Failed to locate any /* marker BELOW \n\n' + outline[scenesToOmit[i]].sceneNumber + ". " + outline[scenesToOmit[i]].string.toUpperCase() + "\n\nPlease check manually if your script looks as expected, or hit cmd+z for UNDO to return to the state before your latest action.")}
+
+		}
+		
+		if (!outline[scenesToOmit[i]-1] || !outline[scenesToOmit[i]-1].omitted){Beat.addString("/*\n\n", outline[scenesToOmit[i]].position)}
+		if(outline[scenesToOmit[i]-1] && outline[scenesToOmit[i]-1].omitted){
+			let parser = Beat.currentParser
+			let endMarkerFound = false
+			let position = (outline[scenesToOmit[i]].line.position - 1)
+			
+			while (position > outline[scenesToOmit[i]-1].position && !endMarkerFound){
+				position = parser.lineAtPosition(position).position //puts us at front of line
+				
+				if (parser.lineAtPosition(position).string.includes("*/")){
+					a = parser.lineAtPosition(position).string.replace("*/", "*/\n/*")
+					Beat.replaceRange(position, a.length - 3, a)
+					startMarkerFound = true
+				}
+				position--
+			}
+			if(!startMarkerFound){Beat.alert('Error finding end point of omitted scene', 'Failed to locate any */ marker ABOVE \n\n' + outline[scenesToOmit[i]].sceneNumber + ". " + outline[scenesToOmit[i]].string.toUpperCase() + "\n\nPlease check manually if your script looks as expected, or hit cmd+z for UNDO to return to the state before your latest action.")}
+		}
+
+		startCheck = outline[scenesToOmit[i]].position
+		if (outline[scenesToOmit[i] + nextScene]){
+			endCheck = outline[scenesToOmit[i] + nextScene].position
+			checkForDoubleBlankLines(endCheck)
+		}
+		checkForDoubleBlankLines(startCheck)
+	}
+
+	if(!updatesDisabled){
+		Beat.onTextChangeDisabled = false
+		Beat.onOutlineChangeDisabled = false
+		Beat.onSelectionChangeDisabled = false
+
+		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
+			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
+			"startFullUpdate()"
+		htmlWindow.runJS(jsToRun)
+	}
+}
+
+Beat.custom.unOmitScene = function(scenesToUnOmit, updatesDisabled) {
+
+	const outline = [...Beat.outline()]
+
+	Beat.onTextChangeDisabled = true
+	Beat.onOutlineChangeDisabled = true
+	Beat.onSelectionChangeDisabled = true
+
+	for (let i = 0; i < scenesToUnOmit.length; i++){
+
+		nextScene = 1
+		while (outline[scenesToUnOmit[i]+nextScene] && outline[scenesToUnOmit[i]+nextScene].typeAsString() == "Synopse") {
+			nextScene ++
+		}
+
+		let omittedScene = scenesToUnOmit[i]
+			if(!outline[omittedScene].omitted){
+				continue}
+
+		let parser = Beat.currentParser
+		const position = outline[omittedScene].line.position
+		let endMarkerFound = false
+		let startMarkerFound = false
+
+		//step ONE: remove the end of the omission if appropriate (or start a new one!)
+		//=============================================================================
+
+		let endOfScenePosition = (outline[omittedScene + nextScene]) ? 
+			outline[omittedScene + nextScene].line.position - 1 :
+			Beat.getText().length	
+		endOfScenePosition = parser.lineAtPosition(endOfScenePosition).position // turn last index of line into first index of line instead
+
+		let jumpBack = 0
+
+		//case one: look for closing omission point from next scenes start to this
+		while (endOfScenePosition - jumpBack > position && !endMarkerFound){
+			
+			let line = parser.lineAtPosition(endOfScenePosition - jumpBack).string
+
+			if (line.includes('*/')){
+
+				lineToInsert = line.replace('*/','')
+				startOfLine = parser.lineAtPosition(endOfScenePosition - jumpBack).position
+				lengthOfLine = parser.lineAtPosition(endOfScenePosition - jumpBack).length
+					// if (lineToInsert == '') {
+					// lengthOfLine ++}
+	
+				Beat.replaceRange(startOfLine, lengthOfLine, lineToInsert)
+				checkForDoubleBlankLines(startOfLine)
+				endMarkerFound = true
+			}
+
+			jumpBack = jumpBack + line.length + 1
+		}
+	
+		//case two: no closing point found, but next scene omitted too
+		if (!endMarkerFound && outline[omittedScene + nextScene] && outline[omittedScene + nextScene].omitted == 1){
+			Beat.addString("/*\n\n", endOfScenePosition + 1)
+			checkForDoubleBlankLines(endOfScenePosition + 1)
+			endMarkerFound = true
+		}
+
+		//step TWO: remove start of omission -- case one: look for starting point up until start of prev scene
+		//====================================================================================================
+
+		let line = parser.lineAtPosition(position).string
+		jumpBack = 0
+
+		while (!line.includes('/*')){
+
+			jumpBack++
+			let lengthOfThatLine = parser.lineAtPosition(position - jumpBack).length
+			jumpBack = jumpBack + lengthOfThatLine
+
+			line = parser.lineAtPosition(position - jumpBack).string
+
+			if (position - jumpBack < 0 || position - jumpBack <= outline[omittedScene - 1].line.position || line.includes('*/')){
+				break
+			}
+		}
+
+		if (line.includes('/*')){
+			lineToInsert = line.replace('/*','')
+			let startOfLine = parser.lineAtPosition(position - jumpBack).position
+			let lengthOfLine = parser.lineAtPosition(position - jumpBack).length
+				if (lineToInsert == '') {
+				lengthOfLine ++}
+
+			Beat.replaceRange(startOfLine, lengthOfLine, lineToInsert)
+			checkForDoubleBlankLines(startOfLine)
+			startMarkerFound = true
+
+		}else{ 
+			
+			// case two: No start encountered. Is the previous scene omitted? Then just end omission before this one
+			if (outline[omittedScene - 1].omitted == 1){
+				Beat.addString("*/\n\n", position)
+				checkForDoubleBlankLines(position)
+				startMarkerFound = true
+			}
+		}
+
+		//now a double-check: is no error given but the scene still omitted? Then add end marker before scene. 
+		if (startMarkerFound && endMarkerFound && outline[omittedScene].omitted == 1){
+			Beat.addString("*/\n",outline[omittedScene].line.position)
+		}
+	
+		if (!startMarkerFound || !endMarkerFound){
+			let whatsMissing = (!startMarkerFound && !endMarkerFound) ? "neither " : ""
+			whatsMissing += "the "
+			whatsMissing += (!startMarkerFound) ? "start " : ""
+			whatsMissing += (!startMarkerFound && !endMarkerFound) ? "nor the " : ""
+			whatsMissing += (!endMarkerFound) ? "end " : ""
+			whatsMissing += "point"
+			whatsMissing += (!startMarkerFound && !endMarkerFound) ? "s " : " "
+			Beat.alert("Failed to un-omit scene" + outline[omittedScene].sceneNumber, "FTOutliner could not find\n" + whatsMissing + "\nwhen trying to un-omit the scene\n" + outline[omittedScene].string.toUpperCase() + ".\n\nPlease check your script manually to remove the corresponding /* and */ entries.\n\nSorry for the inconvenience, this really shouldn't happen.")
+		}
+		
+	} // ENDING THE LOOP
+
+	if(!updatesDisabled){
+		Beat.onTextChangeDisabled = false
+		Beat.onOutlineChangeDisabled = false
+		Beat.onSelectionChangeDisabled = false
+
+		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
+			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
+			"startFullUpdate()"
+		htmlWindow.runJS(jsToRun)
+	}
+}
+
+Beat.custom.deleteScene = function(elementsToDelete) {
+
+	const outline = [...Beat.outline()]
+
+	htmlWindow.runJS("mylog('you have sent: " + elementsToDelete + "', false, false)")
+
+	let deleteMessage = outline[elementsToDelete[elementsToDelete.length-1]].string.toUpperCase()
+	if (elementsToDelete.length > 1) {deleteMessage += "\nand " + (elementsToDelete.length - 1) + " more scenes or sequences"}
+
+	reallyDelete = Beat.confirm("You are about to delete \n" + deleteMessage + "\nincluding all contents!", "This action CAN be undone by hitting cmd+z, but beware that once you keep writing the scene may soon become irretrievably lost forever.\n\nAre you entirely sure?")
+
+	
+	if (reallyDelete) {
+
+		Beat.onTextChangeDisabled = true
+		Beat.onOutlineChangeDisabled = true
+		Beat.onSelectionChangeDisabled = true
+
+		//first: un-omit all scenes to delete + the one after.
+		this.unOmitScene(elementsToDelete, true)
+
+		for (let j=0; j<elementsToDelete.length; j++){
+
+			//here check for synopsis
+			let nextScene = 1
+			let endPosition = false
+			while (outline[elementsToDelete[j] + nextScene + 1] && outline[elementsToDelete[j] + nextScene].typeAsString() == "Synopse") {
+				nextScene ++
+			}
+
+			//unomit next scene to avoid removing /* marker
+			let nextSceneIsOmitted = false
+			if(outline[elementsToDelete[j] + nextScene] && outline[elementsToDelete[j] + nextScene].omitted){
+				Beat.custom.unOmitScene([elementsToDelete[j] + nextScene], true)			
+				nextSceneIsOmitted = true
+			}
+
+			// NOTE: i in omit-function kills i here!
+
+			endPosition = outline[elementsToDelete[j] + nextScene].position //moved out from "check for synopsis" loop because un-omitting may change value of position
+			let theLength = Math.max((endPosition - outline[elementsToDelete[j]].position), outline[elementsToDelete[j]].length)
+			
+			Beat.replaceRange(outline[elementsToDelete[j]].position, theLength, "")
+		
+			if(nextSceneIsOmitted){
+				Beat.custom.omitScene(false, [elementsToDelete[j]], true) // and NOT nextScene, because one scene is now removed!
+				nextSceneIsOmitted = false
+			}
+		}
+	
+		Beat.onTextChangeDisabled = false
+		Beat.onOutlineChangeDisabled = false
+		Beat.onSelectionChangeDisabled = false
+
+		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
+			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
+			"startFullUpdate()"
+		htmlWindow.runJS(jsToRun)
+	
+	}else{
+		htmlWindow.runJS(`
+			undimAllScenes()
+		`)
+	}
+}
+
+function checkForDoubleBlankLines(position){
+
+	let parser = Beat.currentParser
+
+	for (dbl=0; dbl<15; dbl++){
+
+		let indexOfLineAbove = parser.lineAtPosition(position - 1).position
+		let lineAbove = parser.lineAtPosition(indexOfLineAbove).string
+		let line = parser.lineAtPosition(position).string
+
+		if (line == "" && lineAbove == ""){
+			Beat.replaceRange(position, 1, "")
+		}
+
+		position = indexOfLineAbove
+	}
+}
+
+// Beat.custom.saveHtmlForExport = function(){
+// }
+
+Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warningsAreOn){
+
+	const outline = [...Beat.outline()]
+
+	let rangeOfScenes = ""
+	let numberOfScenesToMove = 0
+	for (scenes = firstScene; scenes<lastScene+1; scenes++){
+		if(outline[scenes].typeAsString() == "Synopse"){continue}
+		rangeOfScenes +=
+		((outline[scenes].sceneNumber != undefined) ? 
+			"(" + outline[scenes].sceneNumber + ") " : 
+			"") +
+			outline[scenes].string.toUpperCase() + "\n" +
+			((outline[scenes].sceneNumber == undefined) ? 
+			"\ncontaining\n\n" : 
+			"")
+			numberOfScenesToMove++
+	}
+
+	if(warningsAreOn){
+		let reallyMove = Beat.confirm("Verify Move!",
+			"\nYou are about to move " + 
+			((outline[firstScene].typeAsString() != "Section") ?
+				"the scene" 
+				: "the section") +
+			(((outline[firstScene].typeAsString() != "Section") && numberOfScenesToMove > 1) ? 
+				"s" 
+				: "") +
+			"\n\n" + 
+			(((outline[firstScene].typeAsString() != "Section")) ? 
+				rangeOfScenes 
+				: (outline[firstScene].string.toUpperCase()) + "\n") + 
+			((outline[insertBeforeScene]) ? 
+				("\nto immediately before\n\n" + 
+				(outline[insertBeforeScene].omitted == 1 ? "the omitted scene called \n" 
+				: "") +
+			(((outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString() == "Heading") 
+				? ("(" + outline[insertBeforeScene].sceneNumber + ") ") : "") +
+				outline[insertBeforeScene].string.toUpperCase()))
+				: "\nto immediately after the last scene of your script.")
+			+ 
+			"\n\nDo you want to proceed?\n")
+		if (!reallyMove) {
+			htmlWindow.runJS(`onDragEnd(false, true)`)
+			return
+		}
+	}
+
+	htmlWindow.runJS(`ifYesToMove()`)
+
+	Beat.onTextChangeDisabled = true
+	Beat.onOutlineChangeDisabled = true
+	Beat.onSelectionChangeDisabled = true
+
+	//even before first: check if we are dropping among omitted scenes!
+	let sceneBelowDroppedWasOmitted = (outline[insertBeforeScene] && outline[insertBeforeScene].omitted == 1)
+	let theSceneAbove = insertBeforeScene - 1
+	while (outline[theSceneAbove] && outline[theSceneAbove].typeAsString() == "Synopse"){theSceneAbove --}
+	let sceneAboveDroppedWasOmitted = (outline[theSceneAbove].omitted == 1)
+
+	if (sceneBelowDroppedWasOmitted){
+		this.unOmitScene([insertBeforeScene], true)
+	}
+	if (sceneAboveDroppedWasOmitted){
+		this.unOmitScene([theSceneAbove], true)
+	}
+
+
+	//first check so that we don't break omitted scenes!
+	//unomitting and reomitting the scene before will make sure it stays intact.
+		if(outline[firstScene - 1] && outline[firstScene - 1].omitted){
+			Beat.custom.unOmitScene([firstScene - 1])
+			Beat.custom.omitScene(0, [firstScene - 1])
+		}
+	//then, we need to unomit the scene after, but re-omit it once the scenes are moved
+		let firstSceneAfterWasOmitted = false
+		if(outline[lastScene + 1] && outline[lastScene + 1].omitted){
+			firstSceneAfterWasOmitted = true
+			Beat.custom.unOmitScene([lastScene+1])
+		}
+
+	//now take care of omitted scenes INSIDE the range -- but do it differently:
+	//any scenes other than first and last will just nicely come along. 
+	//so:
+	let firstSceneWasOmitted = false
+	if(outline[firstScene].omitted){
+		firstSceneWasOmitted = true
+		Beat.custom.unOmitScene([firstScene], true)
+	}
+
+	let lastSceneWasOmitted = false
+	if((firstScene != lastScene) && outline[lastScene].omitted){
+		lastSceneWasOmitted = true
+		Beat.custom.unOmitScene([lastScene], true)
+	}
+
+	//collect start and end index of text
+	//collect insertion point
+	var startPosition = outline[firstScene].position
+	var endPosition = (outline[lastScene+1]) ? outline[lastScene+1].position : Beat.getText().length
+	var insertionPosition = outline[insertBeforeScene] ? outline[insertBeforeScene].position : Beat.getText().length
+
+    //copy text from that range
+	var theTextToMove = Beat.getText().substring(startPosition, endPosition)
+
+	//NOW, re-omit the scene after the range.
+	if (firstSceneAfterWasOmitted){
+		Beat.custom.omitScene(0, [lastScene+1], true) 
+		//NOTE: even if doing this BEFORE moving, it should work fine because we retrieved endPosition already
+	}
+
+	//DISABLED -- initial EXTRA SECURITY MEASURE: 
+	//let's put the range at end of script
+	//surrounded by intromessage and outromessage
+		// let introMessage = "/*\n\n!_THE TEXT BELOW IS A BACKUP COPY MADE BY FTOUTLINER._\n\n*It was put here during a move, so that if anything were to go wrong during the operation, the text would remain in the document.*\n*If you encounter this text, it means something did in fact go wrong without the plugin catching it. Please check if the following scene(s) appear elswhere in the script -- if they do you can delete this copy. If not, this is the backup text for you to put where you want it. My sincerest apologies for the inconvenience.*\n\n"
+		// let outroMessage = "\n!_END OF BACKUP COPY_\n\n*/"
+		// Beat.addString(introMessage + theTextToMove + outroMessage, Beat.getText().length)
+
+	//insert and delete, or delete and insert, depending on wheter move was up or down
+
+	let theNewOutlineNumberForFirstMovedScene
+	
+	// for (outlineElement of Beat.outline()){
+	// 		if (outlineElement.position == insertionPosition) {foundit = true; break}
+	// 		theNewOutlineNumberForFirstMovedScene ++
+	// 	}
+
+    if (insertionPosition < startPosition) {
+		deleteTheOldText()
+		addTheTextAtNewPosition()
+
+		theNewOutlineNumberForFirstMovedScene = insertBeforeScene
+	}
+
+	if (insertionPosition > endPosition) {
+		addTheTextAtNewPosition()
+		deleteTheOldText()
+		
+		theNewOutlineNumberForFirstMovedScene = insertBeforeScene - (lastScene - firstScene) - 1
+	}
+
+	// finally (1) time to re-omit first and last scene of range in case they were so.
+	
+	if (firstSceneWasOmitted){
+		Beat.custom.omitScene(0, [theNewOutlineNumberForFirstMovedScene], true)
+	}
+	if (lastSceneWasOmitted){
+		Beat.custom.omitScene(0, [(theNewOutlineNumberForFirstMovedScene + lastScene - firstScene)] ,true)
+	}
+	if (sceneBelowDroppedWasOmitted){
+		Beat.custom.omitScene(0, [(theNewOutlineNumberForFirstMovedScene + lastScene - firstScene + 1)] ,true)
+	}
+	if (sceneAboveDroppedWasOmitted){
+		let theSceneAboveInserted = theNewOutlineNumberForFirstMovedScene -1
+		while (outline[theSceneAboveInserted].typeAsString() == "Synopse"){theSceneAboveInserted --}
+		Beat.custom.omitScene(0, [theSceneAboveInserted], true)
+	}
+
+    //finally (2) delete the backuptext (and provoke a full update)
+
+	Beat.onTextChangeDisabled = false
+	Beat.onOutlineChangeDisabled = false
+	Beat.onSelectionChangeDisabled = false
+
+	let jsToRun = "setTimeout(function(){" +
+		"document.getElementById('outOfSyncDiv').classList.add('animate'); " +
+		"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
+		"startFullUpdate()},600)"
+
+	htmlWindow.runJS(jsToRun)
+	
+	//finally (3) some scope-only functions for inserting and deleting
+		function addTheTextAtNewPosition(){
+
+			let parser = Beat.currentParser
+			let potentialExtraEmptyFirstLine = ""
+			let potentialExtraEmptyLastLine = ""
+			if (parser.lineAtPosition(insertionPosition - 1).string != ""){
+				potentialExtraEmptyFirstLine = "\n"
+			}
+			if (parser.lineAtPosition(endPosition).string != ""){
+				potentialExtraEmptyLastLine = "\n"
+			} 
+
+			Beat.addString(potentialExtraEmptyFirstLine + theTextToMove + potentialExtraEmptyLastLine, insertionPosition)
+		}
+		function deleteTheOldText(){
+			Beat.replaceRange(startPosition, endPosition-startPosition, "")
+		}
+}
+
+Beat.custom.reallyQuit = function (noconfirm) {
+
+	let quit = false
+
+	if(!noconfirm){
+		quit = Beat.confirm("Do you really want to close FTOutliner?", "All your work is stored in Beat, so no harm done. It's just that it's so easy to hit Escape once too many. That's all.\n\nGo ahead and close?")
+	}
+	if(quit || noconfirm){
+		htmlWindow.close()
+	}
+
+}

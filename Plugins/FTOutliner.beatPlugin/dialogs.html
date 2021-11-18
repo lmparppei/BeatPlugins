@@ -1,0 +1,635 @@
+
+<style>
+
+.generalButtonStyle {
+	border: 1px #aaa solid !important;
+	border-radius: 6px !important;
+	box-shadow: 1px 1px 2px #ccc;
+	background-color: white !important;
+
+	text-decoration: none !important;
+	padding: 2px 8px !important;
+	color: black !important;
+}
+.generalButtonStyle:hover {
+	
+	background-color: blue !important;
+	color: white !important
+}
+
+#settings * , #tracking *{
+ transition: 0.5s !important;
+}
+
+.settingsWindow{
+	position:absolute !important; 
+	top: 50% !important; 
+	left: 50% !important;
+	transform: translate(-50%, -50%) !important;
+	height: 650px !important;
+	width: 650px !important; 
+	padding: 40px;
+	background-color:rgba(240,240,239,0.95); 
+	border: 0,5px black solid;
+	border-radius:12px;
+	z-index: 9998;
+	white-space: normal;
+	box-shadow: 5px 5px 50px black !important;
+	
+	font-size: 14px;
+	line-height: 16px;
+	font-weight: 500;
+
+	transition: 0.2s;
+}
+
+#errorWindow{
+	height: auto !important;
+	z-index: 9998 !important;
+}
+
+#warningDiv{
+	width: 100px !important;
+	height: auto !important;
+	margin-top: -70px !important;
+	margin-left: -5px !important;
+	margin-bottom: 20px !important;
+}
+
+#introtext, #outrotext, .normalWindowText{
+	white-space: normal;
+	max-width: 560px;
+	margin-left: auto;
+	margin-right: auto;
+
+	max-height: 500px;
+}
+
+.errorWindowText, .errorWindowText b, .errorWindowText i{
+	white-space: normal;
+	margin-left: auto;
+	margin-right: auto;
+
+	line-height: 16px !important;
+
+	margin-top: 16px !important;
+
+	pointer-events: all !important;
+
+}
+
+#errorBox{
+
+	font-family: inherit;
+	font-size: inherit;
+
+	border: 1px black solid !important;
+	border-radius: 8px !important;
+	background-color: white !important;
+
+	white-space: inherit;
+	padding: 8px 8px !important;
+
+	pointer-events: all !important;
+
+	width: 100% !important;
+	height: 200px !important;
+	z-index: 10000 !important;
+
+	resize: none !important;
+}
+
+.key{
+	margin: 2px;
+	display: inline-block;
+	/* background-color: #555; */
+	background-color: #333;
+	border: 1px solid #222;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: bold;
+	padding: 2px 4px;
+	color:rgb(240,240,240);
+	text-align: center;
+	min-width: 22px;
+	height: 22px;
+	line-height: 16px;
+
+	z-index: 10000;
+	}
+	
+.blurWindow{
+	position: absolute !important;
+	top: 0 !important;
+	left: 0 !important;
+	width: 100% !important; 
+	height: 100% !important;
+		
+	background-color: rgba(85,85,85,0.45);
+	z-index: 9998 !important;
+	-webkit-backdrop-filter: blur(2px);
+	backdrop-filter: blur(2px);
+	}
+
+.blurWindow.lessBlur{
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	background-color: rgba(85,85,85,0.75) !important;
+	z-index: 9998 !important;
+}
+
+#buttons{
+    border: rgb(240, 240, 240) 2px ridge; 
+    border-radius: 5px; 
+    padding: 20px 60px 20px 80px; 
+    white-space: normal; 
+    /* line-height: 28px; */
+
+	max-width: 560px !important;
+	margin: auto auto !important;
+	/* transition: 1s; */
+
+	overflow: none !important;
+	overflow-y: scroll !important;
+
+	max-height: 90% !important;
+}
+
+.headline{
+    font-weight: 800; 
+    font-size:24px;
+    white-space: normal;
+	/* transition: 1s !important; */
+	/* max-width: 560px;
+	margin-left: auto !important;
+	margin-right: auto !important; */
+	max-height: 200px;
+	line-height: 28px !important;
+}
+
+.subheading{
+	margin-left: -20px !important;
+	margin-bottom: 2px !important;
+	margin-top: 10px !important;	
+}
+
+.shortcutText{
+    font-size: 12px; 
+    font-weight: 400;
+    font-style: italic; 
+    color:hsl(0, 0%, 40%);
+    white-space: normal;
+	/* transition: 1s !important; */
+}
+
+p.shortcutText{
+    line-height: 16px !important;
+    margin-left: 20px !important;
+	white-space: normal;
+}
+
+label{
+    margin-left: 0px;
+    padding-left: -20px;
+    white-space: normal;
+}
+
+label input{
+    margin-left: -20px;
+    margin-top: 12px;
+}
+
+#buttons * {
+	white-space: normal;
+}
+
+#reachtext {
+	line-height: 16px !important;
+	max-height: 500px;
+}
+
+#okbutton {
+	font-size: 14px; 
+	padding: 5px 0px 5px auto;
+}
+
+#okbuttonpara{
+	width: 100% !important;
+	max-width: 560px;
+	margin: 0px auto !important;
+}
+
+#upperframe {
+	height: 70% !important;
+}
+
+#emptyScreenMessage, #emptyScreenMessage > p, #emptyScreenMessage > h1, #emptyScreenMessage > h1 > b {
+margin-top: auto !important; 
+margin-bottom: auto !important; 
+color: white !important; 
+white-space: normal !important;
+margin-left: auto !important;
+margin-right: auto !important;
+line-height: 16px !important;
+
+min-width: 100px !important;
+max-width: 80% !important;
+}
+
+#emptyScreenMessage > h1, #emptyScreenMessage > h1 > b {
+	line-height: 24px !important;
+}
+
+#helpWindow {
+	/* border: 6px rgb(220,220,220) solid !important; */
+	/* background-color: rgba(85, 85, 85, 0.8) !important; */
+	/* box-shadow: 5px 5px 50px rgba(0, 0, 0, 0.3) !important; */
+	/* border: 100px rgba(85, 85, 85, 0.8) solid !important; */
+
+	position: absolute !important;
+	left: 0px !important;
+	top: 0px !important;
+	width: 100% !important;
+	height: 100% !important;
+
+	transform: none !important;
+	border-radius: 0px !important;
+
+	background-color: rgba(85, 85, 85, 0.8) !important;
+
+	/* background: none !important; */
+	
+
+	/* box-shadow: none !important; */
+
+}
+
+#helpWindowInnerDiv{
+
+	position: absolute;
+
+	top: 50% !important;
+	left: 50% !important;
+	
+
+	width: 500px !important;
+	max-width: 100% !important; 
+	height: 900px !important;
+	max-height: 100% !important;
+
+	color: rgb(240,240,240) !important;
+	white-space: normal !important;
+
+	padding: 0 5px 0 70px !important ;
+	transform: translate(-50%, -50%) !important;
+
+	overflow: auto;
+	
+	/* content: " "; */
+
+	/* z-index: -1; */
+}
+
+/* #helpWindow p,  */
+#helpWindow .mostText, 
+#helpWindow .subheading,
+#helpWindow .headline{
+filter: drop-shadow(0px 0px 2px black) !important;
+white-space: normal !important;
+line-height: 22px !important;
+;
+
+}
+
+#helpWindow .headline{
+	/* margin-left: -20px !important; */
+	margin-left: -48px !important;
+}
+
+#helpWindow .key:first-child{
+	filter: none !important;
+	margin-left: -28px !important
+}
+
+#helpWindow .subheading {
+	margin-left: -48px !important;
+	margin-bottom: 6px !important;
+	margin-top: 6px !important
+}
+
+@media screen and (max-width: 700px), (max-height: 700px) {
+
+	#settings, #tracking {
+		height: calc(100% - 20px) !important;
+		width: calc(100% - 20px) !important;
+		padding-top: auto !important;
+		padding-bottom: auto !important;
+		/* transition: 1s !important; */
+	}
+
+	#buttons {
+		max-width: 560px !important;
+		margin: auto auto !important;
+		/* transition: 1s; */
+	}
+
+	#shortcutForTop {
+		display: none !important;
+	}
+
+}
+
+@media screen and (max-width: 500px) {
+	.headline, 
+	#introtext, #outrotext, #reachtext, hr,
+	#trackingoutro {
+		opacity: 0%;
+		max-height: 0px !important; 
+		/* transition: 1s; */
+	}
+
+	.floatright{
+		float: none !important;
+	}
+
+	#trackertext {
+		max-height: calc(50% - 30px) !important;
+		overflow: hidden !important;
+		margin-top: 15px !important;
+	}
+
+	#trackertext ul, #trackertext li {
+		text-overflow: ellipsis !important;
+	}
+
+	#selectlistparent {
+		max-height: 50% !important;
+		float: none !important;
+		width: 100% !important;
+		padding-left: 0px !important;
+		margin-left: -40px !important;
+		text-align: left !important;
+	}
+
+	select, select * {
+		width: 100% !important;
+		margin-left: -40px !important;
+		padding-left: -40px !important;
+		text-align: left !important;
+	}
+
+	#upperframe {
+		height: calc(100% - 50px) !important;
+	}
+
+	.shortcutText{
+		display: none;
+	}
+}
+@media screen and (max-height: 625px) {
+	.headline, 
+	#introtext, #outrotext, #reachtext, hr,
+	#trackingoutro {
+		opacity: 0%;
+		max-height: 0px !important; 
+		/* transition: 1s; */
+	}
+
+	/* .floatright{
+		float: none !important;
+	}*/
+
+	#trackertext {
+		max-height: calc(100% - 50px) !important;
+		overflow: hidden !important;
+		margin-top: 15px !important;
+	}
+
+	#trackertext ul, #trackertext li {
+		text-overflow: ellipsis !important;
+	}*/
+
+	#selectlistparent {
+		height: 100% !important;
+		/* float: none !important;
+		width: 100% !important;
+		padding-left: 0px !important;
+		margin-left: -40px !important;
+		text-align: left !important; */
+	}
+
+	select, select * {
+		height: 100% !important;
+		/* width: 100% !important;
+		margin-left: -40px !important;
+		padding-left: -40px !important;
+		text-align: left !important; */
+	}
+
+	#upperframe {
+		height: calc(100% - 40px) !important;
+	} 
+}
+
+</style>
+
+<div id="cover" class="blurWindow" style="display: none"></div>
+<div id="settings" class="settingsWindow" style="display: none;" onblur="toggleSettingsContainer()">
+
+<div id="introtext">
+<span class="headline">Plugin Preferences<span id="shortcutForTop" class="shortcutText" style="float: right; line-height: 24px !important; padding-top: 7px">Toggle this window by pressing&nbsp;&#8984;+,
+</span></span>
+<br/>&nbsp;<!--br/>
+This is a plugin meant to display your screenplay divided into <b>one column per act</b>, or whatever else you want to call your topmost-level, single-hashtag section type.<br/>
+It’s most useful if you’re the kind of writer who likes to divide your scripts into <b>#ACTS</b>, <b>##SEQUENCES</b>, and perhaps <b>###SUB-SEQUENCES</b> (and so on) and will give you a real-time bird’s eye-view of your story.<br/>
+&nbsp;<br/--></div>
+	<div id="buttons">
+		<p class="subheading"><b>ITEMS TO SHOW IN OUTLINE</b></p>
+		<!-- <span style="font-weight: 700; font-size:15px;">Some settings:</span><br/><br/> -->
+		<label class="switch" onclick="toggleShowSceneNumbers()">
+			<input id="buttonForNumbers" type="checkbox"><span onclick="toggleShowSceneNumbers()"> Scene numbers <span class="shortcutText">(shortcut&nbsp;S)</span></span>
+		</label>
+		<br/>
+		<label class="switch" onclick="toggleShowPageNumbers()">
+			<input id="buttonForPages" type="checkbox"><span onclick="toggleShowPageNumbers()"> Page numbers <span class="shortcutText">(shortcut&nbsp;P)</span></span>
+		</label>
+		<br/>
+		<label class="switch" onclick="toggleShowSceneLength()">
+			<input id="buttonForLength" type="checkbox"><span onclick="toggleShowSceneLength()"> Lengths of scenes in eights <span class="shortcutText">(shortcut&nbsp;L)</span></span>
+		</label>
+		<br/>
+		<label class="switch" onclick="toggleDisplayNotes()">
+			<input id="buttonForNotes" type="checkbox"><span onclick="toggleDisplayNotes()"> Notes <span class="shortcutText"><i>(shortcut&nbsp;N)</i></span></span>
+		</label>
+        <br/>
+		<label class="switch" onclick="toggleDisplayMarkers()">
+			<input id="buttonForMarkers" type="checkbox"><span onclick="toggleDisplayMarkers()"> Markers <span class="shortcutText"><i>(shortcut&nbsp;M)</i></span></span>
+		</label>
+        <br/>
+		<p class="subheading"><br/><b>LOOK AND BEHAVIOR</b></p>
+		<label onclick="toggleProportional()">
+			<input id="buttonForProportional" name="buttonForProportional" type="checkbox"><span onclick="toggleProportional()"> Flexible scene heights <span class="shortcutText">(shortcut&nbsp;F)</span></span>
+		</label>
+		<br/>
+		<label class="switch" onclick="toggleOneColumnOutline()">
+			<input id="buttonForOneColumnOutline" type="checkbox"><span onclick="toggleOneColumnOutline()"> One tall column instead of divided per #act <span class="shortcutText"><i>(shortcut&nbsp;O)</i></span></span>
+		</label>
+        <br/>
+		<label class="switch" onclick="toggleRealTime()">
+			<input id="buttonForRealTimeUpdates" type="checkbox"><span onclick="toggleRealTime()"> Update in Real time as-you-type <span class="shortcutText"><i>(shortcut&nbsp;R)</i></span></span>
+		</label>
+        <br/>
+		<p class="subheading"><br/><b>OTHER</b></p>
+		<label class="switch" onclick="toggleWarnings()">
+			<input id="buttonForWarnings" type="checkbox"><span onclick="toggleWarnings()"> Display Warnings before delete, move and omit <span class="shortcutText"><i>(shortcut&nbsp;W)</i></span></span>
+		</label>
+        <br/>
+		<label class="switch" onclick="toggleColorScheme()">
+			<input id="buttonForColors" type="checkbox"><span onclick="toggleColorScheme()"> Use BEAT color theme instead of FTOutliner default <span class="shortcutText">(shortcut&nbsp;C) </span><br/>
+            <p class="shortcutText">Beat’s built-in color scheme is bright and sharp. <br/>The plugin’s default is softer, closer to sticky notes.</p></span>
+		</label>
+		<!--div id="reachtext"><br/>
+		<hr>
+		You can also toggle this dialog by hitting I for ”info”.
+		&nbsp;<br/></div-->
+	</div>
+<div id="outrotext">
+&nbsp;<br/>
+<p class="shortcutText"><b>NOTE:</b> Page lengths are approximations, calculated scene by scene. Since Beat will sometimes move an entire element to the next page rather than split it, the actual page count may differ upwards by a small percentage compared to the number here.</p>
+&nbsp;<br/>
+</div><div>
+<!-- &nbsp;<br/> -->
+<p id="okbuttonpara" style="text-align: right;"><button id="okbutton" type="button" onclick="toggleSettingsContainer()">Close</button></p>
+</div></div>
+
+<div id="outOfSyncDiv">
+<p id="outOfSyncMessage"></p>
+<p id="theScenesDiv"></p>
+</div>
+
+<div id="helpWindow" class="settingsWindow" style="display: none;" onclick="toggleHelpContainer();">
+	<div id="helpWindowInnerDiv">
+	<p class="headline">KEYBOARD SHORTCUTS</p>
+		<br/>
+	<p class="subheading"><b>SCENE INFO</b></p>
+	<p><span class="key">S</span><span class="mostText"> Show/Hide Scene Numbers</p>
+	<p><span class="key">P</span><span class="mostText"> Show/Hide Page numbers in section headers</p>
+	<p><span class="key">L</span><span class="mostText"> Show/Hide Lengths inside scenes</p>
+	<br/>
+	<p class="subheading"><b>SCRIPT NOTES &amp; MARKERS</b></p>
+	<p><span class="key">N</span><span class="mostText"> Show/Hide Notes</p>
+	<p><span class="key">&nbsp; &#8677; &nbsp;</span><span class="mostText"> Cycle through all notes one by one</p>
+	<p><span class="key">M</span><span class="mostText"> Show/Hide Markers</p>
+	<br/>
+	<p class="subheading"><b>CHARACTER TRACKING</b></p>
+	<p><span class="key">T</span><span class="mostText"> Open Tracking window</p>
+	<p><span class="key">1</span><span class="mostText"> through </span><span class="key">9</span><span class="mostText"> Highlight scenes based on character presence (without going through Tracking window)</p>
+		<p><span class="key">&nbsp; &#8679; &nbsp;</span><span class="mostText"> + number key adds character for highlighting.</p>
+			<p><span class="key">0</span><span class="mostText"> Turn off any active character highlight</p>
+	<br/>
+	<p class="subheading"><b>VIEWING MODES</b></p>
+	<p><span class="key">F</span><span class="mostText"> Toggle Flexible (proportional) mode</p>
+	<p><span class="key">O</span><span class="mostText"> Toggle One-column mode</p>
+	<p><span class="key">X</span><span class="mostText"> Index Card Modes: Cycle off, scenes, sequences</p>
+	<br/>
+	<p class="subheading"><b>VIEW OPTIONS</b></p>
+	<p><span class="key">&#8984;</span><span class="key">+</span><span class="mostText"> and </span><span class="key">&#8984;</span><span class="key">-</span><span class="mostText"> Increase and decrease font size</p>
+	<p><span class="key">&#8984;</span><span class="key">0</span><span class="mostText"> Default font size</p>
+	<p><span class="key">C</span><span class="mostText"> Toggle between Color Schemes</p>
+	<br/>
+	<p class="subheading"><b>OTHER</b></p>
+	<p><span class="key">R</span><span class="mostText"> Toggle Real Time Updating</p>
+	<p><span class="key">W</span><span class="mostText"> Toggle Warnings for Delete/Move/Omit</p>
+	<p><span class="key">&#8984;</span><span class="key">,</span><span class="mostText"> Open Settings Window</p>
+	<p><span class="key">?</span><span class="mostText"> Open this screen</p>
+	<p><span class="key">esc</span><span class="mostText"> Exit any window, feature or FTOutliner (in that order)</p>
+	<br/><br/>
+
+</div></div>
+
+<script>
+
+function displayEmptyScreenMessage(){
+
+	document.getElementById('outOfSyncDiv').style.display = 'none'
+	document.getElementById('outOfSyncDiv').classList.remove('animate')
+
+	document.getElementById("flexiContainer").innerHTML = `
+	
+	<div id="emptyScreenMessage">
+	<h1><b>Welcome to FTOutliner</b></h1>
+	<p>&nbsp;</p>
+	<p>This is a plugin that will show your screenplay divided into acts and sequences, and with your scenes displayed in a top-to-bottom timeline fashion with their size proportional to their length in the script.</p>
+	<p>&nbsp;</p>
+	<p>As soon as you add some structural elements into the document window this text will go away.</p>
+	<p>&nbsp;</p>
+	<p>Happy writing!</p>
+	`
+
+}
+
+
+function displayErrorMessage(information){
+
+	//document.removeEventListener("keydown", checkWhatKeyGotPressed);
+	errorHasFired = true
+
+	let moveMessage = `
+		<p class="errorWindowText"><b>FIRST OF ALL: </b><i><b>Your script is most likely okay!</b></i></p>
+		<p class="errorWindowText">For most of the time, FTOutliner does not touch the contents of your script, and there is no indication the error occured in any of the few places where it actually does.</p>
+		<p class="errorWindowText"><i>Of course, feel free to check the script for any anomalies. Should you find any, remember to hit UNDO (cmd+z) to return to the state before this error happened.</i></p>
+	`
+
+	if (actualChangesToScriptInProgress){
+		moveMessage = `
+			<p class="errorWindowText"><b>THE BAD NEWS: </b></p>
+			<p class="errorWindowText">It seems that we were right in the middle of MOVING, DELETING or OMITTING/UN-OMITTING text when this happened.
+				</p>
+			<p class="errorWindowText">This means if we're really out of luck, FTOutliner may have managed to start, but not finish, a process of altering the contents of your script.</p>
+
+			<p class="errorWindowText"><b>THE GOOD NEWS: </b><p>
+			<p class="errorWindowText">If it did, you should be able to use UNDO (cmd+z) to get back to your previous state. Once should be enough.<br/>
+				<i>So please look through your script document now to check if anything is off.</i></p>
+
+			<p class="errorWindowText">Also please remember that Beat constantly autosaves as-you-type, so should you not be able to undo, selecting FILE > REVERT TO... will give you a list of your most recent auto-saved states.</p>
+		`
+	}
+
+	let message = `
+	
+		<div id="errorWindow" class="settingsWindow" style="whitespace:normal; ">
+
+		<div id="warningDiv">` + warningSign + `</div>
+
+		<p class="headline" >Uh-oh! We’ve encountered a problem.</p>
+
+		<p class="errorWindowText">This is embarrassing. FTOutliner just ran into an error and will need to be restarted.</p>
+		`
+		+ moveMessage +
+		`
+
+		<p>&nbsp;</p>
+		<hr>
+		
+		<p class="errorWindowText"><b>WHEN YOU CLOSE THIS DIALOG, </b>FTOutliner will try to create an email with some data that may help track down exactly where in the code the error happened.</p>
+		<p class="errorWindowText">If possible, please add any details about what you were doing when the error message occurred, and send it to the pre-typed address. The only forwarded data will be the names of the latest jumps in the code. </p>
+		<p class="errorWindowText">&nbsp;</p>
+
+		<p id="closeAfterErrorButtonPara" style="text-align: center"><a id="errorClickButton" class="generalButtonStyle" href="mailto:ftoutliner@eviltomato.se?subject=Error report from FTOutliner&body=Hi,%0D%0A%0D%0AI just experienced an error in FTOutliner.%0D%0A%0D%0AHere's what I was doing:%0D%0A%0D%0A%0D%0A
+			-------------------------------------------------------------------------%0D%0A
+			Below are the last 50 jumps that were performed in the code:%0D%0A%0D%0A` + information.join("%0D%0A") + ` " onclick="Beat.call('Beat.custom.reallyQuit(true)')">Close FTOutliner and create email</a>
+
+		<p>&nbsp;</p>
+		</div>
+	`
+
+	coverContainer.style.display = "block"
+
+	flexiContainer.innerHTML += message
+
+
+
+
+}
+
+</script>
