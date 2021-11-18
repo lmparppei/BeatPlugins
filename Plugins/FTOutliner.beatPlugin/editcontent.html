@@ -1,0 +1,231 @@
+<style>
+
+[contenteditable="true"] {
+
+    /* background-color: red !important; */
+    /* color: white !important; */
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.editBox {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: inherit;
+    background-color:inherit;
+    color: black;
+
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    text-align: inherit;
+
+    vertical-align: text-top;
+
+    border: none;
+    /* border: 0.5px rgba(0,0,0,0.8) solid; */
+    border-radius: inherit;
+
+    outline: none !important;
+
+    cursor: text;
+
+    /* font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    font-size: calc(14px * var(--fontSizeFactor)) !important;
+    font-weight: normal; */
+
+
+    padding-left: 3px;
+
+    /* caret-color: #004394 !important; 
+    color: #004394 !important */
+
+    z-index: 9999
+}
+
+.editBox::-webkit-selection,
+.editBox::selection {
+    background-color: black;
+    color: #fff;
+}
+
+.level1 > .sectiontext > .editBox, 
+.special > .sectiontext > .editBox{
+
+    background-color: var(--pageBackground);
+    background-image: none !important;
+    color: white !important;
+
+}
+
+#flexiContainer.synopsisForScenesIsOn .level1 > .sectiontext >.editBox,
+#flexiContainer.synopsisForSectionsIsOn .level1 > .sectiontext >.editBox  {
+    height: calc(16px * var(--fontSizeFactor))  !important;
+}
+
+/* #flexiContainer.synopsisForScenesIsOn .section:not(.level1), */
+#flexiContainer.synopsisForScenesIsOn .section:not(.level1) .sectiontext {
+    z-index: 9999 !important; 
+}
+
+#flexiContainer.synopsisForScenesIsOn .section:not(.level1) .sectiontext .editBox,
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1) .sectiontext .editBox  {
+
+    background-color: white;
+    z-index: 99999 !important;
+    opacity: 1 !important;
+
+}
+
+</style>
+
+
+
+<script>
+
+function editContent() {
+
+    if(weAreCurrentlyEditingText || document.getElementById('outOfSyncDiv').style.display == 'block'){return}
+    //the OutOfSync check above disallows editing if outline is updating. So as not to edit out-of-date data.
+
+    event.stopImmediatePropagation()
+    theElement = event.target
+    theElement.draggable = false
+    
+    if (![...theElement.classList].includes("sectiontext") && ![...theElement.classList].includes("sceneheading")){
+        return
+    }
+
+    if([...theElement.classList].includes("hideSlugIfSmall")){
+        Beat.call(`Beat.alert("Can't edit hidden text", "You are trying to edit the heading of a scene that's too small to fit on the screen.\\n\\nPlease edit directly in the document, or switch to non-flexible view (shortcut F) to see all scenes regardless of length.")`)
+        return
+    }
+
+
+    weAreCurrentlyEditingText = true
+    document.removeEventListener("keydown", checkWhatKeyGotPressed)
+    document.addEventListener('keydown', editBoxListen)
+    theElement.ondblclick=""
+
+    let currentOutlineCount = findOutlineCountFor(theElement)
+    let theOldText = outline[currentOutlineCount].string
+
+    if(document.getElementById('editBox')){
+        mylog("removing previous editBox...")    
+        document.getElementById('editBox').remove()
+        mylog("...now done")
+    }
+
+    if(document.getElementById('youAreHere')){
+        mylog("removing youarehere inside editcontent...")    
+        document.getElementById('youAreHere').remove()
+        mylog("...now done")
+    }
+
+    mylog(theElement.id + ": " + theElement.classList)
+
+    coverContainer.classList.add("lessBlur")
+    coverContainer.style.display = "block" //today
+
+    let editBox = document.createElement("input")
+    editBox.type = "text"
+    editBox.id = "editBox"
+    editBox.draggable = false
+    editBox.value = theOldText
+    editBox.contentEditable = "true"
+    editBox.classList.add("editBox")
+
+    theElement.appendChild(editBox)
+    editBox.parentNode.parentNode.classList.add("noHover")
+    mylog("editbox appended")
+
+    document.getElementById("editBox").focus()
+    document.getElementById("editBox").addEventListener("blur", function(){
+        event.preventDefault();
+        weAreCurrentlyEditingText = false
+        exitEdit(theElement, false)})
+    mylog("eventlisteners appended")
+
+}
+
+function exitEdit(theElement, changesWereConfirmed) {
+    mylog("exitedit")
+
+    weAreCurrentlyEditingText = false
+
+    coverContainer.classList.remove("lessBlur")
+    coverContainer.style.display = "none" //today
+    
+    if(document.getElementById("editBox")){
+
+        let newContent = document.getElementById("editBox").value
+        
+        document.removeEventListener("keydown", editBoxListen)
+        
+        if(theElement && changesWereConfirmed){
+
+            weAreChangingColors = true //forces update of display even if non-realtime
+            currentOutlineCount = findOutlineCountFor(theElement)
+            
+            let shownLine = outline[currentOutlineCount].string
+            let line = outline[currentOutlineCount].line.string
+            let startPosition = outline[currentOutlineCount].line.position
+            let length = outline[currentOutlineCount].line.range.length
+            
+            mylog(newContent)
+
+            let resultingLine = line.replace(shownLine, newContent)
+
+            if (outline[currentOutlineCount].typeAsString == "Heading" && !resultingLine.startsWith(".") && !resultingLine.startsWith("INT") && !resultingLine.startsWith("EXT")){
+                resultingLine = "." + resultingLine
+            }
+
+            //Beat.call("Beat.alert(`" + line + "`,`" + resultingLine + "`)")
+            // Beat.call("Beat.setSelectedRange(" + startPosition + ", " + length + ")")
+            Beat.call(`
+                Beat.onTextChangeDisabled = true
+		        Beat.onOutlineChangeDisabled = true
+		        Beat.onSelectionChangeDisabled = true`
+            )
+            Beat.call("Beat.replaceRange(" + startPosition + ", " + (length - 1) + ", `" + resultingLine + "`)")
+
+            Beat.call(`
+                Beat.onTextChangeDisabled = false
+		        Beat.onOutlineChangeDisabled = false
+		        Beat.onSelectionChangeDisabled = false`
+            )
+            startFullUpdate(null,null,1)
+
+        }else{
+
+            document.getElementById("editBox").remove()
+        }
+
+        document.addEventListener('keydown', checkWhatKeyGotPressed)
+
+    }
+    //recalculateHeights()
+}
+
+function editBoxListen(someoneJustPressed){
+    if (someoneJustPressed.key == "Escape"){event.preventDefault(); exitEdit(theElement, false)}
+    if (someoneJustPressed.key == "Enter"){event.preventDefault(); exitEdit(theElement, true)}
+}
+
+
+function findOutlineCountFor(theElement){
+    let elementWithOutlineCount = theElement
+    let currentOutlineCount = elementWithOutlineCount.getAttribute('data-elementCount')
+    if (!currentOutlineCount) {
+        elementWithOutlineCount = elementWithOutlineCount.parentNode        
+        currentOutlineCount = elementWithOutlineCount.getAttribute('data-elementCount')
+        // Beat.call("Beat.alert('"+elementWithOutlineCount.classList + "', '" + currentOutlineCount +"')")
+    }
+
+    return currentOutlineCount
+}
+
+</script>
