@@ -2,7 +2,7 @@
 		"Cherry-Pick Scenes.beatPlugin": { "version": "1.7", "copyright": "Lauri-Matti Parppei 2021", "description": "Create a new document with selected scenes" },
 		"Clean Extra Spaces.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei 2021", "description": "Clean any extra spaces at the end of all lines" },
 		"Every Line by a Character.beatPlugin": { "version": "1.0", "copyright": "© Lauri-Matti Parppei", "description": "Creates a new document with every line of dialogue said by the selected character" },
-		"FTOutliner.beatPlugin": { "version": "1.1", "copyright": "Fredrik T Olsson 2021", "description": "A Flexible Time Outliner for navigating, structuring and editing your screenplay." },
+		"FTOutliner.beatPlugin": { "version": "1.2", "copyright": "Fredrik T Olsson 2021", "description": "A Flexible Time Outliner for navigating, structuring and editing your screenplay." },
 		"Gather Scenes by Character.beatPlugin": { "version": "1.1", "copyright": "Lauri-Matti Parppei", "description": "Creates a new document with scenes involving the selected character" },
 		"Gather Scenes by Heading.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei", "description": "Creates a new document with scenes containing a given text in heading" },
 		"Gather Scenes by Storyline.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei", "description": "Creates a new document with scenes containing the given storyline" },
