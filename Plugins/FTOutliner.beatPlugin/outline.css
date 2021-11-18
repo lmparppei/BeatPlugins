@@ -4,6 +4,8 @@
 	--fixedHeight: 14px;
 	--fontSizeFactor: 1;
 	--heightFactor: 1;
+
+	--baseFontSize: 12px;
 		
 	--proportionalScenes: 1;
 	--indexCardMode: 0;
@@ -16,6 +18,11 @@
 	
 	--putPopupHereX: 0;
 	--putPopupHereY: 0;
+
+	--indexCardHeight: 140px;
+
+	--indexReferenceForHeight: auto;
+	--pageBackground: #555;
 }
 
 :root,	html[data-theme='FTOutliner']{
@@ -38,6 +45,8 @@
 	--fixedHeight: 14px;
 	--fontSizeFactor: 1;
 	--heightFactor: 1;
+
+	--baseFontSize: 14px;
 		
 	--proportionalScenes: 1;
 	--indexCardMode: 0;
@@ -72,6 +81,8 @@
 	--fixedHeight: 14px;
 	--fontSizeFactor: 1;
 	--heightFactor: 1;
+
+	--baseFontSize: 14px;
 		
 	--proportionalScenes: 1;
 	--indexCardMode: 0;
@@ -98,12 +109,13 @@ html,body {
 
 body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-	background-color: #555 !important;
+	background-color: var(--pageBackground) !important;
 	overflow: hidden !important;
-	}
+}
 
 #flexiContainer{
 	/* border: 2px red solid;  */
+	/* position: relative; */
 
 	display: flex;
 
@@ -118,42 +130,62 @@ body {
 	padding: 10px 5px 0px 5px !important;
 
 	overflow-y: scroll;
+	overflow-x: hidden;
 }
 
-/* .section, .sceneheading{
-	transition: height 0.3s;
-} */
+.positionRelative {
+	position: relative !important;
+}
 	
 .section {
 	margin: 1px !important; 
-	padding:0px 0px 0px 8px; 
+	padding:calc(16px * var(--fontSizeFactor)) 0px 0px 8px; /*deleted one from 16 IMPORTANT!*/
+	position: relative !important;
 	
 	font-size: calc(12px * var(--fontSizeFactor)); 
 	font-weight: bold; 
-	line-height: 17px !important; 
+	line-height: calc(17px * var(--fontSizeFactor)) !important; 
 	
 	border: 3px solid #bbb !important; 
-	border-radius: 5px 0px 0px 0px !important;
+	border-radius: 3px 0px 0px 3px !important;
 	background-color: rgba(0, 0, 0, 0) !important; /*or else the entire DIV will get the background of color name!*/
-	border-bottom: 0px none !important;
-	border-right: 0px none !important;
+	border-bottom: 0px  !important;
+	border-right: 0px  !important; 
 	
-	background-image: -webkit-linear-gradient(top, #bbb , #bbb 16px, transparent 16px, transparent 100%);
-
     flex-grow: 1 !important;
 	flex-basis: 0 !important;
-	min-width: 0 !important; /*without this, flex-boxes with long titles will get wider than those with short titles*/
+	min-width: 0px !important; /*without this, flex-boxes with long titles will get wider than those with short titles*/
 	}
 
 /* .section * {
 	cursor: grab;
 } */
 
+.section div.sectiontext {
+	/* clear: both !important; */
+	position: absolute !important;
+	/* width: calc(100% - 4px) !important; */
+	height: calc(17px * var(--fontSizeFactor)) !important;
+	left: 5px !important;
+	top: -2px !important;
+	/* border: 1px yellow dotted;  */
+	margin-bottom: 17px !important; /*seemingly has no effect*/
+	pointer-events: all !important;
+
+	background-color: #bbb;
+	left: 0px !important;
+	padding-left: 5px !important;
+	width: calc(100% - 0px) !important;
+
+}
+
 p{
 	margin: 0px !important;
 	padding: 0px !important;
-	line-height: 12px !important;
-    min-width: 0 !important;
+	line-height: calc(14px * var(--fontSizeFactor)) !important;
+    min-width: 0px !important;
+
+	/* border: lime 1px solid !important; */
 	}
 
 .noOverflow{
@@ -162,43 +194,67 @@ p{
 	}
 	
 .clickThru{
-	pointer-events: none;
+	pointer-events: none !important;
 	}
 
 .sceneheading {
+	position: relative !important;
+
 	padding-left: 6px !important;
 	padding-right: 4px !important;
 	padding-top: 0px !important;
 	margin: 1px 8px 1px 0px !important; 
+	/* margin: 1px 8px 0px 0px !important;  */
 	
 	text-align: left;
-	font-size: calc(10px * var(--fontSizeFactor)); 
+	font-size: calc(10px * var(--fontSizeFactor)) !important; 
 	font-weight: normal;
 	color: #000 !important;
-	line-height: 11px !important;
+	line-height: calc(14px * var(--fontSizeFactor)) !important;
 	
 	border: none !important; 
+	/* border: 0.5px rgba(0, 0, 0, 0.1) solid !important; */
+	/* box-shadow: inset 0 0 0px 0.5px rgba(0, 0, 0, 0.2) !important;  */
 	background-color: #ddd; 
 	border-radius: 3px 3px 3px 3px !important;	
 	
 	/*min-height: calc(var(--fixedHeight) * calc(1 - var(--proportionalScenes))) !important;*/
     
     flex-grow: 1 !important;
+	/* flex-wrap: wrap !important; */
 	flex-basis: 0 !important;
-    min-width: 0 !important;
+    min-width: 0px !important;
 
 	position: relative; /* DO CHANGE BACK IF RELATIVE/ABSOLUTE POSITIONING OF INDICATOR FAILS!*/
+	pointer-events: all !important;
+
+	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%);
+	/* box-shadow: 0 5px 30px hsl(0 0% 0% / 20%); */
+
+
 	}
+
+.theSlugLine{
+	position: relative !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	display: block !important;
+}
+
 	
 .isOmitted {
 	background: 	repeating-linear-gradient(
 			-45deg,
-			transparent,
-			transparent 3px,
-			#ddd 3px,
-			#ddd 6px),
-	#bbb !important;
-	}
+			rgba(0,0,0,0.1) 0px,
+			rgba(0,0,0,0.1) 3px,
+			rgba(255,255,255,0.05) 3px,
+			rgba(255,255,255,0.05) 6px)
+			,
+	rgba(221, 221, 221, 1) !important;
+	color: rgba(0,0,0,0.9) !important;
+	font-style: italic;
+	margin-left: 16px !important;
+}
 
 .omittedScenesAreHidden {
 	display: none;
@@ -210,41 +266,76 @@ p{
 	opacity: 45%!important;
 	}
 
+.isOmitted .showSceneNum{
+	color: rgba(0, 0, 0, 0.9) !important;
+	opacity: 90% !important;
+	font-weight: bold !important;
+	font-size: calc(8px * var(--fontSizeFactor)) !important;
+	background-color: rgba(255,255,255,0.8);
+	border-radius: 5px !important;
+	padding-left: 3px !important;
+	margin-right: 5px !important;
+	font-style: normal !important;
+}
+
 .showSceneLength{
 	display: var(--showSceneLength);
 	
 	font-weight: bold;
-	font-size: 8px !important;
-	/* background-color: #fff;*/
+	font-size: calc(8px * var(--fontSizeFactor)) !important;
+	/* background-color: #fff;  */
 	/* FIX: currently cannot have background because it won't be shut off by hideslugifsmall class */
 	
-	position: relative !important;
+	/* position: relative !important; */
 	float: right !important;
-	top: -1px !important;
+	/* top: -17px !important; */
+	/* top: calc(-0px - 1px * var(--fontSizeFactor)) !important; */
+
 	
 	opacity: 45% !important;
-	margin-top: 1px;
-	padding: 0px 4px 0px 4px;
-	height: 10px !important;
-	}
+	margin-top: 0px !important; /*calc(1px * var(--fontSizeFactor)) !important;*/
+	margin-left: 0px !important;
+
+	padding: 0px 4px 0px 4px !important;
+	/* margin-bottom: 5px !important; */
+	/* height: 10px !important; */
+	/* height: calc(10px * var(--fontSizeFactor)) !important; */
+
+	/* border: maroon 1px solid !important;  */
+
+}
+
+p >.clear{
+	/* display: inline-block !important; */
+	float: none;
+	/* clear: both; */
+	/* border: lime 1px solid !important; */
+	margin-top: 40px !important;
+	max-width: 100% !important;
+	overflow: hidden !important;
+}
 
 .showSectionPageNumber{
 	display: var(--showPageNum);
 	
 	color: #555;
 	font-weight: normal;
-	font-size: 8px !important;
+	font-size: calc(8px * var(--fontSizeFactor)) !important;
 	/* background-color: #fff; */
 	/* FIX: currently cannot have background because it won't be shut off by hideslugifsmall class */
 	
 	position: relative !important;
 	float: right !important;
+	text-align: right !important;
+	right: 0px !important;
 	
 	opacity: 95% !important;
 	border-radius: 6px;
-	margin-top: 2px;
+	/* margin-top: 2px; */
+	margin-top: calc(2px * var(--fontSizeFactor)) !important;
+
 	padding: 0px 4px 4px 4px;
-	height: 10px !important;
+	/* height: 10px !important; */
 	pointer-events: none;
 	}
 
@@ -252,51 +343,164 @@ p{
 	display: var(--showPageNum);
 		
 	font-weight: bold;
-	font-size: 8px !important;
+	/* font-size: calc(8px * var(--fontSizeFactor)) !important; */
 	background-color: #fff;
 	color: #555;
-	height: 15px !important;
-	font-size: 10px !important;
-	line-height: 15px;
+	height: calc(15px * var(--fontSizeFactor)) !important;
+	font-size: calc(10px * var(--fontSizeFactor)) !important;
+	line-height: calc(15px * var(--fontSizeFactor));
 		
 	position: absolute !important;
 	float: right !important;
 	right: 8px !important;
-	bottom: -18px !important;
+	bottom: calc(-18px * var(--fontSizeFactor)) !important;/*-18px !important; */
 		
 	opacity: 35% !important;
-	border-radius: 10px !important;
+	border-radius: calc(10px * var(--fontSizeFactor)) !important;
 	margin-top: 100%;
 	padding: 0px 3px 0px 4px;
+	pointer-events: all !important;
 	}
 
 .showActLength:hover{
     opacity: 55% !important;
 }
 
-.showSynopsis{
-	line-height: 14px !important;
+div.thisIsASynopsis{
+	line-height: calc(15px * var(--fontSizeFactor)) !important;
 	font-style: italic !important;
-	width: calc(100% + 10.5px) !important;
+	font-size: calc(12px * var(--fontSizeFactor)) !important;
+	/* font-family: 'Courier Prime', 'Courier New', Courier, monospace; */
+
+	width: calc(100% + 10px) !important;
+	/* height: calc(100% - 13px) !important; */
+	/* height: 200px; */
 	white-space: normal !important;
-	height: calc(100% - 16px) !important;
+
+	border-radius: 0px 0px 3px 3px !important;
 
 	/* display: inline-block !important; */
-	overflow: hidden !important;
+	overflow: scroll !important;
 
-	margin: 0px -20px 0px -6px !important;
-	padding: 2px 0px 0px 16px !important;
+	transform: translateX(-6px) !important;
+
+	margin: 0px 0px 0px 0px !important;
+	padding: 2px 0px 0px 0px !important;
 
 	/* mix-blend-mode: multiply; */
-	/* border-top: 1px black solid; */
-	color: rgba(0, 0, 0, 0.9);
+	/*border-top: 1px black solid;*/
 
+	display: none;
 }
 
-.showSynopsis:first-of-type {
-	margin-top: 1px !important;
+.thisIsASynopsis > p {
+	line-height: calc(15px * var(--fontSizeFactor)) !important;
+	font-style: italic !important;
+	font-size: calc(12px * var(--fontSizeFactor)) !important;
+	/* font-family: 'Courier Prime', 'Courier New', Courier, monospace; */
+
+	padding: 0px 6px 0px 18px !important; /*left was 6, right was 3*/ /*top was 2, before changing font!*/ 
+	
+	margin-left: 0px !important; 
+	margin-top: 0px !important;
+
+	margin-right: 3px !important;
+	margin-bottom: calc(14px * var(--fontSizeFactor)) !important;
+	
+	border-radius: 5px !important;
+	min-height: 100% !important;
+
+	white-space: normal !important;
+
+	/* background-image: repeating-linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) calc(14px * var(--fontSizeFactor) - 1px), transparent calc(14px * var(--fontSizeFactor) - 1px), transparent calc(14px * var(--fontSizeFactor))) !important; */
+	/* background-attachment: scroll; */
+
+	color: rgba(0, 0, 0, 0.8); 
+}
+
+syn{
+white-space: inherit;
+}
+
+/* .thisIsASynopsis > p::before,  */
+syn::before{
+	content: "•" !important;
+	margin-left: -12px !important;
+	white-space: normal !important;
+	padding-right: 5px !important;
+}
+
+.synopseForSection > .thisIsASynopsis {
+	margin-top: -5px !important; 
+	margin-bottom: 0px !important; /*was two but why?*/
+	padding-top: 4px !important;
+	padding-bottom: 30px !important; /*added 4 here as well, then removed*/
+	width: calc(100% + 6.5px) !important;
+	border-radius: 0px 0px 3px 0px !important;
+	font-weight: normal !important;
+	background-color: #bbb; /* not important, so overriden if colored*/
+	pointer-events: all !important;
+
+	height: var(--indexCardHeight) !important;
+}
+
+/* .synopseForSection, 
+.synopseForSection > .thisIsASynopsis > p {
+	padding-bottom: 0px !important;
+	margin-bottom: 0px !important;
+;
+} */
+
+/* .thisIsASynopsis > p:last-child, .synopseForSection > p:last-child {
+	padding-bottom: 14px !important;
+	border:hsl(0, 70%, 70%) 1px solid !important;
+} */
+
+.sceneheading:hover > .thisIsASynopsis, .section:hover > .synopseForSection > .thisIsASynopsis{
+	/* background-color: inherit !important; */
+	/* background-image: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.6) 100%) !important; */
+	overflow: scroll !important;
+	color: white !important;
+}
+
+.sceneheading:hover > .thisIsASynopsis > p
+/* , .section:hover > .synopseForSection > .thisIsASynopsis > p  */
+{
+	/* color: rgba(0, 0, 0, 0.8);  */
+	color: rgba(255, 255, 255, 0.7); 
+}
+
+.section:hover > .synopseForSection > .thisIsASynopsis > p
+{
+background-color: rgba(255,255,255,0.6) !important;	
+/* border-top: 8px rgba(0,0,0,0.4) solid !important; */
+color: rgba(0, 0, 0, 1); 
+border-radius: 0px 0px 0px 0px !important;
+/* border-width: 0px !important; */
+width: 100% !important;
+
+padding-top: 4px !important; 
+margin-top: -5px !important;
+padding-bottom: var(--indexCardHeight) !important;
+}
+
+/* .thisIsASynopsis:first-of-type {
+	margin-top: 10px !important;
 	padding-top: 2px !important;
 	border-top: 1px rgba(0, 0, 0, 0.5) dotted;
+} */
+
+.section .showMoreSynopsis {
+	/* height: calc(100% - 13px) !important; */
+	height: 100px !important;
+
+	/* transition-property: height;
+	transition-delay: 0.2s;
+	transition-duration: 0.2s; */
+}
+
+.sceneheading > .showMoreSynopsis {
+	height: calc(100% - 13px) !important; 
 }
 	
 .level1 {
@@ -304,20 +508,33 @@ p{
 	position: relative !important;
 	/* top: 20px; */
 	text-align: center;
-	line-height: 30px !important;
-	background-image: none;
-	/* border: 1px solid orange !important; */
-	border: 0px none !important;
+	line-height: calc(30px * var(--fontSizeFactor)) !important;
+	background-image: none !important;
+	background-color: none !important;
+	/* border: 1px solid orange !important;  */
+	border: 0px none !important; */
 
 	overflow: visible !important;
 
 	margin-left: 5px !important;
 	margin-right: 5px !important;
+	margin-bottom: 8px !important;
 
 	flex-grow: 1 !important;
 	flex-basis: 0 !important;
-	min-width: 0 !important;
-	}
+	min-width: 0px !important;
+}
+
+.level1 > .sectiontext {
+	background-color: var(--special) !important;
+}
+
+div:not(:nth-of-type(1)).level1{
+	/* background-color: rgba(255,255,255,0.1) !important; */
+	/* border-left:rgba(255, 255, 255, 0.3) 1px solid !important; */
+	/* border-radius: 0px !important;   */
+	margin-left: 15px !important; 
+}
 	
 .level2, .level3, .level4, .level5 {
 	margin-left: 0px !important;
@@ -330,122 +547,223 @@ p{
     flex-grow: 1 !important;
 	flex-basis: 0 !important;
     min-width: 0px !important;
+
+	border-color: #bbb !important;
+
+	/* padding-top: 0px !important; this is important. */
 	}
 	
 .text-shift {
-	line-height: 17px !important;
+	line-height: calc(17px * var(--fontSizeFactor)) !important;
 	position: relative !important;
-	top: -2px !important;
+	top: calc(-2px * var(--fontSizeFactor)) !important;
 	}
 
-.level2.yellow, .level3.yellow, .level4.yellow, .level5.yellow {
-	background-image: -webkit-linear-gradient(top, var(--yellow), var(--yellow) 16px, transparent 16px, transparent 100%) !important;
+.section.yellow:not(.level1) > .sectiontext{
+	background-color: var(--yellow); 
+}
+.section.red:not(.level1) > .sectiontext{
+	background-color: var(--red);
+}
+.section.green:not(.level1) > .sectiontext{
+	background-color: var(--green);
+}
+.section.blue:not(.level1) > .sectiontext{
+	background-color: var(--blue);
+}
+.section.cyan:not(.level1) > .sectiontext{
+	background-color: var(--cyan);
+}
+.section.teal:not(.level1) > .sectiontext{
+	background-color: var(--teal);
+}
+.section.magenta:not(.level1) > .sectiontext{
+	background-color: var(--magenta);
+}
+.section.pink:not(.level1) > .sectiontext{
+	background-color: var(--pink);
+}
+.section.orange:not(.level1) > .sectiontext{
+	background-color: var(--orange);
+}
+.section.brown:not(.level1) > .sectiontext{
+	background-color: var(--brown);
+}
+.section.purple:not(.level1) > .sectiontext{
+	background-color: var(--purple);
+}
+.section.black:not(.level1) > .sectiontext{
+	background-color: var(--black);
+}
+.section.white:not(.level1) > .sectiontext{
+	background-color: var(--white);
+}
+.section.special:not(.level1) > .sectiontext{
+	background-color: var(--special);
+}
+
+.section.yellow:not(.level1){
 	border-color: var(--yellow) !important; 
-	}
-.level2.red, .level3.red, .level4.red, .level5.red {
-	background-image: -webkit-linear-gradient(top, var(--red), var(--red) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.red:not(.level1){
 	border-color: var(--red) !important; 
-	}
-.level2.green, .level3.green, .level4.green, .level5.green {
-	background-image: -webkit-linear-gradient(top, var(--green), var(--green) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.green:not(.level1){
 	border-color: var(--green) !important; 
-	}
-.level2.blue, .level3.blue, .level4.blue, .level5.blue {
-	background-image: -webkit-linear-gradient(top, var(--blue), var(--blue) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.blue:not(.level1){
 	border-color: var(--blue) !important; 
-	}
-.level2.cyan, .level3.cyan, .level4.cyan, .level5.cyan {
-	background-image: -webkit-linear-gradient(top, var(--cyan), var(--cyan) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.cyan:not(.level1){
 	border-color: var(--cyan) !important; 
-	}
-.level2.teal, .level3.teal, .level4.teal, .level5.teal {
-	background-image: -webkit-linear-gradient(top, var(--teal), var(--teal) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.teal:not(.level1){
 	border-color: var(--teal) !important; 
-	}
-.level2.magenta, .level3.magenta, .level4.magenta, .level5.magenta {
-	background-image: -webkit-linear-gradient(top, var(--magenta), var(--magenta) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.magenta:not(.level1){
 	border-color: var(--magenta) !important; 
-	}
-.level2.pink, .level3.pink, .level4.pink, .level5.pink {
-	background-image: -webkit-linear-gradient(top, var(--pink), var(--pink) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.pink:not(.level1){
 	border-color: var(--pink) !important; 
-	}
-.level2.orange, .level3.orange, .level4.orange, .level5.orange {
-	background-image: -webkit-linear-gradient(top, var(--orange),var(--orange) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.orange:not(.level1){
 	border-color: var(--orange) !important; 
-}.level2.brown, .level3.brown, .level4.brown, .level5.brown {
-	background-image: -webkit-linear-gradient(top, var(--brown),var(--brown) 16px, transparent 16px, transparent 100%) !important;
+}
+.section.brown:not(.level1){
 	border-color: var(--brown) !important; 
 	}
-.level2.purple, .level3.purple, .level4.purple, .level5.purple {
-	background-image: -webkit-linear-gradient(top, var(--purple),var(--purple) 16px, transparent 16px, transparent 100%) !important;
+.section.purple:not(.level1){
 	border-color: var(--purple) !important; 
 	}
-.level2.black, .level3.black, .level4.black, .level5.black {
-	background-image: -webkit-linear-gradient(top, var(--black),var(--black) 16px, transparent 16px, transparent 100%) !important;
+.section.black:not(.level1){
 	border-color: var(--black) !important; color: hsl(0deg, 0%, 75%) !important;
 	}
-.level2.white, .level3.white, .level4.white, .level5.white {
-	background-image: -webkit-linear-gradient(top, var(--white),var(--white) 16px, transparent 16px, transparent 100%) !important;
+.section.white:not(.level1){
 	border-color: var(--white) !important;
 	}
-.level2.special, .level3.special, .level4.special, .level5.special {
-	/*background-image: -webkit-linear-gradient(top, var(--black),var(--black) 16px, transparent 16px, transparent 100%) !important;*/
+.section.special:not(.level1){
 	background-image: none;
-	border-color: var(--special) !important; color: hsl(0deg, 0%, 75%) !important; 
-	width: 100% !important;
+	border-color: var(--special) !important; 
+	color: hsl(0deg, 0%, 75%) !important; 
+	/* width: 100% !important; */
 	text-align: center;
 	}
-	
 
-.sceneheading.yellow {
+/* .level2	{
+	box-shadow:inset 0 0 0 2000px rgba(255, 0, 150, 0.3);
+}
+
+.sceneheading, .thisIsASynopsis {
+	filter: brightness(1.25) !important;
+}	 */
+
+.sceneheading.yellow{
+/* , .section.yellow>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--yellow) !important;
 	}
 .sceneheading.red {
+/* .section.red>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--red) !important;
 	}
 .sceneheading.green {
+/* , .section.green>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--green) !important;
 	}
 .sceneheading.blue {
+	/* , .section.blue>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--blue) !important;
 	}
-.sceneheading.cyan {
+.sceneheading.cyan{
+	/* , .section.cyan>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--cyan) !important;
 	}
-.sceneheading.teal {
+.sceneheading.teal{
+	/* , .section.teal>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--teal) !important;
 	}
-.sceneheading.magenta {
+.sceneheading.magenta{
+	/* , .section.magenta>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--magenta) !important;
 	}
-.sceneheading.orange {
+.sceneheading.orange{
+	/* , .section.orange>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--orange) !important;
 	}
-.sceneheading.purple {
+.sceneheading.purple{
+	/* , .section.purple>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--purple) !important;
 	}
 .sceneheading.pink {
+	/* , .section.pink>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--pink) !important;
 	}
 .sceneheading.brown {
+	/* , .section.brown>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--brown) !important;
 	}
 .sceneheading.black {
+	/* , .section.black>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--black) !important;
 	}
 .sceneheading.gray {
+	/* , .section.gray>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--gray) !important;
 	}
-.sceneheading.white {
+.sceneheading.white{
+	/* , .section.white>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--white) !important;
 	}
 
-.sceneheading.special {
+.sceneheading.special, 
+.section.special>.synopseForSection>.thisIsASynopsis, 
+.section.special>.synopseForSection>.thisIsASynopsis>p, 
+.level1>.synopseForSection>.thisIsASynopsis,
+.level1>.synopseForSection>.thisIsASynopsis>p 
+{
 	background-color: rgba(0, 0, 0, 0) !important;
-	color: white !important;
+	background-image: none !important;
+	color: rgba(255, 255, 255, 0.7) !important;
 	}
 
+.section.special>.synopseForSection>.thisIsASynopsis, 
+.section.special>.synopseForSection>.thisIsASynopsis>p {
+	text-align: left !important
+}
+
+.sceneTitlePopup{
+	position: absolute;
+	border: 1px #555 solid;
+	opacity: 0;
+	color: black;
+	padding: 2px 4px;
+
+	width: auto;
+
+	font-size: calc(11px * var(--fontSizeFactor)) !important;
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0.4), rgba(255,255,255,0.4) 100%);
+
+	transition: opacity 0.3s !important;
+	z-index: 10000;
+}
+
+.revealPopup{
+	-webkit-backdrop-filter: blur(2px) !important;
+	backdrop-filter: blur(2px) !important;
+
+	opacity: 0.95 !important;
+	transition: opacity 0.3s !important;
+}
+
+.sceneTitlePopup > p{
+	overflow: hidden;
+}
+
+.sceneTitlePopup > .showSceneLength {
+	top: 0.5px !important; 
+}
 
 .tooltip{
 	visibility: hidden;
@@ -477,7 +795,7 @@ p.tooltipHead{
 	white-space: normal !important;
 	
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-	font-size: 12px !important;
+	font-size: calc(12px * var(--fontSizeFactor)) !important;
 	font-weight: bold !important;
 	line-height: 14px !important;
 	
@@ -491,7 +809,7 @@ p.tooltipInfo{
 	width: 100%;
 	text-align: right;
 	padding: 4px 10px 4px 10px !important;
-	font-size: 10px;
+	font-size: calc(10px * var(--fontSizeFactor)) !important; 
 	display: block;
 	margin: 0px;
 	opacity: 100% !important;
@@ -519,17 +837,52 @@ p.tooltipInfo{
 	border: 1px red solid;
 	box-shadow:3px 3px 5px rgba(0, 0, 0, 0.2) !important;
 
+	z-index: 9997;
+
+	pointer-events: none;
+	line-height: 14px !important;
+	padding: 0px !important;
+
+	margin-top: 0px !important;
+	margin-bottom: 0px !important;
+	text-align: left !important;
+	font-size: 15px !important;
+
 	}
+
+.indicator p { /*for debugging purposes only*/
+	display: none !important;
+	float: right !important;
+	padding: 0px 2px !important;
+	background-color: red !important;
+	margin-top: -16px !important;
+	margin-right: -1px !important;
+	text-align: right !important;
+	color: white !important;
+	font-size: 10px !important;
+	font-weight: bold !important;
+}
 	
 .indicator::before{
-	position: absolute !important;
+	padding: 0px !important;
+	margin-top: 0px !important;
+	margin-bottom: 0px !important;
+	text-align: left !important;
+
+	/* position: absolute !important; */
+	position: relative !important;
+	line-height: 14px !important;
+	height: 14px !important;
 	content: "\26AB";
 	color: red;
 	font-size: 15px;
 	font-weight: bold;
 	margin-left: -9px !important;
 	left: 2px !important;
-	top: -6px !important;	
+	/* top: calc(-7px * var(--fontSizeFactor)) !important;	 */
+	top: -8px !important;	
+	/* top: calc(calc(var(--fixedHeight) - 6px) * var(--fontSizeFactor)) !important;  */
+	/* float: left; */
 	}
 
 .level1 > .indicator{
@@ -553,13 +906,17 @@ p.tooltipInfo{
 	width: calc(100% + 28px)
 }
 
-.section > .indicator::before{
-	top: -9px !important;
+/* .section > .indicator::before{
+
+	top: calc(-9px * var(--fontSizeFactor)) !important;
+
 }
 
 .level1 > .indicator::before{
-	top: -16px !important;
-}
+
+	top: calc(-16px * var(--fontSizeFactor)) !important;
+
+} */
 
 
 .indicatorEnd {
@@ -584,29 +941,6 @@ p.tooltipInfo{
 	top: -6px;
     margin-right: -9px !important;
 	}
-
-/* .selectedOutline > p{
-	margin-left: -6px !important;
-	padding-left: 6px !important;
-	/* border-left: 2px red solid !important 
-} 
-
-.selectedOutline::before{
-	position: absolute;
-	left: 0px;
-	text-align: left !important;
-	content: "\26AB";
-	color: red;
-	font-size: 15px;
-	font-weight: bold;
-	margin-left: -14px !important;
-	top: -2px;	
-}
-
-.selectedOutline.level1::before{
-	left: 17px !important;
-	top: -8px !important;
-} */
 	
 div.tooltipContent {
 	height: 100% !important;
@@ -676,13 +1010,13 @@ p.synopse {
 	
 /* --- HOVER COMES AFTER ALL COLORS --- */
 
-.sceneheading:hover {
+.sceneheading:not(.noHover):not(.hideSlugIfSmall):not(.thisIsASynopsis):hover{
 	background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.80), rgba(20,20,20,0.80) 100%) !important;
 	color: white !important;
 	}
 
 .sceneheading.isSelected {
-	background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.9), rgba(0,0,0,0.9) 100%) !important;	
+	background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.8) 100%) !important;	
 	color: white !important;
 }
 	
@@ -692,19 +1026,27 @@ p.synopse {
 
 .hideSlugIfSmall:hover{
 		color: rgba(0,0,0,calc(1 - var(--proportionalScenes))) !important;
-	}
+		background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.80), rgba(20,20,20,0.80) 100%) !important;
+}
 	
-.level2:hover, .level3:hover, .level4:hover, .level5:hover {
+.section:not(.level1):not(.noHover):hover{
 	color: white !important;
-	background-image: -webkit-linear-gradient(top,  rgba(40,40,40,1),  rgba(40,40,40,1) 16px, transparent 16px, transparent 100%) !important;
 	border-color: rgba(40,40,40,1) !important;
-	}
+}
+.section:not(.level1):not(.noHover):hover > .sectiontext{
+	background-color: rgba(40,40,40,1);
+}
 
-.level2.isSelected, .level3.isSelected, .level4.isSelected, .level5.isSelected {
+.section:not(.level1).isSelected {
 	color: white !important;
-	background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.9), rgba(0,0,0,0.9) 16px, transparent 16px, transparent 100%) !important;
 	border-color: rgba(0,0,0,0.9) !important;
 	}
+.section:not(.level1).isSelected > .sectiontext {
+	background-color: rgba(0,0,0,0.9) !important;	
+}
+/* .level1:not(.noHover):hover{
+	color: white !important;
+} */
 	
 #debug{
 	position:absolute;  
@@ -724,6 +1066,9 @@ p.synopse {
 	/* flex-grow: 1 !important;
 	flex-basis: 0 !important;
     min-width: 0 !important; */
+
+	display: flex; 
+	flex-direction: column-reverse;
 	}
 	
 #helpButton{
@@ -755,6 +1100,23 @@ p.synopse {
 	transform: scale(1.05);
 }
 
+#indexCardButton{
+	right: 110px !important;
+	fill: white !important;
+
+	font-size: 32px !important;
+	line-height: 34px !important;
+}
+
+#indexCardButton:hover{
+	transition: 0.1s ease-out;
+	transform: scale(1.02);
+}
+
+#indexCardButton svg, #indexCardButton:hover svg{
+	pointer-events: all !important;
+}
+
 .bottomButton{
 	position: fixed !important;
 	bottom:12px !important;
@@ -767,7 +1129,7 @@ p.synopse {
 	height: 30px !important;
 	width: 30px !important;
 	/* border-radius: 15px !important; */
-	opacity: 40% !important;
+	opacity: 20% !important;
 	z-index: 9998;
 	}
 		
@@ -781,16 +1143,18 @@ button:hover{
 
 #speedReport{
 	left: 20px !important;
-	background-color: white;
+	/* background-color: white;
 	border-radius: 15px !important;
-	color: black !important;
-	font-size: 8px !important;
-    font-weight: 500 !important;
-	line-height: 8px !important;
+	color: black !important; */
+	font-size: 32px !important;
+    font-weight: 600 !important; /*was 800 for questionmark*/
+	line-height: 26px !important;
 	padding-top: 2px;
+
+	
 	/* opacity: 80% !important; */
 
-	display: none; /* for development/debugging purposes only */
+	/*display: none; /* for development/debugging purposes only */
 }
 
 #speedReport.red{
@@ -826,15 +1190,18 @@ button:hover{
 		#444 3px,
 		#444 6px),
 	#555 !important;
-	color: rgba(255,255,255,0.8) !important;
+	color: rgba(255,255,255,1) !important;
 	font-size: 18px !important;
 	font-weight: 700 !important;
 	display: none;
 	z-index: -999;	
+
+	opacity: 0.4;
 }
 	
-.animate{
+#outOfSyncDiv.animate{
 	animation: barberpole 1s linear infinite !important;
+	opacity: 0.9 !important;
 }
 	
 @keyframes barberpole {
@@ -843,12 +1210,576 @@ button:hover{
 }
 	
 #outOfSyncDiv>p {
-	width: 90% !important;
+	width: calc(100% - 160px) !important;
 	position: absolute;
-	bottom: 20px;
+	bottom: 14px;
 	text-align: right;
-	right: 120px;
+	right: 160px;
 	white-space: normal;
+	line-height: 18px !important;
+	opacity: 1 !important;
+}
+
+#padlockIcon{
+	/* position: absolute !important; */
+	/* left: 0px !important; */
+	/* top: 0px !important; */
+	/* height: 9px !important; */
+	height: calc(9px * var(--fontSizeFactor)) !important;
+	width: 12px !important;
+	max-height: 20px !important;
+	
+	/* transform: translateY(-0.5px) !important;  */
+	transform: translateX(-2px) !important; 
+	/* overflow: visible !important; */
+	/* background-color: coral !important; */
+	display: inline-block !important; 
+	opacity: 0.8 !important;
+	/* z-index: 9999 !important; */
+	
+	transition: none !important;
+}
+
+#padlockIcon svg{
+	transition: none !important;
+}
+
+.hideSlugIfSmall #padlockIcon{
+	/* height: 9px !important; */
+	height: calc(9px * var(--fontSizeFactor)) !important;
+	width: 12px !important;
+	opacity: 0 !important;
+
+	transition: none !important;
+}
+
+div.sceneheading:nth-child(1 of .sceneheading):not(.hidden){
+	margin-top: 2px !important;
+}
+
+/*
+.thisCancelsErrors{
+	test
+}
+*/
+
+.hidden, div.hidden, div.hidden>p {
+	/* display:none !important; */
+	height: 0px !important;
+	min-height: 0px !important;
+	transform: scaleY(0.01) !important; 
+	margin-top: 0px !important;
+	margin-bottom: 0px !important;
+	padding-top: 0px !important;
+	padding-bottom: 0px !important;
+	overflow: none !important;
+	opacity: 0 !important;
+
+	width: 0px;
+
+
+	transition: height 2s 3s, transform 3s 0s, opacity 5s 0s , width 5s 0s;
+	/* transition-delay: 0.5s, 0.5s, 0s;
+	transition-duration: 0.2s, 0.3s, 0.5s, 0.2; */
+	/* transition-duration: height 0.5s !important; */
+
+	/* transition: all 0.2s !important */
+}
+
+
+/*
+INDEX CARD VALUES
+=================
+*/
+
+/*column gutter stripes*/
+#flexiContainer.synopsisForScenesIsOn .level1:not(:first-of-type),
+#flexiContainer.synopsisForSectionsIsOn .level1:not(:first-of-type){
+		
+	/* border-left: 2px #aaa dotted !important;
+	border-right: 2px #aaa dotted !important; */
+	border-radius: 0px !important;
+	padding-left: 15px !important;
+	/* padding-right: 15px !important; */
+	margin-left: 0px !important;
+}
+#flexiContainer.synopsisForScenesIsOn .level1,
+#flexiContainer.synopsisForSectionsIsOn .level1{
+	padding-right: 0px !important;
+	margin-right: 0px !important;
+
+	margin-top: -10px !important;
+	padding-top: 10px !important;
+
+	/* height: auto !important; */
+	height: var(--indexReferenceForHeight);
+	min-height: calc(100% - calc(20px * var(--fontSizeFactor))) !important;
+	
+}
+
+#flexiContainer.synopsisForScenesIsOn .level1:nth-of-type(even),
+#flexiContainer.synopsisForSectionsIsOn .level1:nth-of-type(even){
+	border-left: 2px #aaa dotted !important;
+	border-right: 2px #aaa dotted !important;
+
+	background-color: rgba(255,255,255,0.1) !important;
+	/* margin-top: calc(-8px * var(--fontSizeFactor)) !important; */
+
+	/* margin-top: -8px !important;
+	padding-top: calc(9px + 16px * var(--fontSizeFactor)) !important;
+	padding-bottom: 100px !important;
+	min-height: calc(100% + calc(8px - 20px * var(--fontSizeFactor))) !important; */
+
+	height: var(--indexReferenceForHeight); /* + calc(8px - 20px * var(--fontSizeFactor)));*/
+
+
+
+}
+
+#flexiContainer.synopsisForScenesIsOn .level1>.sectiontext,
+#flexiContainer.synopsisForSectionsIsOn .level1>.sectiontext{
+	/* border: 1px red solid !important;  */
+	margin-top: 11px !important;
+	margin-bottom: 5px !important;
+	height: calc(55px * var(--fontSizeFactor)) !important;
+	/* padding-top: 25px !important; */
+}
+
+#flexiContainer.synopsisForScenesIsOn .level1>.sectiontext+.section{
+	margin-top: calc(18px * var(--fontSizeFactor)) !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .level1>.sectiontext+.section{
+	margin-top: calc(22px * var(--fontSizeFactor)) !important;
+}
+
+
+#flexiContainer.synopsisForScenesIsOn .sceneheading>.thisIsASynopsis,
+#flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis {
+	
+	display: block !important;
+	height: var(--indexCardHeight) !important;
+	overflow: scroll !important;
+}
+
+#flexiContainer.synopsisForScenesIsOn .sceneheading {
+	
+	height: var(--indexCardHeight) !important;
+	margin-top: 10px !important;
+	margin-left: 0px !important;
+
+	overflow: hidden !important; /*or else title scrolls too*/
+
+	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%);
+	
+	/* transition: height 0.2s, width 0.2s, top 2s, left 2s;  */
+}
+
+#flexiContainer.synopsisForScenesIsOn .sceneheading>p {
+
+	margin-top: -1px !important; /*calc(-1px * var(--fontSizeFactor)) !important;*/
+	padding-top: calc(1px + 1px * var(--fontSizeFactor)) !important;
+	margin-left: -10px !important;
+	padding-left: 10px !important;
+	margin-right: -10px !important;
+	padding-right: 10px !important;
+	padding-bottom: calc(3px * var(--fontSizeFactor)) !important; 
+
+	background-color: rgba(0, 0, 0, 0.2);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.8);
+}
+
+
+#flexiContainer.synopsisForSectionsIsOn .sceneheading, 
+#flexiContainer.synopsisForSectionsIsOn div.sceneheading:nth-child(1 of .sceneheading){
+
+	min-width: 0px !important;
+	min-height: 0px !important;
+	width: 8px !important;
+	height: 8px !important;
+	border-radius: 4px !important;
+	margin-left: 1px !important;
+	margin-right: 0px !important;
+	margin-top: calc(11px * var(--fontSizeFactor)) !important;
+	margin-bottom: calc(-10px * var(--fontSizeFactor)) !important;
+	padding: 0px !important;
+	float: left !important;
+
+	/* top: 113px !important; */
+	top: calc(var(--indexCardHeight) - 25px * var(--fontSizeFactor)) !important;
+
+	/* transition: 0.2s !important; */
+	overflow: hidden !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .sceneheading * {
+	/* display: none !important; */
+	width: 100px !important;
+	height: 100px !important;
+	background-color: rgba(85,85,85,0.3) !important;
+	color: rgba(0,0,0,0)
+}
+
+#flexiContainer.synopsisForSectionsIsOn .sceneheading .note {
+	background-color: yellow !important;
+	top: 0px !important;
+	left: -2px !important;
+	width: 8px !important;
+	height: 8px !important;
+	border-radius: 8px !important;
+	border: none !important; 
+	opacity: 1 !important;
+	clip-path: none !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .sceneheading .note::before {
+	display: none;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .sceneheading .selectedNote {
+	width: 1000px !important;
+	height: 1000px !important;
+	top: -15px !important;
+	left: -10px !important;
+	opacity: 1 !important;
+	background-color: yellow !important;
+	/* background-image: none !important; */
+}
+
+#flexiContainer.synopsisForScenesIsOn .section:not(.level1){
+	/* border-left: 3px transparent solid !important;
+	border-top: 3px transparent solid !important;
+	border-radius: 0px 0px 0px 0px !important; */
+	margin-top: 15px !important;
+
+	margin-left: -10px !important;
+	padding-left: 10px !important;
+
+	margin-right: 5px !important;
+
+	/*width: calc(100% + 30px) !important;
+	padding-right: 15px !important; */
+
+
+	border-left-style: none !important;
+	border-radius: 0px !important;
+
+}
+
+#flexiContainer.synopsisForScenesIsOn .section:not(.level1):not(.special)>.sectiontext{
+	padding-left: 10px !important;
+	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%); 
+	z-index: 9990 !important;
+}
+
+
+#flexiContainer.synopsisForSectionsIsOn .synopseForSection>.thisIsASynopsis {
+
+	position: absolute;
+	margin-top: calc(20px * var(--fontSizeFactor)) !important;
+	top: -3px !important;
+	display: block !important;
+	max-height: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
+	width: calc(100% - 0px) !important;
+	overflow: scroll !important;
+	background-color: rgba(0,0,0,0) !important;
+
+	/* border:rgb(12, 224, 227) 1px solid !important; */
+	/* padding-top: 3px !important; */
+
+	z-index: 9990 !important;
+
+	padding-bottom: 100px !important
+}
+
+#flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis:hover,
+#flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis:hover p,
+#flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis:hover syn {
+	background-color: none !important;
+	background-image: none !important ;
+	color: black !important;
+	width: calc(100% - 0px) !important;
+
+	padding-bottom: 100px !important;
+	/* border: orange 1px solid !important;  */
+	top: -2px !important;
+}
+
+/* #flexiContainer.synopsisForSectionsIsOn .section:hover syn,
+#flexiContainer.synopsisForSectionsIsOn .section:hover .thisIsASynopsis p {
+	color: white !important;
+	background-color: none !important;
+	background-image: none !important;
+	 font-weight: 900 !important; 
+
+} */
+
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1) div.sectiontext {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.8) !important;
+	background-color: rgba(0, 0, 0, 0.2) !important;
+	margin-left: -3px !important;
+	padding-left: 9px !important;
+	margin-right: 8px !important;
+	padding-right: 8px !important;
+
+	margin-top: -1px !important;
+	padding-top: 1px !important;
+	padding-bottom: 3px !important;
+	border-radius: 5px 5px 0px 0px !important;
+
+	width: calc(100% + 6px) !important;
+	height: calc(20px * var(--fontSizeFactor)) !important;
+
+	margin-bottom: 0px !important;
+
+	/* border: lime 1px solid !important; */
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1) div.sectiontext > p {
+
+	margin-bottom: 0px !important;
+}
+
+
+#flexiContainer.synopsisForScenesIsOn #dropDiv{
+	margin-top: 10px !important;
+	height: 0px;
+	padding-top: calc(var(--indexCardHeight) / 2 - 20px) !important;
+
+	transition: all 0.1s !important; 
+}
+#flexiContainer.synopsisForSectionsIsOn #dropDiv{
+	margin-top: 26px !important;
+	height: 0px;
+	padding-top: calc(var(--indexCardHeight) / 2 - 20px) !important;
+
+	transition: all 0.1s !important; 
+}
+
+#flexiContainer.synopsisForSectionsIsOn #dropDiv.dropZone,
+#flexiContainer.synopsisForScenesIsOn #dropDiv.dropZone{
+
+	height: var(--indexCardHeight) !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn #dropDiv.dropZone:not(.level2~#dropDiv.dropZone){
+	margin-top: calc(var(--indexCardHeight) + 8px) !important;
+	margin-bottom: calc(-1 * var(--indexCardHeight) + 14px) !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1) {
+
+	background-size: 100%;
+	margin-top: 28px !important; /*from 23 to 30 to fit two rows of scenes*/
+	
+	display: block !important;
+	
+	background-color: none !important;
+	border-style: none !important;
+
+	height: auto !important;
+	padding-bottom: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important; 
+
+	margin-right: 10px !important;
+	margin-left: -5px !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section.level3,
+#flexiContainer.synopsisForSectionsIsOn .section.level4,
+#flexiContainer.synopsisForSectionsIsOn .section.level5,
+#flexiContainer.synopsisForSectionsIsOn .section.level6 {
+	top: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section.level3 {
+	margin-left: 10px !important;
+	width: calc(100% - 10px) !important;
+
+}
+#flexiContainer.synopsisForSectionsIsOn .section.level4 {
+	margin-left: 20px !important;
+	width: calc(100% - 20px) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section.level5 {
+	margin-left: 30px !important;
+	width: calc(100% - 30px) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section.level6 {
+	margin-left: 40px !important;
+	width: calc(100% - 40px) !important;
+}
+
+
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).red::before {
+background-color: var(--red) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).orange::before {
+background-color: var(--orange) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).yellow::before {
+background-color: var(--yellow) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).green::before {
+background-color: var(--green) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).cyan::before {
+background-color: var(--cyan) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).teal::before {
+background-color: var(--teal) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).blue::before {
+background-color: var(--blue) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).purple::before {
+background-color: var(--purple) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).magenta::before {
+background-color: var(--magenta) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).pink::before {
+background-color: var(--pink) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).brown::before {
+background-color: var(--brown) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).grey::before {
+background-color: var(--grey) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).white::before {
+background-color: var(--white) !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1).special::before {
+background-color: #555 !important;
+border-color: #444 !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1):not(.noHover):hover::before {
+border-color: black !important;
+}
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1):not(.noHover):hover > .sectiontext {
+	background-color: black !important;
+}
+
+#flexiContainer.synopsisForScenesIsOn syn,
+#flexiContainer.synopsisForSectionsIsOn syn{
+
+  padding-left: 16px !important;
+  margin-left: -12px !important;
+  padding-right: 6px !important;
+  
+  opacity: 0.8 !important;
+  mix-blend-mode: multiply !important;
+
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  box-shadow: none !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .noteContainer{
+	/* top: var(--indexCardHeight) !important */
+	position: absolute !important;
+	top: 0px !important;
+} 
+
+#flexiContainer.synopsisForSectionsIsOn .level1>.noteContainer{
+	position: absolute !important;
+	top: 10px !important;
+	/* left: calc(150% - 5px) !important;
+	transform: translateX(-100%); */ 
+} 
+
+
+/*THESE ARE THE LINES*/
+/*===================*/
+#flexiContainer.synopsisForScenesIsOn .sceneheading::before,
+#flexiContainer.synopsisForScenesIsOn .sceneheading:hover::before,
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1)::after,
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1):hover::after{
+
+	position: absolute;
+	top: calc(9px + 13px * var(--fontSizeFactor)) !important;
+	left: 0px !important;
+	color: rgba(0, 0, 0, 0.3) !important;
+
+	content: " ";
+	background: repeating-linear-gradient(180deg, transparent 0%, transparent calc(15px * var(--fontSizeFactor) - 1px), rgba(0,0,0,0.1) calc(15px * var(--fontSizeFactor) - 1px), rgba(0,0,0,0.1) calc(15px * var(--fontSizeFactor)));
+	
+	height: calc(var(--indexCardHeight) - calc(22px * var(--fontSizeFactor))) !important;
+	width: 100% !important;
+	overflow: hidden !important;
+
+	pointer-events: all;
+	z-index: 0 !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1)::before,
+#flexiContainer.synopsisForSectionsIsOn .section:not(.level1):hover::before{
+
+	position: absolute !important;
+	top: -2px !important;
+	left: -3px !important;
+	width: 100% !important;
+	height: calc(var(--indexCardHeight) - 3px) !important;
+
+	background-color: #bbb;
+
+	content: " " !important;
+
+	border-width: 3px !important;
+	border-style: solid !important;
+	border-radius: 5px !important;
+	border-color: inherit !important;
+
+	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%); 
+
+	z-index: 0 !important;
+}
+
+/*YOU ARE HERE*/
+/*============*/
+
+#flexiContainer.synopsisForScenesIsOn .sceneheading.isSelected {
+	background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.7), rgba(0,0,0,0.7) 100%) !important;	
+	color: white !important;
+}
+
+
+
+#flexiContainer.printMode body {
+	--pageBackground: #fff;
+
+}
+
+#flexiContainer.printMode .sceneheading {
+	border: 1px #555 solid !important;
+	box-shadow: none;
+	box-sizing: content-box;
+	margin-bottom: 0px !important;
+	margin-top: -1px !important;
+}
+
+#flexiContainer.printMode:not(.synopsisForScenesIsOn):not(.synopsisForSectionsIsOn) div.sceneheading:nth-child(1 of .sceneheading) {
+
+	margin-top: 0.5px !important ;
+
+}
+
+#flexiContainer.printMode .level1>.sectiontext,
+#flexiContainer.printMode .section.special>.sectiontext{
+	color: black
+}
+
+#flexiContainer.printMode .showActLength {
+	color: #555;
+	opacity: 0.8 !important;
+}
+
+#flexiContainer.printMode .showSectionPageNumber {
+	color: #222;
+}
+
+#flexiContainer.printMode .indicator {
+	display: none !important;
 }
 
 </style>

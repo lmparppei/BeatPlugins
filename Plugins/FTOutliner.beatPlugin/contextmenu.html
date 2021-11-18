@@ -26,26 +26,98 @@
     color: black;
     list-style-type: none;
     vertical-align: middle !important;
-    padding-top: 0px !important;
+    /* padding-top: 0px !important; */
+    padding: 3px 6px 3px 6px !important;
+    margin: 0px -6px 0px -6px !important;
 }
 
 #contextmenu li:hover {
     background-color: rgb(15,110,212);
     color: white;
     border-radius: 4px !important;
-    margin-left: -6px !important;
+    /* margin-left: -6px !important;
     margin-right: -6px !important;
     padding-left: 6px !important;
     padding-right: 6px !important;
+    padding-top: 3px !important; */
+
+    padding: 3px 6px 3px 6px !important;
+    margin: 0px -6px 0px -6px !important;
+}
+
+#deleteSceneCommand:hover {
+    background-color: rgb(128, 0, 0) !important;
+    color: white;
+    border-radius: 4px !important;
+    /* margin-left: -6px !important;
+    margin-right: -6px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important; */
+
+    padding: 3px 6px 3px 6px !important;
+    margin: 0px -6px 0px -6px !important;
 }
 
 .colorSquare {
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 9px !important;
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 8px !important;
     display: inline-block !important;
-    padding-top: 2px !important;
-    transform: translateY(3px);
+    padding-top: 4px !important;
+    transform: translateY(2.5px);
+    overflow: hidden !important;
+}
+
+.trashCanMenuItem, .eyeWithCrossMenuItem, .eyeMenuItem {
+    height: 16px !important;
+    width: 16px !important;
+    display: inline-block !important;
+    transform: translateY(2.5px);
+}
+
+.trashCanMenuItem > #trashbutton{
+    fill: rgb(165, 0, 0);
+    opacity: 0.8 !important;
+    transition: fill 0ms !important;
+}
+
+.eyeWithCrossMenuItem > .eyeWithCrossIcon,
+.eyeMenuItem > .eyeIcon {
+    fill: black;
+    opacity: 0.8 !important;
+    transition: fill 0ms !important;
+}
+
+.trashCanMenuItem:hover > #trashbutton, #deleteSceneCommand:hover > .trashCanMenuItem > #trashbutton, 
+.eyeWithCrossMenuItem:hover > .eyeWithCrossIcon, #omitSceneCommand:hover > .eyeWithCrossMenuItem > .eyeWithCrossIcon
+.eyeMenuItem:hover > .eyeIcon, #unOmitSceneCommand:hover > .eyeMenuItem > .eyeIcon{
+    fill: white !important;
+    opacity: 1 !important;
+    transition: fill 0ms !important;
+}
+
+.displayNone{
+    display: none !important;
+}
+
+.shrinkingWhenOmitting, .shrinkingWhenOmitting > p, div.shrinkingWhenOmitting{
+    background: 	repeating-linear-gradient(
+			-45deg,
+			rgba(0,0,0,0.1) 0px,
+			rgba(0,0,0,0.1) 3px,
+			rgba(255,255,255,0.05) 3px,
+			rgba(255,255,255,0.05) 6px)
+			,
+	rgba(221, 221, 221, 1) !important;
+    height: 0px !important;
+    opacity: 0 !important;
+    color: rgba(0,0,0,0) !important;
+    margin-top: 0px !important;
+    margin-bottom: -1px !important;
+    
+    /* transition: height 0.5s 1s, opacity 0.2s 1.3s, font-color 0.5s 1s, margin 0.5s 1s !important; */
+    transition-delay: 2s !important;
+    transition: all 1s !important;
 }
 
 </style>
@@ -75,19 +147,29 @@ var colorsArray=[
 
 function contextMenu(theRightClickedThing, x, y, rightClick){
 
+    mylog("contextMenu")
+
     a = [...theRightClickedThing.classList]
 
-    if ((rightClick) && (a.includes("sceneheading") || a.includes("section"))) {      
+    //CMD+click to select multiple:
+    if ((rightClick) && (a.includes("sceneheading") || a.includes("sectiontext"))) {      
         
+        if (a.includes("sectiontext")){theRightClickedThing = theRightClickedThing.parentNode}
         if (!event.metaKey && !a.includes('isSelected')) {deselectAllElements()}
         
-        createContextMenu()
+        createContextMenu(a)
         theRightClickedThing.classList.add('isSelected')       
         return
     }
 
-
+    //user chose a color
     if ([...theRightClickedThing.classList].includes('colorListItem')) {
+
+        Beat.call(`
+        Beat.onTextChangeDisabled = true
+	    Beat.onOutlineChangeDisabled = true
+	    Beat.onSelectionChangeDisabled = true
+        `)
 
         closeContextMenu()
 
@@ -98,6 +180,8 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
         let elementCountArray = []
 
             for (element of selectedElements) {
+
+                if (areScenesProportional == 1 && [...element.classList].includes("isOmitted")){continue}
                 
                 let elementCount = element.getAttribute("data-elementCount")
                 elementCountArray.push(elementCount)
@@ -109,10 +193,33 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
 
         deselectAllElements()
     }   
+
+    //user chose a command
+    if ([...theRightClickedThing.classList].includes('command')) {
+
+        closeContextMenu()
+
+        if (theRightClickedThing.id == 'omitSceneCommand'){
+            omitScene(theRightClickedThing)
+        }
+
+        if (theRightClickedThing.id == 'unOmitSceneCommand'){
+            unOmitScene(theRightClickedThing)
+        }
+
+        if (theRightClickedThing.id == 'deleteSceneCommand'){
+            deleteScene(theRightClickedThing)
+        }
+        mylog("end of 'user chose command'")
+    }
+    
     closeContextMenu()
+    mylog("end of contextMenu()")
 }
 
 function setContextMenuPosition(event, contextMenu) {
+
+    mylog("setContextMenuPosition")
 
     var mousePosition = {};
     var menuPosition = {};
@@ -132,24 +239,66 @@ return menuPosition;
 }
 
 function deselectAllElements(){
+
+    mylog("deselectAllElements")
+
     let selectedElements = document.getElementsByClassName('isSelected')
-    let idToDeselect=[]
-    for (i=0; i < selectedElements.length; i++){
-        idToDeselect[i] = selectedElements[i].id
+
+    if (selectedElements.length){
+        for (i = selectedElements.length - 1; i > -1; i--) {
+            selectedElements[i].classList.remove('isSelected')
+        }
     }
-    for (i=0; i < idToDeselect.length; i++){
-        document.getElementById(idToDeselect[i]).classList.remove('isSelected')
-    }
+
+    mylog("end of deselectallelements")
 }
 
-function createContextMenu(){    
+function createContextMenu(clickedThingsClassList){   
+    
+    mylog("createContextMenu")
+
     let theContextMenu = document.getElementById('contextmenu')
+    let pluralSuffix = ""
+
+    elements = document.getElementsByClassName('isSelected')
+    let someAreOmitted = false
+    let someAreUnOmitted = false
+    if (elements.length > 1) {pluralSuffix = "s"}
+    for (element of elements){
+        if([...element.classList].includes("isOmitted")){someAreOmitted = true}
+        if(![...element.classList].includes("isOmitted")){someAreUnOmitted = true}
+    }
+
+    //mylog("<br>Some are omitted:" + someAreOmitted + ", some not:" + someAreUnOmitted + "<br>")
+
     theContextMenu.innerHTML = "" 
     for (item of colorsArray) {
+        if (item == "Special" && !clickedThingsClassList.includes("sectiontext")){continue}
+        let iconString = ""
+        if (item == "Remove Color"){iconString = "<p style ='font-size: 26px !important; transform: translateY(-10px); line-height: 24px !important;'>&#xd7;</p>"}
         theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 
-            "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'></div>  &nbsp;&nbsp;" +
+            "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'>" + iconString + "</div>  &nbsp;&nbsp;" +
             item + "</li>"
     }
+
+    theContextMenu.innerHTML += "<li id='contextMenuDivider1' class='clickThru contextMenuDivider'><hr></li>"
+    
+    document.getElementById('contextMenuDivider1').classList.add("displayNone")
+
+    if (clickedThingsClassList.includes('sceneheading')){
+        document.getElementById('contextMenuDivider1').classList.remove("displayNone")
+        if (!clickedThingsClassList.includes('isOmitted') || someAreUnOmitted){
+        theContextMenu.innerHTML += "<li class='command' id='omitSceneCommand'>" + 
+            "<div class='eyeWithCrossMenuItem clickThru'>" + hiddenIcon + "</div>  &nbsp;&nbsp;Omit Scene" + pluralSuffix + "</li>"
+        }
+        if (clickedThingsClassList.includes('isOmitted') || someAreOmitted){
+        theContextMenu.innerHTML += "<li class='command' id='unOmitSceneCommand'>" + 
+            "<div class='eyeMenuItem clickThru'>" + showIcon + "</div>  &nbsp;&nbsp;Un-omit Scene" + pluralSuffix + "</li>"
+        }
+    theContextMenu.innerHTML += "<li class='command' id='deleteSceneCommand'>" + 
+            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div>  &nbsp;&nbsp;Delete Scene" + pluralSuffix + "</li>"
+    }
+
 
     theContextMenu.classList.add('visible')
     if (x + theContextMenu.offsetWidth > window.innerWidth - 20) {x = x - theContextMenu.offsetWidth}
@@ -162,9 +311,113 @@ function createContextMenu(){
 }
 
 function closeContextMenu(){
+
+    mylog("closeContextMenu")
+
     let theContextMenu = document.getElementById('contextmenu')
     contextMenuIsOpen = false
-    theContextMenu.classList.remove('visible')
+    if(theContextMenu){theContextMenu.classList.remove('visible')}
+
+    mylog("exiting closeContextMenu()")
+}
+
+function omitScene(){
+
+    mylog("omitScene")
+
+    let elements = document.getElementsByClassName('isSelected')
+
+        if(areScenesProportional == 1){
+            for(element of elements){
+                //element.classList.add("dimmedScene")
+                element.classList.add("shrinkingWhenOmitting")
+            }
+        }
+
+    let elementsToOmit = []
+    var sectionfound = false
+
+        for (i = elements.length - 1; i > -1; i--) {
+            if ([...elements[i].classList].includes("section")){
+                sectionfound = true
+                continue
+            }
+            if (![...elements[i].classList].includes("isOmitted")){
+            elementsToOmit.push(elements[i].getAttribute("data-elementCount"))
+            }
+        }
+
+    if (sectionfound){
+        Beat.call(`Beat.alert('Ignoring section(s) when omitting', 'The range you selected to omit contains one or more SECTIONS.\\n\\nSince they already do not print with the script, omitting (essentially: "hiding")\\na section will only add an extra pair of omission marks without any other actual meaning.\\n\\nYou can go ahead and add them manually if you really want to (Beat will not protest) but all your sections will be visible in FTOutliner whether omitted or not.')`)
+    }
+
+    actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
+    Beat.call("Beat.custom.omitScene(" + areScenesProportional + ", [" + [...elementsToOmit] + "])")
+    deselectAllElements()
+}
+
+function unOmitScene(){
+
+    mylog("unOmitScene")
+
+    Beat.call("Beat.onTextChangeDisabled = true")
+    Beat.call("Beat.onOutlineChangeDisabled = true")
+	Beat.call("Beat.onSelectionChangeDisabled = true")
+
+    elements = document.getElementsByClassName('isSelected')
+    let elementsToUnOmit = []
+
+        for (i = elements.length - 1; i > -1; i--) {
+            if ([...elements[i].classList].includes("isOmitted")){
+            elementsToUnOmit.push(elements[i].getAttribute("data-elementCount"))
+            }
+        }
+
+    actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
+    Beat.call("Beat.custom.unOmitScene([" + [...elementsToUnOmit] + "])")
+    deselectAllElements()
+}
+
+function deleteScene(){
+
+    mylog("deleteScene")
+
+    elements = document.getElementsByClassName('isSelected')
+
+        for(element of elements){
+            element.classList.add("dimmedScene")
+            // if([...element.classList].includes("isOmitted")){
+            //     Beat.call("Beat.alert('Cannot delete omitted scenes', 'One or more scenes in the range you have selected to delete are currently omitted.\\n\\nPlease first unomit any scene you wish to delete, then try again.')")
+            //     undimAllScenes()
+            //     return
+            // }
+        }
+
+    let elementsToDelete = []
+
+        for (i = elements.length - 1; i > -1; i--) {
+            // mylog(outline[elements[i].getAttribute("data-elementCount")].typeAsString)
+            // if(outline[elements[i].getAttribute("data-elementCount")].typeAsString == "Synopse"){continue}
+            elementsToDelete.push(elements[i].getAttribute("data-elementCount"))
+        }
+        
+    Beat.call("Beat.custom.deleteScene([" + [...elementsToDelete] + "])")
+    deselectAllElements()
+    mylog("exiting DeleteScene()")
+}
+
+function undimAllScenes(){
+
+    mylog("undimAllScenes")
+    actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
+
+    let elements = document.getElementsByClassName('dimmedScene')
+	mylog("<br>antal element:" + elements.length + "," + elements +  "<br>")
+
+	for(i = elements.length-1; i > -1; i--){
+		mylog(i + ": " + elements[i] + "<br>")
+		elements[i].classList.remove('dimmedScene')
+	}
 }
 
 </script>

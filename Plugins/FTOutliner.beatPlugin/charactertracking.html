@@ -6,14 +6,31 @@
  white-space: normal;
 }
 
-.dimmedScene {
-    opacity: 10% !important;
+.dimmedScene, .dimmedScene > p .padlockIcon {
+    /* opacity: 10% !important; */
+    background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important;
+    color: rgba(0,0,0,0.2) !important;
+    fill: rgba(0,0,0,0.2) !important;
+    transition: 0s !important;
 }
 
-.section .dimmedSection {
+.dimmedScene:hover, .dimmedScene:hover > p {
+    color: rgba(255,255,255,0.4) !important;
+}
+
+.section:not(.level1).dimmedSection:not(#flexiContainer.synopsisForSectionsIsOn .dimmedSection) {
+    
     border-color:rgba(0, 0, 0, 0) !important;
     background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
     color:rgba(255, 255, 255, 0.10) !important;
+    /* border: 1px solid lime !important; */
+}
+
+.dimmedSection>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+    background-color: rgba(0,0,0,0) !important;
+}
+.section:not(.level1).dimmedSection:hover>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+    background-color: rgba(40,40,40,1) !important;
 }
 
 .rightfloat{
@@ -43,6 +60,10 @@ svg {
 
 }
 
+#indexCardButton.buttonIsActive svg {
+    transform: scale(0.8) translateY(1.5px) !important;
+}
+
 .bullets {
     margin-left: 20px;
 }
@@ -58,7 +79,7 @@ svg {
 	margin-right: auto;
 }
 
-#selectedCharacterName{
+#selectedCharacterName, #indexCardText{
     font-size: 9px;
     font-weight: 500;
     line-height: 10px;
@@ -71,6 +92,11 @@ svg {
     overflow: hidden;
     text-overflow: ellipsis;
     pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
+}
+
+#indexCardText{
+    transform: translateY(calc(-100% - 29px)) translateX(calc(-50% + 16px));
+
 }
 
 select, select * {
@@ -121,10 +147,12 @@ li {
 .scriptTextInWindow {
     font-family:'Courier Prime','Courier New', Courier, monospace; 
     font-size: 13.5px !important;
+    font-weight: bold;
+    letter-spacing: -0.3px;
     padding-bottom: 0px !important;
     padding-top: 1px !important;
     line-height: 16px !important;
-    background-color: white;
+    /* background-color: white; */
 }
 
 </style>
@@ -136,6 +164,7 @@ li {
     <div id="selectlistparent" class="rightfloat" style="height: calc(100% - 40px) !important; text-align: right !important;">
     <select style="height: 100% !important;" multiple onchange="updateFilter()" id="characterMenuList"></select><br/>
     <button id="deselectAllCharacters" onclick="deselectAllCharacters()">Deselect all</button>
+
     </div>
 
     <div  id="trackertext"><p class="normalWindowText"><span class="headline">Track characters</span><br/><br/>
@@ -181,10 +210,21 @@ function collectCharacters() {
 
 function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
 
-    if ((!scenesWithCharacters.length) && (scenesWithCharacters != scenesWithCharactersProxy)){
+    if ((!scenesWithCharacters.length) || (scenesWithCharacters != scenesWithCharactersProxy)){
+
+    let previouslySelectedCharacters
+    let reselectThese = []
 
         let itemNumber = 0
         scenesWithCharacters = scenesWithCharactersProxy //workaround to make this globally accessible
+
+        if (document.getElementById("characterMenuList").selectedOptions){
+             
+            previouslySelectedCharacters = document.getElementById("characterMenuList").selectedOptions
+            for (character of previouslySelectedCharacters){
+                reselectThese.push(character.value)
+            }
+        }
 
         document.getElementById("characterMenuList").innerHTML = "" 
 
@@ -196,6 +236,19 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
                 item +
                 "</option>"
         }
+
+        if (reselectThese.length){
+
+            for (character of reselectThese){
+                for (i = 0; i < characterMenuList.length; i++){
+                    if (characterMenuList[i].value == character){
+                        characterMenuList.options[i].selected = true;
+                    }
+                }
+            }
+        }
+
+
     }
     if (iCameFromToggleCharacter != -1){
         toggleSoloCharacter(iCameFromToggleCharacter)
@@ -227,6 +280,8 @@ function updateFilter(scenesWithCharactersProxy){
                         removeDim = true
                         for (currentCharacter of selectedCharacters){
                             let spacelessName = currentCharacter.value.replace(/ /g, "_")
+                            spacelessName = spacelessName.replace(/\'|\’|\"/g, "-")
+
                             if (!scenesWithCharacters[num].includes(spacelessName)) {
                             removeDim = false
                             }
