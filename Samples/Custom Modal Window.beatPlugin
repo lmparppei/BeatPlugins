@@ -1,0 +1,50 @@
+/*
+
+Modal Menu Example
+Copyright: 2021 Lauri-Matti Parppei
+Version: 1.0
+Note: This only works with Beat 1.89.6 or later
+
+*/
+
+Beat.openConsole()
+
+Beat.modal({
+	title: "Sample Modal Window",
+	info: "Custom modal windows allow the user to input stuff into multiple types of fields.",
+	items: [
+		{
+			type: "text",
+			name: "text1",
+			label: "Item Label",
+			placeholder: "Text input 1"
+		},
+		{
+			type: "dropdown",
+			name: "dropdown1",
+			label: "Selectable",
+			items: ["First", "Second", "Third"]
+		},
+		{
+			// Empty space to organize the items
+			type: "space"
+		},
+		{
+			type: "checkbox",
+			name: "check1",
+			label: "Toggle something"
+		},
+		{
+			type: "checkbox",
+			name: "check2",
+			label: "Toggle another thing"
+		}
+	]
+}, function(response) {
+	if (response) {
+		// The user clicked OK
+		Beat.log(JSON.stringify(response))
+	} else {
+		// The user clicked CANCEL
+	}
+})

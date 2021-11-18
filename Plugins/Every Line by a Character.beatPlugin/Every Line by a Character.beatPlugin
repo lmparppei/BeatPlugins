@@ -1,0 +1,45 @@
+/*
+
+Every Line by a Character
+Description: Creates a new document with every line of dialogue said by the selected character
+Copyright: © Lauri-Matti Parppei
+Version: 1.0
+
+*/
+
+let characters = []
+let text = "\n" // We need one extra line break at the beginning to make first line a character cue
+let dialogue = false
+
+// Gather character names
+for (const line of Beat.lines()) {
+	if (line.typeAsString() == "Character") {
+		const character = line.characterName().toUpperCase()
+		if (!characters.includes(character)) characters.push(character)
+	}
+}
+
+characters.sort();
+
+// Display prompt to select the character
+const characterName = Beat.dropdownPrompt("Gather Character Dialogue", "Select a character to create a new document:", characters);
+if (characterName == "" || characterName == null) return;
+
+// Iterate through the document
+for (const line of Beat.lines()) {
+	if ((line.typeAsString() == "Character" || line.typeAsString() == "Dual Dialogue Character") &&
+		line.characterName().toUpperCase() == characterName.toUpperCase())  {
+		dialogue = true
+	}
+	else if (!line.isDialogueElement() && dialogue) {
+		dialogue = false
+		text += "\n\n"
+	}
+
+	if (dialogue) {
+		text += line.string + "\n"
+	}
+}
+
+// Create the new document
+Beat.newDocument(text)

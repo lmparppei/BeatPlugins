@@ -1,26 +1,33 @@
 # Beat Plugins
 
-This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/).
+This is a collection of open source plugins for [Beat](http://kapitan.fi/beat/). 
 
-To install plugins, open Beat and navigate to *Tools → Plugin Library...* (*Manage Plugins* in older versions). You can download official plugins right from the app. To install custom ones or create your own, click on the folder icon to open the plugin folder.
+These official and verified plugins can be downloaded directly inside the app. To browse the available plugins, open Beat and click *Tools → Plugin Library...*. 
 
-If you write your own plugin, feel free to submit it either through pull request or e-mail. Sometimes, some of the stuff documented here might only work in the latest development build. 
+To install custom plugins or create your own, click on the folder icon to open the plugin folder. Then just drag & drop a plugin container into the folder, and you are all set.
 
-Official plugins in this repository are released under **MIT License**.
+If you write your own plugin, feel free to submit it either through a pull request or e-mail. 
+
+Official plugins in this repository are released under **MIT License**. 
 
 
 ---
 
-#  Beat Plugin API
+# Plugin API Documentation
+
+See **[Plugin Wiki](https://github.com/lmparppei/BeatPlugins/wiki)** for up-to-date documentation for Beat Plugin API.
+
+---
+
+
+## Basics
 
 Plugins are written in JavaScript. Beat provides a simple API to interact with the app.
 
 A plugin can be either a single file (`Plugin.beatPlugin`) or a folder containing script file by the same name (ie. `Plugin.beatPlugin/Plugin.beatPlugin`. In the folder model, plugins can access supporting asset files, such as HTML templates.
 
-The included sample plugin demonstrates basic logic behind plugins.
+The included sample plugin demonstrates basic logic behind plugins. Documentation below is updated alongside new versions of the app. The best way learn plugin development is to study the existing ones.
 
-
-## Basics
 
 ### Writing Plugins
 
@@ -62,8 +69,57 @@ Have fun and make something useful!
 `Beat.prompt("Title", "Informative Text", "Placeholder string")` – get text input from the user, returns a string  
 `Beat.dropdownPrompt("Title", "Informative Text", [value, value, value])` – allow the user to select a value from an array, returns a string   
 
-For more elaborate inputs it is wiser to use `Beat.htmlPanel()`.   
+For more elaborate inputs it is wiser to use `Beat.htmlPanel()` or `Beat.modal()`.  
   
+  
+### Advanced Modal Windows
+
+You can create more advanced modal windows with multiple types of inputs using `Beat.modal()`. It takes in an object with the following properties: `title` (title of the modal), `info` (informative text) and `items: []` (an array of inputs).
+
+See the example below to get an idea on how advanced modals work.
+
+```
+Beat.modal({
+    title: "This is a test modal",
+    info: "You can input stuff into multiple types of fields",
+    items: [
+        {
+            type: "text",
+            name: "characterName",
+            label: "Character Name",
+            placeholder: "First Name"
+        },
+        {
+            type: "dropdown",
+            name: "characterRole",
+            label: "Role",
+            items: ["Protagonist", "Supporting Character", "Other"]
+        },
+        {
+            type: "space"
+        },
+        {
+            type: "checkbox",
+            name: "important",
+            label: "This is an important character"
+        },
+        {
+            type: "checkbox",
+            name: "recurring",
+            label: "Recurring character"
+        }
+    ]
+}, function(response) {
+    if (response) {
+        // The user clicked OK
+        Beat.log(JSON.stringify(response))
+    } else {
+        // The user clicked CANCEL
+    }
+})
+```
+
+
 
 ### Save Plugin Defaults
 
@@ -117,7 +173,7 @@ Any changes you make are directly represented in the `Line` objects. That's why 
 
 `Beat.lines()` array contains all the lines in the script as objects. This is not a copy of the array, but the actual line array from parser. A line object contains multiple values, including but not limited to:
 
-`line.string` —	string content  
+`line.string` — string content  
 `line.position` — starting index of line  
 `line.textRange` — range of the line (`{ location: ..., range: ... }`)  
 `line.range` — full location and length INCLUDING line break  
@@ -133,9 +189,9 @@ Any changes you make are directly represented in the `Line` objects. That's why 
 Iterate through lines:
 ```
 for (const line of Beat.lines()) {  
-	// Do something  
+    // Do something  
 }  
-```	
+``` 
 
 
 ### Scenes
@@ -151,18 +207,18 @@ for (const line of Beat.lines()) {
 `scene.storylines` — storylines for the scene  
 `scene.sectionDepth` – depth of a section element  
 `scene.typeAsString()` — scene type (heading, section, synopse)  
-	
+    
 Iterate through the outline (includes sections and synopsis markers):  
 ```
 for (const scene of Beat.outline()) {
-	// ...
+    // ...
 }
 ```
 
 Iterate through **scenes only**:  
 ```
 for (const scene of Beat.scenes()) {
-	// ...
+    // ...
 }
 ```
 
@@ -186,10 +242,10 @@ const paginator = Beat.paginator() // Create new paginator instance
 const scenes = Beat.scenes()
 
 for (const scene of scenes) {
-	const lines = Beat.linesForScene(scene)
-	paginator.paginateLines(lines)
-	
-	let eights = paginator.lengthInEights() // Returns [pages, eights]
+    const lines = Beat.linesForScene(scene)
+    paginator.paginateLines(lines)
+    
+    let eights = paginator.lengthInEights() // Returns [pages, eights]
 }
 ``` 
 
@@ -223,9 +279,9 @@ Runs whenever the screenplay is edited, and receives location and length of the 
 
 ```
 Beat.onTextChange(
-	function (location, length) {
-		Beat.log("Edited at " + location + " (length: " + length +")")
-	}
+    function (location, length) {
+        Beat.log("Edited at " + location + " (length: " + length +")")
+    }
 );
 ```
 
@@ -235,9 +291,9 @@ You can listen to selection changes with `setSelectionUpdate()`. Note that this 
 
 ```
 Beat.onSelectionChange(
-	function (location, length) {
-		Beat.log("Selection changed to " + location + "/" + length)
-	}
+    function (location, length) {
+        Beat.log("Selection changed to " + location + "/" + length)
+    }
 )
 ```
 
@@ -247,11 +303,11 @@ Beat.onSelectionChange(
 
 ```
 Beat.onOutlineChange(
-	function (...outline) {
-		for (let i=0; i < outline.length; i++) {
-			// Do something with the new outline
-		}
-	}
+    function (...outline) {
+        for (let i=0; i < outline.length; i++) {
+            // Do something with the new outline
+        }
+    }
 )
 ```
 
@@ -266,9 +322,9 @@ This should only be used for updating something in your UI. For example, if you 
 ```
 const scenes = Beat.outline()
 Beat.onSceneIndexUpdate(
-	function (sceneIndex) {
-		let currentScene = scenes[sceneIndex]
-	}
+    function (sceneIndex) {
+        let currentScene = scenes[sceneIndex]
+    }
 )
 ```
 
@@ -280,9 +336,9 @@ To avoid strange loops, you can disable the listeners when needed:
 
 ```
 Beat.onTextChange(function (len, loc) {
-	Beat.onTextChangeDisabled = true
-	Beat.replaceRange(0,0, "Hello World! ")
-	Beat.onTextChangeDisabled = false
+    Beat.onTextChangeDisabled = true
+    Beat.replaceRange(0,0, "Hello World! ")
+    Beat.onTextChangeDisabled = false
 })
 ```
 
@@ -304,7 +360,7 @@ When using a **resident plugin**, you can set a timer for a single interval. The
 
 ```
 Beat.timer(1.0, function () {
-	Beat.log("One second elapsed.")
+    Beat.log("One second elapsed.")
 })
 ```
 
@@ -334,22 +390,22 @@ The `callback` function receives an object, which contains two keys, `data` and 
 
 ```
 Beat.htmlPanel(
-	"<h1>Hello World</h1>\
-	<input type='text' rel='beat' name='textInput'>\
-	<script>Beat.data = { 'hello': 'world' }</script>",
-	600, 300,
-	function (result) {
-		/*
-		
-		In this case, callback receives:
-		result = {
-			data: { hello: 'world' },
-			inputData: { name: 'textInput', value: '' }
-		}
-		
-		*/
-		Beat.end()
-	}
+    "<h1>Hello World</h1>\
+    <input type='text' rel='beat' name='textInput'>\
+    <script>Beat.data = { 'hello': 'world' }</script>",
+    600, 300,
+    function (result) {
+        /*
+        
+        In this case, callback receives:
+        result = {
+            data: { hello: 'world' },
+            inputData: { name: 'textInput', value: '' }
+        }
+        
+        */
+        Beat.end()
+    }
 )
 ```
 
@@ -373,17 +429,17 @@ The biggest difference to `htmlPanel` is, that you can transfer data in real tim
 
 ```
 let htmlWindow = Beat.htmlWindow(
-	"<div id='ctx'></div>\
-	<script>\
-		let ctx = document.getElementById('ctx')\
-		Beat.call(\"Beat.log('Hello world')\")
-	</script>", 
-	300, 200,
-	function () { Beat.end() }
+    "<div id='ctx'></div>\
+    <script>\
+        let ctx = document.getElementById('ctx')\
+        Beat.call(\"Beat.log('Hello world')\")
+    </script>", 
+    300, 200,
+    function () { Beat.end() }
 )
 
 Beat.setUpdate(function (loc, len) {
-	htmlWindow.runJS("ctx.innerHTML += 'change at " + loc + ' (length ' + len + ")<br>'")
+    htmlWindow.runJS("ctx.innerHTML += 'change at " + loc + ' (length ' + len + ")<br>'")
 })
 ```
 
@@ -420,7 +476,7 @@ Inside **HTML panel**, set `Beat.data` object to be another object. This object 
 HTML code:  
 ````
 <script>
-	Beat.data = { customData: "This will be sent to the callback." }
+    Beat.data = { customData: "This will be sent to the callback." }
 </script>
 <button onclick='sendBeatData()'>Send Data</button>
 ````
@@ -428,8 +484,8 @@ HTML code:
 Plugin code:  
 ````
 Beat.htmlPanel(html, 400, 400, function (htmlData) {
-	// We will now receive any data set in the HTML panel
-	Beat.alert("This is what we got:", htmlData.data.customData)
+    // We will now receive any data set in the HTML panel
+    Beat.alert("This is what we got:", htmlData.data.customData)
 })
 ````
 
@@ -450,7 +506,7 @@ HTML:
 Plugin:  
 ```
 function hello() {
-	Beat.alert("Hello World")
+    Beat.alert("Hello World")
 }
 ```
 
@@ -459,9 +515,9 @@ function hello() {
 Plugin:  
 ```
 Beat.custom = {
-	hello: function () {
-		Beat.alert("Hello World!")
-	}
+    hello: function () {
+        Beat.alert("Hello World!")
+    }
 }
 ```
 
@@ -508,21 +564,22 @@ Using background threads in plugins is highly experimental and unrecommended, bu
 
 Example:  
 ```
-// Load any required data
-const scenes = Beat.scenes()
-const lines = Beat.lines()
+// Load any required data and make a copy of the array, 
+// so it won't be mutated while you are in a background thread
+const scenes = [... Beat.scenes()]
+const lines = [... Beat.lines()]
 
 // Dispatch to a background thread
 Beat.dispatch(function () {
-	// Do something with the data
-	for (let line of lines) {
-		// ...
-	}
+    // Do something with the data
+    for (let line of lines) {
+        // ...
+    }
 
-	// Return the results to UI in main thread
-	dispatch_sync(function () {
-		htmlWindow.setHTML("Results: ... ")
-	})
+    // Return results to the main thread (UI)
+    Beat.dispatch_sync(function () {
+        htmlWindow.setHTML("Results: ... ")
+    })
 })
 ```
 
@@ -533,7 +590,7 @@ Most of the methods here are wrappers for the parser associated with current doc
 ```
 let parser = Beat.currentParser
 for (let line of parser.lines) {
-	//...
+    //...
 }
 ``` 
 
@@ -543,7 +600,7 @@ You can also create a new, static parser to parse external Fountain files, with 
 let parser = Beat.parser(stringToParse)
 
 for (let line of parser.lines) {
-	// ...
+    // ...
 }
 ```
 
@@ -554,12 +611,11 @@ There are some property/method inconsistencies between the normal Beat parser ac
 `parser.scenes` — scene objects only *(**note**: property, not a method)*  
 `parser.titlePage` — title page elements  
 `parser.linesInRange({ location: x, length: y })` — get all lines in the selected range *(**note:** parameter has to be a range object)*  
-`parser.lineAtIndex(index)` — get line item at given character index  
-`parser.sceneAtIndex(index)` — get outline item at given character index  
+`parser.lineAtPosition(index)` — get line item at given character index (`.lineAtIndex()` prior to 1.90.4)  
+`parser.sceneAtPosition(index)` — get outline item at given character index (`.sceneAtIndex()` prior to 1.90.4)  
   
 
 # Plugin Guidelines
-
 
 * **Be Nice** – don't make the user confused and try not to mess up their work. Test your plugins thoroughly, especially if they make any changes to the screenplay itself. Try to take edge cases into account.
 
