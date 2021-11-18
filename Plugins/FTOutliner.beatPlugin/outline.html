@@ -3,35 +3,42 @@
 <!-- ================================================== -->
 
 <div id="debug" class="debugWindow" style="display: none"></div>
-<div id="flexiContainer"></div>
+<div id="flexiContainer" class="positionRelative"></div> 
+	<!--must be able to remove position: relative for FlexiContainer during drag-n-drop, or else the ghost image cannot be created -->
 <div id="helpButton" class="bottomButton">&#9881;</div>
-<div id="characterButton" class="bottomButton"><svg width="90%" height="90%" viewBox="0 0 134 129" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g transform="matrix(0.0914882,0,0,0.0914882,-55.722,-69.8855)">
-        <path d="M1460.88,1521.97L1460.88,1934.76L1215.5,2170.98L1215.5,1732.94C1170.4,1774.99 1109.91,1800.73 1043.45,1800.73C904.154,1800.73 791.064,1687.64 791.064,1548.35C791.064,1430.32 872.253,1331.11 981.765,1303.57L609.063,955.318L2067.32,955.318L1460.88,1521.97ZM1043.45,1418.32C1115.21,1418.32 1173.48,1476.58 1173.48,1548.35C1173.48,1620.11 1115.21,1678.38 1043.45,1678.38C971.685,1678.38 913.422,1620.11 913.422,1548.35C913.422,1476.58 971.685,1418.32 1043.45,1418.32ZM2067.32,763.875L609.063,763.875L609.063,931.696L2067.32,931.696L2067.32,763.875Z" style="fill:rgb(235,235,235);"/>
-    </g>
-</svg>
-<div id="selectedCharacterName"></div>
-</div>
-<div id="speedReport" class="bottomButton"></div>
+<div id="characterButton" class="bottomButton"></div>
+<div id="indexCardButton" class="bottomButton" onclick="cycleIndexCardMode()"></div>
+<div id="speedReport" class="bottomButton" onclick="toggleHelpContainer()">&#8984;</div>
 
 <!-- ================================================== -->
 <!--      HERE ENDS THE HTML PART, JAVASCRIPT BELOW     -->
 <!-- ================================================== -->
 
-
 <script>
+
+document.getElementById("indexCardButton").innerHTML = indexCardIcon + `<div id="indexCardText"></div>`
+document.getElementById("characterButton").innerHTML = funnelIcon + `<div id="selectedCharacterName"></div>`
 
 // GLOBAL UI VARIABLES
 
-var typeTimer = null; //setting initial timer to avoid errors	
+var smallTypeTimer = null; //setting initial timer to avoid errors	
+var fullTypeTimer = null;
 var debugContainerVisibility=0;
 var settingsContainerVisibility = 0;
 var trackingContainerVisibility = 0;
+var helpContainerVisibility = 0;
+var notesAreDisplayed = false;
+var markersAreDisplayed = false;
+var synopsisAreDisplayed = false;
+var scenesAreHidden = false;
 var oneColumnOutline;
 var indexCardMode = 0;
+var currentZoomLevel;
+
 var debugContainer = document.getElementById('debug');
 var settingsContainer = document.getElementById('settings');
 var trackingContainer = document.getElementById('tracking');
+var helpContainer = document.getElementById('helpWindow');
 var coverContainer = document.getElementById('cover');
 var theRoot = document.querySelector(':root');
 var colorScheme
@@ -43,15 +50,18 @@ var classListArray = []
 var contextMenuIsOpen = false
 var weAreChangingColors = false
 
+var logArray=[]
+
 // GLOBAL DEFAULT VARIABLES
 
 var areScenesProportional, whatAreSceneLengths, whatAreSceneNumbers, whatArePageNumbers, isRealTimeOn
+var warningsAreOn
 var theDocumentsWidth, theDocumentsHeight, theWindowsPositionX, theWindowsPositionY
 	
 
 // GLOBAL DOCUMENT-RELATED VARIABLES
 
-var outline, pages
+var outline, pages, repairSceneLength
 var heightFactor = 10 //initial value if all else fails
 
 var currentSectionDepth;
@@ -65,7 +75,11 @@ var outlineElementNumber
 var actNumber, endElement
 var location, length 
 
+var omittedNumber
+
 var firstLineThatIsNoSynopsis = 0
+var selectedNote = -1
+var previouslyHovered
 
 var someoneResizedTheWindow = debounce(function() {
 	theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
@@ -86,101 +100,180 @@ window.addEventListener('load', function () {
 
 
 //	EVENTLISTENERS FOR keypresses and such
-	
+
+	window.addEventListener('error', function() {			
+			mylog(">>>>> ERROR <<<<<", false, true)
+	})
 	document.addEventListener("keydown", checkWhatKeyGotPressed);
 	document.addEventListener("mouseup", somethingWasClicked);
 	window.addEventListener("resize", someoneResizedTheWindow);
 	window.addEventListener("focus", function () {
 		if(isRealTimeOn == 1){return}
 		document.getElementById('outOfSyncDiv').style.display = "none";
-		completeRun()
+		completeRun()//should provide loc and len here!	
 		});
 	window.addEventListener("blur", function () {
+		deselectAllElements()
+		closeContextMenu()
 		saveCurrentState()
+		if (document.querySelector(".sceneTitlePopup")){document.querySelector(".sceneTitlePopup").remove()}
 		});	
+	document.addEventListener("mouseover", hover)
+	document.addEventListener("mouseout", unhover) 
 
-	window.addEventListener("dragstart", onDragStart);
-	window.addEventListener("dragend", onDragEnd);
+function hover() {
+	if(!event.target.id=="debug"){mylog("hover" + event.target.id)}
 
-function onDragStart(event) {
-	let draggedStuff = event.target
-	draggedStuff.style.opacity = '0.8'
+	let element = event.target
+
+	if (weAreCurrentlyEditingText){return}
+	if (JSON.stringify(element.id) == previouslyHovered || element.id == "hiddenSceneTitlePopup"){return}
+
+	unhover()
+	
+	if ([...element.classList].includes("hideSlugIfSmall")){
+
+		previouslyHovered = JSON.stringify(element.id)
+
+	    let x = parseInt(JSON.stringify(event.clientX))
+	    let y = parseInt(JSON.stringify(element.getBoundingClientRect().top))
+		let width = parseInt(JSON.stringify(element.getBoundingClientRect().width)) + 20
+		let color = window.getComputedStyle(element).getPropertyValue('background-color')
+
+		if (x + width > window.innerWidth - 40){
+			x = x - width + 20
+		}
+
+		document.getElementById('flexiContainer').innerHTML += 
+        	"<div id='hiddenSceneTitlePopup' class='clickThru sceneTitlePopup'>" + element.firstChild.innerHTML + "</div>"
+		document.getElementById('hiddenSceneTitlePopup').style.left = (x + 10) + "px"
+		document.getElementById('hiddenSceneTitlePopup').style.top = (y - 22) + "px"
+		document.getElementById('hiddenSceneTitlePopup').style.maxWidth = width + "px"
+		document.getElementById('hiddenSceneTitlePopup').style.backgroundColor = color
+
+		mylog("Next up: timeout within hover()")
+
+		clearTimeout(testing)
+		let elementToGivePopup = document.getElementById('hiddenSceneTitlePopup')
+		var testing = setTimeout(function(){
+			elementToGivePopup.classList.add('revealPopup')
+			},1500
+		)
+	}
 }
-
-function onDragEnd(event) {
-	let draggedStuff = event.target
-	draggedStuff.style.opacity = '1'
-}
-
 
 // ==================================================
 //           END OF STUFF THAT RUNS ONCE.
-//          Everything below is functions.
 // ==================================================
 
 
-// ========== UPDATING THE TIMELINE ==========
-		
-function needsFullUpdate(location, length) {
-	//if (weAreChangingColors){return}
-	debugContainer.innerHTML += "[full uppdate called]"
+function unhover(){
+	if(!event.target.id=="debug"){mylog("unhover")}
 
-	if (isRealTimeOn == 1 || weAreChangingColors == true)
-		{
-		weAreChangingColors = false
-		document.getElementById('outOfSyncMessage').innerHTML = "";
-
-		clearTimeout(typeTimer);
-			typeTimer = setTimeout(
-				function(){
-
-					Beat.call("Beat.custom.updateVariables(" + location + "," + length + ")")
-
-				}, 500
-			);	
-		}
-	else
-		{
-		document.getElementById('outOfSyncMessage').innerHTML = "Click anywhere to refresh.";
-		document.getElementById("outOfSyncDiv").style.animation = "none";
-		document.getElementById("outOfSyncDiv").style.display = "block";
+	previouslyHovered = ""
+	
+		let elements = document.querySelectorAll(".sceneTitlePopup")
+		for (i = elements.length - 1; i>-1; i--) {
+			elements[i].remove()
 		}
 }
 
-function needsSmallUpdate(location, length) {
-	if (isRealTimeOn == 1 || weAreChangingColors == true){	
-
-		weAreChangingColors = false
+// ========== UPDATING THE TIMELINE ==========
 		
-		let whichSceneAreWeIn = 0
-		while (outline[whichSceneAreWeIn].sceneStart + outline[whichSceneAreWeIn].sceneLength <= location){
-			whichSceneAreWeIn ++
-		}
+function startFullUpdate(location, length, delayTime) { //not getting loc and len from outlinechange!
 
-		clearTimeout(typeTimer);
-			typeTimer = setTimeout(
+	mylog("[full uppdate called]"  + location + "," + length, true, true)
+	actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
+	// weAreCurrentlyEditingText = false // this is if update takes place when live editing outline text
+
+	//document.getElementById('outOfSyncDiv').classList.add('animate');
+	document.getElementById('outOfSyncDiv').style.display = 'block';
+
+	if (isRealTimeOn == 1 || weAreChangingColors == true){
+		weAreChangingColors = false
+		document.getElementById('outOfSyncMessage').innerHTML = "";
+
+		clearTimeout(fullTypeTimer)
+		fullTypeTimer = setTimeout(
+			function(){
+				Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")	
+			}, delayTime || 100 
+		)
+	}	
+	else
+	{
+		document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
+		document.getElementById("outOfSyncDiv").style.animation = "none";
+		document.getElementById("outOfSyncDiv").style.display = "block";
+		// document.getElementById('flexiContainer').style.opacity = '1';
+
+		if(document.getElementById("youAreHere")){document.getElementById("youAreHere").remove()}
+	}
+}
+
+function startSmallUpdate(location, length) {
+	
+	//mylog("[small uppdate called] " + location + "," + length, true, true) //removeme
+	//Beat.call("Beat.log('SMALL UPDATE CALLED!')")
+	
+	// weAreCurrentlyEditingText = false // this is if update takes place when live editing outline text
+
+	if(outline.length < 1){
+		displayEmptyScreenMessage()
+		return}
+
+	if (isRealTimeOn == 1 || weAreChangingColors == true){	
+		weAreChangingColors = false
+
+		//Beat.call("Beat.log('right before timer!')")
+
+		clearTimeout(smallTypeTimer);
+			smallTypeTimer = setTimeout(
 				function(){
-					Beat.call("Beat.custom.updateOnlyOne(" + whichSceneAreWeIn + "," + location + "," + length + ")")
+					Beat.call("Beat.custom.updateOnlyOneScene(" + location + "," + length + ")")
 				}, 500
 			); 		
 		}
 	else
 		{
-		document.getElementById('outOfSyncMessage').innerHTML = "Click anywhere to refresh.";
+		document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
 		document.getElementById("outOfSyncDiv").style.animation = "none";
 		document.getElementById("outOfSyncDiv").style.display = "block";
+		// document.getElementById('flexiContainer').style.opacity = '1';
+
+		if(document.getElementById("youAreHere")){document.getElementById("youAreHere").remove()}
 		}
 }
 
 function completeRun(location, length){ //Called AT STARTUP and (when non-realtime) AT FOCUS
-	Beat.call("Beat.custom.updateVariables(" + location + "," + length + ")")
+	mylog("completeRun() called")
+	
+	weAreCurrentlyEditingText = false
+
+	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")
 }
 
-function updateEverything(json, location, length, pagesAsString) {
+function repairSceneLengths(){
+	if(repairSceneLength.length > 0){
+		for (i=0; i<repairSceneLength.length; i++){
+			outline[i].sceneLength += repairSceneLength[i]
+		}
+	}
+}
+
+function updateEverything(json, location, length, pagesAsString, repairSceneLengthAsString) {
+	mylog("updateEverything")
 
 	pages = pagesAsString
-	outline = JSON.parse(json)
 
+	// Beat.call("Beat.alert('"+pagesAsString+"')")
+
+	outline = JSON.parse(json)
+	repairSceneLength = repairSceneLengthAsString
+
+	if(outline.length < 1){displayEmptyScreenMessage(); return}
+
+	repairSceneLengths()
 	recalculatePages()
 	makeDivsFromOutline(-1, -1)
 
@@ -190,54 +283,83 @@ function updateEverything(json, location, length, pagesAsString) {
 
 		updateFilter("") //this call is unnecessary for functionality, but works to eliminate blinkage.
 		for (i=0; i<outline.length; i++) {
-			//debugContainer.innerHTML += (i == outline.length-1)
 			Beat.call("Beat.custom.reevaluateCharactersForScene(" + i + "," + (i == outline.length-1) + ")") //will send false except last time
 		}
 	}
+	if (notesAreDisplayed || markersAreDisplayed){
+		collectNotes()
+	}
+
 	recalculateHeights()
-	youAreHere(location + length, 0)
+	youAreHere(location, length) //used to be location + length, 0 but WHY?
+	hideOrShowOmittedScenes()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
 
+	if(weAreCurrentlyEditingText){ //} = false // this is if update takes place when live editing outline text
+		exitEdit()
+	}
+
+	mylog("end of chain (full)")
 	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
 }
 
-function updateOneScene(json, scene, pagesForChangedScene, location, length){
-
-	let sceneNumber = outline[scene].sceneNumber
+function updateOneScene(json, scene, pagesForChangedScene, location, length, repairSceneLengthAsString){
+	mylog("updateOneScene" + json.length)
 
 	outline = JSON.parse(json)
-	pages[sceneNumber] = pagesForChangedScene
+	repairSceneLength = repairSceneLengthAsString
+	mylog("1")
+	pages[scene] = pagesForChangedScene // Note: scene here now means outline item
+	mylog("2")
 
+	if(outline.length < 1){displayEmptyScreenMessage(); return}
+
+	mylog  ("3")
+	// mylog("in update ONE scene only, the outline number for scene " + ((outline[scene].sceneNumber) ? outline[scene].sceneNumber:"NO SCENENUMBER") + " is " + scene + "and it is so long: " + pages[scene])
+
+	repairSceneLengths()
 	recalculatePages()
 	makeDivsFromOutline(-1, -1) //Note to self: will I ever NOT call this completely?
 
 	document.getElementById("flexiContainer").innerHTML = body
 
 	if (characterMenuList.selectedIndex != -1){
-		updateFilter() //again: unnecessary, but just to eliminate blinkage.
+		updateFilter() //again: unnecessary for functionality, but just to eliminate blinkage.
 
 		Beat.call("Beat.custom.reevaluateCharactersForScene(" + scene + "," + "true" + ")")
 	}
+	if (notesAreDisplayed || markersAreDisplayed){
+		collectNotes()
+	}
 	
 	recalculateHeights() 
-	youAreHere(location + length, 0) 
+	youAreHere(location, length) //used to be location + length, 0 but WHY?
+	hideOrShowOmittedScenes()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
+	// document.getElementById('flexiContainer').style.opacity = '1'
 
+	if(weAreCurrentlyEditingText){ //} = false // this is if update takes place when live editing outline text
+		exitEdit()
+	}
+		
 	//NOTE: here ends the chain of functions based on needSmallUpdate, now returning home
+	mylog("end of chain (one scene)")
 }
 
 
 // ========== BUILDING THE TIMELINE ==========
 
 function makeDivsFromOutline(startElement, endElement){
+	mylog("makeDivsFromOutline")
 	
 	var lastElementNumberThatWasHeading
+	omittedNumber = 0
 	body = ""
 	actNumber = 0
 	nonSceneElementNumber = 0
@@ -250,6 +372,7 @@ function makeDivsFromOutline(startElement, endElement){
 
 	// NOTE: the following is in preparation for only replacing SOME divs, when changes are made
 	// inside a scene only. But as discussed elsewhere, I'm not sure that will speed anything up.
+	// To my knowledge, we still never call MakeDivs... with a value other than -1 or nothing.
 	if (!startElement || startElement == -1){startElement = 0} 
 	if (!endElement || endElement == -1){endElement = outline.length}
 
@@ -263,6 +386,7 @@ function makeDivsFromOutline(startElement, endElement){
  		switch(currentLine.typeAsString){
  			case "Section":
  				theOutputLines[outlineElementNumber] = makeSectionDiv(currentLine, outlineElementNumber)
+				lastElementNumberThatWasHeading = outlineElementNumber
 				break;
 			case "Heading":
 				theOutputLines[outlineElementNumber] = makeHeadingDiv(currentLine, outlineElementNumber)
@@ -272,15 +396,38 @@ function makeDivsFromOutline(startElement, endElement){
 				if (currentSectionDepth == 0) {
 					 firstLineThatIsNoSynopsis ++
 				}
-			// 	if(lastElementNumberThatWasHeading){
-			// 		theOutputLines[lastElementNumberThatWasHeading] = theOutputLines[lastElementNumberThatWasHeading].substr(0,theOutputLines[lastElementNumberThatWasHeading].length - 6)
-			// 		theOutputLines[lastElementNumberThatWasHeading] += 
-			// 			"<text class='noOverflow showSynopsis' data-line='" + 
-			// 			currentLine.sceneStart +
-			// 			"'>" + 
-			// 			currentLine.string + 
-			// 			"</text></div>"
-			// 		}
+				if(lastElementNumberThatWasHeading){
+					
+					let removeClosingDivs = (outline[outlineElementNumber - 1].typeAsString == "Synopse") ? 16 : 6
+					let openingDiv = (outline[outlineElementNumber - 1].typeAsString == "Synopse") ? 
+						"</syn><br/><syn class='" + currentLine.color.toLowerCase() + "''>" : 
+						"<div class='noOverflow thisIsASynopsis' data-line='" +
+						currentLine.sceneStart +
+						"' data-elementCount='" + outlineElementNumber +  
+						"'><p class='noHover clickThru'>" + 
+							"<syn class='" + currentLine.color.toLowerCase() + "'>"
+
+					let closingDiv = ""
+					if (outline[lastElementNumberThatWasHeading].typeAsString == "Section"){
+						openingDiv = "</div><div class='synopseForSection " + currentLine.color.toLowerCase() + " '" + 
+							"data-line='" + outline[lastElementNumberThatWasHeading].sceneStart + "'>" +
+							openingDiv
+						if (outline[outlineElementNumber - 1].typeAsString == "Synopse"){
+							openingDiv = "</syn><br/><syn" +
+								" class='" + currentLine.color.toLowerCase() + "'" +
+								" data-elementCount='" + outlineElementNumber + "'>"
+						}
+						closingDiv = ""
+					}
+
+					theOutputLines[lastElementNumberThatWasHeading] = theOutputLines[lastElementNumberThatWasHeading].substr(0,theOutputLines[lastElementNumberThatWasHeading].length - removeClosingDivs)
+					
+					theOutputLines[lastElementNumberThatWasHeading] += 
+						openingDiv + 
+						currentLine.string.replace(/^={1}\s*/, "") +
+						"</p></div></div>" +
+						closingDiv
+					}
 			 	break;
  		}
  	} 
@@ -291,19 +438,20 @@ function makeDivsFromOutline(startElement, endElement){
 
 	//SEPARATELY CLOSING THE LAST DIV (and adding page number before it):
 	
+	body += "</div>"
 	body += "<div data-line='" + currentIndex + "' class='showActLength'>Pg " + 
 				Math.ceil(Math.max(currentPagenumber, 1)) + ".</div>"
-	body += "</div>"
 
 return body; 
 }
 
 function makeSectionDiv(currentLine, outlineElementNumber){
+	// mylog("makeSectionDiv")
+
 	let classList = []
 	previousSectionDepth = currentSectionDepth; 
-	//currentSectionDepth = currentLine.sectionDepth //replaced with counting hashtags below bc not served in outlineAsJSON
-	currentSectionDepth = (currentLine.line.string.substring(0,10).split("#").length) - 1
-		//Note: should look to see that they are consecutive; weird things happen if another stray # is present within the 10 characters
+	let beghash = currentLine.line.string.match(/^#+/g)
+	currentSectionDepth = beghash.join('').length
 
 	theLineToReturn=""
 
@@ -339,120 +487,165 @@ function makeSectionDiv(currentLine, outlineElementNumber){
 		divDepth ++
 		nonSceneElementNumber ++
 		theLineToReturn += "<div "
-		//theLineToReturn += "draggable='true' " // for future use
+		theLineToReturn += "draggable='true' " 
+		theLineToReturn += "ondragstart='onDragStart(event)' ondragend='onDragEnd(event)' "
+		theLineToReturn +=" ondragenter='onDragEnter(event)' ondragleave='onDragLeave(event)' ondragover='onDragOver(event)' "
+		theLineToReturn +=" ondblclick='editContent()' "
 		theLineToReturn += "id ='outline" + nonSceneElementNumber + "' "
 		theLineToReturn += "data-elementCount='" + outlineElementNumber + "' "
 		theLineToReturn += "data-line='" + currentLine.sceneStart + "' "
 		classList.push("section", 
 			currentLine.color.toLowerCase(), 
-			"level"+currentSectionDepth)
+			"level"+currentSectionDepth,
+			"clickThru")
 		theLineToReturn += "class ='" + classList.join(" ") + "' "
 
 		if (currentSectionDepth == 1){actNumber ++}
 		
 		theLineToReturn += "data-iAmInAct = '" + actNumber + "' "
-		theLineToReturn += ">" + "<p data-line='" + currentLine.sceneStart;
-		theLineToReturn += "' class='noOverflow text-shift sectiontext clickThru'>"; //sectiontext has no style, but must be included for right-click reasons
+		theLineToReturn += ">" + "<div data-line='" + currentLine.sceneStart; 
+		theLineToReturn += "' class='noOverflow text-shift sectiontext clickThru'>"; 
 	
 		if(currentSectionDepth > 1){
 			theLineToReturn += "<span class='showSectionPageNumber'>Pg " + Math.ceil(Math.max(currentLine.startsOnPage, 1)) + ".</span>";
 		}
 
 		// Finally: THE TITLE
-		theLineToReturn += currentLine.string.toUpperCase() + 
-		//outlineElementNumber + //for testing purposes
-		"&nbsp;</p>"; 
+		theLineToReturn += 
+			// outlineElementNumber +". " +
+			// currentLine.sceneStart + ". " + //" (" + currentLine.sceneLength + ")" +
+			currentLine.string.toUpperCase() + 
+		"&nbsp;</div>";
 
 	return theLineToReturn
 }
 
 function makeHeadingDiv(currentLine, outlineElementNumber){
+	//mylog("makeHeadingDiv")
 			
 			let theLineToReturn = "";
 
 			if (currentSectionDepth == 0 && outlineElementNumber == firstLineThatIsNoSynopsis){ //ADD FAUX ACT if screenplay starts w/ scene
 					currentSectionDepth = 1
 					divDepth ++
-					theLineToReturn = "<div class='section level1'><p class='noOverflow text-shift sectiontext clickThru'>&nbsp;</p>"				}
+					theLineToReturn = "<div class='section level1'><p class='noOverflow text-shift sectiontext clickThru'>&nbsp;</p>"				
+			}
 	
-			var theSceneNumber = currentLine.sceneNumber;
-			var thisLinesIndex = currentLine.sceneStart;
+			var theSceneNumber = currentLine.sceneNumber
+			var thisLinesIndex = currentLine.sceneStart
+			var thisScenesLength = currentLine.sceneLength
+			var lockedString = ""
+			var debugText = ""
+
+			if (currentLine.omitted == 1) { //this entire if clause is a workaround for omitted scernes until next build of Beat	
+
+				omittedNumber ++
+				thisLinesIndex = currentLine.line.position
+				if (outline[outlineElementNumber +1]){
+					thisScenesLength = outline[outlineElementNumber +1].line.position - currentLine.line.position
+				}else{
+					thisScenesLength = currentLine.sceneLength // because last omitted scene DOES have correct length
+				}
+				theSceneNumber = "OMITTED" 
+			}
+
+			if (outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){
+		
+				synsopsisCheck = 1 //this is to give length of a synopsis to its parenting scene instead
+				while (outline[outlineElementNumber + synsopsisCheck] && outline[outlineElementNumber + synsopsisCheck].typeAsString == "Synopse"){	
+
+					debugText += outline[outlineElementNumber + synsopsisCheck].string.substr(0,10) + "...: " + outline[outlineElementNumber + synsopsisCheck].numberOfPages + "<br/>"
+				
+					synsopsisCheck ++
+				}
+			}
+
 	
-			lastIndexOfScene = thisLinesIndex + currentLine.sceneLength -1
-			lengthOfScene[theSceneNumber] = currentLine.numberOfPages
-			lengthOfSceneInEights[theSceneNumber] = numberIntoEights(lengthOfScene[theSceneNumber])
+			lastIndexOfScene = thisLinesIndex + thisScenesLength -1 //fixed this
+			lengthOfScene[outlineElementNumber] = currentLine.numberOfPages;
+				if (lengthOfScene[outlineElementNumber] == undefined){lengthOfScene[outlineElementNumber] = 1} //characters, not pages 
+			lengthOfSceneInEights[outlineElementNumber] = numberIntoEights(lengthOfScene[outlineElementNumber])
 
 			if (currentLine.string.startsWith('.')){currentLine.string = currentLine.string.substring(1)}
+
+			if (/(?:#)(.+)(?:#){1}\s*$/.test(currentLine.string)){
+				let theLockedNumber = currentLine.string.match(/(?:#)(.+)(?:#){1}\s*$/)
+			 	currentLine.string = currentLine.string.replace(/(?:#)(.+)(?:#){1}\s*$/, " ")
+				lockedString =  "<a id='padlockIcon' style='transition: none'>" + padlockIcon + "</a>"			 	
+			}
 
 			//FIRST: The DIV for the SCENE CARD:
 			//----------------------------------
 				theLineToReturn += 
 					"<div " +
-					//"draggable='true' " + // for future use
+					"draggable='true' " + 
+					"ondragstart='onDragStart(event)' ondragend='onDragEnd(event)' ondragenter='onDragEnter(event)' ondragleave='onDragLeave(event)' ondragover='onDragOver(event)' " +
 					"id='" + theSceneNumber + "' " +
 					"class='sceneheading ";
-					if (currentLine.omitted == 1){theLineToReturn += 
-						"isOmitted omittedScenesAreHidden "
+					if (currentLine.omitted == 1){
+						theLineToReturn += "isOmitted omittedScenesAreHidden "
+						currentLine.numberOfPages = 0
 					}
 				theLineToReturn += currentLine.color.toLowerCase() + "' " +
-					"title='" + currentLine.string.toUpperCase() + "' " + 
+					// "title='" + currentLine.string.toUpperCase() + "' " + 
 					// 	"(" + lengthOfSceneInEights[theSceneNumber] + ")' " +
-					"data-lengthOfScene='" + currentLine.numberOfPages + "' " +
+					"data-lengthOfScene='" + currentLine.numberOfPages + "' " + 
 					"data-iAmInAct='" + actNumber + "' " +
 					"data-elementCount='" + outlineElementNumber + "' " +
+					"data-lengthInCharacters = '" + thisScenesLength + "' " +
 					"data-line='" + thisLinesIndex + "'>";
 
 				currentPagenumber = currentLine.startsOnPage + currentLine.numberOfPages 	// For distribution to the act end
-				currentIndex = thisLinesIndex + currentLine.sceneLength 					// Likewise
+				currentIndex = thisLinesIndex + thisScenesLength 							// Likewise
 
 			//THEN: The P for the text content:
 			//---------------------------------				
 				theLineToReturn += 
 					"<p " +
-					"class='noOverflow clickThru' " +
+					"class='noOverflow clickThru theSlugLine' " +
 					"data-line='" + thisLinesIndex + "'>" +
-					"<span class='showSceneLength'>"+ lengthOfSceneInEights[theSceneNumber] + "</span>" +	
-					"<span class='showSceneNum'>" + theSceneNumber + ". </span>" + 
-						//outlineElementNumber + // for testing purposes
-						currentLine.string.toUpperCase() + 
-					"</p>";
+					"<span class='showSceneLength'>"+ lengthOfSceneInEights[outlineElementNumber] + "<br/></span>" +	
+					"<span class='showSceneNum'>" + lockedString + theSceneNumber + " </span>" + 
+					"<span class='clear'>" + currentLine.string.toUpperCase() + // outlineElementNumber + // ": " + currentLine.numberOfPages + "<br/>" + debugText +
+					"</span></p>";
 			
 		// FINALLY: -- Let's close the current div and return
 	
 		theLineToReturn += "</div>";
 	
 		return theLineToReturn;
-	}
+}
 
 function recalculatePages(){
+	mylog("recalculatePages")
 	
 	let startsOnPage = 1
+	let elementNumber = 0
 
 	for (line in outline){
 		let currentLine = outline[line]
 
-			if(currentLine.typeAsString != "Heading"){
-				outline[line].startsOnPage = startsOnPage
+			if((currentLine.typeAsString != "Heading" && currentLine.typeAsString != "Synopse") || currentLine.omitted == true){
+				outline[elementNumber].startsOnPage = startsOnPage
+				elementNumber ++
 			 	continue
 			}
 	
-	let thisScene = currentLine.sceneNumber
-	
-	outline[line].startsOnPage = startsOnPage
-	outline[line].numberOfPages = pages[thisScene]
-	startsOnPage += pages[thisScene]
+		outline[elementNumber].startsOnPage = startsOnPage
+		outline[elementNumber].numberOfPages = pages[elementNumber]
+		startsOnPage += pages[elementNumber]
+
+		elementNumber ++
 	}
 }
 
 function recalculateHeights(timeToWait){
+	mylog("recalculateHeights() -- OLD VALUE: " + getComputedStyle(document.documentElement).getPropertyValue('--heightFactor'))
 
 	let theIndicator = document.getElementById("youAreHere")
 	if(theIndicator){
-		var theIndicatorIsInScene = theIndicator.getAttribute('data-theSceneNumber');
 		var theIndicatorIsInElement = theIndicator.getAttribute('data-outlineElementCount');
 		var theIndicatorIsInId = document.querySelector("[data-elementCount='" + theIndicatorIsInElement + "']").id
-
-		//debugContainer.innerHTML += "<br/>the indicator is in: " + theIndicatorIsInId + "<br/>"
 
 		var theIndicatorPercentage = Number(theIndicator.getAttribute('data-percentageIntoScene'));
 	}
@@ -462,20 +655,61 @@ function recalculateHeights(timeToWait){
 	let actLength = [0,0,0,0,0,0,0,0,0,0,0,0] //there MUST be a prettier way to do this, but I have found none!
 	let sectionsPerAct = [0,0,0,0,0,0,0,0,0,0,0,0]
 
-	if(areScenesProportional != 1){
+	if (indexCardMode > 0) {
+		let referenceForWidth = (indexCardMode == 1) ? allScenes[0] : allSections[0]
+		let allActs = document.getElementsByClassName("level1")
+		let referenceForHeight = 0
+		theRoot.style.setProperty('--indexReferenceForHeight', "auto")
+		
+		//set height of cards first
+
+		theRoot.style.setProperty('--indexCardHeight', (Number(referenceForWidth.getBoundingClientRect().width) * 3 / 5) + "px")
+		if (document.querySelector(".altYouAreHere")){document.querySelector(".altYouAreHere").classList.remove("altYouAreHere")}
+		putOntoScreen()
+		if(theIndicator){theIndicator.style.top = "calc(16px * var(--fontSizeFactor))"}
+
+		//then set height of act lanes
+		if (!oneColumnOutline){
+			for (act of allActs){
+				referenceForHeight = Math.max(referenceForHeight, Number(act.getBoundingClientRect().bottom) - Number(act.getBoundingClientRect().top))
+				}
+			theRoot.style.setProperty('--indexReferenceForHeight', referenceForHeight + "px")
+		}
+
+		return
+	}
+
+	function putOntoScreen() {
+		if (theIndicatorIsInElement){
+			if(isThisOffScreen(document.querySelector("[data-elementCount='" + theIndicatorIsInElement + "']"))){
+				mylog("This is offscreen: " + document.querySelector("[data-elementCount='" + theIndicatorIsInElement + "']"))
+				scrollNicelyIntoView(document.querySelector("[data-elementCount='" + theIndicatorIsInElement + "']"))
+			}	
+		}
+	}
+
+	if(areScenesProportional != 1){ //would be better if this were a class instead! 
 		for (scene of allScenes){
-			scene.style.height = "var(--fixedHeight)"
+			scene.style.height = "calc(var(--fixedHeight) * var(--fontSizeFactor))"
+			scene.style.minHeight = "5px"
 		}
 		if(theIndicator){
-			let theIndicatorPosition = "calc(var(--fixedHeight)*2/3)"
+			let a = getComputedStyle(theRoot).getPropertyValue('--fixedHeight')
+			let theIndicatorPosition = "calc(var(--fixedHeight) * var(--fontSizeFactor) * 2 / 3)"
+				if (a = "auto"){theIndicatorPosition = "calc(11px * var(--fontSizeFactor))"}
 			theIndicator.style.top = theIndicatorPosition
 		}
+		putOntoScreen()
 		return	
+	}else{
+		for (scene of allScenes){
+			scene.style.minHeight = ""	
+		}
 	}
 
 	for (scene of allScenes){
-		let myLength = Number(scene.getAttribute('data-lengthOfScene'));
-		let thisAct = Number(scene.getAttribute('data-iAmInAct'));
+		let myLength = Number(scene.getAttribute('data-lengthOfScene'))
+		let thisAct = Number(scene.getAttribute('data-iAmInAct'))
 
 		actLength[thisAct] += myLength
 		let useThisHeight = "calc(" + myLength + "px * var(--heightFactor))"	
@@ -492,16 +726,19 @@ function recalculateHeights(timeToWait){
 	let whichActHasLongestScenes = actLength.indexOf(theLongestAct)
 	let whichActHasMostSections = sectionsPerAct.indexOf(theMostSections)
 	let windowHeight = parseInt(window.getComputedStyle(document.getElementById('flexiContainer')).getPropertyValue("height"));
-		windowHeight -= 80 // this is very arbitrary. But I found it looks better
-	let scenesHaveMoreSpace = (windowHeight - 23 * sectionsPerAct[whichActHasLongestScenes]) / theLongestAct
-	let sectionsHaveMoreSpace = (windowHeight - 23 * theMostSections) / actLength[whichActHasMostSections]
+		windowHeight -= 120 // this is very arbitrary. But I found it looks better //changed from 80 // last: 160
+	let scenesHaveMoreSpace = (windowHeight - 17 * currentZoomLevel * sectionsPerAct[whichActHasLongestScenes]) / theLongestAct
+	let sectionsHaveMoreSpace = (windowHeight - 17 * currentZoomLevel * theMostSections) / actLength[whichActHasMostSections]
+
+	//the 17 above used to be 23 -- why is this better?
 	
 	let heightFactor =  Math.min(scenesHaveMoreSpace, sectionsHaveMoreSpace)
 	theRoot.style.setProperty('--heightFactor', heightFactor);
+	mylog("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;                     NEW VALUE: " + heightFactor + "")
 
 		for (scene of allScenes){
 			let slugHeight = parseInt(window.getComputedStyle(scene).getPropertyValue("height"));
-			if (slugHeight < 12) {
+			if (slugHeight < 12 * currentZoomLevel) {
 				scene.classList.add("hideSlugIfSmall")
 				}else{
 				scene.classList.remove("hideSlugIfSmall")
@@ -512,40 +749,57 @@ function recalculateHeights(timeToWait){
 			//let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(document.getElementById(theIndicatorIsInScene)).getPropertyValue("height")));
 			let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(document.getElementById(theIndicatorIsInId)).getPropertyValue("height")));
 			let theIndicatorPosition = theIndicatorParentHeight * theIndicatorPercentage
-			if (theIndicatorPercentage == -1) {theIndicatorPosition = 12}
+			if (theIndicatorPercentage == -1) {theIndicatorPosition = 11 * currentZoomLevel}
 			theIndicator.style.top = theIndicatorPosition + "px"
+			//mylog(theIndicatorPosition)
+
 		}
+		mylog("exiting recalculateHeights()")
+		putOntoScreen()
 }
 
 function youAreHere(location, length){
+	mylog("youAreHere: " + location)
 
-	if(!location){return}
+	if(location == 0){location = 1}
+
+	if(!location || outline.length < 1 || weAreCurrentlyEditingText){
+		if(document.getElementById('youAreHere')){document.getElementById('youAreHere').remove()}
+		mylog("CANCELING YOU ARE HERE")
+		return
+	}
 
 	if(document.getElementById('youAreHere')){document.getElementById('youAreHere').remove()}
 
+
 	let whichSceneAreWeIn = 0
-	let whichOutlineThen = 1
-		while (outline[whichSceneAreWeIn].sceneStart + outline[whichSceneAreWeIn].sceneLength <= location){
+	//let whichOutlineThen = 1
+		while ((outline[whichSceneAreWeIn + 1]) && outline[whichSceneAreWeIn + 1].line.position - 0 <= location){ 
+			//changed -1 to -0, fixes end of element but will it destroy something too?
+			//OLD (obsolete?) comment: workaround, will (?) destroy last scene
+
 			whichSceneAreWeIn ++
-			if (!outline[whichSceneAreWeIn].sceneNumber){
-				if(outline[whichSceneAreWeIn].typeAsString == "Section") {whichOutlineThen++}
-			}
+			// if (!outline[whichSceneAreWeIn].sceneNumber){
+			// 	if(outline[whichSceneAreWeIn].typeAsString == "Section") {whichOutlineThen++}
+			// }
 		}
 
-	// OLD METHOD with setting different style to sections instead of drawing indicator. Kept if I change my mind. 
-	// 		if(!outline[whichSceneAreWeIn].sceneNumber){
-	// 			whichOutlineThen = "outline" + whichOutlineThen
-	// 			document.getElementById(whichOutlineThen).classList.add("selectedOutline")
-	// 			return
-	// 		} 
-
+	while(outline[whichSceneAreWeIn].typeAsString == "Synopse"){
+		whichSceneAreWeIn--
+	}
+	if(outline[whichSceneAreWeIn].omitted == 1 && areScenesProportional == 1) {return}	
+	
 	whichSceneNumberAreWeIn = outline[whichSceneAreWeIn].sceneNumber
 
 	let thisScenesBeginning = outline[whichSceneAreWeIn].sceneStart
-	let thisScenesEnd = thisScenesBeginning + outline[whichSceneAreWeIn].sceneLength
+		if(outline[whichSceneAreWeIn].sceneNumber.includes("OMITTED")){thisScenesBeginning = outline[whichSceneAreWeIn].line.position} //if we need to fix the sceneNumber for later use?
 
-	var percentageIntoScene = (location - thisScenesBeginning) / (thisScenesEnd - thisScenesBeginning);
-	if(!outline[whichSceneAreWeIn].sceneNumber){percentageIntoScene = -1}
+	let thisScenesEnd = thisScenesBeginning + outline[whichSceneAreWeIn].sceneLength
+		if(outline[whichSceneAreWeIn].sceneNumber.includes("OMITTED")){thisScenesBeginning = outline[whichSceneAreWeIn+1].line.position - 1} //if we need to fix the sceneNumber for later use?
+		if(outline[whichSceneAreWeIn].typeAsString == "Section" && outline[whichSceneAreWeIn + 1]){thisScenesEnd = outline[whichSceneAreWeIn + 1].line.position - 1} //added check if +1 exists oct 11
+
+	var percentageIntoScene = (location - thisScenesBeginning) / (thisScenesEnd - thisScenesBeginning); // must also fix end position in plugin before delivering JSON
+	if(!outline[whichSceneAreWeIn].sceneNumber || outline[whichSceneAreWeIn].typeAsString == "Section"){percentageIntoScene = -1}
 
 	let theIndicatorHTML = "<div " + 
 		"id='youAreHere' " +
@@ -553,13 +807,14 @@ function youAreHere(location, length){
 		"data-percentageIntoScene='" + percentageIntoScene + "' " +
 		"data-outlineElementCount='" + whichSceneAreWeIn + "' " +
 		"data-theSceneNumber = '" + whichSceneNumberAreWeIn + "' " + 
-		">"+""+"</div>";
+		">"+"<p>"+ location + " (" + outline[whichSceneAreWeIn].typeAsString + ")</p></div>";
 	document.querySelector("[data-elementCount='" + whichSceneAreWeIn + "']").innerHTML += theIndicatorHTML
 
-	recalculateHeights()
+	recalculateHeights() 
 }
 
 function numberIntoEights(theNumber) {
+	//mylog("numberIntoEights()")
 	
 	let theFraction = Math.floor((theNumber - Math.floor(theNumber))*8);
 	
@@ -569,12 +824,14 @@ function numberIntoEights(theNumber) {
 	if (Math.floor(theNumber) > 0){theNumberInEights = 	Math.floor(theNumber)+" " + theNumberInEights};
 	
 	return theNumberInEights;
+
 }
 
 
 // ========== UI-RELATED STUFF ==========
 
 function getDefaults(){
+	mylog("getDefaults()")
 
 areScenesProportional = document.getElementById('theDataDiv').getAttribute('data-showProportional');
 whatAreSceneLengths = document.getElementById('theDataDiv').getAttribute('data-showLengths');
@@ -583,6 +840,8 @@ whatArePageNumbers = document.getElementById('theDataDiv').getAttribute('data-sh
 isRealTimeOn = document.getElementById('theDataDiv').getAttribute('data-realTimeUpdates');
 colorScheme = document.getElementById('theDataDiv').getAttribute('data-colorScheme');
 oneColumnOutline = document.getElementById('theDataDiv').getAttribute('data-oneColumnOutline');
+warningsAreOn = document.getElementById('theDataDiv').getAttribute('data-warningsAreOn');
+currentZoomLevel = document.getElementById('theDataDiv').getAttribute('data-currentZoomLevel');
 
 document.documentElement.setAttribute('data-theme', colorScheme)
 document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
@@ -593,10 +852,15 @@ theDocumentsHeight = document.getElementById('theDataDiv').getAttribute('data-th
 theWindowsPositionX = document.getElementById('theDataDiv').getAttribute('data-x-position');
 theWindowsPositionY = document.getElementById('theDataDiv').getAttribute('data-y-position');
 
+if(areScenesProportional != 1){
+	document.getElementById("flexiContainer").classList.add("nonProportionalMode")
+}
+
 theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
 theRoot.style.setProperty('--showSceneLength', whatAreSceneLengths);
 theRoot.style.setProperty('--showSceneNum', whatAreSceneNumbers);
 theRoot.style.setProperty('--showPageNum', whatArePageNumbers);
+theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
 
 document.getElementById("buttonForLength").checked = (whatAreSceneLengths == 'inline');
 document.getElementById("buttonForNumbers").checked = (whatAreSceneNumbers == 'inline');
@@ -605,30 +869,69 @@ document.getElementById("buttonForProportional").checked = (areScenesProportiona
 document.getElementById("buttonForRealTimeUpdates").checked = (isRealTimeOn == 1);
 document.getElementById("buttonForColors").checked = (colorScheme == 'Beat');
 document.getElementById("buttonForOneColumnOutline").checked = (oneColumnOutline == 1);
+document.getElementById("buttonForWarnings").checked = (warningsAreOn == true)
 
 }
 
 function checkWhatKeyGotPressed(someoneJustPressed) {
+	mylog("checkWhatKeyGotPressed(" + someoneJustPressed.key + ")")
 	
-	//if (someoneJustPressed.key == "Enter") {event.preventDefault(); toggleDebugContainer()} // My private console.
-	if (someoneJustPressed.key == "Escape" && settingsContainerVisibility == 1) {event.preventDefault(); toggleSettingsContainer(); return false}
-	if (someoneJustPressed.key == "Escape" && trackingContainerVisibility == 1) {event.preventDefault(); toggleTrackingContainer(); return false}
-	if (someoneJustPressed.key == "Escape" && characterMenuList.selectedIndex != -1) {event.preventDefault(); deselectAllCharacters(); return false}
-	//if (someoneJustPressed.key == "Escape") {saveCurrentState()}
-	if (someoneJustPressed.key == "i") {event.preventDefault(); toggleSettingsContainer()}
+	if (someoneJustPressed.key == "Escape") {
+		
+		event.preventDefault()
+		if(errorHasFired){return}
+
+		if (helpContainerVisibility == 1) {toggleHelpContainer(); return false}
+	 	if (settingsContainerVisibility == 1) {toggleSettingsContainer(); return false}
+		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
+		if (document.getElementById('expandedNote')) {collapseNote(); return false}
+		if (contextMenuIsOpen) {closeContextMenu(); return false}
+		if (characterMenuList.selectedIndex != -1) {deselectAllCharacters(); return false}
+		if (notesAreDisplayed) {toggleDisplayNotes(); return false}
+
+		Beat.call("Beat.custom.reallyQuit()")										
+	}
+
+	if (errorHasFired && someoneJustPressed.key == "Enter") {
+			event.preventDefault()
+			document.getElementById("errorClickButton").click()
+    }
+	
+	if(errorHasFired){return} // nothing else is allowed when the error box is up.
+
+	if (someoneJustPressed.key == "," && event.metaKey) {event.preventDefault(); toggleSettingsContainer()}
+	if (someoneJustPressed.key == "?") {event.preventDefault(); toggleHelpContainer()}
 	if (someoneJustPressed.key == "t") {event.preventDefault(); toggleTrackingContainer()}
 	if (someoneJustPressed.key == "f") {event.preventDefault(); toggleProportional()}
 	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
 	if (someoneJustPressed.key == "l") {event.preventDefault(); toggleShowSceneLength()}
+
+	if (someoneJustPressed.key == "p" && event.metaKey) {event.preventDefault(); togglePrintMode(); return}
 	if (someoneJustPressed.key == "p") {event.preventDefault(); toggleShowPageNumbers()}
 	if (someoneJustPressed.key == "s") {event.preventDefault(); toggleShowSceneNumbers()}
 	if (someoneJustPressed.key == "c") {event.preventDefault(); toggleColorScheme()}
-	// if (someoneJustPressed.key == "y") {event.preventDefault(); toggleShowSynopsis()} // NOTE: Never connected!
-	// if (someoneJustPressed.key == "x") {event.preventDefault(); toggleIndexCardMode()}
-	// if (someoneJustPressed.key == "u") {event.preventDefault(); recalculateHeights()}
+	if (someoneJustPressed.key == "n") {event.preventDefault(); toggleDisplayNotes()}
+	if (someoneJustPressed.key == "m") {event.preventDefault(); toggleDisplayMarkers()}
+	if (someoneJustPressed.key == "w" && event.metaKey) {event.preventDefault(); Beat.call("Beat.custom.reallyQuit(true)")										
+}
+	if (someoneJustPressed.key == "w") {event.preventDefault(); toggleWarnings()}
+	if (someoneJustPressed.key == "Tab") {event.preventDefault(); cycleNotes(event.shiftKey)}
+
+	// if (someoneJustPressed.key == "Enter") {event.preventDefault(); toggleDebugContainer()} // My private console.
+
+	if (someoneJustPressed.key.toLowerCase() == "x") {event.preventDefault(); cycleIndexCardMode(event.shiftKey)}
 	if (someoneJustPressed.key == "o") {event.preventDefault(); toggleOneColumnOutline()}
 	if (someoneJustPressed.key == "a" && event.ctrlKey) {event.preventDefault(); selectAllElements(true)}
 	if (someoneJustPressed.key == "a" && event.metaKey) {event.preventDefault(); selectAllElements(false)}
+	if (event.metaKey && (someoneJustPressed.key == "+" || someoneJustPressed.key == "-" || someoneJustPressed.code == "Digit0")){
+		event.preventDefault(); zoomSizes(someoneJustPressed.key)
+	}
+
+	// if (someoneJustPressed.key == "å") {event.preventDefault(); thisFunctionDoesNotExistSoWillThrowError()}
+
+	// if (someoneJustPressed.key == "e" && event.metaKey) {event.preventDefault(); 
+	// 	Beat.call("Beat.custom.saveHtmlForExport()")
+	// }
 
 	if (someoneJustPressed.code == "Digit0") {event.preventDefault(); deselectAllCharacters(); return false}
 	if(someoneJustPressed.code.startsWith("Digit")) {
@@ -641,22 +944,17 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 // if (someoneJustReleased.key == "Shift") {HidePopups()}	// DISABLED
 // }
 
-function HidePopups() { // DISABLED, perhaps for good.
-	theRoot.style.setProperty('--popupVisibility', 'hidden');
-}
-
-function ShowPopups() { // DISABLED, perhaps for good.
-	theRoot.style.setProperty('--popupVisibility', 'visible');
-}
-
 function toggleOneColumnOutline() { 
+	mylog("toggleOneColumnOutline")
 	oneColumnOutline= 1 - oneColumnOutline;
 	document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
 	document.getElementById("buttonForOneColumnOutline").checked = (oneColumnOutline == 1);
 	saveCurrentState()
+	recalculateHeights() // or else, in index card mode, cards get the wildest sizes.
 }
 	
 function toggleDebugContainer() { 
+	mylog("toggleDebugContainer")
 	debugContainerVisibility=1-debugContainerVisibility;
 	if (debugContainerVisibility == 1) {
 		debugContainer.style.display = "block";
@@ -665,27 +963,83 @@ function toggleDebugContainer() {
 	}
 }
 
-function toggleIndexCardMode(){
-
-	if (areScenesProportional == 1){return}
+function cycleIndexCardMode(shift){
+	mylog("cycleIndexCardMode")
 	
-		indexCardMode = 1 - indexCardMode;
-		if (indexCardMode == 1){
-			theRoot.style.setProperty('--fixedHeight', '72px');
-			let synopsisis = document.getElementsByClassName('showSynopsis')
-			for (synopse of synopsisis){
-				synopse.style.setProperty("display", "block	");
+	if (!shift) {
+		indexCardMode ++
+	} else {
+		indexCardMode --
+	}
+	
+	if (indexCardMode > 2) {indexCardMode = 0}
+	if (indexCardMode < 0) {indexCardMode = 2}
+	
+	if(document.querySelectorAll(".sceneheading").length == 0 && indexCardMode == 1){indexCardMode = 2}
+	if(document.querySelectorAll(".section").length == 0 && indexCardMode == 2){indexCardMode = 0}
+
+	switch (indexCardMode) {
+
+		case 1:
+			mylog("scenes")
+			scenesWereProportionalBeforeIndexMode = false
+			if (areScenesProportional == 1) {
+				scenesWereProportionalBeforeIndexMode = true
+				toggleProportional()
 			}
-		}else{
-			theRoot.style.setProperty('--fixedHeight', '14px');
-			let synopsisis = document.getElementsByClassName("showSynopsis")
-			for (synopse of synopsisis){
-				synopse.style.setProperty("display", "none")
-			}
-		}
+
+			document.getElementById("indexCardText").innerHTML = "scenes"
+			document.getElementById("indexCardButton").classList.add("buttonIsActive")
+
+			document.getElementById("flexiContainer").classList.add("synopsisForScenesIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForSectionsIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForBothIsOn")
+
+			break;
+		case 2:
+			mylog("sections")
+			document.getElementById("indexCardText").innerHTML = "sections"
+			document.getElementById("indexCardButton").classList.add("buttonIsActive")
+
+			document.getElementById("flexiContainer").classList.remove("synopsisForScenesIsOn")
+			document.getElementById("flexiContainer").classList.add("synopsisForSectionsIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForBothIsOn")
+			
+			break;
+		case 3: //DISABLED, hopefully permanently
+			mylog("both")
+			document.getElementById("indexCardText").innerHTML = "both"
+			document.getElementById("indexCardButton").classList.add("buttonIsActive")
+
+			document.getElementById("flexiContainer").classList.remove("synopsisForScenesIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForSectionsIsOn")
+			document.getElementById("flexiContainer").classList.add("synopsisForBothIsOn")
+			
+			break;
+		default:
+			if (scenesWereProportionalBeforeIndexMode){toggleProportional()}
+			mylog("off")
+			document.getElementById("indexCardText").innerHTML = ""
+			document.getElementById("indexCardButton").classList.remove("buttonIsActive")
+
+			document.getElementById("flexiContainer").classList.remove("synopsisForScenesIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForSectionsIsOn")
+			document.getElementById("flexiContainer").classList.remove("synopsisForBothIsOn")
+
+			break;
+	}
+
+	youAreHere()
+	recalculateHeights()
+
+	if(notesAreDisplayed){toggleDisplayNotes(); toggleDisplayNotes()}
+	if(markersAreDisplayed){toggleDisplayMarkers(); toggleDisplayMarkers()}
+
+	mylog("end cycling index card mode")
 }
 	
 function toggleShowSceneNumbers() {
+	mylog("toggleShowSceneNumbers")
 	if (whatAreSceneNumbers == "inline") {
 		theRoot.style.setProperty('--showSceneNum', 'none');	
 		}else{
@@ -698,6 +1052,7 @@ function toggleShowSceneNumbers() {
 }
 
 function toggleShowPageNumbers() {
+	mylog("toggleShowPageNumbers")
 	if (whatArePageNumbers == "inline") {
 		theRoot.style.setProperty('--showPageNum', 'none');	
 		}else{
@@ -710,6 +1065,7 @@ function toggleShowPageNumbers() {
 }
 
 function toggleShowSceneLength() {
+	mylog("toggleShowSceneLength")
 	if (whatAreSceneLengths == "inline") {
 		theRoot.style.setProperty('--showSceneLength', 'none');	
 		}else{
@@ -720,19 +1076,75 @@ function toggleShowSceneLength() {
 	document.getElementById("buttonForLength").checked = (whatAreSceneLengths == 'inline');
 	saveCurrentState()
 }
+
+function toggleWarnings() {
+	mylog("toggleWarning")
+	warningsAreOn = warningsAreOn ? false : true
+		
+	document.getElementById("buttonForWarnings").checked = (warningsAreOn);
+	saveCurrentState()
+}
+
+function toggleDisplayNotes() {
+	mylog("toggleDisplayNotes")
+	notesAreDisplayed = (notesAreDisplayed == false)
+		
+	if(notesAreDisplayed){
+		collectNotes()
+	}else{
+		collapseNote()
+		let noteElements = document.getElementsByClassName("noteContainer")
+		
+		for (i = noteElements.length-1; i > -1; i--) {
+			noteElements[i].remove()
+		}
+	}
+	document.getElementById("buttonForNotes").checked = (notesAreDisplayed);
+	//saveCurrentState()
+}
+
+function toggleDisplayMarkers() {
+	mylog("toggleDisplayMarkers")
+	markersAreDisplayed = (markersAreDisplayed == false)
+	
+	
+	if(markersAreDisplayed){
+		collectNotes()
+	}else{
+		let currentMarkers = document.querySelectorAll(".marker")
+        for (currentMarker of currentMarkers){currentMarker.remove()}
+	}
+	document.getElementById("buttonForMarkers").checked = (markersAreDisplayed);
+	//saveCurrentState()
+}
 	
 function toggleSettingsContainer() { 
+	mylog("toggleSettingsContainer")
 
 	if (trackingContainerVisibility == 1){toggleTrackingContainer()}
+	if (helpContainerVisibility == 1){toggleHelpContainer()}
 
 	settingsContainerVisibility = 1 - settingsContainerVisibility;
 	settingsContainer.style.display = blockOrNone[1-settingsContainerVisibility];
 	coverContainer.style.display = blockOrNone[1-settingsContainerVisibility];
 }
 
+function toggleHelpContainer() {
+	mylog("toggleHelpContainer")
+
+	if (trackingContainerVisibility == 1){toggleTrackingContainer()}
+	if (settingsContainerVisibility == 1){toggleSettingsContainer()}
+
+	helpContainerVisibility = 1 - helpContainerVisibility;
+	helpContainer.style.display = blockOrNone[1-helpContainerVisibility];
+	coverContainer.style.display = blockOrNone[1-helpContainerVisibility];
+}
+
 function toggleTrackingContainer() { 
+	mylog("toggleTrackingContainer")
 
 	if (settingsContainerVisibility == 1){toggleSettingsContainer()}
+	if (helpContainerVisibility == 1){toggleHelpContainer()}
 
 	trackingContainerVisibility = 1 - trackingContainerVisibility;
 	if (trackingContainerVisibility == 1) {collectCharacters()}
@@ -741,6 +1153,7 @@ function toggleTrackingContainer() {
 }
 
 function toggleColorScheme() { 
+	mylog("toggleColorScheme")
 	colorScheme = 'FTOutlinerBeat'.replace(colorScheme, "")
 	document.documentElement.setAttribute('data-theme', colorScheme)
 	document.getElementById("buttonForColors").checked = (colorScheme == "Beat");
@@ -748,70 +1161,145 @@ function toggleColorScheme() {
 }
 	
 function toggleProportional() { 
+	mylog("toggleProportional")
 	areScenesProportional = 1 - areScenesProportional;
 	theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
 	document.getElementById("buttonForProportional").checked = (areScenesProportional == 1);
 
 	if(areScenesProportional==1){
+		document.getElementById("flexiContainer").classList.remove("nonProportionalMode")
 		let synopsisis = document.getElementsByClassName("showSynopsis")
 		for (synopse of synopsisis){
 			synopse.style.setProperty("display", "none")
 		}
 	}
+	else
+	{
+		document.getElementById("flexiContainer").classList.add("nonProportionalMode")
+		let sluglessElements = document.querySelectorAll('.hideSlugIfSmall')
+		for (i = sluglessElements.length; i > 0; i--){
+			sluglessElements[i-1].classList.remove('hideSlugIfSmall')
+		}
+	}
 
+	if (notesAreDisplayed){
+		toggleDisplayNotes()
+		toggleDisplayNotes()
+	}
+
+	if (markersAreDisplayed){
+		toggleDisplayMarkers()
+		toggleDisplayMarkers()
+	}
+
+	mylog("In toggleProportional, before RecalculateHeights()")
 	recalculateHeights(400)
 			
-	document.querySelector('.omittedScenesAreHidden').style.setProperty('display', blockOrNone[areScenesProportional]);
+	hideOrShowOmittedScenes()
+
+	mylog("Scenes are proportional: " + areScenesProportional)
 	saveCurrentState()
 }
 
+function togglePrintMode(){
+
+	
+	document.getElementById("flexiContainer").classList.toggle("printMode")
+	
+	let pageBackground = ([...document.getElementById("flexiContainer").classList].includes("printMode")) ? "#fff" : "#555"
+	mylog ("togglePrint")
+	theRoot.style.setProperty('--pageBackground', pageBackground)
+
+
+}
+
+function hideOrShowOmittedScenes(){
+	mylog("hideOrShowOmittedScenes")
+	let allOmittedScenes = document.querySelectorAll('.isOmitted')
+	for (element of allOmittedScenes){
+		if (areScenesProportional == 1) {
+			element.classList.add("omittedScenesAreHidden")
+		}else{
+			element.classList.remove("omittedScenesAreHidden")
+		}
+	}
+}
+
 function toggleRealTime() { 
+	mylog("toggleRealTime")
 	isRealTimeOn = 1 - isRealTimeOn;
 	document.getElementById("buttonForRealTimeUpdates").checked = (isRealTimeOn == 1);
 }
 	
 function saveCurrentState() {
+	mylog("saveCurrentState")
 		
 	Beat.call("Beat.setUserDefault('showProportional', " + areScenesProportional + ")")
 	Beat.call("Beat.setUserDefault('showLengths', '" + whatAreSceneLengths + "')")
 	Beat.call("Beat.setUserDefault('showPages', '" + whatArePageNumbers + "')")
 	Beat.call("Beat.setUserDefault('showNumbers', '" + whatAreSceneNumbers + "')")
 	Beat.call("Beat.setUserDefault('realTimeUpdates', '" + isRealTimeOn + "')")
-	Beat.call("Beat.setUserDefault('x-position', '" + window.screenLeft + "')")
-	Beat.call("Beat.setUserDefault('y-position', '" + window.screenTop + "')")
+	// Beat.call("Beat.setUserDefault('x-position', '" + window.screenX + "')")
+	// Beat.call("Beat.setUserDefault('y-position', '" + window.screenY + "')")
 	Beat.call("Beat.setUserDefault('colorScheme', '" + colorScheme + "')")
 	Beat.call("Beat.setUserDefault('oneColumnOutline', '" + oneColumnOutline + "')")
+	Beat.call("Beat.setUserDefault('warningsAreOn', '" + warningsAreOn + "')")
+	Beat.call("Beat.setUserDefault('currentZoomLevel', '" + currentZoomLevel + "')")
 
 	Beat.call("Beat.custom.saveWindowSize()")		
 }
 	
 function somethingWasClicked() {
-		
+	mylog("somethingWasClicked")
+	
 	let theClickedThing = event.target;
 	let theButton = event.button;
 	let rightClick = event.ctrlKey || theButton == 2
+	let length
+	
+	if (theClickedThing.id == "expandedNote" || theClickedThing.id == "trashNote"){		
+		length = document.getElementById('expandedNoteText').innerHTML.replace(/\<br\>/g, "\n").length
+	}
+
+	//ADDED TO FIX WHAT CONSIDERS CLICKED when in Index Card Mode
+		if (indexCardMode == 1 && [...theClickedThing.classList].includes("thisIsASynopsis")){
+			while(theClickedThing.parentNode && ![...theClickedThing.classList].includes("sceneheading")){
+				theClickedThing = theClickedThing.parentNode
+			}
+		}
+		if (indexCardMode == 2 && [...theClickedThing.classList].includes("thisIsASynopsis")){
+			while(theClickedThing.parentNode && ![...theClickedThing.classList].includes("section")){
+				theClickedThing = theClickedThing.parentNode
+			}
+		}	
+		if (indexCardMode == 2 && [...theClickedThing.classList].includes("section")){
+			while(theClickedThing.firstChild && ![...theClickedThing.classList].includes("sectiontext")){
+				theClickedThing = theClickedThing.firstChild
+			}
+		}
+	
+	collapseNote()
 	
 	if (rightClick || contextMenuIsOpen) {
 			x = event.clientX
 			y = event.clientY
 
 		contextMenu(theClickedThing, x, y, rightClick)
+		mylog("back from contexMenu() into SomethingWasClicked()")
 		return
 	}
 
+	a = [...theClickedThing.classList]
+	if (a.includes("sectiontext")) {theClickedThing = theClickedThing.parentNode; a = [...theClickedThing.classList]}
+
 	if (event.metaKey){
-		a = [...theClickedThing.classList]
-		if (a.includes("sceneheading") && a.includes("isSelected")) {
+		if (a.includes("isSelected")) {
 			theClickedThing.classList.remove('isSelected')
 			return
-			}
-        if (a.includes("sectiontext") && [...theClickedThing.parentNode.classList].includes("isSelected")) {
-			theClickedThing.parentNode.classList.remove('isSelected')
-			return
-			}
+		}
 
-		if (a.includes("sceneheading")) {theClickedThing.classList.add('isSelected')}
-        if (a.includes("sectiontext")) {theClickedThing.parentNode.classList.add('isSelected')}
+		if (a.includes("sceneheading") || a.includes("section")) {theClickedThing.classList.add('isSelected')}
+        // if (a.includes("sectiontext")) {theClickedThing.parentNode.classList.add('isSelected')}
 		return
 	}
 
@@ -843,8 +1331,10 @@ function somethingWasClicked() {
 			for (i = thisOne; i <= closestSuccessor; i++){
 				let selectThis = document.querySelector("[data-elementCount='" + i + "']")
 				if (selectThis){
-					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection")){
-						selectThis.classList.add('isSelected')
+					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection") && ![...selectThis.classList].includes("thisIsASynopsis")){
+						if (!(areScenesProportional == 1 && [...selectThis.classList].includes("isOmitted"))){
+							selectThis.classList.add('isSelected')
+						}
 					}
 				}
 			}
@@ -852,8 +1342,10 @@ function somethingWasClicked() {
 			for (i = closestPredecessor; i <= thisOne; i++){				
 				let selectThis = document.querySelector("[data-elementCount='" + i + "']")
 				if (selectThis){
-					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection")){
-						selectThis.classList.add('isSelected')
+					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection") && ![...selectThis.classList].includes("thisIsASynopsis")){
+						if (!(areScenesProportional == 1 && [...selectThis.classList].includes("isOmitted"))){
+							selectThis.classList.add('isSelected')
+						}
 					}
 				}
 			}
@@ -863,6 +1355,13 @@ function somethingWasClicked() {
 
 	deselectAllElements()
 
+	if([...theClickedThing.classList].includes('sceneheading')){
+		mylog("clicked a sceneheading...")
+		theClickedThing.classList.add('isSelected')
+		mylog("whose classlist is: " + theClickedThing.classList)
+	} //new behavior: clicking a scene moves there AND selects it
+
+
 	var gotoIndex = theClickedThing.getAttribute("data-line");
 		
 	if (theClickedThing.id == "cover"){
@@ -871,17 +1370,35 @@ function somethingWasClicked() {
 	}
 	if (theClickedThing.id == "helpButton"){toggleSettingsContainer(); return;}
 	if (theClickedThing.id == "characterButton"){toggleTrackingContainer(); return;}
+	if (theClickedThing.id == "trashNote"){
+			gotoIndex = theClickedThing.parentNode.parentNode.getAttribute("data-line")
+			Beat.call("Beat.replaceRange(" + (parseInt(gotoIndex)) + ", " + (length + 5) + ", '')")
+		// perhaps put this as a function in the plugin instead, and add if both previous and next line are empty then delete one of them
+		return
+	}
 		
 	if (gotoIndex) {
-		Beat.call("Beat.scrollTo(" + gotoIndex + ")")
-		return;
-	}
 
-	//debugContainer.innerHTML += "if you see this, there was no gotoIndex and thus no return. You clicked " + theClickedThing.classList + theClickedThing.getAttribute("data-line")  + "<br/>";
-	
+		mylog("going to: " + gotoIndex) //removeme
+		
+		if (a.includes("sceneheading") || a.includes("section") || a.includes("thisIsASynopsis")){
+			Beat.call("Beat.scrollToScene(Beat.currentParser.sceneAtIndex(" + gotoIndex + "))")
+
+		}
+		
+		Beat.call("Beat.scrollTo(" + gotoIndex + ")") 		
+			
+		if ([...theClickedThing.classList].includes("note") || theClickedThing.id == "expandedNote"){
+			if (theClickedThing.id != "expandedNote"){length = theClickedThing.innerHTML.replace(/\<br\>/g, "\n").length}
+			Beat.call("Beat.setSelectedRange(" + (parseInt(gotoIndex) + 2) + ", " + length + ")")
+		}
+		
+		return;
+	}	
 }
 
 function selectAllElements(altWasPressed) {
+	mylog("selectAllElements")
 	let allElements = document.querySelectorAll("[data-elementCount]")
 	for (element of allElements){
 		if (![...element.classList].includes("dimmedScene") && ![...element.classList].includes("dimmedSection")){
@@ -898,6 +1415,7 @@ function selectAllElements(altWasPressed) {
 // If `immediate` is passed, trigger the function on the leading edge, instead of the trailing.
 
 function debounce(func, wait, immediate) {
+	//mylog("debounce")
 	var timeout;
 	return function() {
 		var context = this, args = arguments;
@@ -911,6 +1429,108 @@ function debounce(func, wait, immediate) {
 		if (callNow) func.apply(context, args);
 	};
 };
+
+function mylog(text, noError, important, sameline){
+
+	//Beat.call("Beat.log('" + text + "')")
+
+	logArray.push(Date.now() + " -- " + text)
+	while (logArray.length > 50){logArray.shift()}
+
+	if(!important){return}
+
+
+	if(!noError){
+		displayErrorMessage(logArray)
+		return}
+
+	if(!sameline){debugContainer.innerHTML += "<br/>"}
+	debugContainer.innerHTML += text
+	// debugContainer.scrollTop = debugContainer.scrollHeight
+}
+
+function zoomSizes(key){
+
+	currentZoomLevel = getComputedStyle(theRoot).getPropertyValue('--fontSizeFactor')
+
+	switch (key){
+		case "+":
+			newZoomLevel = Math.min(2, Number(currentZoomLevel) + 0.2) 
+		break;
+		case "-":
+			newZoomLevel = Math.max(0.4, Number(currentZoomLevel) - 0.2) 
+		break;
+		case "0":
+			newZoomLevel = 1
+	}
+
+	theRoot.style.setProperty('--fontSizeFactor', newZoomLevel)
+	currentZoomLevel = newZoomLevel
+
+	recalculateHeights()
+	saveCurrentState()
+
+	if (notesAreDisplayed){displayNotes()}
+
+}
+
+function isThisOffScreen(element){
+
+	let rect = element.getBoundingClientRect()
+
+	return (
+		(rect.x + rect.width) < 0 
+            || 
+		(rect.y) < 20
+            || 
+		(rect.x > window.innerWidth 
+			|| 
+		rect.y + rect.height > (window.innerHeight - 70))
+	)
+}
+
+function scrollNicelyIntoView(element){
+
+	mylog("scrollNicely")
+
+		let elementRect = element.getBoundingClientRect()
+		let frameRect = document.getElementById("flexiContainer").getBoundingClientRect()
+		let currentScroll = document.getElementById("flexiContainer").scrollTop
+		let currentBottom = frameRect.height + currentScroll
+
+		
+		let oldPos = elementRect.top
+		let targetPos = currentScroll + oldPos - frameRect.bottom/2
+
+		let diff = (targetPos - currentScroll) / 10
+		let newPos = currentScroll
+
+		if (targetPos > currentScroll){
+			function stepUp() {
+				newPos = newPos + diff
+				document.getElementById("flexiContainer").scrollTo(0, newPos)
+
+				if (newPos < targetPos) {
+					window.requestAnimationFrame(stepUp)
+				}
+			}
+			window.requestAnimationFrame(stepUp)
+		}
+
+		if (targetPos < currentScroll){
+			function stepDown() {
+				newPos = newPos + diff
+				document.getElementById("flexiContainer").scrollTo(0, newPos)
+
+				if (newPos > targetPos) {
+					window.requestAnimationFrame(stepDown)
+				}
+			}
+			window.requestAnimationFrame(stepDown)
+		}
+	
+	mylog("scrollNicely is now done")
+}
 
 </script>
 

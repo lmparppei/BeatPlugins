@@ -1,0 +1,607 @@
+<style>
+
+.beingDragged{
+    opacity: 0.2 !important;
+    transform: scale(0.9) !important;
+
+    transition: all 0.2s !important;
+    cursor: dragging !important;
+}
+
+#dropDiv{
+    height: 0px;
+    width: calc(100% - 8px) !important;
+    background-color: none;
+    border: 0px rgba(255,255,255,0.0) dotted !important;
+    border-radius: 5px !important;
+
+    pointer-events: all;
+
+    text-align: center;
+    font-size: 12px !important;
+    color: rgba(255,255,255,0.3);
+    line-height: 35px !important;
+
+    overflow: hidden !important; 
+    white-space: normal !important;
+
+    transition: all 0.1s; 
+}
+
+#dropDiv.dropZone{
+    height: 40px !important;
+    transition: all 0.1s !important;
+
+    pointer-events: all;
+}
+
+#dropDiv.dropZone.over{
+    border: 2px rgba(255,255,255,1) dotted !important;
+    background-color: rgba(255,255,255,0.05) !important;
+    color: white;
+    transition: all 0.05s !important;
+}
+
+.ghost {
+    position: absolute;
+    transform: scale(0.9); 
+    opacity: 0.85;
+    
+    cursor: grabbing !important;
+}
+
+#ghost .isSelected {
+    background-image: transparent !important;
+}
+
+.shrinkToNone{
+    transform: scale(0) !important;
+    margin: 0px 0px 0px 0px !important;
+    border: 0px !important;
+    transition: all 0.5s !important;
+}
+
+/* .over{
+    border: 2px red solid !important;
+} */
+
+.longerAnimation{
+    transition: all 0.5s !important;
+}
+
+.level1.mustAnimate{
+    transition: all 0.2s !important;
+}
+
+.sceneheading.mustAnimate{
+    transition: all 0.2s !important;
+}
+
+.locateme{
+    border: 3px solid red !important;
+}
+
+</style>
+
+<script>
+
+var previouslyDraggedOverElement = false
+var beforeOrAfter, previousBeforeOrAfter
+var previousDropZonePosition
+var dropTookPlace
+
+var sectionLevelDrag
+
+var elementBeforeDropDiv
+
+function onDragStart(e) {
+
+    if(weAreCurrentlyEditingText){return}
+
+    e.stopPropagation()
+    collapseNote()
+
+    Beat.call("Beat.onTextChangeDisabled = true")
+    Beat.call("Beat.onOutlineChangeDisabled = true")
+	Beat.call("Beat.onSelectionChangeDisabled = true")
+
+    dropTookPlace = false 
+    beforeOrAfter = false
+    previousBeforeOrAfter = false
+
+	mylog("onDragStart" + e.target.id)
+
+	if(!e){mylog("left because no event"); return}  //unlikely to occur
+    if(![...e.target.classList].includes('isSelected')){
+        deselectAllElements()
+        e.target.classList.add('isSelected')
+    } //to avoid dragging others thans the one you do actually drag
+
+    //check so all selected scenes are consecutive
+        let selectedScenes = document.querySelectorAll('.isSelected')
+        let firstElement = (selectedScenes.length > 0) ? Number(selectedScenes[0].getAttribute("data-elementCount")) : Number(e.target.getAttribute("data-elementCount"))
+        let lastElement = (selectedScenes.length > 0) ? Number(selectedScenes[selectedScenes.length-1].getAttribute("data-elementCount")) : Number(e.target.getAttribute("data-elementCount"))
+
+    //but first: check if we're dragging sections and adjust the selection!
+    sectionLevelDrag = false
+    if (outline[firstElement].typeAsString == "Section"){
+        //if only one is selected:
+        if (firstElement == lastElement){
+            document.querySelector("[data-elementCount = '" + firstElement + "']").classList.add('isSelected')
+            sectionLevelDrag = true
+            let thisSectionsDepth = [...document.querySelector("[data-elementCount = '" + firstElement + "']").classList].join(" ")
+            thisSectionsDepth = (thisSectionsDepth.match(/level(\d)/))[1]
+            mylog(thisSectionsDepth)
+            while (outline[lastElement + 1] && 
+                !(outline[lastElement + 1].typeAsString == "Section" && 
+                [...document.querySelector("[data-elementCount = '" + (lastElement + 1) + "']").classList].join(" ").match(/level(\d)/)[1] <= thisSectionsDepth)){
+                    lastElement ++
+                    a = document.querySelector("[data-elementCount = '" + lastElement + "']")
+                    if (a){a.classList.add("isSelected")}
+            }
+        }else{
+            for (i = firstElement + 1; i<lastElement; i++){
+                if (outline[i].typeAsString == "Section"){
+                    e.stopPropagation()
+                    e.preventDefault()
+                    deselectAllElements ()
+                    onDragEnd(e)
+                    Beat.call("Beat.alert('Can only move single sequences at a time', 'To move a sequence, grab its sequence header and move all scenes at once.\\n\\nTo move a subset of the sequence select the desired scenes and move them separately.')")
+                    return
+                }
+            }
+        }
+        
+        if(outline[lastElement + 1] && outline[lastElement +1].typeAsString != "Section"){
+            e.stopPropagation()
+            e.preventDefault()
+            deselectAllElements ()
+            onDragEnd(e)
+            Beat.call("Beat.alert('Can only move entire sequences', 'To move a sequence, grab its sequence header and move all scenes at once.\\n\\nTo move a subset of the sequence select the desired scenes and move them separately.')")
+            return
+        }
+    
+    //if sectionDrag, we need to re-evaluate selectedScenes again:
+    selectedScenes = document.querySelectorAll('.isSelected')
+    scenesAreClickThru(true)
+    }  
+              
+        if (firstElement != lastElement){
+            for (i = firstElement; i < lastElement+1; i++){
+
+                let elementToCheck = document.querySelector("[data-elementCount = '" + i + "']")
+
+                if (outline[i].typeAsString == "Section" && !sectionLevelDrag){
+                    e.stopPropagation()
+                    e.preventDefault()
+                    deselectAllElements ()
+                    onDragEnd(e)
+                    Beat.call("Beat.alert('Can not move section header as part of selected range', 'Either select the block of scenes you want to move, or grab a section header to move the entire section and everything in it.')")
+                    return
+                }
+
+                if (!elementToCheck || ![...elementToCheck.classList].includes("isSelected")){
+
+                    let reasonString = ""
+
+                    if (outline[i].typeAsString == "Synopse"){mylog("syonpissis so continuing"); continue}
+
+                    if (outline[i].omitted == 1 && areScenesProportional == 1){reasonString = "It may look as if they are, but the range you are trying to move contains one or more hidden (omitted) scenes, which were not selected. \\n\\nSwitch to non-flexible mode (shortcut: F) to select the entire range."}
+            
+                    e.stopPropagation()
+                    e.preventDefault()
+                    deselectAllElements()
+                    onDragEnd(e)
+                    Beat.call(`Beat.alert('Can only move consequtive scenes!', '` + reasonString + `')`)
+                    return
+                }
+            }
+        }
+
+	//remove the you are here indicator before dragging starts for cosmetic reasons
+    if(document.getElementById('youAreHere')){document.getElementById('youAreHere').remove()}
+
+    //NOW: Time to start dragging
+
+    previouslyDraggedOverElement = e.target
+
+    document.getElementById("flexiContainer").classList.remove("positionRelative") //or else Ghost Image will be invisible
+
+    makeGhost(e, selectedScenes, "dragstart")
+    
+    //disable hovering of scenes for cosmetic reasons
+        let elements = document.querySelectorAll(".sceneheading")
+        for (element of elements){
+            element.classList.add("noHover")
+        }
+
+    //un-uglify the ghost image
+        elements = document.querySelectorAll("#ghost .sceneheading")
+        for (element of elements){
+            element.classList.remove("isSelected")
+            element.classList.remove("beingDragged")
+        }
+}
+
+function onDragEnd(e, doItAnyway) { //doitanyway is passed when
+	mylog("onDragEnd")
+    scenesAreClickThru(false)
+    document.getElementById("flexiContainer").classList.add("positionRelative") //for Notes to scroll again -- disabled for Ghost Image
+
+    if (dropTookPlace && !doItAnyway){return}
+
+    actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
+
+    if (document.getElementById("ghost")){document.getElementById("ghost").remove()}
+    closeDropZone()
+    
+    let elements = document.querySelectorAll(".sceneheading")
+        for (element of elements){
+            element.classList.remove("noHover", "beingDragged")       
+        }
+
+    elements = document.querySelectorAll(".section")
+        for (element of elements){
+            element.classList.remove("noHover", "beingDragged") 
+        }
+
+        deselectAllElements()
+
+    Beat.call("Beat.onTextChangeDisabled = false")
+    Beat.call("Beat.onOutlineChangeDisabled = false")
+	Beat.call("Beat.onSelectionChangeDisabled = false")
+}
+
+function onDragEnter(e) {
+
+    e.preventDefault()
+    e.stopPropagation()
+	mylog("onDragEnter" + e.target.id)
+
+    let draggedOver = e.target
+    let draggedFrom = previouslyDraggedOverElement
+
+    if(!document.getElementById("ghost")){ //eliminates error if dragging from outside the plugin
+        mylog("leaving onDragEnter because no #ghost")
+        return
+    } 
+
+    if (draggedOver.id == "dropDiv"){
+        draggedOver.classList.add("over")
+        return
+    }
+
+    if ([...draggedOver.classList].includes("beingDragged") || draggedFrom && [...draggedFrom.classList].includes("beingDragged")){
+        if(document.getElementById("dropDiv")){closeDropZone()}
+        return
+    }
+
+    if (draggedFrom.id == "dropDiv" && 
+        ([...draggedOver.classList].includes("sceneheading") || [...draggedOver.classList].includes("sectiontext"))){
+            return
+    }
+
+    if(document.getElementById("dropDiv")){closeDropZone()}
+}
+
+function onDragLeave(e) {
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.target.id == "dropDiv"){
+        e.target.classList.remove("over")
+    }
+}
+
+function openDropZone(draggedOver){
+
+    mylog("openDropZone()")
+
+    if (document.getElementById("dropDiv")){
+        return
+    }
+
+    let placeToDrop = draggedOver
+
+    if ([...placeToDrop.classList].includes('sectiontext')){placeToDrop = placeToDrop.parentNode}
+    if ([...placeToDrop.classList].includes('level1') && beforeOrAfter == "beforebegin"){return}
+    
+    //if scene-dragging, make "after section" mean "before next scene"
+    if ([...placeToDrop.classList].includes('section') && beforeOrAfter == "afterend" && !sectionLevelDrag){
+        mylog("probably here")
+        //first: always put before next element instead of after this so as not to skip entire section
+            beforeOrAfter = "beforebegin"
+            let findSceneInsteadOfSection = Number(placeToDrop.getAttribute("data-elementCount")) + 1
+        //then: check so next element wasn't a synopsis; then find the non-synopsis
+            while ([...document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']").classList].includes("thisIsASynopsis")){
+                    mylog("looking for non-synops " + findSceneInsteadOfSection + ", " + outline[findSceneInsteadOfSection].string)
+                    findSceneInsteadOfSection ++
+            }
+        mylog("surely we don't get here do we?")
+        placeToDrop = document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']")
+    }
+
+    mylog('half way down')
+
+    //disallow dropping next to where we started
+    let selectedScenes = document.querySelectorAll('.beingDragged')
+    if (beforeOrAfter == "afterend" && placeToDrop.getAttribute("data-elementCount") == Number(selectedScenes[0].getAttribute("data-elementCount")) - 1
+        ||
+        beforeOrAfter == "beforebegin" && placeToDrop.getAttribute("data-elementCount") == Number(selectedScenes[selectedScenes.length - 1].getAttribute("data-elementCount")) + 1)
+        {
+            return
+    }
+
+    mylog ('at this point, do we have a placetodrop? -->' + placeToDrop.id)
+
+    //correcting things for sections!
+    if(sectionLevelDrag){
+        while (![...placeToDrop.classList].includes("section")){ 
+            placeToDrop = placeToDrop.parentNode
+        }
+
+        if(beforeOrAfter == "afterend"){
+
+            mylog("if beforeOrAfter is AFTEREND:")
+
+            let adjustedPlaceToDrop = Number(placeToDrop.getAttribute("data-elementCount"))
+            while((outline[adjustedPlaceToDrop + 1]) &&
+                //(![...document.querySelector("[data-elementCount='" + (adjustedPlaceToDrop + 1) + "']").classList].includes("section"))){
+                (outline[adjustedPlaceToDrop + 1].typeAsString != "Section")){
+
+                adjustedPlaceToDrop ++
+            }
+
+            mylog("adjusting placetodrop to " + ("[data-elementCount='" + adjustedPlaceToDrop + "']"))
+            
+            //adjust backwards if synopsis!
+            mylog("now entering adjusting backwards -- outline[adjusted...] is now: " + outline[adjustedPlaceToDrop].typeAsString)
+            while(outline[adjustedPlaceToDrop].typeAsString == "Synopse"){
+                adjustedPlaceToDrop --
+            }
+            placeToDrop=document.querySelector("[data-elementCount='" + adjustedPlaceToDrop + "']" )
+
+            
+        }
+    }
+
+    if([...placeToDrop.classList].includes("beingDragged")){return} 
+    
+    mylog (beforeOrAfter)
+    mylog (placeToDrop.id)
+    mylog (placeToDrop.getAttribute("data-elementCount"))
+
+    previousDropZonePosition = beforeOrAfter + placeToDrop.getAttribute("data-elementCount") 
+    
+    //create the div to drop in
+    
+    let dropDiv = document.createElement('div')
+    dropDiv.id = "dropDiv"
+    dropDiv.innerHTML += "DROP TO MOVE SCENE" +    
+        ((document.querySelectorAll(".isSelected").length > 1) ? "S" : "")
+    placeToDrop.insertAdjacentElement(beforeOrAfter, dropDiv)
+
+    mylog('half way down drop zone creation')
+  
+    dropDiv = document.getElementById("dropDiv") 
+    dropDiv.addEventListener("dragenter", function(){
+        onDragEnter(event)}, false)
+    dropDiv.addEventListener("dragleave", function(){onDragLeave(event)}, false)
+    dropDiv.addEventListener("dragover", function(){event.preventDefault()})
+    dropDiv.addEventListener("drop", function(){
+        dropTookPlace = true;
+        event.stopPropagation()
+        event.preventDefault()
+        moveTheScenes(event)}, false)
+    
+    elementBeforeDropDiv = (beforeOrAfter == "beforebegin") ? 
+        Number(placeToDrop.getAttribute("data-elementCount")) : 
+        (Number(placeToDrop.getAttribute("data-elementCount")) + 1)
+    
+        mylog("the placeToDrop had dataElementCount == " + placeToDrop.getAttribute("data-elementCount"), false, false)
+    
+    while(outline[elementBeforeDropDiv] && outline[elementBeforeDropDiv].typeAsString == "Synopse"){elementBeforeDropDiv++} //makes sure synopsis does not mark end of scene
+
+    mylog("after the synopse-while")
+
+    dropDiv.dataset.beforeScene = elementBeforeDropDiv
+
+    let onlyToProvokeAnimation = dropDiv.getBoundingClientRect()
+    document.getElementById("dropDiv").classList.add("dropZone")
+}
+
+function closeDropZone(){
+
+    mylog("closeDropZone()")
+
+    previousDropZonePosition = false
+    previouslyDraggedOverElement = false
+    previousBeforeOrAfter = false
+
+
+    if(document.getElementById("dropDiv")){
+            document.getElementById("dropDiv").remove()
+    }
+}
+
+function onDragOver(e) {
+
+    mylog("dragover")
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    if(!document.getElementById("ghost")){ // should eliminate error if dragging from outside the plugin
+        mylog("leaving onDragOver because no #ghost")
+        return
+    } 
+    
+    let draggedOver = e.target
+        if (draggedOver.id == "dropDiv"){
+            previouslyDraggedOverElement = draggedOver
+            return}
+        if (![...draggedOver.classList].includes("sceneheading") && ![...draggedOver.classList].includes("sectiontext")){
+            if(document.getElementById("dropDiv")){closeDropZone()}
+            return}
+        if ([...draggedOver.classList].includes("beingDragged")){
+            if(document.getElementById("dropDiv")){closeDropZone()}
+            return
+        }
+
+    previousBeforeOrAfter = beforeOrAfter
+
+    // setting ENTIRE sequence as reference before measuring height IF we are dragging sections
+    while (sectionLevelDrag && ![...draggedOver.classList].includes("section")){draggedOver = draggedOver.parentNode}
+
+    //check to see before or after; if it didn't change then get out of here
+
+        beforeOrAfter = false
+        let bounding = draggedOver.getBoundingClientRect()
+
+        let y = e.clientY
+            if (y - bounding.top < (Math.min(20, (bounding.bottom - bounding.top)/2))) {beforeOrAfter = "beforebegin"}
+            if (bounding.bottom - y < (Math.min(20, (bounding.bottom - bounding.top)/2))) {beforeOrAfter = "afterend"}
+        
+    //Close dropzone if we are anywhere where no dropzone applies
+        if (!beforeOrAfter){
+            if(document.getElementById("dropDiv")){closeDropZone()}
+            return
+        }
+    
+    // now setting section element as reference even if dragging scenes
+        if (sectionLevelDrag && [...draggedOver.classList].includes("sectiontext")){draggedOver = draggedOver.parentNode}
+
+    // different checks to cancel if no change etc
+        if ((previouslyDraggedOverElement && draggedOver == previouslyDraggedOverElement)
+                &&
+                (previousBeforeOrAfter && beforeOrAfter == previousBeforeOrAfter)){
+            return
+        }
+        
+        if ((beforeOrAfter == "afterend" && previousDropZonePosition == "beforebegin" + (draggedOver.getAttribute("data-elementCount")) + 1)
+                ||
+                (beforeOrAfter == "beforebegin" && previousDropZonePosition == "afterend" + (draggedOver.getAttribute("data-elementCount")) - 1)){
+            return
+        }
+    
+    previouslyDraggedOverElement = draggedOver
+    previousBeforeOrAfter = beforeOrAfter
+        
+    openDropZone(draggedOver)
+}
+
+function moveTheScenes(e){
+
+    mylog("moveTheScenes(" + e + ")")
+    let selectedScenes = document.querySelectorAll('.beingDragged')
+
+    let dropMessage = warningsAreOn ? ("SCENE"+
+        ((selectedScenes.length > 1)? "S" : "")+
+        " DROPPED") : ""
+
+    document.getElementById("dropDiv").innerHTML = dropMessage
+
+    firstScene = selectedScenes[0].getAttribute("data-elementCount")
+    lastScene = selectedScenes[selectedScenes.length - 1].getAttribute("data-elementCount")
+        while(outline[Number(lastScene) + 1] && outline[Number(lastScene) + 1].typeAsString == "Synopse"){lastScene++;} //makes sure synopsis is moved with scene
+    insertBeforeScene = e.target.getAttribute("data-before-scene") // written into dropdiv at creation: dataset.beforeScene
+
+    mylog(firstScene + ", " + lastScene + ", " + insertBeforeScene + "," + warningsAreOn)
+
+    actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
+    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + ")")
+}
+
+function ifYesToMove(){ //this is visually-related stuff only and does not alter any actual data 
+
+    mylog("Now shrinking the scenes.")
+
+    let secondClone = document.createElement("div")
+    secondClone.id = "clone"
+    let tmp = 0; let cloneName
+
+    let selectedScenes = document.querySelectorAll('.beingDragged')
+    for (scene of selectedScenes){
+        if (sectionLevelDrag && scene != selectedScenes[0]){continue}
+        scene.classList.add("longerAnimation")
+            tmp++; cloneName = "tmp" + tmp
+            clone = scene.cloneNode(true)
+            clone.id = cloneName
+            clone.classList.add("longerAnimation", "shrinkToNone")
+            clone.classList.remove("beingDragged", "isSelected")
+            document.getElementById("dropDiv").insertAdjacentElement("beforebegin", clone)
+            onlyToProvokeAnimation = document.getElementById(cloneName).getBoundingClientRect()         
+            document.getElementById(cloneName).classList.remove("shrinkToNone")
+        scene.classList.add("shrinkToNone")
+    }
+
+    document.getElementById("dropDiv").classList.remove("over")
+    onlyToProvokeAnimation = document.getElementById("dropDiv").getBoundingClientRect()         
+    document.getElementById("dropDiv").classList.add("longerAnimation")
+    document.getElementById("dropDiv").classList.remove("dropZone")
+
+    document.getElementById("ghost").remove()
+}
+
+function makeGhost(e, selectedScenes,icamefrom){
+
+    mylog ("makeGhost -- from" + icamefrom + "; and with so many selected scenes: <b>" + selectedScenes.length)
+
+    if(document.getElementById("ghost")){document.getElementById("ghost").remove()}
+    
+    //set the ghost image
+    let ghost = document.createElement("div")
+    ghost.id = "ghost"
+    ghost.classList.add("ghost")
+    ghost.style.top = (window.innerHeight * 2) + "px"
+    ghost.style.width = window.getComputedStyle(e.target).getPropertyValue("width")
+
+    //if no selected scenes, make the one dragged selected instead
+    //let selectedScenes = document.querySelectorAll('.isSelected')
+    if (selectedScenes.length < 1) {selectedScenes = [e.target]}
+    for (scene of selectedScenes){
+        clone = scene.cloneNode(true)
+        clone.classList.remove("beingDragged")
+        
+        if ([...clone.classList].includes("thisIsASynopsis")){continue}
+        
+        if (sectionLevelDrag && scene == e.target){ //selects entire sequence if dragging a section head
+            ghost.appendChild(clone)
+        }
+        else if (!sectionLevelDrag && [...clone.classList].includes("sceneheading")){
+            ghost.appendChild(clone)
+        } 
+        
+        scene.classList.add("beingDragged")
+    }
+    
+    //create ghost image
+    document.getElementById("flexiContainer").appendChild(ghost);
+    let offsetX = parseInt(window.getComputedStyle(document.getElementById("ghost")).getPropertyValue("width")) * 0.9 /2
+    let offsetY = parseInt(window.getComputedStyle(document.getElementById("ghost")).getPropertyValue("height")) * 0.9 /2
+
+    e.dataTransfer.setDragImage(document.getElementById("ghost"), offsetX, offsetY);
+    
+    mylog("end of ghost function")
+}
+
+function scenesAreClickThru(areThey){
+
+    return
+
+    mylog("now making all scenes clicthru " + areThey)
+
+    let allScenes = document.querySelectorAll(".sceneheading")
+
+    for (scene of allScenes){
+        if (areThey) {
+            scene.classList.add("clickThru")
+        }else{
+            scene.classList.remove("clickThru")
+        }
+    }
+
+}
+
+</script>

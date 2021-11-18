@@ -1,9 +1,66 @@
 CHANGELOG
 
+v 1.1  
+=====================
+
+NEW FEATURES:
+------------- 
+
+* SHOW SCRIPT NOTES. Show any full-line [[script notes]] in the outline, positioned relative to their place in the script. (This excludes notes that are inline, i.e. part of an element with actual script text. Multi-line notes are accepted to.)
+  Some tips:
+  - Toggle the display of notes by hitting "N" or checking/unchecking the corresponding checkbox in settings.
+  - Hover a note to see its contents; scroll the script window to a note's position by clicking it.
+  - Alternatively, TAB key will cycle through all notes one by one to show their contents.
+  - When cycling notes with TAB, the open note remains sticky until you click elsewhere -- and also, a trashcan icon at the top of the note lets you delete it right from there.
+
+* SHOW MARKERS. Any markers in your script as indicated by [[marker color]] will show up as little flags in their appropriate places in your script. Click them to jump directly to that spot. One tip and one caveat:
+  - Toggle the display of markers with "M"
+  - For now, only full-line markers are recognized. As with notes, in-line markers (i.e. in the middle of a piece of dialogue or action) will not show up.
+
+* MOVE SCENES. Drag-and-drop to re-arrange single scenes, ranges of scenes, or entire sections along with their contents.
+
+* INDEX CARD VIEWS. If you like to outline with 3x5 format cards, there are now two views to allow you to do that: Either with each card representing a SCENE (with any scene-level synopsis visible inside it) or with each card representing a SECTION (with any section-level synopsis visible inside it). Use the "X" key (for IndeX) to cycle to the SCENE index card view to SECTION and back to the normal outline.
+
+* OMIT and UN-OMIT one or more scenes directly via the context menu. 
+
+* CHANGE SCENE HEADING AND SECTION TEXT directly from any view by double-clicking a visible header. ENTER saves any changes, ESCAPE exits without changing.
+
+* DELETE one or more scenes directly from the context menu. You will be warned when you do. But still. Be careful. 
+
+* CHANGE THE FONT SIZE. The plugin's font size can now be increased (cmd + pluskey) or decreased (cmd + minuskey). Reset with cmd + 0. 
+
+* DOUBLE-CLICK a scene or sequence to edit its name (heading) directly in the outline. Admittedly, this may be less effecient than just clicking the scene to jump there and then editing the heading in the script, but it paves the way for future things. Stay tuned.
+
+A NOTE: With this update, FTOutliner will for the first time will be able to make significant changes to the contents of your script. Great care has been taken to test and make sure that FTOutliner does not break anything in your text, but please doublecheck that any changes you do actually end up the way you intended and please report if anything seems incorrect. 
+On the bright side, you WILL be able to undo any changes if something doesn't end up the way you wanted it to. Thanks to the fact that Beat listens for (some) shortcuts even when a plugin is in focus, you can do this immediately by pressing cmd+z without switching to the main window, should you want to.
+
+SMALLER CHANGES: 
+----------------
+
+* RESPONSIVENESS HAS BEEN MUCH IMPROVED, especially when typing around or in outline elements such as scene headings, sections or synopsis.
+
+* IMPROVEMENT: In modes where not all scenes fit onto the screen at once, typing or clickling a scene in the Beat window will have it scroll into view in FTOutliner if it wasn't already
+* IMPROVEMENT: Dimmed scenes are now not dimming child elements. Which is a convoluted way to say that the you-are-here indicator will now show brightly everywhere in the script including in scenes that are dimmed by character tracking.
+* IMPROVEMENT: Omitted scenes in a script no longer breaks everything. Instead, they will show as un-numbered, striped-out scenes in Non-Flexible mode, while remaining invisible in Flexible mode (as they are in fact disabled and thus do not take up any time/pagespace anyway)
+* IMPROVEMENT: Locked scene numbers (e.g. #44A#) will also not break stuff anymore. Instead, if FTOutliner is set to show scene numbers, locked scenes will be marked with a padlock icon.
+* IMPROVEMENT: Previously, FTOutliner behaved badly when a scene had a synopsis present anywhere but immediately following the scene hading. This has now been improved. 
+
+* FIX: A # character inside a section name (e.g. #ACT #2) will not be counted as a leading # and thus not increase the section level anymore.
+* FiX: An empty screenplay document will not cause an error anymore but make FTOutliner display a welcome message. 
+* FIX: Temporary workaround to allow apostrophes in a character name (e.g. LINN'S DAD) without breaking character tracking
+* FIX: Scenes that are too small to show their sceneheading will now sport a better popup with the slugline info when hovered, while scenes that do have their heading written out will have no popup at all because why would they. 
+* FIX: Hitting ESC with context menu open now closes the menu rather than the entire plugin
+* FIX: A bunch of internal changes because hey. You live and you learn.
+
+* CHANGE: Clicking a scene will not only scroll to that place, but the scene is now also selected in the plugin view. It will be deselected again as soon as focus is moved from the plugin to the document, but helps with the UX logic when selecting a range of scenes.
+* CHANGE: The "special" color option in the context menu now only shows in the context menu when a sequence is selected. The "special" color means nothing to Beat, but is shown in FTOutliner as a transparent sequence, pretty much like an act but *without* starting a new column. This is useful for special dividers inside acts, such as ##NEW DAY or whatever other reason you might have for wanting a visual spacer.
+* CHANGE: FTOutliner will now ask before closing. 
+
+
 v 1.01 (July 29, 2021)
 =====================
 * FIX: If screenplay does not start with an #ACT, scenes and ##sequences before any #ACT will now be stacked vertically too
-* IMPROVED: Character list updates every time the Tracking dialog is opened, with any character already currently selected for tracking automatically reselected.
+* IMPROVEMENT: Character list updates every time the Tracking dialog is opened, with any character already currently selected for tracking automatically reselected.
 
 
 v 1.0 (July 27, 2021)
