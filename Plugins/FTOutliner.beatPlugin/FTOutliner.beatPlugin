@@ -124,7 +124,7 @@ Beat.custom.updateEntireOutline = function (location, length) {
 			if(queueOneMoreFullUpdate){
 				queueOneMoreFullUpdate = false
 				//Beat.log("fired another round due to queued up outline change")
-				updateEntireOutline()
+				Beat.custom.updateEntireOutline()
 			}
 
 			backgroundAlreadyRunning = false
