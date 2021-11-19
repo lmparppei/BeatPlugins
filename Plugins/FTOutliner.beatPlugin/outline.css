@@ -133,6 +133,10 @@ body {
 	overflow-x: hidden;
 }
 
+#flexiContainer::-webkit-scrollbar{
+	display: none;
+}
+
 .positionRelative {
 	position: relative !important;
 }
@@ -869,18 +873,34 @@ p.tooltipInfo{
 	margin-bottom: 0px !important;
 	text-align: left !important;
 
+	min-width: 1px !important;
+	max-width: 1px !important;
+	min-height: 1px !important;
+	max-height: 1px !important;
+	width: 1px !important;
+	height: 1px !important;
+	background-color: red !important;
+	border: 4px red solid !important; 
+	border-radius: 6px 6px 6px 6px !important;
+	content: " a " !important;
+	color: rgba(0,0,0,0) !important;
+	overflow: hidden;
+
+	font-size: 1px !important;
+	line-height: 1px !important;
+
 	/* position: absolute !important; */
 	position: relative !important;
-	line-height: 14px !important;
+	/* line-height: 14px !important;
 	height: 14px !important;
 	content: "\26AB";
 	color: red;
 	font-size: 15px;
-	font-weight: bold;
+	font-weight: bold; */
 	margin-left: -9px !important;
 	left: 2px !important;
 	/* top: calc(-7px * var(--fontSizeFactor)) !important;	 */
-	top: -8px !important;	
+	top: -12.5px !important;	
 	/* top: calc(calc(var(--fixedHeight) - 6px) * var(--fontSizeFactor)) !important;  */
 	/* float: left; */
 	}
@@ -1481,7 +1501,8 @@ INDEX CARD VALUES
 	display: block !important;
 	max-height: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
 	width: calc(100% - 0px) !important;
-	overflow: scroll !important;
+	overflow-y: scroll !important;
+	overflow-x: hidden !important;
 	background-color: rgba(0,0,0,0) !important;
 
 	/* border:rgb(12, 224, 227) 1px solid !important; */
@@ -1490,6 +1511,11 @@ INDEX CARD VALUES
 	z-index: 9990 !important;
 
 	padding-bottom: 100px !important
+}
+
+.thisIsASynopsis::-webkit-scrollbar{
+	background: transparent;
+	width: 1px !important; 
 }
 
 #flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis:hover,

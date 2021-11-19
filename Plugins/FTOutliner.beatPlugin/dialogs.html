@@ -155,6 +155,10 @@
 	max-height: 90% !important;
 }
 
+#buttons::-webkit-scrollbar{
+	display: none;
+}
+
 .headline{
     font-weight: 800; 
     font-size:24px;
@@ -288,6 +292,13 @@ max-width: 80% !important;
 	/* content: " "; */
 
 	/* z-index: -1; */
+}
+
+
+#helpWindow::-webkit-scrollbar,
+#helpWindowInnerDiv::-webkit-scrollbar {
+	display: hidden !important;
+	background-color: transparent;
 }
 
 /* #helpWindow p,  */
