@@ -9,5 +9,4 @@
 		"List Locations.beatPlugin": { "version": "0.5", "copyright": "Lauri-Matti Parppei", "description": "Quick and dirty list of shooting locations" },
 		"Map Character Appearances.beatPlugin": { "version": "1.1", "copyright": "Lauri-Matti Parppei", "description": "A visual timeline of character appearances" },
 		"Merge Screenplays.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei 2021", "description": "Quickly merge multiple screenplays together" },
-		"Shuffle Scenes.beatPlugin": { "version": "1.0", "copyright": "2021 Lauri-Matti Parppei", "description": "Randomize the order of your scenes and create a new, twisted version of your story." }
-	}
+		"Shuffle Scenes.beatPlugin": { "version": "1.0", "copyright": "2021 Lauri-Matti Parppei", "description": "Randomize the order of your scenes and create a new, twisted version of your story." }}

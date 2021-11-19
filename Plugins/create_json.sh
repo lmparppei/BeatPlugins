@@ -27,13 +27,13 @@ for dir in */
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
 		then
-			json+=","
+			json+=$',\n'
 	fi
 
 	zip -vrq "../Dist/$filename.zip" "./$dir"
 done
 json+="}"
 
-echo $json > "../Dist/Beat Plugins.json"
+echo "$json" > "../Dist/Beat Plugins.json"
 echo "Written JSON file"
 git add ../
