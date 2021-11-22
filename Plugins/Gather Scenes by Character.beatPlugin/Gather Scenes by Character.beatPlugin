@@ -25,7 +25,7 @@ function titleCase(str) {
 // Gather characters (by dialogue)
 for (const line of Beat.lines()) {
 	if (line.typeAsString() == "Character") {
-		const character = line.characterName().toUpperCase();
+		const character = line.characterName().toUpperCase().trim();
 		if (!characters.includes(character)) characters.push(character);
 	}
 }
@@ -51,8 +51,7 @@ for (const scene of Beat.scenes()) {
 		// Immediately add this scene if it contains dialogue with the person
 		if ((type == "Character" || type == "Double Dialogue Character")) {
 			// Strip V.O. etc.
-			//const charLine = stripSuffix(line.string).trim();
-			const characterCue = line.characterName()
+			const characterCue = line.characterName().trim()
 
 			if (characterCue == characterName) {
 				scenes.push(scene);
