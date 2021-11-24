@@ -21,8 +21,16 @@ for dir in */
 	description=${description/Description: /}
 	copyright=$(find "./$dir$filename" -type f -exec grep "Copyright:" {} \;);
 	copyright=${copyright/Copyright: /}
+
+	image=$(find "./$dir$filename" -type f -exec grep "Image:" {} \;);
+	image=${image/Image: /}
+
+	if [[ $image ]]; then
+		echo "     image found"
+		cp "./$filename/$image" "../Dist/Images/$image"
+	fi
 	
-	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\" }"
+	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\" }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
