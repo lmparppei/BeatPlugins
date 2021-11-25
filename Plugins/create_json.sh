@@ -1,6 +1,13 @@
 #!/bin/bash
+
+# This bash script creates a JSON file for Beat plugin library.
+# © 2021 Lauri-Matti Parppei
+
 IFS=$'\n'
-#files=( $(find . -maxdepth 1 -mindepth 1  -type d) )
+
+json_escape () {
+    printf '%s' "$1" | python -c 'import json,sys; print(json.dumps(sys.stdin.read(), ensure_ascii=False))'
+}
 
 json="{"
 
@@ -22,6 +29,11 @@ for dir in */
 	copyright=$(find "./$dir$filename" -type f -exec grep "Copyright:" {} \;);
 	copyright=${copyright/Copyright: /}
 
+	html=$(sed -n "/<Description>/,/<\/Description>/p" ./$dir$filename)
+	html=${html//$'\n'/''}
+	html=${html//$'\t'/''}
+	html=$(json_escape "$html")
+
 	image=$(find "./$dir$filename" -type f -exec grep "Image:" {} \;);
 	image=${image/Image: /}
 
@@ -30,7 +42,7 @@ for dir in */
 		cp "./$filename/$image" "../Dist/Images/$image"
 	fi
 	
-	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\" }"
+	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
