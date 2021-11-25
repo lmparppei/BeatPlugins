@@ -50,6 +50,7 @@ for dir in */
 			json+=$',\n'
 	fi
 
+	rm "../Dist/$filename.zip"
 	zip -vrq "../Dist/$filename.zip" "./$dir" -x ".*" -x "__MACOSX"
 done
 json+="}"
