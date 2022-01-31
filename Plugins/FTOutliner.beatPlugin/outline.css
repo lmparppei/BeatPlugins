@@ -133,6 +133,23 @@ body {
 	overflow-x: hidden;
 }
 
+#flexiContainer.red,
+#flexiContainer.orange,
+#flexiContainer.yellow,
+#flexiContainer.green,
+#flexiContainer.teal,
+#flexiContainer.cyan,
+#flexiContainer.blue,
+#flexiContainer.purple,
+#flexiContainer.magenta,
+#flexiContainer.pink,
+#flexiContainer.brown,
+#flexiContainer.gray,
+#flexiContainer.white{
+	background: transparent !important;
+}
+
+
 #flexiContainer::-webkit-scrollbar{
 	display: none;
 }
@@ -142,9 +159,10 @@ body {
 }
 	
 .section {
-	margin: 1px !important; 
-	padding:calc(16px * var(--fontSizeFactor)) 0px 0px 8px; /*deleted one from 16 IMPORTANT!*/
 	position: relative !important;
+	
+	padding: calc(16px * var(--fontSizeFactor)) 0px 0px 8px;
+	margin: 1px !important; 
 	
 	font-size: calc(12px * var(--fontSizeFactor)); 
 	font-weight: bold; 
@@ -165,23 +183,33 @@ body {
 	cursor: grab;
 } */
 
-.section div.sectiontext {
+/* .section div */
+div.sectiontext {
+	
+	height: calc(17px * var(--fontSizeFactor)) !important;
+	margin-top: 0px !important;
+	
 	/* clear: both !important; */
 	position: absolute !important;
 	/* width: calc(100% - 4px) !important; */
-	height: calc(17px * var(--fontSizeFactor)) !important;
+	
 	left: 5px !important;
 	top: -2px !important;
-	/* border: 1px yellow dotted;  */
-	margin-bottom: 17px !important; /*seemingly has no effect*/
+	/* border: 1px yellow dotted;   */
 	pointer-events: all !important;
 
 	background-color: #bbb;
 	left: 0px !important;
 	padding-left: 5px !important;
 	width: calc(100% - 0px) !important;
-
 }
+
+/* .nonProportionalMode .section div.sectiontext{
+
+	height: calc(17px * var(--fontSizeFactor)) !important;
+} */
+
+
 
 p{
 	margin: 0px !important;
@@ -201,13 +229,18 @@ p{
 	pointer-events: none !important;
 	}
 
-.sceneheading {
+.sceneheading, .orphanText {
 	position: relative !important;
 
 	padding-left: 6px !important;
 	padding-right: 4px !important;
 	padding-top: 0px !important;
-	margin: 1px 8px 1px 0px !important; 
+	
+	/* margin: 1px 8px 1px 0px !important;  */
+	/* setting margin-top programmatically due to allowing space for orphan material */
+	margin-right: 8px !important;
+	margin-left: 0px !important;
+	margin-bottom: 1px !important;
 	/* margin: 1px 8px 0px 0px !important;  */
 	
 	text-align: left;
@@ -235,8 +268,48 @@ p{
 	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%);
 	/* box-shadow: 0 5px 30px hsl(0 0% 0% / 20%); */
 
+}
 
-	}
+.orphanText{
+	/* transform: translateX(50%); */
+	border: none;
+	/* border-left: 10px solid #555 !important;
+	border-right: 10px solid #555 !important; */
+	/* border-left: 2px dotted rgba(255, 255, 255, 0.3) !important;
+	border-bottom: transparent 40px solid;
+	border-top: transparent 40px solid; */
+
+	background: transparent;
+	box-shadow: none;
+	/*background: repeating-linear-gradient(45deg transparent, 4px transparent, 4px #ddd, 8px #ddd) */
+	background: 	repeating-linear-gradient(
+			-45deg,
+			transparent 0px,
+			transparent 3px,
+			rgba(255,255,255,0.1) 3px,
+			rgba(255,255,255,0.1) 6px)
+			/* ,
+	rgba(221, 221, 221, 1) !important */
+	;
+}
+
+.orphanText:hover{
+	background: 	/*repeating-linear-gradient(
+			-45deg,
+			transparent 0px,
+			transparent 3px,
+			rgba(255,255,255,0.1) 3px,
+			rgba(255,255,255,0.1) 6px)
+			,*/
+			rgba(0, 0, 0, 0.3)
+			;
+	border: 0px !important;
+	transition: border 50ms ;
+}
+
+div.sceneheading:nth-child(1 of .sceneheading):not(.hidden):not(.orphanText ~ .sceneheading){
+	margin-top: 2px !important;
+}
 
 .theSlugLine{
 	position: relative !important;
@@ -309,6 +382,10 @@ p{
 
 }
 
+.isOmitted .showSceneLength{
+	display: none;
+}
+
 p >.clear{
 	/* display: inline-block !important; */
 	float: none;
@@ -361,7 +438,7 @@ p >.clear{
 		
 	opacity: 35% !important;
 	border-radius: calc(10px * var(--fontSizeFactor)) !important;
-	margin-top: 100%;
+	margin-top: 0px !important;
 	padding: 0px 3px 0px 4px;
 	pointer-events: all !important;
 	}
@@ -445,7 +522,7 @@ syn::before{
 	background-color: #bbb; /* not important, so overriden if colored*/
 	pointer-events: all !important;
 
-	height: var(--indexCardHeight) !important;
+	/* height: var(--indexCardHeight) !important; */
 }
 
 /* .synopseForSection, 
@@ -516,7 +593,7 @@ padding-bottom: var(--indexCardHeight) !important;
 	background-image: none !important;
 	background-color: none !important;
 	/* border: 1px solid orange !important;  */
-	border: 0px none !important; */
+	border: 0px none !important; 
 
 	overflow: visible !important;
 
@@ -661,19 +738,74 @@ div:not(:nth-of-type(1)).level1{
 	filter: brightness(1.25) !important;
 }	 */
 
+.uncolorAllScenesBut .sceneheading{
+	/* background-color: rgba(255,255,255,0.1) !important; */
+	/* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.95) ,rgba(85,85,85,0.95) 100%); */
+	background-image: -webkit-linear-gradient(top, rgba(90,90,90,1) ,rgba(90,90,90,1) 100%);
+	color: rgba(0,0,0,0.3) !important;
+}
+
+/* .printMode.uncolorAllScenesBut .sceneheading {
+	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0.9) ,rgba(255,255,255,0.9) 100%);
+	color: rgba(0,0,0,0.8) !important; 
+	opacity: 0.2;
+	/* border: 1px solid rgba(0,0,0,0.3) !important; */
+/*} */
+
+/* .printMode.uncolorAllScenesBut .sectiontext {
+	color: rgba(0,0,0,0.3);
+} */
+
+.uncolorAllScenesBut.red .sceneheading.red, 
+.uncolorAllScenesBut.yellow .sceneheading.yellow,
+.uncolorAllScenesBut.orange .sceneheading.orange,
+.uncolorAllScenesBut.green .sceneheading.green, 
+.uncolorAllScenesBut.teal .sceneheading.teal,
+.uncolorAllScenesBut.cyan .sceneheading.cyan,
+.uncolorAllScenesBut.blue .sceneheading.blue,
+.uncolorAllScenesBut.purple .sceneheading.purple,
+.uncolorAllScenesBut.magenta .sceneheading.magenta,
+.uncolorAllScenesBut.pink .sceneheading.pink,
+.uncolorAllScenesBut.brown .sceneheading.brown,
+.uncolorAllScenesBut.gray .sceneheading.gray,
+.uncolorAllScenesBut.white .sceneheading.white,
+.uncolorAllScenesBut.black .sceneheading.black
+{
+	background-image: none;
+	filter: none !important;
+	opacity: 1;
+}
+
+.uncolorAllScenesBut.black .black:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.red .red:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.orange .orange:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.yellow .yellow:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.green .green:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.teal .teal:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.cyan .cyan:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.blue .blue:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.purple .purple:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.magenta .magenta:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.pink .pink:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.brown .brown:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.gray .gray:not(.hideSlugIfSmall):not(.dimmedScene),
+.uncolorAllScenesBut.white .white:not(.hideSlugIfSmall):not(.dimmedScene){
+	color: black !important;
+}
+
 .sceneheading.yellow{
 /* , .section.yellow>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--yellow) !important;
 	}
-.sceneheading.red {
+.sceneheading.red{
 /* .section.red>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--red) !important;
 	}
-.sceneheading.green {
+.sceneheading.green{
 /* , .section.green>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--green) !important;
 	}
-.sceneheading.blue {
+.sceneheading.blue{
 	/* , .section.blue>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--blue) !important;
 	}
@@ -697,19 +829,19 @@ div:not(:nth-of-type(1)).level1{
 	/* , .section.purple>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--purple) !important;
 	}
-.sceneheading.pink {
+.sceneheading.pink{
 	/* , .section.pink>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--pink) !important;
 	}
-.sceneheading.brown {
+.sceneheading.brown{
 	/* , .section.brown>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--brown) !important;
 	}
-.sceneheading.black {
+.sceneheading.black{
 	/* , .section.black>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--black) !important;
 	}
-.sceneheading.gray {
+.sceneheading.gray{
 	/* , .section.gray>.synopseForSection>.thisIsASynopsis { */
 	background-color: var(--gray) !important;
 	}
@@ -841,7 +973,7 @@ p.tooltipInfo{
 	border: 1px red solid;
 	box-shadow:3px 3px 5px rgba(0, 0, 0, 0.2) !important;
 
-	z-index: 9997;
+	z-index: 9995;
 
 	pointer-events: none;
 	line-height: 14px !important;
@@ -1030,10 +1162,15 @@ p.synopse {
 	
 /* --- HOVER COMES AFTER ALL COLORS --- */
 
-.sceneheading:not(.noHover):not(.hideSlugIfSmall):not(.thisIsASynopsis):hover{
+.sceneheading:not(.noHover):not(.hideSlugIfSmall):not(.thisIsASynopsis):not(.uncolorAllScenesBut .sceneheading):hover{
 	background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.80), rgba(20,20,20,0.80) 100%) !important;
 	color: white !important;
-	}
+}
+
+.uncolorAllScenesBut .sceneheading:hover{
+	background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.0), rgba(20,20,20,0.0) 100%) !important;
+	/* outline: 3px rgba(20,20,20,0.8) solid !important; */
+}
 
 .sceneheading.isSelected {
 	background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.8) 100%) !important;	
@@ -1090,16 +1227,32 @@ p.synopse {
 	display: flex; 
 	flex-direction: column-reverse;
 	}
+
+#debug, #debug * {
+	white-space: normal;
+}
 	
 #helpButton{
 	right: 12px !important;
-	font-size: 48px !important;
+	font-size: 36px !important; /*48px !important;*/
 	line-height: 24px !important;
 	}
 
 #helpButton:hover{
 	transition: 0.1s ease-out;
 	transform: rotate(18deg) scale(1.05);
+}
+
+#printButton{
+	left: 64px !important;
+	font-size: 36px !important; /*48px !important;*/
+	line-height: 24px !important;
+	transform: scale(0.95);
+	}
+
+#printButton:hover{
+	transition: 0.1s ease-out;
+	transform: scale(1.00);
 }
 		
 #refreshButton{
@@ -1108,17 +1261,7 @@ p.synopse {
 	line-height: 32px !important;
 	}
 
-#characterButton{
-	right: 56px !important;
 
-	font-size: 32px !important;
-	line-height: 34px !important;
-}
-
-#characterButton:hover{
-	transition: 0.1s ease-out;
-	transform: scale(1.05);
-}
 
 #indexCardButton{
 	right: 110px !important;
@@ -1146,12 +1289,57 @@ p.synopse {
 	font-size: 48px !important;
 	font-weight: 700 !important;
 	text-align: center !important;
-	height: 30px !important;
+	height: 26px !important;
 	width: 30px !important;
 	/* border-radius: 15px !important; */
 	opacity: 20% !important;
 	z-index: 9998;
 	}
+
+
+
+#indexCardSizeButton {
+	right: 88px !important;
+	opacity: 100% !important;
+	bottom: 8px !important;
+}
+
+#indexCardSizeButton:not(.active) {
+	display: none !important;
+	border: 10px orange solid !important;
+}
+
+.roundButton{
+	/* background-color: white;
+	height: 12px !important;
+	width: 12px !important; */
+	/* border-radius: 6px !important;
+	color: black !important; */
+	font-size: 10px !important;
+	/* font-weight: bold !important; */
+	text-align: center !important;
+	height: 10px !important;
+
+	opacity: 30% !important;
+}
+
+.roundButton:hover {
+	opacity: 100% !important;
+}
+
+#characterButton{
+	right: 56px !important;
+	bottom: 14px !important;
+
+	font-size: 32px !important;
+	line-height: 30px !important;
+	margin-top: -20px !important;
+}
+
+#characterButton:hover{
+	transition: 0.1s ease-out;
+	transform: scale(1.05);
+}
 		
 .bottomButton:hover{
 	opacity: 80%!important;
@@ -1166,10 +1354,10 @@ button:hover{
 	/* background-color: white;
 	border-radius: 15px !important;
 	color: black !important; */
-	font-size: 32px !important;
+	font-size: 28px !important;
     font-weight: 600 !important; /*was 800 for questionmark*/
 	line-height: 26px !important;
-	padding-top: 2px;
+	padding-top: 0px;
 
 	
 	/* opacity: 80% !important; */
@@ -1180,6 +1368,11 @@ button:hover{
 #speedReport.red{
 	background-color: red !important;
 	border: 4px red solid;
+}
+
+#speedReport:hover{
+	transform: scale(1.02);
+	transition: 0.1s ease-out;
 }
 	
 #theDataDiv{
@@ -1240,7 +1433,7 @@ button:hover{
 	opacity: 1 !important;
 }
 
-#padlockIcon{
+.padlockIcon{
 	/* position: absolute !important; */
 	/* left: 0px !important; */
 	/* top: 0px !important; */
@@ -1250,7 +1443,7 @@ button:hover{
 	max-height: 20px !important;
 	
 	/* transform: translateY(-0.5px) !important;  */
-	transform: translateX(-2px) !important; 
+	transform: translateX(-1px) !important; 
 	/* overflow: visible !important; */
 	/* background-color: coral !important; */
 	display: inline-block !important; 
@@ -1260,21 +1453,17 @@ button:hover{
 	transition: none !important;
 }
 
-#padlockIcon svg{
+.padlockIcon svg{
 	transition: none !important;
 }
 
-.hideSlugIfSmall #padlockIcon{
+.hideSlugIfSmall .padlockIcon{
 	/* height: 9px !important; */
 	height: calc(9px * var(--fontSizeFactor)) !important;
 	width: 12px !important;
 	opacity: 0 !important;
 
 	transition: none !important;
-}
-
-div.sceneheading:nth-child(1 of .sceneheading):not(.hidden){
-	margin-top: 2px !important;
 }
 
 /*
@@ -1312,6 +1501,14 @@ INDEX CARD VALUES
 =================
 */
 
+/* #flexiContainer.synopsisForScenesIsOn{
+	border: 10px red solid !important
+}
+
+#flexiContainer.synopsisForSectionsIsOn{
+	border: 10px green solid !important
+} */
+
 /*column gutter stripes*/
 #flexiContainer.synopsisForScenesIsOn .level1:not(:first-of-type),
 #flexiContainer.synopsisForSectionsIsOn .level1:not(:first-of-type){
@@ -1332,8 +1529,8 @@ INDEX CARD VALUES
 	padding-top: 10px !important;
 
 	/* height: auto !important; */
-	height: var(--indexReferenceForHeight);
-	min-height: calc(100% - calc(20px * var(--fontSizeFactor))) !important;
+	height: calc(var(--indexReferenceForHeight) + 20px + 20px * var(--fontSizeFactor)) !important;
+	min-height: calc(100% - 45px - (20px * var(--fontSizeFactor))) !important;
 	
 }
 
@@ -1361,7 +1558,8 @@ INDEX CARD VALUES
 	/* border: 1px red solid !important;  */
 	margin-top: 11px !important;
 	margin-bottom: 5px !important;
-	height: calc(55px * var(--fontSizeFactor)) !important;
+	/* height: calc(55px * var(--fontSizeFactor)) !important; */
+	/* This used to have a set height of 55px causing blinkage -- WHY was it good? Jan 2022 */
 	/* padding-top: 25px !important; */
 }
 
@@ -1374,12 +1572,14 @@ INDEX CARD VALUES
 }
 
 
-#flexiContainer.synopsisForScenesIsOn .sceneheading>.thisIsASynopsis,
-#flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis {
+#flexiContainer.synopsisForScenesIsOn .sceneheading>.thisIsASynopsis
+/* #flexiContainer.synopsisForSectionsIsOn .thisIsASynopsis */
+ {
 	
 	display: block !important;
 	height: var(--indexCardHeight) !important;
 	overflow: scroll !important;
+	min-height: 100px !important;
 }
 
 #flexiContainer.synopsisForScenesIsOn .sceneheading {
@@ -1466,6 +1666,12 @@ INDEX CARD VALUES
 	/* background-image: none !important; */
 }
 
+.nonProportionalMode .orphanText,
+.synopsisForScenesIsOn .orphanText,
+.synopsisForSectionsIsOn .orphanText{
+	height: 0px !important;
+}
+
 #flexiContainer.synopsisForScenesIsOn .section:not(.level1){
 	/* border-left: 3px transparent solid !important;
 	border-top: 3px transparent solid !important;
@@ -1500,6 +1706,8 @@ INDEX CARD VALUES
 	top: -3px !important;
 	display: block !important;
 	max-height: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
+	height: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
+	min-height: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
 	width: calc(100% - 0px) !important;
 	overflow-y: scroll !important;
 	overflow-x: hidden !important;
@@ -1510,7 +1718,8 @@ INDEX CARD VALUES
 
 	z-index: 9990 !important;
 
-	padding-bottom: 100px !important
+padding: 0 !important; 
+	/* padding-bottom: 100px !important; *//* commented out jan 7 */
 }
 
 .thisIsASynopsis::-webkit-scrollbar{
@@ -1526,7 +1735,7 @@ INDEX CARD VALUES
 	color: black !important;
 	width: calc(100% - 0px) !important;
 
-	padding-bottom: 100px !important;
+	/* padding-bottom: 100px !important; *//* commented out jan 7 */
 	/* border: orange 1px solid !important;  */
 	top: -2px !important;
 }
@@ -1551,7 +1760,7 @@ INDEX CARD VALUES
 	margin-top: -1px !important;
 	padding-top: 1px !important;
 	padding-bottom: 3px !important;
-	border-radius: 5px 5px 0px 0px !important;
+	border-radius: 4px 4px 0px 0px !important;
 
 	width: calc(100% + 6px) !important;
 	height: calc(20px * var(--fontSizeFactor)) !important;
@@ -1610,10 +1819,21 @@ INDEX CARD VALUES
 	margin-left: -5px !important;
 }
 
-#flexiContainer.synopsisForSectionsIsOn .section.level3,
-#flexiContainer.synopsisForSectionsIsOn .section.level4,
-#flexiContainer.synopsisForSectionsIsOn .section.level5,
-#flexiContainer.synopsisForSectionsIsOn .section.level6 {
+#flexiContainer.synopsisForSectionsIsOn .aShyDiv .section{
+	top: calc(-27px + 20px * var(--fontSizeFactor)) !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .level1>.aShyDiv{
+	width: calc(100% - 10px) !important;
+	padding-bottom: 0px !important;
+	margin-bottom: 0px !important;
+}
+
+#flexiContainer.synopsisForSectionsIsOn .section.level3:not(.synopsisForSectionsIsOn .ghost>.section:first-child):not(.level1>.aShyDiv>.section), 
+#flexiContainer.synopsisForSectionsIsOn .section.level4:not(.synopsisForSectionsIsOn .ghost>.section:first-child):not(.level1>.aShyDiv>.aShyDiv>.section),
+#flexiContainer.synopsisForSectionsIsOn .section.level5:not(.synopsisForSectionsIsOn .ghost>.section:first-child):not(.level1>.aShyDiv>.aShyDiv>.aShyDiv>.section),
+#flexiContainer.synopsisForSectionsIsOn .section.level6:not(.synopsisForSectionsIsOn .ghost>.section:first-child):not(.level1>.aShyDiv>.aShyDiv>.aShyDiv>.aShyDiv>.section)
+{
 	top: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important;
 }
 
@@ -1753,7 +1973,7 @@ border-color: black !important;
 
 	border-width: 3px !important;
 	border-style: solid !important;
-	border-radius: 5px !important;
+	border-radius: 4px !important;
 	border-color: inherit !important;
 
 	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%); 
@@ -1770,42 +1990,130 @@ border-color: black !important;
 }
 
 
+/* #flexiContainer.printMode body {
+	/* --pageBackground: #fff; */
+/* } */
 
-#flexiContainer.printMode body {
-	--pageBackground: #fff;
-
-}
-
-#flexiContainer.printMode .sceneheading {
-	border: 1px #555 solid !important;
+/* #flexiContainer.printMode .sceneheading {
+	border: 1px solid !important;
+	border-color: #555 !important;
 	box-shadow: none;
 	box-sizing: content-box;
 	margin-bottom: 0px !important;
 	margin-top: -1px !important;
-}
+} */
 
-#flexiContainer.printMode:not(.synopsisForScenesIsOn):not(.synopsisForSectionsIsOn) div.sceneheading:nth-child(1 of .sceneheading) {
+/* #flexiContainer.printMode:not(.synopsisForScenesIsOn):not(.synopsisForSectionsIsOn) div.sceneheading:nth-child(1 of .sceneheading) {
 
 	margin-top: 0.5px !important ;
 
-}
+} */
 
-#flexiContainer.printMode .level1>.sectiontext,
-#flexiContainer.printMode .section.special>.sectiontext{
-	color: black
-}
+/* #flexiContainer.printMode .level1>.sectiontext,
+#flexiContainer.printMode .section.special>.sectiontext,
 
-#flexiContainer.printMode .showActLength {
+#flexiContainer.printMode.uncolorAllScenesBut.red .section.red > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.orange .section.orange > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.yellow .section.yellow > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.green .section.green > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.teal .section.teal > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.cyan .section.cyan > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.blue .section.blue > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.purple .section.purple > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.magenta .section.magenta > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.pink .section.pink > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.brown .section.brown > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.black .section.black > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.gray .section.gray > .sectiontext,
+#flexiContainer.printMode.uncolorAllScenesBut.white .section.white > .sectiontext
+
+{
+	color: black !important;
+
+} */
+
+/* #flexiContainer.printMode .showActLength {
 	color: #555;
 	opacity: 0.8 !important;
-}
+} */
 
-#flexiContainer.printMode .showSectionPageNumber {
+/* #flexiContainer.printMode .showSectionPageNumber {
 	color: #222;
+} */
+
+/* #flexiContainer.printMode .indicator {
+	display: none !important;
+} */
+
+/* #flexiContainer.synopsisForSectionsIsOn .showSceneNum {display:none} */
+
+/* SHOWING SYNOPSE INSTEAD OF SCENEHEADING */
+
+.synopseInSceneheading:not(#flexiContainer.showSynopsisInsteadOfSceneheading .synopseInSceneheading){
+	display: none;
 }
 
-#flexiContainer.printMode .indicator {
+#flexiContainer.showSynopsisInsteadOfSceneheading:not(.synopsisForScenesIsOn):not(.synopsisForSectionsIsOn) .sceneheadingText{
 	display: none !important;
+}
+
+#flexiContainer.showSynopsisInsteadOfSceneheading:not(.synopsisForScenesIsOn):not(.synopsisForSectionsIsOn) .synopseInSceneheading{
+	display: unset !important;
+	/* font-style: italic !important; */
+	font-stretch: condensed !important;
+	font-weight: bold;
+	/* max-height: 100% !important; */
+	/* overflow: hidden !important; */
+	white-space: normal !important;
+	/* border: 1px red solid */
+}
+
+.lightgrey, .lightgrey.theSlugLine {
+	opacity: 0.2;
+	font-stretch: normal !important;
+	text-overflow: clip !important;
+}
+
+.showSynopsisInsteadOfSceneheading .sceneheading>p{
+	text-overflow: ellipsis !important;
+	max-height: 100% !important;
+
+	height: auto !important;
+}
+
+.showSynopsisInsteadOfSceneheading.nonProportionalMode .sceneheading{
+	/* text-overflow: ellipsis !important;
+	max-height: 100% !important; */
+
+	height: auto !important;
+}
+
+.greyonly .sceneheading
+/* :not(.synopsisForScenesIsOn .sceneheading):not(.synopsisForSectionsIsOn .sceneheading)  */
+{ 
+	background-color: #ddd !important;
+	/* transition: background-color 0.75s ; */
+}
+.greyonly .sectiontext:not(.level1>.sectiontext):not(.special>.sectiontext):not(.sectiontext:hover):not(.section:hover>.sectiontext)
+/* :not(.synopsisForScenesIsOn .sectiontext):not(.synopsisForSectionsIsOn .sectiontext)  */
+{ 
+	background-color: #bbb !important;
+	/* transition: background-color 0.75s ; */
+}
+.greyonly .section:not(.level1):not(.special):not(.section:hover)
+/* :not(.synopsisForScenesIsOn .section):not(.synopsisForSectionsIsOn .section)  */
+{
+	border-color: #bbb !important;
+	/* transition: border-color 0.75s ; */
+}
+
+.debug{
+	display: none;
+}
+
+.showDebug .debug{
+	font-weight: bold;
+	display: unset !important;
 }
 
 </style>

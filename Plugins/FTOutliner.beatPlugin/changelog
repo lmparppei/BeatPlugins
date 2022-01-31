@@ -1,13 +1,65 @@
 CHANGELOG
 
 
+v 1.2 (jan 25, 2022)
+===================
+
+NEW FEATURES:
+-------------
+
+* EXPORT OUTLINE TO PDF/PRINT. 
+  - Click the print button or press CMD + P to open the print dialog. 
+  - The first time you print an outline, FToutliner will try to collect any script title, writer name and other info (like episode number etc) from the title page. You will be offered to change it before printing.
+  - To manually enter/change those data, hold ALT to turn the printer icon into a tag icon and click it.
+  - LIMITATION: Printing only works with flexible and non-flexible outline modes. Printing index cards is not supported yet.
+
+* HIGHLIGHT SCENES OF CERTAIN COLOR. 
+  - ALT + click on a scene to dim all other scene colors (e.g. display only all red scenes)
+  - Alternatively, click the funnel to open the tracking dialog and choose a color in the dropdown
+  - Add more colors to display by ALT + SHIFT + clicking on scene with another color
+  - Hit Esc (or ALT + click anywhere again) to return to normal.
+
+* SELECTION TO NEW DOC
+  Context menu item to create a new document populated with the contents of any scenes selected in the outline.
+  Example workflow to print all scenes of specific color:
+    - ALT-click a color to dim all others
+    - press CMD + A to select all highlighted (i.e.non-dimmed) scenes
+    - right-click (or CTRL + click) on a selected scene to invoke the context menu
+
+IMPORTANT BUG FIX:
+------------------
+
+* Fixed a serious issue where repeatedly moving scenes or sequences with synopsis might move contents of next scene with it (effectively breaking it in two). This logic has now been completely rewritten. 
+
+SMALLER CHANGES AND BUG FIXES:
+------------------------------
+
+* IMPROVEMENT: Text that are not part of a scene -- i.e. immediately following a section header, without any preceding sceneheading -- will now be properly reflected in the outline
+* IMPROVEMENT: Markers are recognized even if they contain information after the MARKER COLOR beginning. This way, a marker can read [[MARKER RED: Must rewrite this scene without animals]] and convey the reason the marker is there to begin with. (Note: This is not supported by Beat itself, so if you depend on markers in the document scrollbar do not use this.)
+* Improved ways to resize index card heights through toolbar buttons and new keyboard shortcuts to avoid conflict with US keyboards
+* Improved parsing logic when moving scenes and sequences
+* Improved parsing of notes and markers
+* Clicking an element in the outline will now make its heading blink briefly in the editor window for quicker identification
+* When initiating a drag to move elements in the outline, the text-to-be-moved will be identified in the editor by temporarily selecting it
+* Temporary/partial fix to avoid error when filtering by character, and the character is in a scene which is both omitted AND has a forced scene number 
+  (Known issue: Omitted scenes with NO forced scene number, OR scenes with empty scene numbers, will currently still fail to identify the character as present)
+* Other fixes to filtering by character: @ before name is disregarded, character name on a hidden/omitted line does not count as present
+* Major improvement to reliability in pagecount 
+* Fixed a very rare bug that could cause a scene to be displayed with the wrong height
+* Fixed a bug that would create an error message when trying to delete a document's last scene from the context menu
+* Implemented Beat's new tabbing methods (v 1.929) so that CTRL + Tab and CTRL + SHIFT + Tab switches between tabs in the main window (and with FTOutliner switching along with it)
+* Conformed app description data to the new plugin manager
+* Cosmetic fixes
+
+* Added undocumented feature (unless you made it all the way down here in this document, but who does?) to display Synopsis inside scenes in normal outline view. When flexible mode is on, Synopsis are shown to the extent that they fit inside the scene box. When off (i.e. in non-proportional mode) scenes actually grow to show the entire synopsis. To toggle this, hit Y for sYnopsis.
+* Also added undocumented feature (again meaning not mentioned anywhere else but here) to temporarily toggle off the display of all colors for scenes and sequences. Meant to clearly isolate notes and markers, in case they become drowned out by a busy coloring scheme. Togglable with CTRL + C.
+
+
 v 1.11 (nov 19, 2021)  
 =====================
 
 * Minor cosmetical fixes for older versions of MacOS and to make scrollbars less obtrusive
 * Fixed an bug that would display an error if making repeated rapid changes to outline elements
-
-
 
 
 v 1.10 (nov 18, 2021) 
@@ -32,8 +84,6 @@ NEW FEATURES:
 * INDEX CARD VIEWS. If you like to outline with 3x5 format cards, there are now two views to allow you to do that: Either with each card representing a SCENE (with any scene-level synopsis visible inside it) or with each card representing a SECTION (with any section-level synopsis visible inside it). Use the "X" key (for IndeX) to cycle to the SCENE index card view to SECTION and back to the normal outline.
 
 * OMIT and UN-OMIT one or more scenes directly via the context menu. 
-
-* CHANGE SCENE HEADING AND SECTION TEXT directly from any view by double-clicking a visible header. ENTER saves any changes, ESCAPE exits without changing.
 
 * DELETE one or more scenes directly from the context menu. You will be warned when you do. But still. Be careful. 
 

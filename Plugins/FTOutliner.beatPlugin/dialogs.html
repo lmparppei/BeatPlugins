@@ -19,6 +19,7 @@
 
 #settings * , #tracking *{
  transition: 0.5s !important;
+ line-height: 16px !important;
 }
 
 .settingsWindow{
@@ -126,7 +127,7 @@
 	height: 100% !important;
 		
 	background-color: rgba(85,85,85,0.45);
-	z-index: 9998 !important;
+	z-index: 9997 !important;
 	-webkit-backdrop-filter: blur(2px);
 	backdrop-filter: blur(2px);
 	}
@@ -135,7 +136,7 @@
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
 	background-color: rgba(85,85,85,0.75) !important;
-	z-index: 9998 !important;
+	z-index: 9997 !important;
 }
 
 #buttons{
@@ -275,16 +276,19 @@ max-width: 80% !important;
 	top: 50% !important;
 	left: 50% !important;
 	
+	column-count: 2;
+	column-gap: 80px;
+	column-rule: #aaa solid 1px;
 
-	width: 500px !important;
-	max-width: 100% !important; 
-	height: 900px !important;
+	width: 800px !important;
+	max-width: 80% !important; 
+	height: auto !important;
 	max-height: 100% !important;
 
 	color: rgb(240,240,240) !important;
 	white-space: normal !important;
 
-	padding: 0 5px 0 70px !important ;
+	/* padding: 0 5px 0 70px !important ; */
 	transform: translate(-50%, -50%) !important;
 
 	overflow: auto;
@@ -308,27 +312,57 @@ max-width: 80% !important;
 filter: drop-shadow(0px 0px 2px black) !important;
 white-space: normal !important;
 line-height: 22px !important;
-;
+
+
+}
+
+#helpWindow p{
+	margin-left: 30px !important;
+}
+
+#helpWindow p.subheading{
+	-webkit-column-break-after: avoid;
+	-webkit-column-break-before: auto;
+	margin-left: 0px !important; 
+	/* margin-left: -20px;  */
 
 }
 
 #helpWindow .headline{
 	/* margin-left: -20px !important; */
-	margin-left: -48px !important;
+	/* margin-left: -48px !important; */
+	margin-left: 0px !important;
+	column-span: all;
+	padding-bottom: 20px !important;
+	padding-top: 20px !important;
+	text-align: center;
 }
 
 #helpWindow .key:first-child{
+	-webkit-column-break-before: avoid;
 	filter: none !important;
-	margin-left: -28px !important
+	/* margin-left: -28px !important */
+	margin-left: -30px; 
 }
 
 #helpWindow .subheading {
-	margin-left: -48px !important;
+	/* margin-left: -48px !important; */
 	margin-bottom: 6px !important;
-	margin-top: 6px !important
+	margin-top: 6px !important;
+	margin-left: 0px !important;	
+	-webkit-column-break-after: avoid;
+	-webkit-column-break-before: auto
+}
+
+#helpWindow p:last-child{
+	padding-bottom: 22px;
 }
 
 @media screen and (max-width: 700px), (max-height: 700px) {
+
+	#helpWindowInnerDiv{
+		column-count: 1;
+	}
 
 	#settings, #tracking {
 		height: calc(100% - 20px) !important;
@@ -350,8 +384,18 @@ line-height: 22px !important;
 
 }
 
+.collection{
+	background: rgba(0,0,0,0.3);
+	border-radius: 6px;
+	margin-bottom: 10px;
+	padding: 10px;
+	break-inside: avoid;
+
+}
+
 @media screen and (max-width: 500px) {
-	.headline, 
+
+	.headline:not(#helpWindow .headline), 
 	#introtext, #outrotext, #reachtext, hr,
 	#trackingoutro {
 		opacity: 0%;
@@ -521,46 +565,79 @@ It’s most useful if you’re the kind of writer who likes to divide your scrip
 <div id="helpWindow" class="settingsWindow" style="display: none;" onclick="toggleHelpContainer();">
 	<div id="helpWindowInnerDiv">
 	<p class="headline">KEYBOARD SHORTCUTS</p>
-		<br/>
+		<!-- <br/> -->
+	<div class="collection">
 	<p class="subheading"><b>SCENE INFO</b></p>
 	<p><span class="key">S</span><span class="mostText"> Show/Hide Scene Numbers</p>
 	<p><span class="key">P</span><span class="mostText"> Show/Hide Page numbers in section headers</p>
 	<p><span class="key">L</span><span class="mostText"> Show/Hide Lengths inside scenes</p>
 	<br/>
+	</div>
+	<div class="collection">
 	<p class="subheading"><b>SCRIPT NOTES &amp; MARKERS</b></p>
 	<p><span class="key">N</span><span class="mostText"> Show/Hide Notes</p>
 	<p><span class="key">&nbsp; &#8677; &nbsp;</span><span class="mostText"> Cycle through all notes one by one</p>
 	<p><span class="key">M</span><span class="mostText"> Show/Hide Markers</p>
 	<br/>
+	</div>
+	<div class="collection">
 	<p class="subheading"><b>CHARACTER TRACKING</b></p>
 	<p><span class="key">T</span><span class="mostText"> Open Tracking window</p>
 	<p><span class="key">1</span><span class="mostText"> through </span><span class="key">9</span><span class="mostText"> Highlight scenes based on character presence (without going through Tracking window)</p>
 		<p><span class="key">&nbsp; &#8679; &nbsp;</span><span class="mostText"> + number key adds character for highlighting.</p>
 			<p><span class="key">0</span><span class="mostText"> Turn off any active character highlight</p>
 	<br/>
+	</div>
+	<div class="collection">
+	<p class="subheading"><b>SELECTING SCENES</b></p>
+	<p><span class="key">T</span><span class="mostText"> Selects a scene</p>
+	<p><span class="key">&#8984;</span><span class="key">A</span><span class="mostText"> Select all (non-dimmed) scenes & sections</p>
+	<p><span class="key">^</span><span class="key">A</span><span class="mostText"> Select all (non-dimmed) scenes only</p>
+	<!-- <p><span class="key">&#8984;</span><span class="key">I</span><span class="mostText"> Inverse selection</p> -->
+	<br/>
+	</div>
+	<div class="collection">
 	<p class="subheading"><b>VIEWING MODES</b></p>
 	<p><span class="key">F</span><span class="mostText"> Toggle Flexible (proportional) mode</p>
 	<p><span class="key">O</span><span class="mostText"> Toggle One-column mode</p>
 	<p><span class="key">X</span><span class="mostText"> Index Card Modes: Cycle off, scenes, sequences</p>
 	<br/>
+	</div>
+	<div class="collection">
 	<p class="subheading"><b>VIEW OPTIONS</b></p>
 	<p><span class="key">&#8984;</span><span class="key">+</span><span class="mostText"> and </span><span class="key">&#8984;</span><span class="key">-</span><span class="mostText"> Increase and decrease font size</p>
 	<p><span class="key">&#8984;</span><span class="key">0</span><span class="mostText"> Default font size</p>
+	<p><span class="key">^</span><span class="key">&#8984;</span><span class="key">+</span><span class="mostText"> and </span><span class="key">^</span><span class="key">&#8984;</span><span class="key">-</span><span class="mostText"> Make Index Cards taller/less tall</p>
 	<p><span class="key">C</span><span class="mostText"> Toggle between Color Schemes</p>
 	<br/>
+	</div>
+	<div class="collection">
+	<p class="subheading"><b>PRINTING</b></p>
+	<p><span class="key">&#8984;</span><span class="key">P</span><span class="mostText"> Print current outline</p>
+	<br/>
+	</div>
+	<div class="collection">
 	<p class="subheading"><b>OTHER</b></p>
 	<p><span class="key">R</span><span class="mostText"> Toggle Real Time Updating</p>
 	<p><span class="key">W</span><span class="mostText"> Toggle Warnings for Delete/Move/Omit</p>
 	<p><span class="key">&#8984;</span><span class="key">,</span><span class="mostText"> Open Settings Window</p>
 	<p><span class="key">?</span><span class="mostText"> Open this screen</p>
 	<p><span class="key">esc</span><span class="mostText"> Exit any window, feature or FTOutliner (in that order)</p>
-	<br/><br/>
+	<p><span class="key">&#8984;</span><span class="key">W</span><span class="mostText"> Close FTOutliner</p>
+	<br/>
+	</div><br/>
+
+	
+
+
 
 </div></div>
 
 <script>
 
 function displayEmptyScreenMessage(){
+
+	if (areScenesProportional == 0){toggleProportional()} //or else message is not nicely centered vertically.
 
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
@@ -576,7 +653,6 @@ function displayEmptyScreenMessage(){
 	<p>&nbsp;</p>
 	<p>Happy writing!</p>
 	`
-
 }
 
 

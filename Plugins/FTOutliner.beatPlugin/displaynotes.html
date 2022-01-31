@@ -13,16 +13,26 @@
 .noteContainer {
     position: relative !important;
     float: right !important;
-     /* border: 1px red dotted;   */
+    /* border: 1px red dotted;   */
     height: 1px !important; 
     margin-bottom: -1px !important;
     width: auto !important;
     pointer-events: none;
     /* background-color: rgba(255,0,0,0.4) !important; */
-    z-index: 998 !important;
+    z-index: 9996 !important;
     overflow: visible;
 
     opacity: 1;
+
+    /*testing new absolute note container*/
+    position: absolute !important;
+    top: 0 !important;
+    right: 2px !important;
+    height: 100% !important;
+}
+
+.markersAreDisplayed .noteContainer{
+    right: 20px !important
 }
 
 .marker {
@@ -34,25 +44,61 @@
     border-top: 6px solid grey;
     border-bottom: 6px solid grey;
     border-right: 7.5px solid grey;
-    border-left: 7.5px solid transparent;
+    border-left: 6px solid transparent;
 
-    box-shadow: 1.5px 1.5px 1.5px rgba(0,0,0,0.6);
+    /* border-radius: 0 3.5px 0 0;  */
+
+    /* box-shadow: 1.5px 1.5px 2.5px rgba(0,0,0,0.25); */
 
     pointer-events: all !important;
+
+    z-index: 998;
+
+    opacity: 0.8;
 }
 
-.marker::before {
+/* .marker {
+
+    background: 
+        conic-gradient(from 225deg at 6px 50%, transparent 90deg, green 90deg 200deg)
+    ;
+    position: absolute;
+    right: -3px;
+    height: 12px;
+    width: 20px;
+    border: 1px black solid;
+    border-left: none;
+
+    box-shadow: 1.5px 1.5px 1.5px rgba(0,0,0,0.4);
+
+    pointer-events: all !important;
+
+    /* clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 8px 50%); */
+    /*opacity: 0.8;
+
+} */
+
+.marker::after {
     position: absolute;
     top: -6px;
-    left: -7px;
-    width: 19px;
-    height: 11px;
+    left: -6px;
+    width: 20px;
+    height: 12px;
     content: " ";
 
-    border-top: 0.5px solid white;
-    border-right: 1px solid #333;
-    border-bottom: 0.5px solid black; 
-    opacity: 0.4;
+    box-sizing: border-box;
+
+    border-top: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;   
+
+    /* border-radius: 0 3px 0 0; */
+
+    background: conic-gradient(from 180deg at 7.5px 50%, transparent 45deg, black 45deg 135deg, transparent 135deg);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
+
+
+    opacity: 0.7;
 }
 
 
@@ -60,7 +106,7 @@
     background-color: transparent;
     position: absolute;
 
-    top: 1px !important;
+    top: 0px !important;
     right: 2px; 
     
     height: 0px;
@@ -86,6 +132,15 @@
 }
 #flexiContainer.nonProportionalMode .marker:nth-of-type(3){
     right: 16px;
+}
+
+#flexiContainer.nonProportionalMode .marker::after {
+
+width: 15px;
+height: 13px;
+left: -7.5px;
+top: -6.5px;
+
 }
 
 #flexiContainer.nonProportionalMode .marker::before {
@@ -124,20 +179,50 @@
     float: left !important;
     padding: 0 !important;
     margin: 0 0px 0px 2px !important;
-    background-color: var(--note-bottom) !important;
-    border: 1px solid var(--note-border) !important; 
+    /* background-color: var(--note-bottom) !important; */
+    
+    background: 
+    /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
+    conic-gradient(from 0deg at 13px 9px, var(--note-border), var(--note-border) 135deg, transparent 135deg),
+    conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, var(--note-border) 225deg),
+    linear-gradient(to bottom right, var(--note-bottom), var(--note-bottom) 16px, transparent 16px)
+    ;
+
+    border-left: 1px solid var(--note-border) !important; 
+    border-top: 1px solid var(--note-border) !important; 
     height: 15px !important;
     width: 15px !important;
     color: rgba(0,0,0,0);
 
     z-index: 999 !important;
     white-space: normal;
-
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%);
-
-    /* transform: rotate(-3deg);  */
+    
     pointer-events: all;
+
     overflow: hidden;
+
+    /* clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%); */
+    /* transform: rotate(-3deg);  */
+    /* overflow: hidden; */
+
+    /* border-radius: 0 0 6.5px 0;
+    box-shadow: 1.5px 1.5px 2.5px rgba(0,0,0,0.25); */
+
+}
+
+.note::before{
+    position: absolute;
+    border-radius: 0;
+    content: " ";
+    width: 4px;
+    height: 4px;
+    border-top: 1px solid var(--note-border);
+    border-left: 1px solid var(--note-border);
+    background: linear-gradient(to bottom right, transparent, transparent 1.5px, var(--note-border) 1.5px, var(--note-border) 2.5px, transparent 2.5px);
+    left: 9px;
+    top: 9px;
+    /* z-index: 11111 */
+
 }
 
 #expandedNote .showSectionPageNumber{
@@ -152,11 +237,18 @@
 } */
 
 .selectedNote {
-	background-image: -webkit-linear-gradient(top, var(--note-border), var(--note-border)) !important; 
+    
+	/* background-image: -webkit-linear-gradient(top, var(--note-border), var(--note-border)) !important;  */
+    background: 
+    /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
+    conic-gradient(from 0deg at 13px 9px, black, black 135deg, transparent 135deg),
+    conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, black 225deg),
+    linear-gradient(to bottom right, var(--note-border), var(--note-border) 16px, transparent 16px)
+    ;
     border-color: black !important; /* var(--note-bottom) !important; */
 }
 
-.note:before {
+/* .note:before {
   content: "";
   position: absolute;
   bottom: 0px !important;
@@ -167,7 +259,7 @@
   border-style: solid;
   border-color: var(--note-border);
   background-image: linear-gradient(to top left,var(--note-border) , var(--note-border) 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%); 
-}
+} */
 
 /* .note::after, .noteContainer::after, .sceneHeading::before, .sceneHeading>p::before, .sceneHeading>.showSceneNum::before{
     clear: both;
@@ -177,7 +269,9 @@
 
 .selectedNote:before {
   border-color: black !important; /* var(--note-border) !important; */
-  background-image: linear-gradient(to top left,black , black 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%) !important; 
+  background: linear-gradient(to bottom right, transparent, transparent 1.5px, black 1.5px, black 2.5px, transparent 2.5px);
+
+  /* background-image: linear-gradient(to top left,black , black 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%) !important;  */
 }
 
 #expandedNote{
@@ -358,7 +452,7 @@ function displayNotes(notesData, markerData){
             //previously also displayed this:
             //Beat.call("Beat.alert('trying to reference a scene that does not exist!', '"+notesData[i].outlineElementNumber+"')"); break
         }
-        mylog("now putting in place note #" + i + "; " + outline[notesData[i].outlineElementNumber].string)
+        mylog("now putting in place note #" + i + "; ")// + outline[notesData[i].outlineElementNumber].string)
 
         let element = document.querySelector("[data-elementCount='" + notesData[i].outlineElementNumber + "']")
         let thisNote = notesData[i].string.replace(/(\[|\])/g, "")
@@ -444,6 +538,8 @@ function displayMarkers(){
             theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
             theMarkerToAdd.style.borderTopColor = globalMarkerData[im].color
             theMarkerToAdd.style.borderBottomColor = globalMarkerData[im].color
+            //theMarkerToAdd.style.backgroundColor = globalMarkerData[im].color
+            
         }
         
         let markerVerticalPosition = -2
@@ -467,7 +563,9 @@ function displayMarkers(){
 
 function expandNote(tabWasPressed){
 
+    if(!globalNotesData || globalNotesData.length == 0){return}
     exitEdit()
+
 
     if (selectedNote > -1 && tabWasPressed){ //SELECTED THROUGH TAB
         theNote = document.querySelector("[data-noteNumber='" + selectedNote + "']")
@@ -575,16 +673,19 @@ function collapseNote(){
 
 function cycleNotes(shift){
 
+    mylog("cycleNotes")
+      
     if(!notesAreDisplayed){
         toggleDisplayNotes()
         return
     }
-
+    
     //IF a hovered note is open, tab solidifies that note (=trashnote on) instead of opening next
     if (document.getElementById('expandedNote') && !document.getElementById('trashNote')){
         selectedNote = shift ? (selectedNote + 1) : (selectedNote - 1)
     }
 
+    
     if (document.getElementById('expandedNote')){
         collapseNote()
     }
@@ -594,7 +695,7 @@ function cycleNotes(shift){
     } else {
         selectedNote --
     }
-
+    
     if (selectedNote > document.querySelectorAll(".note").length-1) {selectedNote = 0}
     if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
     

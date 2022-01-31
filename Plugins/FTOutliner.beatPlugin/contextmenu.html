@@ -68,7 +68,7 @@
     overflow: hidden !important;
 }
 
-.trashCanMenuItem, .eyeWithCrossMenuItem, .eyeMenuItem {
+.trashCanMenuItem, .eyeWithCrossMenuItem, .eyeMenuItem, .clipboardMenuItem {
     height: 16px !important;
     width: 16px !important;
     display: inline-block !important;
@@ -82,7 +82,8 @@
 }
 
 .eyeWithCrossMenuItem > .eyeWithCrossIcon,
-.eyeMenuItem > .eyeIcon {
+.eyeMenuItem > .eyeIcon,
+.clipboardmenuItem > toNewIcon {
     fill: black;
     opacity: 0.8 !important;
     transition: fill 0ms !important;
@@ -90,7 +91,8 @@
 
 .trashCanMenuItem:hover > #trashbutton, #deleteSceneCommand:hover > .trashCanMenuItem > #trashbutton, 
 .eyeWithCrossMenuItem:hover > .eyeWithCrossIcon, #omitSceneCommand:hover > .eyeWithCrossMenuItem > .eyeWithCrossIcon
-.eyeMenuItem:hover > .eyeIcon, #unOmitSceneCommand:hover > .eyeMenuItem > .eyeIcon{
+.eyeMenuItem:hover > .eyeIcon, #unOmitSceneCommand:hover > .eyeMenuItem > .eyeIcon,
+.clipboardMenuItem:hover > #toNewIcon{
     fill: white !important;
     opacity: 1 !important;
     transition: fill 0ms !important;
@@ -126,24 +128,6 @@
 <div id="contextmenu" onblur="self.classList.remove('visible')"></div>
 
 <script>
-
-var colorsArray=[
-    "Remove Color",
-    "Red",
-    "Orange",
-    "Yellow",
-    "Green",
-    "Teal",
-    "Cyan",
-    "Blue",
-    "Purple",
-    "Magenta",
-    "Pink",
-    "Brown",
-    "Gray",
-    "White",
-    "Special"
-]
 
 function contextMenu(theRightClickedThing, x, y, rightClick){
 
@@ -198,6 +182,11 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
     if ([...theRightClickedThing.classList].includes('command')) {
 
         closeContextMenu()
+
+        if(theRightClickedThing.id == 'contentsToClipboard'){
+            mylog("yup")
+            copyContentsToClipboard()
+        }
 
         if (theRightClickedThing.id == 'omitSceneCommand'){
             omitScene(theRightClickedThing)
@@ -280,6 +269,10 @@ function createContextMenu(clickedThingsClassList){
             "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'>" + iconString + "</div>  &nbsp;&nbsp;" +
             item + "</li>"
     }
+
+    theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
+    theContextMenu.innerHTML += "<li class='command' id='contentsToClipboard'>" + 
+            "<div class='clipboardMenuItem clickThru'>" + toNewIcon + "</div>  &nbsp;&nbsp;Selection to New Doc</li>"
 
     theContextMenu.innerHTML += "<li id='contextMenuDivider1' class='clickThru contextMenuDivider'><hr></li>"
     
@@ -412,12 +405,32 @@ function undimAllScenes(){
     actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
 
     let elements = document.getElementsByClassName('dimmedScene')
-	mylog("<br>antal element:" + elements.length + "," + elements +  "<br>")
+	// mylog("<br>antal element:" + elements.length + "," + elements +  "<br>")
 
 	for(i = elements.length-1; i > -1; i--){
 		mylog(i + ": " + elements[i] + "<br>")
 		elements[i].classList.remove('dimmedScene')
 	}
+}
+
+function copyContentsToClipboard(){
+
+    mylog("copyContentsToClipboard")
+
+    let selectedElements = document.getElementsByClassName('isSelected')
+
+    let ranges = []
+
+    for (let element of selectedElements){
+        let obj = {}
+        obj.start = outline[element.getAttribute("data-elementCount")].sceneStart 
+        obj.end = outline[element.getAttribute("data-elementCount")].sceneEnd
+        ranges.push(obj)        
+    }
+    
+    Beat.call("Beat.custom.copyRangeToClipboard('" + JSON.stringify(ranges) + "')")
+
+
 }
 
 </script>
