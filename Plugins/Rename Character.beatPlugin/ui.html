@@ -1,0 +1,137 @@
+<style>
+	body {
+		font-size: .8em;
+	}
+	.occurence {
+		position: relative;
+		padding: 8px 5px 8px 5px;
+		border-top: dotted 1px gray;
+	}
+	.selected {
+		background-color: #aaeeaa;
+	}
+	.hidden {
+		display: none;
+	}
+	.confirm {
+		position: absolute;
+		top: .2em;
+		right: .2em;
+		font-size: .6em;
+	}
+
+	#replaceButton {
+		padding: .4em 1em .4em 1em;
+		font-size: 1em;
+	}
+
+</style>
+
+<section id='top'>
+	<table border="0">
+		<tr><td>Character to rename: </td>
+			<td><select name='oldName' onchange='oldNameChange()'>#NAMES#</select></td>
+		</tr>
+		<tr><td>Capitalized: </td>
+			<td><input type='text' name='oldNameCapitalized'></td>
+		</tr>
+		<tr><td><b>New name</b><br><em style='font-size: 90%'>(capitalized, not uppercase, ie. Agnes)</em></td>
+			<td><input type='text' name='newName' placeholder="Agnes"></td>
+		</tr>
+	</table>
+	<button onclick='startReplace()' id='replaceButton'>Replace</button>
+</section>
+
+<section id='listView'> </section>
+
+<script>
+
+oldNameChange()
+
+let listView
+let removed = []
+let oldNameStr = ""
+
+function startReplace () {
+	const topMenu = document.getElementById("top")
+	const oldNameField = document.querySelector("select[name='oldName']")
+	const oldCapitalizedField = document.querySelector("input[name='oldNameCapitalized']")
+	const newNameField = document.querySelector("input[name='newName']")
+
+	if (newNameField.value.length == 0) {
+		return
+	}
+
+	topMenu.className = "hidden"
+	oldNameStr = oldNameField.value
+	listView = document.getElementById('listView')
+
+	Beat.call("Beat.custom.replace(\"" + oldNameField.value + "\", \"" + oldCapitalizedField.value + "\", \"" + newNameField.value + "\")")
+}
+
+function oldNameChange() {
+	let oldName = document.querySelector("select[name='oldName']").value
+	let oldNameCapitalized = document.querySelector("input[name='oldNameCapitalized']")
+
+	let capitalized = capitalize(oldName)
+	oldNameCapitalized.value = capitalized
+}
+
+function capitalize(string) {
+	string = string.toLowerCase()
+	string = string[0].toUpperCase() + string.substring(1)
+
+	if (string.indexOf("-") > 0) {
+		let i = string.indexOf("-")
+		string = string.substring(0, i+1) + string[i+1].toUpperCase() + string.substring(i + 2)
+	}
+
+	return string
+}
+
+function select(el) {
+	let indx = el.getAttribute("index")
+	if (removed.includes(indx)) return
+
+	const items = document.querySelectorAll(".occurence")
+	for (const item of items) {
+		item.classList.remove("selected")
+		//if (item == el) item.classList.add("selected")
+	}
+	
+	el.classList.add("selected")
+
+	Beat.log("Select " + indx)
+	Beat.call("Beat.custom.show(" + indx + ")")
+}
+
+function occurences(html, firstTime = false) {
+	const listView = document.getElementById('listView')
+	listView.innerHTML = "<p><b>Dialogue replaced.</b><br>Possible other occurences of <em>" +  oldNameStr + "</em>:</p>" + html
+
+	if (firstTime) {
+		const firstOccurence = document.querySelectorAll(".occurence")[0]
+		select(firstOccurence)
+	}
+}
+
+function confirm (el) {
+	const indx = el.getAttribute("index")
+	removed.push(indx)
+
+	Beat.call("Beat.custom.confirm(" + indx + ")")
+	
+	let nextElement = el.parentNode.nextElementSibling
+	if (nextElement) select(nextElement)
+
+	el.parentNode.remove()
+
+/*
+	// Nothing left, close the panel
+	if (document.querySelectorAll(".occurence").length == 0) {
+		Beat.call("Beat.custom.close()")
+	}
+*/
+}
+
+</script>

@@ -1,0 +1,169 @@
+/*
+
+Rename Character
+Description: Replace occurences of a character in the screenplay
+Copyright: © Lauri-Matti Parppei
+Image: Rename_Character.png
+Version: 1.0
+
+*/
+
+let html
+let names = []
+
+let name = ""
+let oldName = ""
+let oldCapitalized = ""
+
+let occurences = []
+let replacing = false
+
+gatherNames()
+createHTML()
+
+let panel = Beat.htmlWindow(html, 400, 300, function () {
+	clearHighlights()
+	Beat.end()
+});
+let frame = panel.getFrame()
+panel.setFrame(frame.x, frame.y - 200, frame.width, frame.height)
+
+Beat.onTextChange = function () {
+	if (replacing) {
+		findPossibleOccurences(oldName, oldCapitalized, false)
+	}
+}
+
+// Custom methods for external JS calls
+
+Beat.custom = {
+	replace: function (originalName, originalCapitalized, newName) {
+		if (newName == "") return
+		name = newName
+		oldName = originalName
+		oldCapitalized = originalCapitalized
+
+		replacing = true
+
+		replaceDialogue(oldName, newName)
+		findPossibleOccurences(oldName, oldCapitalized)
+	},
+
+	show: function (index) {
+		const item = occurences[index]
+		const line = item[0]
+		Beat.scrollTo(line.position)
+		Beat.setSelectedRange(line.position + item[1], item[2])
+	},
+
+	confirm: function(index) {
+		// Confirm non-character cue replace 
+		const item = occurences[index]
+		const line = item[0]
+
+		Beat.onTextChangeDisabled = true
+		Beat.replaceRange(line.position + item[1], item[2], item[4])
+		Beat.onTextChangeDisabled = false
+		Beat.setSelectedRange(line.position, item[4].length)
+	},
+
+	close: function () {
+		Beat.end()
+	}
+}
+
+
+// Internal methods
+
+function createHTML() {
+	html = Beat.assetAsString("ui.html")
+
+	let namesHtml = ""
+	for (const name of names) {
+		namesHtml += "<option>" + name + "</option>"
+	}
+
+	html = html.replace("#NAMES#", namesHtml)
+}
+
+function gatherNames() {
+	for (const line of Beat.lines()) {
+		if (line.typeAsString() == "Character" || line.typeAsString() == "Dual Dialogue Character") {
+			let name = line.characterName()
+			if (!names.includes(name) && name.length > 0) {
+				names.push(line.characterName())
+			}
+		}
+	}
+
+	names.sort()
+}
+
+function clearHighlights() {
+	for (const occ of occurences) {
+		const line = occ[0]
+		if (Beat.reformat) {
+			Beat.reformat(line)
+		}
+		//Beat.removeBackgroundHighlight(line.position, line.string.length)
+	}
+}
+
+function replaceDialogue(originalName, newName) {
+	oldName = originalName
+	name = newName
+
+	for (const line of Beat.lines()) {
+		if (line.typeAsString() == "Character" || line.typeAsString == "Dual Dialogue Character") {
+			if (line.string.indexOf(oldName) == 0) {
+				Beat.replaceRange(line.position, oldName.length, newName.toUpperCase())
+			}
+		}
+	}
+}
+
+RegExp.quote = function(str) {
+    return str.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
+};
+
+function findPossibleOccurences(originalName, originalCapitalized, firstTime = true) {
+	oldName = originalName
+	oldCapitalized = originalCapitalized
+
+	occurences = []
+	for (const line of Beat.lines()) {
+
+		let result
+		let regex = new RegExp(RegExp.quote(oldName), "g")
+		let regexCap = new RegExp(RegExp.quote(oldCapitalized), "g")
+
+		while ((result = regex.exec(line.string))) {
+			Beat.textBackgroundHighlight("#aaeeaa", line.position + result.index, oldName.length)
+		    occurences.push([ line, result.index, oldName.length, oldName, name.toUpperCase() ])
+		}
+
+		while ((result = regexCap.exec(line.string))) {
+			Beat.textBackgroundHighlight("#aaeeaa", line.position + result.index, oldCapitalized.length)
+		    occurences.push([ line, result.index, oldCapitalized.length, oldCapitalized, name ])
+		}
+	}
+
+	let html = ""
+
+	let indx = 0
+	for (const occ of occurences) {
+		let line = occ[0]
+		let string = line.string.replaceAll("\"", "\\\"")
+		//if (line.string.length > 45) string = line.string.substr(0, 45) + "..."
+
+		html += "<div class='occurence' index='" + indx + "' onclick='select(this)'><b>" + occ[3] + "</b><br>On line: <em style='font-size: 90%;'>" + string +  "</em>" +
+				"<button class='confirm' onclick='confirm(this)' index='" + indx + "'>Replace</button>" +
+				"</div>"
+
+		indx++
+	}
+
+	let json = JSON.stringify(html)
+	if (firstTime) panel.runJS("occurences(\"" + html + "\", true)")
+	else panel.runJS("occurences(\"" + html + "\", false)")
+}
