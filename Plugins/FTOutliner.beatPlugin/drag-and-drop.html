@@ -35,6 +35,11 @@
     pointer-events: all;
 }
 
+
+.synopsisForSectionsIsOn .level1>.sectiontext+.dropZone{
+    transform: translateY(calc( -2px - var(--indexCardHeight) + 16px * (var(--fontSizeFactor)))) !important
+}
+
 #dropDiv.dropZone.over{
     border: 2px rgba(255,255,255,1) dotted !important;
     background-color: rgba(255,255,255,0.05) !important;
@@ -50,6 +55,20 @@
     cursor: grabbing !important;
 }
 
+/* .synopsisForSectionsIsOn .ghost{
+    border: yellow 1px dotted;
+} */
+
+/* .synopsisForSectionsIsOn .ghost>.section:first-child:not(.level2){ */
+	/* top: calc(var(--indexCardHeight) - 20px * var(--fontSizeFactor)) !important; */
+    /* top: 0px !important; */
+
+/*  transform: translateY(calc(0 - var(--indexCardHeight + 20 * var(--fontSizeFactor))));
+    margin-top: 0 !important;*/
+    /* border: red 2px solid !important; */
+    /* outline: lime 2px solid !important; */
+/*} */
+
 #ghost .isSelected {
     background-image: transparent !important;
 }
@@ -63,7 +82,8 @@
 
 /* .over{
     border: 2px red solid !important;
-} */
+    background: lime !important;
+}  */
 
 .longerAnimation{
     transition: all 0.5s !important;
@@ -92,7 +112,11 @@ var dropTookPlace
 
 var sectionLevelDrag
 
+var rangeStart, rangeEnd //new: selects the text to be moved BEFORE sending to plugin!
+
 var elementBeforeDropDiv
+
+var justLoggedThis = {thing: 0, manyTimes: 0}
 
 function onDragStart(e) {
 
@@ -112,15 +136,30 @@ function onDragStart(e) {
 	mylog("onDragStart" + e.target.id)
 
 	if(!e){mylog("left because no event"); return}  //unlikely to occur
+
+    //don't drag scene dots in index card mode for sections
+    if([...e.target.classList].includes('sceneheading') && indexCardMode == 2){Beat.call("Beat.alert('Not allowed', 'Moving scene dots around in this view would be quite insecure and finicky. So no.')");return}
+
+    //avoid dragging others thans the one you do actually drag
     if(![...e.target.classList].includes('isSelected')){
         deselectAllElements()
         e.target.classList.add('isSelected')
-    } //to avoid dragging others thans the one you do actually drag
+    } 
 
     //check so all selected scenes are consecutive
         let selectedScenes = document.querySelectorAll('.isSelected')
         let firstElement = (selectedScenes.length > 0) ? Number(selectedScenes[0].getAttribute("data-elementCount")) : Number(e.target.getAttribute("data-elementCount"))
         let lastElement = (selectedScenes.length > 0) ? Number(selectedScenes[selectedScenes.length-1].getAttribute("data-elementCount")) : Number(e.target.getAttribute("data-elementCount"))
+
+    //now: some logic to stop omitted scenes from moving
+        if(outline[firstElement].omitted == 1 || outline[lastElement].omitted == 1){
+            e.stopPropagation()
+            e.preventDefault()
+            deselectAllElements ()
+            onDragEnd(e)
+            Beat.call("Beat.alert('Please unhide scenes first', 'You are trying to move a block of scenes where the first or last scenes are omitted (hidden).\\n\\nDue to how Fountain handles omission marks this might be open a giant can of worms, so you need to unhide them to move them around.\\n\\nFun fact: Hidden scenes WITHIN a block is fine, as long as the first or last scenes are not.')")
+            return
+        }
 
     //but first: check if we're dragging sections and adjust the selection!
     sectionLevelDrag = false
@@ -184,7 +223,7 @@ function onDragStart(e) {
 
                     let reasonString = ""
 
-                    if (outline[i].typeAsString == "Synopse"){mylog("syonpissis so continuing"); continue}
+                    if (outline[i].typeAsString == "Synopse"){mylog("syonpsis so continuing"); continue}
 
                     if (outline[i].omitted == 1 && areScenesProportional == 1){reasonString = "It may look as if they are, but the range you are trying to move contains one or more hidden (omitted) scenes, which were not selected. \\n\\nSwitch to non-flexible mode (shortcut: F) to select the entire range."}
             
@@ -226,6 +265,7 @@ function onDragStart(e) {
 function onDragEnd(e, doItAnyway) { //doitanyway is passed when
 	mylog("onDragEnd")
     scenesAreClickThru(false)
+    Beat.call("Beat.setSelectedRange("+rangeStart+",0)")
     document.getElementById("flexiContainer").classList.add("positionRelative") //for Notes to scroll again -- disabled for Ghost Image
 
     if (dropTookPlace && !doItAnyway){return}
@@ -256,11 +296,16 @@ function onDragEnter(e) {
 
     e.preventDefault()
     e.stopPropagation()
-	mylog("onDragEnter" + e.target.id)
-
+    
     let draggedOver = e.target
     let draggedFrom = previouslyDraggedOverElement
 
+    //draggedOver.classList.add("locateme")
+    //draggedOver.innerHTML = [...draggedOver.classList]
+
+	mylog("onDragEnter: " + draggedOver.id + " (from " + draggedFrom.id + ")")
+
+    
     if(!document.getElementById("ghost")){ //eliminates error if dragging from outside the plugin
         mylog("leaving onDragEnter because no #ghost")
         return
@@ -281,22 +326,24 @@ function onDragEnter(e) {
             return
     }
 
-    if(document.getElementById("dropDiv")){closeDropZone()}
+    if(document.getElementById("dropDiv")){mylog("Closing dropdiv bc entered element that is:" + draggedOver.classList); closeDropZone()}
 }
 
 function onDragLeave(e) {
 
+    
     e.preventDefault()
     e.stopPropagation()
-
+    
     if (e.target.id == "dropDiv"){
+        mylog("onDragLeave dropdiv")
         e.target.classList.remove("over")
     }
 }
 
 function openDropZone(draggedOver){
 
-    mylog("openDropZone()")
+    mylog("openDropZone() " + draggedOver.id)
 
     if (document.getElementById("dropDiv")){
         return
@@ -305,20 +352,25 @@ function openDropZone(draggedOver){
     let placeToDrop = draggedOver
 
     if ([...placeToDrop.classList].includes('sectiontext')){placeToDrop = placeToDrop.parentNode}
-    if ([...placeToDrop.classList].includes('level1') && beforeOrAfter == "beforebegin"){return}
+    //if ([...placeToDrop.classList].includes('level1') && beforeOrAfter == "beforebegin"){return}
     
-    //if scene-dragging, make "after section" mean "before next scene"
-    if ([...placeToDrop.classList].includes('section') && beforeOrAfter == "afterend" && !sectionLevelDrag){
-        mylog("probably here")
+    //if scene-dragging, make "after section" mean "before next scene"  
+    let dropNumber = Number(placeToDrop.getAttribute("data-elementCount"))
+    if ([...placeToDrop.classList].includes('section') 
+        && beforeOrAfter == "afterend" 
+        && outline[dropNumber + 1] 
+        && ![...document.querySelector("[data-elementCount = '" + (dropNumber + 1) + "']").classList].includes("section") 
+        && !sectionLevelDrag){
+        mylog("making 'after section' mean 'before next scene. Place to drop is: " + placeToDrop.id)
         //first: always put before next element instead of after this so as not to skip entire section
             beforeOrAfter = "beforebegin"
             let findSceneInsteadOfSection = Number(placeToDrop.getAttribute("data-elementCount")) + 1
         //then: check so next element wasn't a synopsis; then find the non-synopsis
-            while ([...document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']").classList].includes("thisIsASynopsis")){
-                    mylog("looking for non-synops " + findSceneInsteadOfSection + ", " + outline[findSceneInsteadOfSection].string)
+            while (document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']") &&
+                    [...document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']").classList].includes("thisIsASynopsis"))
+                    {
                     findSceneInsteadOfSection ++
             }
-        mylog("surely we don't get here do we?")
         placeToDrop = document.querySelector("[data-elementCount = '" + findSceneInsteadOfSection + "']")
     }
 
@@ -333,15 +385,29 @@ function openDropZone(draggedOver){
             return
     }
 
-    mylog ('at this point, do we have a placetodrop? -->' + placeToDrop.id)
+    mylog ('at this point, do we have a placetodrop? Yes -->' + placeToDrop.id)
 
-    //correcting things for sections!
+    if ([...placeToDrop.classList].includes("level1")){ //added january 2022
+
+        let dropNumber = placeToDrop.getAttribute("data-elementCount")
+        if (outline[dropNumber +1] && ![...document.querySelector("data-elementCount = '" + (dropNumber + 1 )+ "'").classList].includes("level1")){ 
+            //i.e. if there are objects below, but also next object is not another act
+            placeToDrop = document.querySelector("data-elementCount = '" + (dropNumber + 1) + "']")
+            beforeOrAfter = "beforebegin"
+        }else{ //i.e. we are dropping in an empty act, whether or not last in the doc
+            beforeOrAfter = "afterend"
+        }
+        //Beat.call("Beat.alert('disallowing opening of dropzone here bc classlist includes level1')")
+        //return
+    }
+
+    //correcting things for dragging sections!
     if(sectionLevelDrag){
         while (![...placeToDrop.classList].includes("section")){ 
             placeToDrop = placeToDrop.parentNode
         }
 
-        if(beforeOrAfter == "afterend"){
+        if(beforeOrAfter == "afterend" && ![...placeToDrop.classList].includes("level1")){ //entire purpose of this is to include entire section, right?
 
             mylog("if beforeOrAfter is AFTEREND:")
 
@@ -356,13 +422,14 @@ function openDropZone(draggedOver){
             mylog("adjusting placetodrop to " + ("[data-elementCount='" + adjustedPlaceToDrop + "']"))
             
             //adjust backwards if synopsis!
-            mylog("now entering adjusting backwards -- outline[adjusted...] is now: " + outline[adjustedPlaceToDrop].typeAsString)
+            mylog("now entering adjusting backwards")
             while(outline[adjustedPlaceToDrop].typeAsString == "Synopse"){
+                mylog("surely this can never happen")
                 adjustedPlaceToDrop --
             }
             placeToDrop=document.querySelector("[data-elementCount='" + adjustedPlaceToDrop + "']" )
 
-            
+            //and when can the synopsis situation be true, since i'm iterating until reaching a section?
         }
     }
 
@@ -380,7 +447,12 @@ function openDropZone(draggedOver){
     dropDiv.id = "dropDiv"
     dropDiv.innerHTML += "DROP TO MOVE SCENE" +    
         ((document.querySelectorAll(".isSelected").length > 1) ? "S" : "")
-    placeToDrop.insertAdjacentElement(beforeOrAfter, dropDiv)
+    //next is an effort to put the div INSIDE the act so as not to make the screen go bonkers.
+    if ([...placeToDrop.classList].includes("level1")){
+        placeToDrop.firstChild.insertAdjacentElement("afterend", dropDiv)
+    }else{
+        placeToDrop.insertAdjacentElement(beforeOrAfter, dropDiv)
+    }
 
     mylog('half way down drop zone creation')
   
@@ -414,6 +486,9 @@ function openDropZone(draggedOver){
 function closeDropZone(){
 
     mylog("closeDropZone()")
+    
+    let a = document.querySelectorAll(".locateme")
+    for (let el of a){el.classList.remove("locateme")}
 
     previousDropZonePosition = false
     previouslyDraggedOverElement = false
@@ -427,8 +502,14 @@ function closeDropZone(){
 
 function onDragOver(e) {
 
-    mylog("dragover")
-
+    if (e.target == justLoggedThis.thing){
+        justLoggedThis.manyTimes ++
+    }else{
+        justLoggedThis.thing = e.target
+        justLoggedThis.manyTimes = 1
+        mylog("onDragOver changed to: " + justLoggedThis.thing.id + "(after previous one repeated " + justLoggedThis.manyTimes + " times)")
+    }
+    
     e.preventDefault()
     e.stopPropagation()
 
@@ -438,14 +519,24 @@ function onDragOver(e) {
     } 
     
     let draggedOver = e.target
+
+        // draggedOver.classList.add("locateme")
+        // printButton.innerHTML = draggedOver.classList
+
+
         if (draggedOver.id == "dropDiv"){
             previouslyDraggedOverElement = draggedOver
             return}
-        if (![...draggedOver.classList].includes("sceneheading") && ![...draggedOver.classList].includes("sectiontext")){
-            if(document.getElementById("dropDiv")){closeDropZone()}
+        if (![...draggedOver.classList].includes("sceneheading") && ![...draggedOver.classList].includes("sectiontext")
+                &&
+            !([...flexiContainer.classList].includes("synopsisForSectionsIsOn") && [...draggedOver.classList].includes("thisIsASynopsis"))
+                &&
+            !([...flexiContainer.classList].includes("synopsisForSectionsIsOn") && [...draggedOver.classList].includes("section"))
+        ){
+            if(document.getElementById("dropDiv")){mylog("<b>closing</b> because neither scene nor section"); closeDropZone()}
             return}
         if ([...draggedOver.classList].includes("beingDragged")){
-            if(document.getElementById("dropDiv")){closeDropZone()}
+            if(document.getElementById("dropDiv")){mylog("<b>closing</b> because hovering self"); closeDropZone()}
             return
         }
 
@@ -458,6 +549,10 @@ function onDragOver(e) {
 
         beforeOrAfter = false
         let bounding = draggedOver.getBoundingClientRect()
+        if ([...draggedOver.classList].includes("level1")){
+            bounding = draggedOver.firstChild.getBoundingClientRect()
+            mylog("<b>making bound childs bounding instead</b>")
+        }
 
         let y = e.clientY
             if (y - bounding.top < (Math.min(20, (bounding.bottom - bounding.top)/2))) {beforeOrAfter = "beforebegin"}
@@ -466,11 +561,14 @@ function onDragOver(e) {
     //Close dropzone if we are anywhere where no dropzone applies
         if (!beforeOrAfter){
             if(document.getElementById("dropDiv")){closeDropZone()}
+            mylog("<b>closing</b> zone because we are where no dropzone applies -- i.e. no before or after")
             return
         }
     
     // now setting section element as reference even if dragging scenes
-        if (sectionLevelDrag && [...draggedOver.classList].includes("sectiontext")){draggedOver = draggedOver.parentNode}
+        if (sectionLevelDrag && [...draggedOver.classList].includes("sectiontext")){
+            draggedOver = draggedOver.parentNode
+        }
 
     // different checks to cancel if no change etc
         if ((previouslyDraggedOverElement && draggedOver == previouslyDraggedOverElement)
@@ -487,7 +585,8 @@ function onDragOver(e) {
     
     previouslyDraggedOverElement = draggedOver
     previousBeforeOrAfter = beforeOrAfter
-        
+    
+    mylog ("now to openDropZone -- element is " + beforeOrAfter + ": " + draggedOver.id)
     openDropZone(draggedOver)
 }
 
@@ -507,10 +606,12 @@ function moveTheScenes(e){
         while(outline[Number(lastScene) + 1] && outline[Number(lastScene) + 1].typeAsString == "Synopse"){lastScene++;} //makes sure synopsis is moved with scene
     insertBeforeScene = e.target.getAttribute("data-before-scene") // written into dropdiv at creation: dataset.beforeScene
 
-    mylog(firstScene + ", " + lastScene + ", " + insertBeforeScene + "," + warningsAreOn)
-
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
-    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + ")")
+    
+    //new method of sending data: sending explicit range. Still sending "scenes" as a security measure though, in case used in the plugin code.
+    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + ")")
+    rangeStart = false
+    rangeEnd = false
 }
 
 function ifYesToMove(){ //this is visually-related stuff only and does not alter any actual data 
@@ -564,7 +665,7 @@ function makeGhost(e, selectedScenes,icamefrom){
         clone = scene.cloneNode(true)
         clone.classList.remove("beingDragged")
         
-        if ([...clone.classList].includes("thisIsASynopsis")){continue}
+        //if ([...clone.classList].includes("thisIsASynopsis")){continue}
         
         if (sectionLevelDrag && scene == e.target){ //selects entire sequence if dragging a section head
             ghost.appendChild(clone)
@@ -575,6 +676,20 @@ function makeGhost(e, selectedScenes,icamefrom){
         
         scene.classList.add("beingDragged")
     }
+
+    //ghost.firstChild.firstChild.innerHTML += "hej" + ghost.firstChild.id + [...ghost.firstChild.classList]
+
+    mylog("setting range to move")
+    //highlight all text affected in move; also determining the correct movable range
+    rangeStart = outline[selectedScenes[0].getAttribute("data-elementCount")].sceneStart
+    mylog("setting endrange")
+        rangeEnd = outline[selectedScenes[selectedScenes.length-1].getAttribute("data-elementCount")].sceneEnd
+        Beat.call("Beat.scrollTo(" + rangeStart + ")") 		
+        Beat.call("Beat.setSelectedRange(" + rangeStart + ", " + (rangeEnd - rangeStart) + ")")
+
+        //This is a debugging tool that will bring the text into the html for evaluation purposes!
+        //Beat.call("Beat.custom.sendTextToHTML(" + rangeStart + "," + rangeEnd+ ")") 
+
     
     //create ghost image
     document.getElementById("flexiContainer").appendChild(ghost);
@@ -584,6 +699,15 @@ function makeGhost(e, selectedScenes,icamefrom){
     e.dataTransfer.setDragImage(document.getElementById("ghost"), offsetX, offsetY);
     
     mylog("end of ghost function")
+}
+
+function receiveText(allText){
+
+    mylog("receiveText()")
+
+    if (debugContainerVisibility != 1){toggleDebugContainer()}
+    debugContainer.innerHTML = allText.substring(rangeStart, rangeEnd).replace("\n","<br/>")
+
 }
 
 function scenesAreClickThru(areThey){

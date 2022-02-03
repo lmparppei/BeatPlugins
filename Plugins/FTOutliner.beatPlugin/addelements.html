@@ -1,0 +1,79 @@
+<style>
+
+.addButton{
+
+position: absolute;
+bottom: -2px;
+right: -2px;
+border-radius: 50%;
+height: 20px;
+width: 20px;
+
+background: black;
+border: 3px white solid;
+color: white;
+
+text-align: center;
+font-size: 16px;
+font-weight: bold;
+padding-top: 0;
+
+
+opacity: 0.6;
+z-index: 99997;
+pointer-events: all !important;
+
+display: none;
+}
+
+.addButton>p{
+    margin-top: -1px !important;
+}
+
+.addButton:hover{
+
+    opacity: 1;
+    color: red;
+
+}
+
+.addButtonVisible{
+    display: unset
+}
+
+.synopsisForScenesIsOn .addButton,
+.synopsisForSectionsIsOn .addButton{
+bottom: 2px;
+right: 2px;
+}
+
+
+</style>
+
+<script>
+
+function insertAddButton(element){
+
+    return  // This feature is not implemented yet. 
+            // But thank you for looking around!
+
+    addButton = document.createElement("div")
+    addButton.id = "addButton"
+    addButton.classList.add("addButton")
+    addButton.innerHTML = "<p>+</p>"
+    if(altIsBeingPressed){
+        addButton.classList.add("addButtonVisible")
+    }
+    element.appendChild(addButton)
+}
+
+function removeAddButton(){
+
+    let elements = $$(".addButton")
+    for (let element of elements){
+        element.remove()
+    }
+
+}
+
+</script>

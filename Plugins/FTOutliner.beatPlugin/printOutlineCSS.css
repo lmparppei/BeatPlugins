@@ -1,0 +1,164 @@
+<style>
+
+body {
+   background: #fff !important;
+   max-height: calc(29.7cm);
+}
+
+:root{
+    --heightFactor: 30;/*29; /*840px;*/ /*calc(29.7 / 2.54) ;*/
+    /* --pageBackground: #fff; */
+    --fontSizeFactor: 0.8;
+}
+
+#flexiContainer{
+
+    margin-top: 25px; 
+
+    width: 21cm;
+    min-width: 21cm;
+    max-width: 21cm;
+    /* height: 29.6cm;
+    min-height: 29.6cm; 
+    max-height: calc(29.6cm - 30px);*/
+
+    overflow: visible !important;
+}
+
+* {
+    -webkit-print-color-adjust: exact;
+}
+
+.showPageNumbers, .showSceneLength, .showSceneNum, .showActLength, .showSectionPageNumber{
+    display: inline !important;
+}
+
+.showActLength {
+	color: #555;
+	opacity: 0.8 !important;
+}
+
+.showSectionPageNumber {
+	color: #222;
+    margin-top: 0.8pt !important;
+}
+
+.indicator {
+	display: none !important;
+}
+
+/* .showSceneNum {
+    display:none
+} */
+
+.sceneheading {
+	border: 1px solid !important;
+	border-color: #555 !important;
+	box-shadow: none !important;
+	box-sizing: content-box !important;
+	margin-bottom: 0px !important;
+	margin-top: -1px !important;
+
+    overflow: hidden; 
+}
+
+.uncolorAllScenesBut .sceneheading,
+.dimmedScene {
+	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0.9) ,rgba(255,255,255,0.9) 100%);
+	color: rgba(0,0,0,0.8) !important; 
+	opacity: 0.2;
+	/* border: 1px solid rgba(0,0,0,0.3) !important; */
+}
+
+div.sceneheading:nth-child(1 of .sceneheading) {
+
+margin-top: 0.5px !important ;
+
+}
+
+.sectiontext{ 
+     padding-right: 0px;
+    max-width: calc(100% - 4.5px)
+}
+
+p.headline {
+    font-weight: 900;
+    font-size: 22pt;
+    line-height: 24pt;
+    text-align: center;
+    padding-top: 40px;
+
+    height: 30px;
+}
+
+.headline2{
+    font-weight: 400;
+    font-size: 16pt;
+    line-height: 20pt;
+    text-align: center;
+}
+
+.footer{
+    font-size: 7pt;
+    opacity: 0.4;
+    text-align: right;
+    margin-top:40px;
+
+    width: 21cm; 
+    position: absolute;
+    bottom: 0.5in;
+}
+
+a, .padlockIcon{
+    display: none !important;
+}
+
+.uncolorAllScenesBut .padlockIcon{
+    display: none !important;
+}
+
+.uncolorAllScenesBut .sectiontext {
+	color: rgba(0,0,0,0.3);
+}
+
+.level1>.sectiontext,
+.uncolorAllScenesBut .level1>.sectiontext,
+.uncolorAllScenesBut .section.special>.sectiontext,
+
+.uncolorAllScenesBut.red .section.red > .sectiontext,
+.uncolorAllScenesBut.orange .section.orange > .sectiontext,
+.uncolorAllScenesBut.yellow .section.yellow > .sectiontext,
+.uncolorAllScenesBut.green .section.green > .sectiontext,
+.uncolorAllScenesBut.teal .section.teal > .sectiontext,
+.uncolorAllScenesBut.cyan .section.cyan > .sectiontext,
+.uncolorAllScenesBut.blue .section.blue > .sectiontext,
+.uncolorAllScenesBut.purple .section.purple > .sectiontext,
+.uncolorAllScenesBut.magenta .section.magenta > .sectiontext,
+.uncolorAllScenesBut.pink .section.pink > .sectiontext,
+.uncolorAllScenesBut.brown .section.brown > .sectiontext,
+.uncolorAllScenesBut.black .section.black > .sectiontext,
+.uncolorAllScenesBut.gray .section.gray > .sectiontext,
+.uncolorAllScenesBut.white .section.white > .sectiontext
+
+{
+	color: black !important;
+
+}
+
+.hideSlugIfSmall, .sceneheading.hideSlugIfSmall {
+    color: rgba(0,0,0,0) !important;
+}
+
+/* .hideSlugIfSmall, .sceneheading.hideSlugIfSmall{
+		color: rgba(0,0,0,1) !important;
+        overflow: hidden !important;
+        -webkit-column-width: 100px !important;
+        column-width: 100px !important;
+        border: 1px orange solid !important;
+} */
+
+.note {
+    display: none
+}
+
+</style>

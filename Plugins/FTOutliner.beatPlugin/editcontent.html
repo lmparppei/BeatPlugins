@@ -94,9 +94,19 @@ function editContent() {
     event.stopImmediatePropagation()
     theElement = event.target
     theElement.draggable = false
+
+    if (event.altKey || event.ctrlKey || event.metaKey){return}
     
     if (![...theElement.classList].includes("sectiontext") && ![...theElement.classList].includes("sceneheading")){
         return
+    }
+
+    if([...document.getElementById("flexiContainer").classList].includes("uncolorAllScenesBut")){
+        for(let color of colorsArray){
+            if([...theElement.classList].includes(color.toLowerCase()) && ![...document.getElementById("flexiContainer").classList].includes(color.toLowerCase())){
+            return
+            }
+        }
     }
 
     if([...theElement.classList].includes("hideSlugIfSmall")){
@@ -128,7 +138,7 @@ function editContent() {
     mylog(theElement.id + ": " + theElement.classList)
 
     coverContainer.classList.add("lessBlur")
-    coverContainer.style.display = "block" //today
+    coverContainer.style.display = "block" 
 
     let editBox = document.createElement("input")
     editBox.type = "text"
@@ -175,7 +185,7 @@ function exitEdit(theElement, changesWereConfirmed) {
             let startPosition = outline[currentOutlineCount].line.position
             let length = outline[currentOutlineCount].line.range.length
             
-            mylog(newContent)
+            //mylog(newContent)
 
             let resultingLine = line.replace(shownLine, newContent)
 
@@ -201,6 +211,8 @@ function exitEdit(theElement, changesWereConfirmed) {
 
         }else{
 
+            editBox.parentNode.parentNode.classList.remove("noHover")
+            theElement.draggable = true
             document.getElementById("editBox").remove()
         }
 

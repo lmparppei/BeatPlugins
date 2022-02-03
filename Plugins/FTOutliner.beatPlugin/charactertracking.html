@@ -6,7 +6,11 @@
  white-space: normal;
 }
 
-.dimmedScene, .dimmedScene > p .padlockIcon {
+#tracking *:focus{
+    outline: none !important;
+}
+
+.dimmedScene {
     /* opacity: 10% !important; */
     background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important;
     color: rgba(0,0,0,0.2) !important;
@@ -14,11 +18,43 @@
     transition: 0s !important;
 }
 
+.dimmedScene > .padlockIcon {
+    /* opacity: 10% !important; */
+    /* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important; */
+    color: rgba(0,0,0,0.2) !important;
+    fill: rgba(0,0,0,0.2) !important;
+    transition: 0s !important;
+}
+
+.uncolorAllScenesBut.red .padlockIcon:not(.sceneheading.red .padlockIcon),
+.uncolorAllScenesBut.orange .padlockIcon:not(.sceneheading.orange .padlockIcon),
+.uncolorAllScenesBut.yellow .padlockIcon:not(.sceneheading.yellow .padlockIcon),
+.uncolorAllScenesBut.green .padlockIcon:not(.sceneheading.green .padlockIcon),
+.uncolorAllScenesBut.teal .padlockIcon:not(.sceneheading.teal .padlockIcon),
+.uncolorAllScenesBut.cyan .padlockIcon:not(.sceneheading.cyan .padlockIcon),
+.uncolorAllScenesBut.blue .padlockIcon:not(.sceneheading.blue .padlockIcon),
+.uncolorAllScenesBut.purple .padlockIcon:not(.sceneheading.purple .padlockIcon),
+.uncolorAllScenesBut.magenta .padlockIcon:not(.sceneheading.magenta .padlockIcon),
+.uncolorAllScenesBut.pink .padlockIcon:not(.sceneheading.pink .padlockIcon),
+.uncolorAllScenesBut.brown .padlockIcon:not(.sceneheading.brown .padlockIcon),
+.uncolorAllScenesBut.black .padlockIcon:not(.sceneheading.black .padlockIcon),
+.uncolorAllScenesBut.gray .padlockIcon:not(.sceneheading.gray .padlockIcon),
+.uncolorAllScenesBut.white .padlockIcon:not(.sceneheading.white .padlockIcon)
+{
+	color: rgba(0,0,0,0.2) !important;
+    fill: rgba(0,0,0,0.2) !important;
+}
+
+/* .printMode.uncolorAllScenesBut .padlockIcon{
+    display: none !important;
+} */
+
 .dimmedScene:hover, .dimmedScene:hover > p {
     color: rgba(255,255,255,0.4) !important;
 }
 
-.section:not(.level1).dimmedSection:not(#flexiContainer.synopsisForSectionsIsOn .dimmedSection) {
+.section:not(.level1).dimmedSection:not(#flexiContainer.synopsisForSectionsIsOn .dimmedSection), 
+.uncolorAllScenesBut .section:not(.level1):not(#flexiContainer.synopsisForSectionsIsOn .section){
     
     border-color:rgba(0, 0, 0, 0) !important;
     background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
@@ -26,10 +62,77 @@
     /* border: 1px solid lime !important; */
 }
 
-.dimmedSection>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+.dimmedSection>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext),
+.uncolorAllScenesBut .sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext){
     background-color: rgba(0,0,0,0) !important;
 }
-.section:not(.level1).dimmedSection:hover>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn sectiontext){
+
+.uncolorAllScenesBut.red .section.red > .sectiontext,
+.uncolorAllScenesBut.orange .section.orange > .sectiontext,
+.uncolorAllScenesBut.yellow .section.yellow > .sectiontext,
+.uncolorAllScenesBut.green .section.green > .sectiontext,
+.uncolorAllScenesBut.teal .section.teal > .sectiontext,
+.uncolorAllScenesBut.cyan .section.cyan > .sectiontext,
+.uncolorAllScenesBut.blue .section.blue > .sectiontext,
+.uncolorAllScenesBut.purple .section.purple > .sectiontext,
+.uncolorAllScenesBut.magenta .section.magenta > .sectiontext,
+.uncolorAllScenesBut.pink .section.pink > .sectiontext,
+.uncolorAllScenesBut.brown .section.brown > .sectiontext,
+.uncolorAllScenesBut.black .section.black > .sectiontext,
+.uncolorAllScenesBut.gray .section.gray > .sectiontext,
+.uncolorAllScenesBut.white .section.white > .sectiontext {
+    color: black !important;
+}
+
+#characterButton:is(.red, .orange, .yellow, .green, .teal, .cyan, .blue, .purple, .magenta, .pink, .brown, .grey, .black, .white) {
+    background: none !important;
+    opacity: 1 !important;
+}
+
+#characterButton.red > svg path{
+    fill: var(--red) !important;
+}
+#characterButton.orange > svg path{
+    fill: var(--orange) !important;
+}
+#characterButton.yellow > svg path{
+    fill: var(--yellow) !important;
+}
+#characterButton.green > svg path{
+    fill: var(--green) !important;
+}
+#characterButton.teal > svg path{
+    fill: var(--teal) !important;
+}
+#characterButton.cyan > svg path{
+    fill: var(--cyan) !important;
+}
+#characterButton.blue > svg path{
+    fill: var(--blue) !important;
+}
+#characterButton.purple > svg path{
+    fill: var(--purple) !important;
+}
+#characterButton.magenta > svg path{
+    fill: var(--magenta) !important;
+}
+#characterButton.pink > svg path{
+    fill: var(--pink) !important;
+}
+#characterButton.brown > svg path{
+    fill: var(--brown) !important;
+}
+#characterButton.black > svg path{
+    fill: var(--black) !important;
+}
+#characterButton.white > svg path{
+    fill: var(--white) !important;
+}
+#characterButton.grey > svg path{
+    fill: var(--grey) !important;
+}
+
+.section:not(.level1).dimmedSection:hover>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext){
     background-color: rgba(40,40,40,1) !important;
 }
 
@@ -55,7 +158,7 @@ svg {
 }
 
 .buttonIsActive svg {
-    transform: scale(0.7) translateY(5px) !important;
+    transform: scale(0.7) translateY(2px) !important;
     pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
 
 }
@@ -84,7 +187,7 @@ svg {
     font-weight: 500;
     line-height: 10px;
     text-transform: uppercase;
-    transform: translateY(calc(-100% - 25px)) translateX(calc(-50% + 16px));
+    transform: translateY(calc(-100% - 23px)) translateX(calc(-50% + 16px));
     /*transform: translateX(-50%);*/
     width: 60px !important;
     /* border: red 1px solid; */
@@ -160,6 +263,14 @@ li {
     /* background-color: white; */
 }
 
+#colorDropdown{
+    width: 50% !important;
+    display: inline;
+    background-color: white !important;
+    appearance: none !important;
+    margin-top: -3px !important;
+}
+
 </style>
 
 <div id="tracking" class="settingsWindow" style="display: none;" onblur="toggleTrackingContainer()">
@@ -174,27 +285,36 @@ li {
 
     <div  id="trackertext"><p class="normalWindowText"><span class="headline">Track characters</span><br/><br/>
 
-        Select one or more characters to highlight scenes where they appear.<br/><br/>
+        Select characters in the list to highlight scenes where they appear.<br/>
+        Selecting more than one will highlight scenes where ALL are present.<br/><br/>
         <div id="hints">
-        <b>HINTS:</b>
+        <b>KEYBOARD SHORTCUTS:</b>
         <ul>
-        <li>To highlight your nine most frequent characters without opening this dialog, use keys 1&mdash;9. <br/>Deselect all highlights with 0 (zero).</li>
-        <li>To select two or more characters simultaneously, hold CMD while pressing the second character name</li>
-        <li>When more than one character is selected, scenes with BOTH (ALL) characters present are highlighted.</li>
-        <li>You can also open (and dismiss) this dialog by pressing T for ”track characters”.</li>
+        <li>Highlight your nine most frequent characters with keys 1&mdash;9.</li>
+        <li>Hold CMD to select two or more characters simultaneously</li>
+        <li>Deselect all highlights with 0 (zero).</li>
+        <li>Open (and dismiss) this dialog by pressing T for ”Tracking”.</li>
         </ul>
+        <span class="shortcutText">
+            <b>TIP: </b>You can avoid false positives by adding an empty note inside a name to hide it from being tracked:<br/> <!--span class="scriptTextInWindow"--> ”She grabs the gun Fra[[]]nk gave her”<!--/span--></span>
         </div>
     </p>
     </div>
     
     </div>
+    <hr/>
+    <br/>
     <div id="trackingoutro">
+        <span class="headline">Isolate scenes/sections by color</span><br/><br/>
+
+        Dim all scenes and sections except for: <select id="colorDropdown" onchange="simulateAltClick()" class="rightfloat"><option>no colors set</option></select><br/>
+        
+        
         <br/>
-        <hr/>
-        <span class="shortcutText">
-        <b>NOTE: </b><br/>
-        Characters must be speaking at least once to appear in the list. Once they do, they are also recognized when mentioned in an action element.<br/>
-        To avoid false positives with names that are referred to in a scene where they are not present, as in <span class="scriptTextInWindow">she grabs the gun Frank gave her</span>, adding two asterisks inside a name <span class="scriptTextInWindow">(Fra**nk)</span> will allow it to pass under the radar without affecting the printed/exported text.
+
+        <b>SHORTCUTS:</b> To isolate a color without opening this dialog, ALT+click on a colored scene to dim all others. 
+        (ESC or ALT+clicking anywhere else reverts to normal.)<br/>
+        
     </div>
     <div>
         <br/>
@@ -209,6 +329,7 @@ var iCameFromToggleCharacter = -1
 var scenesWithCharacters = []
 
 function collectCharacters() {
+    mylog("collectCharacters")
     //first request the data, then have plugin send that data into makeCharacterMenu
     Beat.call("Beat.custom.addCharacterClasses()")
 }
@@ -259,11 +380,38 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
         toggleSoloCharacter(iCameFromToggleCharacter)
     }
 
+    alsoFillColorDropdown()
+
     document.getElementById("characterMenuList").focus()
     //    updateFilter()
 }
 
+function alsoFillColorDropdown(){
+
+    let dropdown = "<option>(None)</option>"
+    let alreadySelected = false
+
+    for (let color of colorsArray){
+        if (color == "Remove Color" || color == "Special"){continue}
+
+        if (document.querySelector("." + color.toLowerCase())){
+            dropdown += "<option>" + color + "</option>"
+
+            if ([...document.getElementById("flexiContainer").classList].includes(color.toLowerCase())){
+                alreadySelected = color
+                //Beat.call("Beat.alert('"+i+"')")
+            }
+        }
+    }
+
+    document.getElementById("colorDropdown").innerHTML = dropdown   
+    document.getElementById("colorDropdown").value = alreadySelected || "(None)"
+
+}
+
 function updateFilter(scenesWithCharactersProxy){
+
+    mylog("updateFilter")
 
     let allScenes = document.getElementsByClassName('sceneheading')
     let allSections = document.getElementsByClassName('section')
@@ -284,6 +432,7 @@ function updateFilter(scenesWithCharactersProxy){
                     if (scenesWithCharacters[num]){
                         removeDim = true
                         for (currentCharacter of selectedCharacters){
+
                             let spacelessName = currentCharacter.value.replace(/ /g, "_")
                             spacelessName = spacelessName.replace(/\'|\’|\"/g, "-")
 
@@ -292,7 +441,14 @@ function updateFilter(scenesWithCharactersProxy){
                             }
                         }
                     }
-                    if (removeDim == true){document.getElementById(num).classList.remove("dimmedScene")}
+                    if (!outline[i].omitted){
+                        if (removeDim == true){document.getElementById(num).classList.remove("dimmedScene")}
+                    }else{
+                         // this will help show character in omitted scene, but only if scene has forced number.
+                         // previously it threw an error, so this is better.
+                         // for scenes with no number ( = normal omitted ones!) filter will miss present characters. 
+                        if (removeDim == true){document.querySelector("[data-elementCount='" + i + "']").classList.remove("dimmedScene")}
+                    }
                 }
             }
     }
@@ -301,6 +457,8 @@ function updateFilter(scenesWithCharactersProxy){
         for (scene of allScenes){scene.classList.remove("dimmedScene")}
         for (section of allSections){section.classList.remove("dimmedSection")}
     }
+
+    mylog("dimming is done")
 
     if (characterMenuList.selectedIndex == -1){
         document.getElementById("characterButton").classList.remove("buttonIsActive")
@@ -314,6 +472,7 @@ function updateFilter(scenesWithCharactersProxy){
             document.getElementById("selectedCharacterName").innerHTML += currentCharacter.value + "<br/>"
         }
     }
+    mylog("end of UpdateFilter")
 }
 
 function deselectAllCharacters() {
@@ -322,6 +481,7 @@ function deselectAllCharacters() {
 }
 
 function toggleSoloCharacter(theKey) {
+    mylog("toggleSoloCharacter(" + theKey +")" )
 
     theKey --
 
@@ -345,7 +505,61 @@ function toggleSoloCharacter(theKey) {
         }
     }
     iCameFromToggleCharacter = -1
+
+    mylog("still in toggle, before sending to updateFilter()")
+
     updateFilter()
+}
+
+function simulateAltClick(){
+
+    let theSelection = document.getElementById("colorDropdown").selectedOptions
+    let theClickedThing = {}
+    theClickedThing.classList = ["sceneheading", theSelection[0].value.toLowerCase()]
+
+    //Beat.call("Beat.alert('"+theClickedThing.classList+"')")
+
+    if ([...document.getElementById("flexiContainer").classList].includes("uncolorAllScenesBut")){
+        muteColors()    
+    } //if already on, this first time toggles it off before:
+
+    if (theSelection[0].value != "(None)"){ //do not toggle on if user chose "none"
+        muteColors(theClickedThing)
+    }
+
+}
+
+
+function muteColors(theClickedThing, shift){
+
+    mylog("muteColors")
+    
+    if (!shift && [...document.getElementById("flexiContainer").classList].includes("uncolorAllScenesBut")){
+        document.getElementById("flexiContainer").classList.remove("uncolorAllScenesBut")
+        for (let color of colorsArray){
+            if([...document.getElementById("flexiContainer").classList].includes(color.toLowerCase())){
+                document.getElementById("flexiContainer").classList.remove(color.toLowerCase())
+                document.getElementById("characterButton").classList.remove(color.toLowerCase())
+            }
+        }
+        return
+    }
+
+    if(!theClickedThing || ![...theClickedThing.classList].includes("sceneheading")){
+        return
+    }
+    
+    document.getElementById("flexiContainer").classList.add("uncolorAllScenesBut")
+
+    for (let color of colorsArray){
+        if([...theClickedThing.classList].includes(color.toLowerCase())){
+            document.getElementById("flexiContainer").classList.add(color.toLowerCase())
+            document.getElementById("characterButton").classList.add(color.toLowerCase())
+            break
+        }
+    }
+    
+
 }
 
 </script>
