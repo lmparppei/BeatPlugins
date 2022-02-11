@@ -1,10 +1,9 @@
 /*
 
 Plugin name: FTOutliner
-
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.2
+Version: 1.21
 Compatibility: 1.929
 Type: Tool
 Image: screenshot.jpg
@@ -353,12 +352,12 @@ Beat.onOutlineChange (function() {
 		return
 	}
 
-	fullUpdateInProgress = true		
-
 	let jsToRun = `
-				startFullUpdate(null, null, 800)
-				`
+	startFullUpdate(null, null, 800)
+	`
 	htmlWindow.runJS(jsToRun)
+	
+	fullUpdateInProgress = true	
 
 // PLUGIN: onOutlineChange (THIS FUNCTION) will call...
 // HTMLWINDOW: startFullUpdate, which will call...
