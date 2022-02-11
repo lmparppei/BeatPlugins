@@ -1,10 +1,9 @@
 /*
 
 Plugin name: FTOutliner
-
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.20
+Version: 1.22
 Compatibility: 1.929
 Type: Tool
 Image: screenshot.jpg
@@ -103,6 +102,7 @@ Beat.custom.updateEntireOutline = function (location, length) {
 		//Beat.log("stopped because background already running! ")
 		return}
 
+	fullUpdateInProgress = true	
 	let jsToRun = `
 		document.getElementById('outOfSyncDiv').style.display = 'block';
 		document.getElementById('outOfSyncDiv').classList.add('animate');
@@ -353,13 +353,11 @@ Beat.onOutlineChange (function() {
 		return
 	}
 
-	fullUpdateInProgress = true		
-
 	let jsToRun = `
-				startFullUpdate(null, null, 800)
-				`
+	startFullUpdate(null, null, 800)
+	`
 	htmlWindow.runJS(jsToRun)
-
+	
 // PLUGIN: onOutlineChange (THIS FUNCTION) will call...
 // HTMLWINDOW: startFullUpdate, which will call...
 // PLUGIN: beat.custom.updateEntireOutline, 
