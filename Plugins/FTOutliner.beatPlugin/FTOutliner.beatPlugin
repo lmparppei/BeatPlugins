@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.22
+Version: 1.23
 Compatibility: 1.929
 Type: Tool
 Image: screenshot.jpg
@@ -25,7 +25,7 @@ a {
 	<li>Print your outline (or export to PDF) to discuss your script's structure 
 	<li>and lots more...
 </ul>
-<p>For more info, questions or support visit <a href='https://ftoutliner.webflow.io' target='_default'>ftoutliner.webflow.io</a></p>
+<p>For more info, questions or support visit <a href="https://ftoutliner.webflow.io" target="_default">ftoutliner.webflow.io</a></p>
 </Description>
 
 */ 
