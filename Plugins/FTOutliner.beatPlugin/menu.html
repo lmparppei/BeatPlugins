@@ -1,0 +1,1240 @@
+<style>
+
+.menu{
+
+    position: absolute;
+    background: rgb(232, 232, 232);
+    
+    border: #c1c1c1 solid 1px;
+    border-radius: 10px;
+
+    font-size: 14px;
+    white-space: nowrap;
+
+    width: auto; /*200px;*/
+    height: auto; /* 400px;*/
+    min-width: 250px;
+    max-width: 280px !important;
+    min-height: 100px;
+
+    box-shadow: 0px 5px 30px rgb(0,0,0,0.7);
+
+    transform: translateY(calc(-100% - 10px));
+    z-index: 99999
+
+}
+
+.menu .name{
+
+    background: #bbb;
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    display: block;
+    width: calc(100% + 20px);
+
+    margin-top: -10px;
+    padding-top: 4px;
+    margin-left: -10px;
+    padding-left: 16px;
+
+    padding-right: 10px;
+
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+
+    border-radius: 9px 9px 0 0 ;
+
+}
+
+:root{
+
+    --pointer-placement: 15%;
+}
+
+.menu strong {
+
+    font-weight: 700;
+    padding-top: 16px !important;
+    padding-left: 6px;
+
+}
+
+.menu .shortcut{
+
+    float: right;
+
+    padding-left: 10px !important;
+    letter-spacing: 2px;
+
+    opacity: 0.5;
+
+    font-style: none !important;
+    font-size: inherit !important;
+    line-height: inherit !important; 
+
+    white-space: pre !important;
+
+}
+
+.menu::before,
+.menu::after{
+
+    position: absolute;
+    content: "";
+    box-sizing: border-box;
+    
+    bottom: -11px;
+    left: var(--pointer-placement);
+
+    width: 20px !important;
+    height: 20px !important;
+    
+    border-left: 10px #c1c1c1 solid;
+    border-top: 10px #c1c1c1 solid;
+    border-right: 10px transparent solid;
+    border-bottom: 10px transparent solid;
+    border-radius: 2px 0 0 0;
+    
+    opacity: 0.95;
+
+    transform: rotate(-135deg);
+}
+
+.menu::after{
+
+    border-left-color: #e8e8e8;
+    border-top-color: #e8e8e8;
+
+    transform: rotate(-135deg) translate(1px, 1px);
+
+}
+
+.menuContents{
+
+    padding: 10px;
+
+    white-space: nowrap;
+    width: auto;
+    height: auto;
+
+    overflow: hidden;
+
+    text-align: left;
+}
+
+.menu ul,
+.menu label,
+.menu input,
+.menu .shortcut
+/* .menu .select */
+ {
+
+    margin: unset;
+    padding: unset;
+
+    line-height: normal;
+    white-space: nowrap;
+
+}
+
+.colorDropdown {
+
+        -webkit-appearance: none !important;
+        appearance: none !important; 
+
+        width: 100% !important;
+        height: auto !important;
+
+        border: none !important;
+        background-color: transparent !important; 
+        background-image: transparent !important;
+
+        color: inherit;
+        opacity: inherit;
+
+        padding: unset !important;
+        margin: 0 !important;
+        max-width: unset !important;
+
+        padding: 3px 3px 3px 24px !important;
+
+        font-size: 14px !important;
+        font-family: inherit !important;
+        font-weight: inherit !important;
+        /* color: #1c87c9; */
+        border-radius: 3px !important;
+        /* box-shadow: 4px 4px #ccc; */
+
+      }
+
+.colorDropdown:hover{
+    color: white
+}
+
+.colorDropdown option{
+    font-size: 14px !important;
+    line-height: 26px !important; 
+
+    color: inherit !important;
+    opacity: inherit !important;
+    
+        font-family: inherit !important;
+        font-weight: inherit !important;
+}
+
+
+.menu select:focus{
+    outline: none;
+}
+
+.menu .label{
+
+    position: relative;
+    display: inline;
+    white-space: normal;
+
+}
+
+.menu strong + .shortcut{
+    padding-right: 6px;
+}
+
+.menu li{
+
+    display: block;
+    white-space: nowrap;
+    width: auto;
+
+    padding: 4px 6px !important;
+    border-radius: 4px;
+
+}
+
+.menu li:hover {
+
+    background-color: #027aff;
+    color: white
+
+}
+
+/* .menu li:has(select), */
+.menu li.hasSelect{
+    padding: 4px 6px 0px 4px !important;
+    line-height: 10px !important;
+    position: relative;
+    background: rgba(206,206,206);
+}
+/* .menu li:has(select)::after, */
+.menu li.hasSelect::before,
+.menu li.hasSelect::after{
+        content: " ";
+    white-space: pre;
+    position: absolute;
+    right: 8px;
+    top: 2px;
+    font-size: 10px !important;
+    line-height: 8px !important;
+
+    border-left: 2px solid black;
+    border-top: 2px solid black;
+    width: 4px !important;
+    height: 4px !important;
+    transform: rotate(45deg) translate(0px, 6px);
+}
+
+.menu li.hasSelect::after{
+
+    border-left: none;
+    border-top: none;
+    border-right: 2px solid black;
+    border-bottom: 2px solid black;
+
+    transform: rotate(45deg) translate(4px, 10px);
+
+}
+
+.menu li.hasSelect:hover::before,
+.menu li.hasSelect:hover::after{
+    border-color: white !important;
+}
+
+
+/* .menu li:hover > .toggle > .switch{
+    background: #027aff !important;
+} */
+
+
+
+.menu .centered{
+    /* text-align: center !important; */
+    display: flex !important;
+    flex-direction: row;
+    /* justify-content: center; */
+    justify-content: center;
+    /* border: 1px blue dotted;  */
+}
+
+.menu .centered > * {
+
+    flex-grow: 1;
+    flex-basis: 0;
+
+    /* outline: red 1px dotted */
+}
+
+/* .menu .toggle{
+    width: 100%;
+    text-align: center;
+} */
+
+.menu .radio{
+
+    flex-grow: 0 !important;
+    flex-basis: auto !important;
+    
+    display: inline-block;
+    position: relative;
+    /*float: left;*/
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 1px solid silver; 
+    background: white;
+    margin: 0 5px -6px 5px;
+
+    transform: translateY(-1px);
+
+    pointer-events: none;
+
+}
+
+.menu input:checked + .radio {
+    background-color: black;
+}
+
+/* .menu input:checked + .radio::before{
+
+    content: " ";
+
+    position: absolute;
+    left: 1px;
+    top: 1px; 
+
+    width: 16px;
+    height: 16px;
+    border: 1px silver solid !important;
+    border-radius: 999px;
+    background-color: black;
+
+} */
+
+.menu input:checked + .radio::after{
+
+content: " ";
+
+position: absolute;
+left: 4px;
+top: 4px; 
+
+width: 12px;
+height: 12px;
+/* border: 1px silver outset !important; */
+border-radius: 999px;
+background-color: #eee;
+box-shadow: inset 0px 0px 4px white,
+    inset -1px -1px 1px #999
+;
+
+}
+
+.menu .switch{
+
+    flex-grow: 0 !important;
+    flex-basis: auto !important;
+    
+    display: inline-block;
+    position: relative;
+    /*float: left;*/
+    width: 36px;
+    height: 20px;
+    border-radius: 18px;
+    border: 1px solid silver; 
+    margin: 0 5px -6px 5px;
+
+    transform: translateY(-1px);
+
+    pointer-events: none;
+
+    /* line-height: 12px !important; */
+
+}
+.menu .switch::before{
+
+    position: absolute;
+    top: -2px;
+
+    content: "";
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid silver;
+    background: white;
+    box-shadow: 0px 0px 4x rgba(0, 0, 0, 0.3);
+
+
+}
+
+.menu input{
+    flex-grow: 0 !important;
+    opacity: 0;
+    width: 0px !important;
+    height: 0px !important;
+    overflow: hidden;
+
+    /* line-height: 14px !important; */
+}
+
+.menu input:not(:checked) + .switch::before,
+.menu input:not(:checked) + label + .switch::before{
+    
+    left: -1px;
+
+}
+
+.menu input:checked + .switch::before,
+.menu input:checked + label + .switch::before{
+
+    right: -1px;
+}
+
+.menu input:indeterminate + .switch::before,
+.menu input:indeterminate + label + .switch::before{
+
+    left: 9px;
+    top: 1px;
+    opacity: 0.6;
+    height: 14px;
+    width: 14px;
+
+}
+
+.menu input:checked + .switch,
+.menu input:checked + label + .switch{
+    background: #333;
+}
+
+.menu hr{
+    opacity: 0.5;
+}
+
+.labelBefore{
+    display: unset;
+    width: unset; 
+    text-align: right;
+    padding-right: 6px !important; 
+    /* width: 50% !important;
+    border: magenta 1px dotted*/
+} 
+
+.labelAfter{
+    display: unset;
+    width: unset; 
+    text-align: left;
+    padding-left: 6px !important; 
+    /* width: 50% !important;
+    border: magenta 1px dotted */
+}
+
+.greyedout {
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.willFold {
+
+    opacity: 0.2;
+    pointer-events: none;
+
+}
+
+.menu:has(#buttonForIndexCards:checked) .willFold,
+.menu:has(#buttonForFixed:checked) .willFold{
+
+    pointer-events: all;
+    opacity: 0.95;
+
+
+}
+
+.menu:has(#buttonForFlexible:checked) .willFold{
+
+/* height: 0px;
+opacity: 0;
+overflow: hidden;
+margin: 0;
+padding: 0; */
+
+opacity: 0.2;
+pointer-events: none;
+
+/* height: 0px;
+margin: 0px;
+padding: 0px;
+overflow: hidden; */
+
+}
+
+/* .menu:has(#buttonForFlexible:checked) hr.willFold{
+    display: none
+} */
+
+
+.menu .hint {
+
+opacity: 0.6;
+padding-top: 6px !important;
+padding-left: 4px !important;
+
+font-size: 10px;
+line-height: 12px !important;
+font-style: italic;
+
+white-space: normal;
+pointer-events: none;
+
+
+}
+
+
+@media (prefers-color-scheme: dark) {
+
+    :root{
+
+        --menu-background: rgb(40,40,40);
+        --menu-border-color: rgb(81,81,81);
+        --menu-color: rgb(233,233,233);
+
+    }
+
+    .menu  { 
+    background:  rgb(40, 40, 40); 
+    color: rgb(233,233,233); 
+    border-color: rgb(81,81,81);
+
+
+    box-shadow: 0px 5px 30px rgb(0,0,0,0.7),
+    0px 0px 0px 0.5px rgb(0,0,0,1);
+
+
+    }
+    .menu .name{
+        background-color: #444;
+    }
+
+    .menu::before{
+        border-left-color: var(--menu-border-color);
+        border-top-color: var(--menu-border-color)
+    }
+    .menu::after{
+        border-left-color: var(--menu-background);
+        border-top-color: var(--menu-background)
+    }
+    .menu input:checked + .switch,
+    .menu input:checked + label + .switch{
+        background: #555;
+    }
+
+    /* .menu li:has(select), */
+    .menu li.hasSelect{
+        background: #555;
+    }
+
+    #contextmenu {
+        background: rgba(40,40,40,0.9);
+        color: var(--menu-color);
+        border-color: var(--menu-border-color);
+    }
+    #contextmenu li,
+    #contextmenu li svg{
+        color: var(--menu-color) !important;
+        fill: var(--menu-color) !important;
+    }
+
+    #-------------DIALOGS{}
+
+    .settingsWindow{
+
+        background:  rgb(40, 40, 40); 
+        color: rgb(233,233,233); 
+        border: 1px rgb(81,81,81) solid !important;
+
+    }
+
+    .generalButtonStyle {
+        border: 1px #222 solid !important;
+        /* box-shadow: 1px 1px 2px #ccc; */
+        background-color: #555 !important;
+
+        color: white !important;
+    }
+
+    .generalButtonStyle:hover {	
+        background: #027aff !important;
+        color: white !important
+    }
+
+    select{
+        border: 1px #222 inset !important;
+        background: #555 !important;
+        color: white;
+    }
+
+    option:nth-of-type(even){
+        background: #444;
+    }
+
+
+}
+
+</style>
+
+<script>
+
+function toggleNewMenu(whichOne){
+
+    mylog("=============")
+    mylog("toggleNewMenu")
+    mylog("=============")
+
+    theClickedThing = event.target
+
+    mylog(theClickedThing.classList)
+
+    if ($id("menu")){
+
+        if($id("menu").firstChild.id == whichOne){
+            closeNewMenu()
+            return
+        }
+        closeNewMenu()
+    }
+
+    showNewMenu(theClickedThing, whichOne)
+
+}
+
+function showNewMenu(theClickedThing, whichOne){
+
+    mylog("showNewMenu")
+
+    let button = theClickedThing?.getBoundingClientRect() || $id("indexCardButton").getBoundingClientRect()
+
+    // let area = $id("flexiContainer").getBoundingClientRect()
+
+    if($id("menu")){$id("menu").remove()}
+    if (trackingContainerVisibility == 1){toggleTrackingContainer()}
+	if (helpContainerVisibility == 1){toggleHelpContainer()}
+
+    menu = document.createElement("div")
+    menu.id = "menu"
+    menu.classList.add("menu")
+    if (button.right > window.innerWidth / 2){
+        menu.style.right = (window.innerWidth - button.right - 15) + "px"
+        theRoot.style.setProperty("--pointer-placement", "85%")
+    }else{
+        menu.style.left = (button.x - 15) + "px"
+        theRoot.style.setProperty("--pointer-placement", "7%")
+    }
+    menu.style.y = (button.y) + "px"
+
+    document.body.appendChild(menu)
+    $id("cover").style.display = "block"
+
+    fillNewMenu(whichOne)
+    setAllButtons()
+}
+
+function fillNewMenu(whichOne){
+
+    switch (whichOne) {
+        case "indexCardMenu":
+            indexCardMenu()
+            break;
+        case "showStuffMenu":
+            showStuffMenu()
+            break;
+        case "notesMenu":
+            notesMenu()
+            break;
+        case "zoomMenu":
+            zoomMenu()
+            break;
+        case "settingsMenu":
+            settingsMenu()
+            break;
+        case "exportMenu":
+            exportMenu()
+            break;
+        case "trackingMenu":
+            trackingMenu()
+            break;
+        default:
+            break;
+    }
+}
+
+function closeNewMenu(){
+
+    if($id("menu")){
+        $id("menu").remove()    
+    }
+    $id("cover").style.display = "none"
+
+}
+
+function indexCardMenu(){
+
+    menu1 = document.createElement("div")
+
+    menu1.id = "indexCardMenu"
+    menu1.classList.add("menuContents")
+
+    test = `</div><div>`
+
+    menu1.innerHTML = /*html*/`
+        <ul>
+            <p class="name">Outline Menu</p>
+
+            <strong>Outline Mode: </strong>
+            <li onclick="toggleProportional('on')">
+		        <input id="buttonForFlexible" type="checkbox">
+                <div class="radio"></div><!--was class switch!-->
+                    <label for="buttonForFlexible">
+                        Flexible Time<span class="shortcut">F</span>
+                    </label>
+            </li>
+
+            <li onclick="toggleProportional('off')">
+		        <input id="buttonForFixed" type="checkbox">
+                <div class="radio"></div>
+                    <label for="buttonForFixed">
+                        Fixed Heights<span class="shortcut">F</span>
+                    </label>
+            </li>
+
+            <li onclick="toggleIndexCardMode()">
+		        <input id="buttonForIndexCards" type="checkbox" >
+                <div class="radio"></div>
+                    <label for="buttonForIndexCards">
+                        Index Cards<span class="shortcut">X</span>
+                    </label>
+            </li>
+
+            <hr>
+
+            <strong>Colums:</strong><span class="shortcut" style="float:right">O</span><br/>
+            <li class="centered" onclick="toggleOneColumnOutline()">
+                <input id="buttonForOneColumn" type="checkbox">
+                    <label for="buttonForOneColumn" class="labelBefore">Single</label>
+                        <div class="switch"></div>
+                    <label for="buttonForOneColumn" class="labelAfter">Multiple</label>
+            </li>
+
+            <p class="hint">When set to multi, every # starts new column</p>
+            <hr>
+            <strong class="${(areScenesProportional ==1) ? `greyedout` : ``}">Expand scenes: </strong><span class="shortcut" style="float:right">E</span><br/>
+            <li class="${(areScenesProportional ==1) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.arrowForIndexCards'), true)">
+                <input id="buttonForExpandedScenes" type="checkbox">
+                    <label for="buttonForExpandedScenes" class="labelBefore">None</label>
+                        <div class="switch" style="float:none !important; display: inline-block;"></div>
+                    <label for="buttonForExpandedScenes" class="labelAfter">All</label>
+            </li>
+            <hr>
+            <strong class="${(!indexCardMode) ? `greyedout` : ``}">Expand sections: </strong><span class="shortcut" style="float:right">D</span><br/>
+            <li class="${(!indexCardMode) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.sectionArrow'), true)">
+                <input id="buttonForExpandedSections" type="checkbox">
+                    <label for="buttonForExpandedSections" class="labelBefore">None</label>
+                        <div class="switch"></div>
+                    <label for="buttonForExpandedSections" class="labelAfter">All</label>
+                </li> 
+
+            <hr>
+            
+            <strong class="${(!$(".boneyard")) ? `greyedout` : ``}">Boneyard: </strong><span class="shortcut" style="float:right">⌘B</span><br/>
+            <li class="${(!$(".boneyard")) ? `greyedout` : ``} centered" onclick="addShowHideBoneyard($('.sectionArrow'), true)">
+                <input id="buttonForBoneyard" type="checkbox">
+                    <label for="buttonForBoneyard" class="labelBefore">Hide</label>
+                        <div class="switch"></div>
+                    <label for="buttonForBoneyard" class="labelAfter">Show</label>
+                </li> 
+            <li class="${($(".boneyard")) ? `greyedout` : ``}" onclick="addShowHideBoneyard()">Add Boneyard Act
+                    <span class="shortcut" style="float:right">⌘B</span>
+                </li>
+
+            <!--p class="hint willFold">Hint: ALT+clicking a scene arrow or section card button will expand/collapse all instead of just the clicked card.</p-->
+        </ul>
+    `
+
+    $id("menu").innerHTML = ""
+    $id("menu").appendChild(menu1)
+}
+
+function showStuffMenu(){
+
+    innerMenu = document.createElement("div")
+
+    innerMenu.id = "showStuffMenu"
+    innerMenu.classList.add("menuContents")
+    innerMenu.innerHTML = /*html*/`
+    <ul>    
+        <p class="name">Details Menu</p>
+
+        <strong>Show info:</strong><br/>
+        <li  onclick="toggleShowSceneNumbers()">
+            <input id="buttonForNumbers" type="checkbox">
+                <div class="switch"></div>  
+                    <label for="buttonForNumbers">Scene Numbers<span class="shortcut" style="float:right">S</span></label>
+        </li>
+        <li onclick="toggleShowPageNumbers()">
+            <input id="buttonForPages" type="checkbox">
+                <div class="switch"></div>
+                    <label for="buttonForPages">Page Numbers<span class="shortcut" style="float:right">P</span></label>
+        </li>
+        <li onclick="toggleShowSceneLength()">
+            <input id="buttonForLength" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForLength">Lengths in Eights<span class="shortcut" style="float:right">L</span></label>
+        </li>
+        <!--hr>
+        <li onclick="zoomSizes('+')">Increase Font Size<span class="shortcut" style="float:right">&#8984;+</span></li>
+        <li onclick="zoomSizes('-')">Decrease Font Size<span class="shortcut" style="float:right">&#8984;-</span></li>
+        <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li-->
+        <hr>
+        <strong>More stuff:</strong><br/>
+        <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis()">
+            <input id="buttonForSynopsis" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForSynopsis">Show Synopsis<span class="shortcut" style="float:right">Y</span></label>
+        </li>
+        <li  onclick="$id('flexiContainer').classList.toggle('greyonly'); setAllButtons()">
+            <input id="buttonForGreyOnly" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForGreyOnly">All Colors to Grey<span class="shortcut" style="float:right">^C</span></label>
+        </li>
+        <!--hr class="willFold">
+       
+        <li class="hint">
+            Hint: Actual page number in document may be one or two pages higher than shown in the outline.
+        </li-->
+    </ul>
+`
+
+$id("menu").innerHTML = ""
+$id("menu").appendChild(innerMenu)
+}
+
+function notesMenu(){
+
+innerMenu = document.createElement("div")
+
+innerMenu.id = "notesMenu"
+innerMenu.classList.add("menuContents")
+innerMenu.innerHTML = /*html*/`
+<ul>    
+    <p class="name">Notes Menu</p>
+    <strong>Show in Outline:</strong><br/>
+    <li onclick="toggleDisplayNotes()">
+        <input id="buttonForNotes" type="checkbox">
+            <div class="switch"></div>  
+                <label for="buttonForNotes">Notes<span class="shortcut" style="float:right">N</span></label>
+    </li>
+    <li onclick="toggleDisplayMarkers()">
+        <input id="buttonForMarkers" type="checkbox">
+            <div class="switch"></div>
+                <label for="buttonForMarkers">Markers<span class="shortcut" style="float:right">M</span></label>
+    </li>
+    <li onclick="toggleDisplayBeats()">
+        <input id="buttonForBeats" type="checkbox">
+            <div class="switch"></div> 
+                <label for="buttonForBeats">Beats<span class="shortcut" style="float:right">B</span></label>
+    </li>
+    <hr>
+    <li onclick="cycleNotes()">Open Next Note<span class="shortcut" style="float:right">&#8677;</span></li>
+    <li onclick="cycleNotes(true)">Open Previous Note<span class="shortcut" style="float:right">&#8679;&#8677;</span></li>
+    <hr>
+        <strong>Note Panel: </strong><span class="shortcut" style="float:right">§</span><br/>
+        <li class="centered" onclick="toggleNotepanel()">
+            <input id="buttonForNotePanel" type="checkbox">
+                <label for="buttonForNotePanel" class="labelBefore">Closed</label>
+                    <div class="switch"></div>
+                <label for="buttonForNotePanel" class="labelAfter">Open</label>
+        </li>
+    </ul>
+`
+
+$id("menu").innerHTML = ""
+$id("menu").appendChild(innerMenu)
+}
+
+function trackingMenu(from){
+
+    $id("menu").innerHTML = "<br/><br/><br/><center>Loading...</center><br/><br/><br/>"
+    
+    mylog(trackingMenu.caller.name)
+    if(trackingMenu.caller.name != "makeCharacterMenu" && trackingMenu.caller.name != "onclick" ){
+        // if (!characterMenuList || characterMenuList.length == 0) {
+            let redraw = $id("menu").getBoundingClientRect()
+            
+            iCameFromMenu = true
+            collectCharacters()
+            return
+        }
+        
+    let characterString = ""
+        innerMenu = document.createElement("div")
+
+    if(characterMenuList && characterMenuList.length > 0){
+
+        for(let i = 0; i < Math.min(characterMenuList.length, 9); i++){
+
+            characterString += /*html*/`
+            <li onclick="toggleSoloCharacter(${i + 1}); trackingMenu()">
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${characterMenuList[i].value}<span class="shortcut">${i + 1}</span>
+                ${characterMenuList[i].selected ? "<span style='float: left; width: 0px; overflow: visible; font-weight: 700'>&check;</span>" : ""}
+            </li>
+            `
+        }
+    }else{
+        characterString = /*html*/`<li class="centered">(No characters detected)</li>`
+    }
+
+    innerMenu.id = "trackingMenu"
+    innerMenu.classList.add("menuContents")
+    innerMenu.innerHTML = /*html*/`
+
+    <ul>    
+        <p class="name">Tracking Menu</p>
+        <strong>Filter by character:</strong><br/>
+        ${characterString}
+        
+        <hr>
+        <li onclick="closeNewMenu(); toggleTrackingContainer()">See more characters...<span class="shortcut" style="float:right">T</span></li>
+        <li onclick="deselectAllCharacters()">Deselect all characters<span class="shortcut" style="float:right">0</span></li>
+            <hr>
+            <strong style="padding: 6px">Filter by color:</strong><br/><!--note here!-->
+            <li style="padding-top: 0px !important" class="hasSelect">
+                <span class="dropDownSpan">
+                    <select id="colorDropdown" class="colorDropdown" onchange="simulateAltClick()">
+                <option>no colors set</option><option>no colors set</option>
+            </select>
+                </span>
+        </li>
+        <p class="hint">SHORTCUT:<br/>Also select color by ALT + clicking on a scene.<br/>ALT + click on an empty space to reset.</p>
+    </ul>
+`
+
+
+$id("menu").innerHTML = ""
+$id("menu").appendChild(innerMenu)
+
+alsoFillColorDropdown()
+}
+
+function zoomMenu(){
+
+innerMenu = document.createElement("div")
+
+innerMenu.id = "zoomMenu"
+innerMenu.classList.add("menuContents")
+innerMenu.innerHTML = /*html*/`
+<ul>    
+    <p class="name">Zoom Menu</p>
+
+        <li onclick="zoomSizes('+')">Zoom Font Size<span class="shortcut" style="float:right">&#8984;+</span></li>
+        <li onclick="zoomSizes('-')">Zoom Font Size<span class="shortcut" style="float:right">&#8984;-</span></li>
+        <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li>
+        <hr>
+        <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('+')">
+            Increase Index Card Size
+            <span class="shortcut" style="float:right">^&#8984;+</span></li>
+        <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('-')">
+            Decrease Index Card Size
+            <span class="shortcut" style="float:right">^&#8984;-</span></li>
+        <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('0')">
+            Reset Index Card Size
+            <span class="shortcut" style="float:right">^&#8984;0</span></li>
+        <!--hr>
+    <li>
+        <input id="buttonForNotes" type="checkbox" onclick="toggleDisplayNotes()"">
+            <div class="switch" onclick="toggleDisplayNotes()"></div>  
+                <label for="buttonForNotes">Notes<span class="shortcut" style="float:right">N</span></label>
+    </li>
+    <li>
+        <input id="buttonForMarkers" type="checkbox" onclick="toggleDisplayMarkers()">
+            <div class="switch" onclick="toggleDisplayMarkers()"></div>
+                <label for="buttonForMarkers">Markers<span class="shortcut" style="float:right">M</span></label>
+    </li>
+    <li>
+        <input id="buttonForBeats" type="checkbox" onclick="toggleDisplayBeats()">
+            <div class="switch" onclick="toggleDisplayBeats()"></div> 
+                <label for="buttonForBeats">Beats<span class="shortcut" style="float:right">B</span></label>
+    </li>
+    <hr>
+    <li onclick="cycleNotes()">Open Next Note<span class="shortcut" style="float:right">&#8677;</span></li>
+    <li onclick="cycleNotes(true)">Open Previous Note<span class="shortcut" style="float:right">&#8679;&#8677;</span></li>
+    <hr>
+        <strong>Note Panel: </strong><span class="shortcut" style="float:right">§</span><br/>
+        <li class="centered" onclick="toggleNotepanel()">
+            <input id="buttonForNotePanel" type="checkbox">
+                <label for="buttonForNotePanel" class="labelBefore">Closed</label>
+                    <div class="switch"></div>
+                <label for="buttonForNotePanel" class="labelAfter">Open</label>
+        </li-->
+    </ul>
+`
+
+$id("menu").innerHTML = ""
+$id("menu").appendChild(innerMenu)
+// setAllButtons()
+// $id("buttonForFlexible").checked = (areScenesProportional == 1)
+// $id("buttonForOneColumn").checked = (oneColumnOutline == 0)
+// $id("buttonForNumbers").checked = (whatAreSceneNumbers == "inline")
+// $id("buttonForPages").checked = (whatArePageNumbers == "inline")
+// $id("buttonForLength").checked = (whatAreSceneLengths == "inline")
+// $id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))
+// setButtonForExpandedSc
+// setButtonForExpandedSections()enes()
+}
+
+function settingsMenu(){
+
+    let debugMenuItems = (loggingIsOn || altIsBeingPressed)? 
+        /*html*/ `
+        <hr>
+        <strong>Debugging features:</strong><br/>
+            <li onclick='toggleConsole()'>
+                <input id='buttonForLogging' type='checkbox'>
+                    <div class='switch'></div>  
+                        <label for='buttonForLogging'>Debug Mode<!--span class='shortcut' style='float:right'>N</span--></label>
+            </li>
+        ` : ``
+
+    innerMenu = document.createElement("div")
+
+    innerMenu.id = "settingsMenu"
+    innerMenu.classList.add("menuContents")
+    innerMenu.innerHTML = /*html*/`
+    <ul>    
+        <p class="name">Settings Menu</p>
+
+        <strong>Plugin Settings:</strong><br/>
+        <li onclick="toggleWarnings()">
+            <input id="buttonForWarnings" type="checkbox">
+                <div class="switch"></div>  
+                    <label for="buttonForWarnings">Disable Warnings<span class="shortcut" style="float:right">W</span></label>
+        </li>
+        <li onclick="toggleRealTime()">
+            <input id="buttonForRealTimeUpdates" type="checkbox">
+                <div class="switch"></div>  
+                    <label for="buttonForRealTimeUpdates">Disable Real Time<span class="shortcut" style="float:right">R</span></label>
+        </li>
+        <p class="hint">If you experience lag while typing, you can disable real-time updating. As soon as FTOutliner is focused again, it will catch up with your changes.</p>
+
+        <hr>
+        <strong>Color Settings: </strong><span class="shortcut" style="float:right">C</span><br/>
+            <li class="centered" onclick="toggleColorScheme()">
+                <input id="buttonForColors" type="checkbox">
+                    <label for="buttonForColors" class="labelBefore">FTOutliner</label>
+                        <div class="switch"></div>
+                    <label for="buttonForColors" class="labelAfter">Beat</label>
+            </li>
+        <li onclick="toggleInvertText()">
+            <input id="buttonForInverted" type="checkbox">
+                <div class="switch"></div>  
+                    <label for="buttonForInverted">Invert text on dark shades<!--span class="shortcut" style="float:right">N</span--></label>
+        </li>
+        <hr>
+        <strong>Help:</strong><br/>
+        <li onclick="displayAboutBox()">
+            <p>About…
+                <span class="shortcut" style="float:right"></span></li>
+        <li onclick="toggleHelpContainer()">
+            <p>Show all keyboard shortcuts…
+                <span class="shortcut" style="float:right">?</span></li>
+        <!--li onclick="">
+            <p style="color: red!important">Support…
+                <span class="shortcut" style="float:right"></span></li-->
+        <hr>
+        <li onclick="forceRestart()">
+                Force restart
+                <span class="shortcut" style="float:right">Å</span></li>
+        ${debugMenuItems}
+        </ul>
+`
+
+    $id("menu").innerHTML = ""
+    $id("menu").appendChild(innerMenu)
+
+}
+
+function exportMenu(){
+
+    innerMenu = document.createElement("div")
+
+    innerMenu.id = "exportMenu"
+    innerMenu.classList.add("menuContents")
+    innerMenu.innerHTML = /*html*/`
+    
+    <ul>
+        <p class="name">Export Menu</p>
+
+        <li onclick="togglePrintMode()">
+            Print Outline (Beta)
+            <span class="shortcut" style="float:right">&#8984;P</span></li>
+    <li onclick="togglePrintMode(true)">
+            Export to HTML (Beta indeed)
+            <span class="shortcut" style="float:right">&#8984;E</span></li>    
+    <hr>
+    <li onclick="newPrintBox()">
+            Print/Export Settings
+            <span class="shortcut" style="float:right">⇧⌘P</li>    
+    </ul>
+    `
+
+    $id("menu").innerHTML = ""
+    $id("menu").appendChild(innerMenu)
+
+}
+
+function setButtonForExpandedScenes() {
+
+    mylog("setButtonForExpandedScenes")
+
+    let sections = $$(".section")
+    let hasIt = false
+    let hasNt = false
+    for (section of sections){
+        if (section.classList.contains("isExpanded")){
+            hasIt = true
+        }else{
+            hasNt = true
+        }
+    }
+    if(hasIt && hasNt){
+        if($id("buttonForExpandedScenes")){$id("buttonForExpandedScenes").indeterminate = true}
+    }else{
+        if($id("buttonForExpandedScenes")){$id("buttonForExpandedScenes").indeterminate = false}
+        if($id("buttonForExpandedScenes")){$id("buttonForExpandedScenes").checked = hasIt}
+    }
+    mylog("done")
+}
+
+function setButtonForExpandedSections() {
+    let sections = $$(".section:not(.level1)")
+    let hasIt = false
+    let hasNt = false
+    for (section of sections){
+        if (section.classList.contains("collapsedSection")){
+            hasIt = true
+        }else{
+            hasNt = true
+        }
+    }
+    if(hasIt && hasNt){
+        if($id("buttonForExpandedSections")){$id("buttonForExpandedSections").indeterminate = true}
+    }else{
+        if($id("buttonForExpandedSections")){$id("buttonForExpandedSections").indeterminate = false}
+        if($id("buttonForExpandedSections")){$id("buttonForExpandedSections").checked = hasNt}
+    }
+}
+
+function setAllButtons(){
+
+    mylog("settingAllButtons")
+
+    if($id("menu")){
+        let whichOne = $id("menu").firstChild?.id
+        mylog(whichOne)
+            fillNewMenu(whichOne)
+    }
+
+    setButtonForExpandedScenes()
+    setButtonForExpandedSections()
+
+    if($id("buttonForIndexCards")){$id("buttonForIndexCards").checked = indexCardMode}
+    if($id("buttonForFlexible")){$id("buttonForFlexible").checked = ((areScenesProportional == 1) && !indexCardMode)}
+    if($id("buttonForFixed")){$id("buttonForFixed").checked = ((areScenesProportional == 0) && !indexCardMode)}
+
+    if($id("buttonForOneColumn")){$id("buttonForOneColumn").checked = !(oneColumnOutline == 1)}
+    if($id("buttonForBoneyard")){$id("buttonForBoneyard").checked = !(flexiContainer.classList.contains("boneyardIsClosed"))}
+
+    if($id("buttonForNumbers")){$id("buttonForNumbers").checked = (whatAreSceneNumbers == 'inline')}
+    if($id("buttonForPages")){$id("buttonForPages").checked = (whatArePageNumbers == 'inline')}
+	if($id("buttonForLength")){$id("buttonForLength").checked = (whatAreSceneLengths == 'inline')}
+
+	if($id("buttonForWarnings")){$id("buttonForWarnings").checked = (!warningsAreOn)}
+    if($id("buttonForColors")){$id("buttonForColors").checked = (colorScheme == "Beat")}
+    if($id("buttonForInverted")){$id("buttonForInverted").checked = invertTextOnDark}
+    if($id("buttonForRealTimeUpdates")){$id("buttonForRealTimeUpdates").checked = (isRealTimeOn == 0)}
+
+    if($id("buttonForNotes")){$id("buttonForNotes").checked = (notesAreDisplayed == true)}
+    if($id("buttonForMarkers")){$id("buttonForMarkers").checked = (markersAreDisplayed == true)}
+    if($id("buttonForBeats")){$id("buttonForBeats").checked = (beatsAreDisplayed == true)}
+    if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
+    if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}
+    
+    if($id("buttonForGreyOnly")){$id("buttonForGreyOnly").checked = ($id("flexiContainer").classList.contains("greyonly"))}
+    
+    mylog("indexcards = " + indexCardMode + " & AreScenesProp = " + areScenesProportional)
+
+    if($id("buttonForLogging")){$id("buttonForLogging").checked = loggingIsOn}
+
+    saveCurrentState()
+}
+
+function cycleMenus(shift){
+
+    if(!$id("menu")){ //if no menu, start at cycling from last one
+        whichOne = "zoomMenu"
+    }else{
+        whichOne = $(".menuContents").id
+    }
+
+        let menuArray = [
+            "settingsMenu",
+            "exportMenu",
+            "indexCardMenu",
+            "showStuffMenu",
+            "notesMenu",
+            "trackingMenu",
+            "zoomMenu"
+        ]
+        let buttonArray = [
+            $id("helpButton"),
+            $id("printButton"),
+            $id("indexCardButton"),
+            $id("showStuffButton"),
+            $id("notesButton"),
+            $id("characterButton"),
+            $id("zoomButton")
+        ]
+
+        
+        let m = menuArray.indexOf(whichOne)
+            if(shift){
+                m--
+            }else{
+                m++
+            }
+                if (m >= menuArray.length){m = 0}
+                if (m < 0){m = menuArray.length -1}
+
+        theClickedThing = buttonArray[m]
+        whichOne = menuArray[m]
+
+    showNewMenu(theClickedThing, whichOne)
+
+}
+
+</script>

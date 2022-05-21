@@ -29,6 +29,11 @@
     top: 0 !important;
     right: 2px !important;
     height: 100% !important;
+
+}
+
+.indexcards .level1::after > .noteContainer { 
+    /* see outline.css*/
 }
 
 .markersAreDisplayed .noteContainer{
@@ -55,6 +60,79 @@
     z-index: 998;
 
     opacity: 0.8;
+}
+
+.beat{
+    position: absolute;
+    background-color: purple;
+    padding: 0.5px 2px;
+    height: 14px; 
+    font-size: 10px;
+    line-height: 11px;
+    color: white;
+    border: 1px rgba(255,255,255,1) solid;
+    font-weight: bold;
+    border-radius: 4px;
+    opacity: 1;
+    box-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+
+    /* transition: all 0.2s; */
+    pointer-events: all !important;
+}
+
+.beat:hover{
+    color: black;
+    background: white !important;
+
+}
+
+.hiddenBeat{
+    display: none;
+}
+
+.largerBeat{
+
+    height: 20px;
+    font-size: 14px;
+    line-height: 14px !important;
+    margin-top: -2px;
+    padding: 1px 4px !important;
+    border-width: 2px;
+
+    /* transition: all 0.3s !important; */
+
+}
+
+.allpaths, .svgForBeats {
+    stroke-width: 5px;
+    stroke-dasharray: 4 2;
+    stroke: white !important;
+
+    filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.6))
+}
+
+.pathOf1{
+    stroke: purple;
+}
+.pathOf2{
+    stroke: midnightblue;
+
+}
+.pathOf3{
+    stroke: forestgreen;
+}
+.pathOf4{
+    stroke: firebrick;
+}
+.pathOf5{
+    stroke: deeppink;
+}
+.pathOf6{
+    stroke: black;
+}
+
+.hiddenPath{
+    display: none;
 }
 
 /* .marker {
@@ -102,6 +180,7 @@
 }
 
 
+#flexiContainer.indexcards .marker,
 #flexiContainer.nonProportionalMode .marker {
     background-color: transparent;
     position: absolute;
@@ -122,18 +201,22 @@
     pointer-events: all !important;
 }
 
+#flexiContainer.indexcards .section>.marker,
 #flexiContainer.nonProportionalMode .section>.marker {
-    top: -2px !important;
+    /* top: -2px !important; */
     z-index: 9999 !important;
 }
 
+#flexiContainer.indexcards .marker:nth-of-type(2),
 #flexiContainer.nonProportionalMode .marker:nth-of-type(2){
     right: 2px;
 }
+#flexiContainer.indexcards .marker:nth-of-type(3),
 #flexiContainer.nonProportionalMode .marker:nth-of-type(3){
     right: 16px;
 }
 
+#flexiContainer.indexcards .marker::after,
 #flexiContainer.nonProportionalMode .marker::after {
 
 width: 15px;
@@ -143,6 +226,7 @@ top: -6.5px;
 
 }
 
+#flexiContainer.indexcards .marker::before,
 #flexiContainer.nonProportionalMode .marker::before {
     position: absolute;
     top: -6px;
@@ -162,6 +246,7 @@ top: -6.5px;
     transition: 0.05s; 
 }
 
+#flexiContainer.indexcards .marker:hover,
 #flexiContainer.nonProportionalMode .marker:hover {
     transform: translateY(2px) scaleY(1.3) scaleX(0.8) rotate(-90deg) !important;
     transition: 0.1s;
@@ -169,6 +254,30 @@ top: -6.5px;
 
 .hideSlugIfSmall > .noteContainer {
     height: 15px !important;
+}
+
+.developing-a-new-note {
+
+    opacity: 0.8 !important;
+
+    position: relative !important;
+    float: left !important;
+    padding: 0 !important;
+    margin: 0 0px 0px 2px !important;
+
+    height: 15px !important;
+    width: 15px !important;
+    border-left: 10px var(--note-bottom) solid; 
+    border-top: 15px var(--note-bottom) solid; 
+    border-right: 15px transparent solid;
+
+    z-index: 999 !important;
+    white-space: normal;
+    
+    pointer-events: all;
+
+    overflow: hidden;
+
 }
 
 .note {
@@ -179,17 +288,19 @@ top: -6.5px;
     float: left !important;
     padding: 0 !important;
     margin: 0 0px 0px 2px !important;
-    /* background-color: var(--note-bottom) !important; */
+    background-color: var(--note-bottom);
     
-    background: 
+    /* background:  */
     /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
-    conic-gradient(from 0deg at 13px 9px, var(--note-border), var(--note-border) 135deg, transparent 135deg),
+    /* conic-gradient(from 0deg at 13px 9px, var(--note-border), var(--note-border) 135deg, transparent 135deg),
     conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, var(--note-border) 225deg),
-    linear-gradient(to bottom right, var(--note-bottom), var(--note-bottom) 16px, transparent 16px)
-    ;
+    linear-gradient(to bottom right, var(--note-bottom), var(--note-bottom) 16px, transparent 16px) */
+    /* ; */
 
-    border-left: 1px solid var(--note-border) !important; 
-    border-top: 1px solid var(--note-border) !important; 
+    border: 1px solid rgba(0,0,0,0.75);
+
+    /* border-left: 1px solid var(--note-border) !important; 
+    border-top: 1px solid var(--note-border) !important;  */
     height: 15px !important;
     width: 15px !important;
     color: rgba(0,0,0,0);
@@ -201,9 +312,9 @@ top: -6.5px;
 
     overflow: hidden;
 
-    /* clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%); */
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4.1px), calc(100% - 4.1px) 100%, 0 100%);
     /* transform: rotate(-3deg);  */
-    /* overflow: hidden; */
+    overflow: hidden;
 
     /* border-radius: 0 0 6.5px 0;
     box-shadow: 1.5px 1.5px 2.5px rgba(0,0,0,0.25); */
@@ -216,9 +327,9 @@ top: -6.5px;
     content: " ";
     width: 4px;
     height: 4px;
-    border-top: 1px solid var(--note-border);
-    border-left: 1px solid var(--note-border);
-    background: linear-gradient(to bottom right, transparent, transparent 1.5px, var(--note-border) 1.5px, var(--note-border) 2.5px, transparent 2.5px);
+    border-top: 1px solid  rgba(0,0,0,0.0); /*var(--note-border);*/
+    border-left: 1px solid  rgba(0,0,0,0.0); /*var(--note-border);*/
+    background: linear-gradient(to bottom right, transparent 0%, transparent 1.5px, rgba(0,0,0,0.7) 1.5px, rgba(0,0,0,0.7) 99%, transparent 100%);
     left: 9px;
     top: 9px;
     /* z-index: 11111 */
@@ -239,12 +350,14 @@ top: -6.5px;
 .selectedNote {
     
 	/* background-image: -webkit-linear-gradient(top, var(--note-border), var(--note-border)) !important;  */
-    background: 
+    background-image: 
+
+    linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.7) 100%);
     /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
-    conic-gradient(from 0deg at 13px 9px, black, black 135deg, transparent 135deg),
+    /* conic-gradient(from 0deg at 13px 9px, black, black 135deg, transparent 135deg),
     conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, black 225deg),
     linear-gradient(to bottom right, var(--note-border), var(--note-border) 16px, transparent 16px)
-    ;
+    ; */
     border-color: black !important; /* var(--note-bottom) !important; */
 }
 
@@ -289,20 +402,20 @@ top: -6.5px;
     min-height: 50px;
     
     background-color: rgb(255,255,128);
-    color: var(--note-border);
-    border:1px solid var(--note-border);
+    color: rgba(0,0,0,0.7);
+    border:1px solid rgba(0,0,0,0.7);
     border-radius: 5px !important;
     
-    z-index: 10000 !important;
     white-space: normal;
     padding: 0px 8px 8px 8px !important;
 
-    background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, var(--note-border-light) 16px, var(--note-border-light) 17px) !important;
+    /* background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, var(--note-border-light) 16px, var(--note-border-light) 17px) !important; */
+    background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, rgba(0,0,0,0.2) 16px, rgba(0,0,0,0.2) 17px) !important;
 
     box-shadow: 2px 2px 10px rgba(0,0,0,0.6);
     overflow: hidden;
 
-    z-index: 11000 !important;
+    z-index: 9997 !important;
 }
 
 #expandedNote.omittedNote {
@@ -327,7 +440,7 @@ top: -6.5px;
 #expandedNote text{
     font-size: 14px !important;
     line-height: 17px !important;
-    margin-top: -3px; 
+    margin-top: -1px !important; 
     padding-top: 17px;
     padding-bottom: 6px;
     font-family: 'Courier Prime', 'Courier New', Courier, monospace;
@@ -338,21 +451,25 @@ top: -6.5px;
 
 #expandedNote b{
     font-size: 12px !important;
-    padding: 5px 9px 2px 9px;
-    margin: 0px -9px 0px -9px; 
+    padding: 5px 9px 0px 9px;
+    margin: 0px -9px 2px -9px; 
     line-height: 12px !important;
-    background-color: hsl(60, 50%, 50%);
-    color:var(--note-border);
+    /* background-color: hsl(60, 50%, 50%); */
+    background-color: rgba(0,0,0,0.2);
+    color:  rgba(0,0,0,0.75);
     display: block;
     text-align: left;
+
+    font-weight: 700;
 
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+
 .trashNote {
-    height: 16px !important;
-    width: 16px !important;
+    height: 12px !important;
+    width: 12px !important;
     line-height: 12px !important;
     float: right !important;
     /* border: 1px red solid !important;  */
@@ -363,15 +480,37 @@ top: -6.5px;
 }
 
 #trashbutton{
-    fill: var(--note-border);
+    /* fill: var(--note-border); */
+    fill:  rgba(0,0,0,0.75);
     pointer-events: none;
     opacity: 0.6 !important;
 
 }
 #trashNote:hover > #trashbutton{
-    fill: rgb(186, 0, 0) !important;
+    fill: rgb(192,0,0) !important;
+    /* stroke: black !important;
+    stroke-width: 5px !important;  */
     opacity: 1 !important;
+    
+    overflow: visible !important;
+    transition: all 0s !important;
 }
+
+/* #trashNote:hover,
+.trashNote:hover,
+#trahsNote.trashNote:hover{
+
+    height: 16px !important;
+    width: 16px !important;
+    border: 2px solid red !important;
+    background-color: red !important;
+    border-radius: 50% !important;
+    transition: all 0s !important;
+
+    transform: translate(2px, -2px);
+
+} */
+
 
 
 </style>
@@ -406,17 +545,20 @@ var showIcon = `
 let notesDivStart
 let notesDivEnd = "</div>"
 
-function collectNotes(){
-    mylog("collectnotes")
+function collectNotes(wherefrom){
+    mylog(" from " + JSON.stringify(collectNotes.caller.name))
     Beat.call("Beat.custom.collectNotes()")
 }
 
-function displayNotes(notesData, markerData){
+function displayNotes(notesData, markerData, beatData){
+    mylog()
 
-    mylog("displayNotes")
+    if(!outline){return} //or else error on plugin startup
 
     if(notesData){globalNotesData = notesData}
     if(markerData){globalMarkerData = markerData}
+    if(beatData){globalBeatData = beatData}
+
     notesData = globalNotesData
 
     let existingNotes = document.querySelectorAll(".note, .noteContainer")
@@ -427,6 +569,8 @@ function displayNotes(notesData, markerData){
     }
 
     if(markersAreDisplayed){displayMarkers()}
+    if(beatsAreDisplayed){displayBeats()}
+    if($id("notepanel")?.classList.contains("expanded") && notesData.length > 0){updateNotepanel()}
 
     //Deleted parsing markers because already served in markerData
     // markers = [] //resetting markers every time we re-calculate notes, since markers are just notes
@@ -454,12 +598,19 @@ function displayNotes(notesData, markerData){
         }
         mylog("now putting in place note #" + i + "; ")// + outline[notesData[i].outlineElementNumber].string)
 
-        let element = document.querySelector("[data-elementCount='" + notesData[i].outlineElementNumber + "']")
-        let thisNote = notesData[i].string.replace(/(\[|\])/g, "")
+        let element = $id(notesData[i].outlineElementNumber)
+        // let thisNote = notesData[i].string.replace(/(\[|\])/g, "")
+        let thisNote = notesData[i].string.replace(/(\[\[)/, "").replace(/(\]\]$)/, "")
         let notesDivStart = ""
         let notesDivEnd = ""
         let currentContainer = 'noteContainer' + notesData[i].outlineElementNumber
         let parentSize = element.getBoundingClientRect()
+            if (element.classList.contains("section")){
+                parentSize = element.querySelector(".section-heading").getBoundingClientRect()
+            }
+            if (element.querySelector(".orphanText")){
+                parentSize = element.querySelector(".orphanText").getBoundingClientRect()
+            }
 
         let howFarBackWasPreviousNonMarker = 1
         while(i > 0 && notesData[i - howFarBackWasPreviousNonMarker].string.toLowerCase().startsWith("[[marker")){howFarBackWasPreviousNonMarker ++}
@@ -469,37 +620,58 @@ function displayNotes(notesData, markerData){
 
             element.innerHTML += "<div id='" + currentContainer + "' class='noteContainer clickThru'>" + "</div>"
 
-            document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")// was "0px"
+            $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")// was "0px"
 
             if ([...element.classList].includes("hideSlugIfSmall") && areScenesProportional == 1) {
-                document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
+                $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
             }
             if (areScenesProportional != 1) {
-                document.getElementById(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
-                document.getElementById(currentContainer).style.float = "none"
+                $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
+                $id(currentContainer).style.float = "none"
             }
-            if (element.id.includes("outline")) {
-                document.getElementById(currentContainer).style.top = ((-1 * parentSize.height + 1) + "px")
-                document.getElementById(currentContainer).style.marginRight = "4px"
+            if (element.id.includes("outline") && !element.querySelector(".orphanText")) {
+                $id(currentContainer).style.top = ((-1 * parentSize.height + 1) + "px")
+                $id(currentContainer).style.marginRight = "4px"
+            }
+
+            if (element.id.includes("outline") && element.querySelector(".orphanText")) {
+                parentSize = element.querySelector(".orphanText").getBoundingClientRect()
+                $id(currentContainer).style.top = ((-1 * parentSize.height + 1) + "px")
+                $id(currentContainer).style.maxHeight = (parentSize.height + 14 * currentZoomLevel) + "px"
+                // document.getElementById(currentContainer).style.border = "4px lime dotted"
+                // alertThis("found one")
             }
 
         }
 
         let percentageBasedPosition = Math.max(((notesData[i].position - outline[notesData[i].outlineElementNumber].sceneStart) / outline[notesData[i].outlineElementNumber].sceneLength) * (parentSize.height - (15 * currentZoomLevel) - 0),0) // the minus 0 used to be -12, now taking full height into use.
+        if (element.id.includes("outline") && element.querySelector(".orphanText")) {
+            let skip = 1
+            while(outline[notesData[i].outlineElementNumber + skip]?.typeAsString == "Synopse"){
+                skip ++
+            }
+            percentageBasedPosition = (notesData[i].position - outline[notesData[i].outlineElementNumber].sceneStart)/(outline[notesData[i].outlineElementNumber + skip]?.sceneStart - outline[notesData[i].outlineElementNumber].sceneStart) * (parentSize.height - (15 * currentZoomLevel) - 0)
+        }
+
 
         notesDivStart += "<div class='note collapsed' " 
         notesDivStart += "data-line='" + notesData[i].position + "' " 
         notesDivStart += "data-noteNumber='" + i + "' "
+        notesDivStart += "id='noteNumber" + i + "' "
         notesDivStart += "onmouseenter='expandNote()' " 
         notesDivStart += "onmouseleave='collapseNote()'"
-        if (areScenesProportional == 1 && !element.id.includes("outline")) {
+        if (areScenesProportional == 1 && !(element.id.includes("outline") && !element.querySelector(".orphanText")))  {
             notesDivStart += "style='top: " + percentageBasedPosition + "px' " 
         }
         notesDivStart += ">"
 
         notesDivEnd += "</div>"
 
-        document.getElementById(currentContainer).innerHTML += notesDivStart + thisNote + notesDivEnd
+        $id(currentContainer).innerHTML += notesDivStart + thisNote + notesDivEnd
+        if (thisNote.startsWith("!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "red"}
+        if (thisNote.startsWith("!!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "magenta"}
+        if (thisNote.startsWith("!!!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "#8000FF"}
+        if (thisNote.startsWith("?")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "lime"}
 
         mylog("end of Note Loop")
     }
@@ -511,15 +683,15 @@ function displayMarkers(){
 
     if (globalMarkerData.length < 1){return}
 
-    let currentMarkers = document.querySelectorAll(".marker")
+    let currentMarkers = $$(".marker")
         for (currentMarker of currentMarkers){currentMarker.remove()}
 
-    mylog("display markers")
+    mylog()
 
 
     for (let im = 0; im < globalMarkerData.length; im++){
 
-        let element = document.querySelector("[data-elementCount='" + globalMarkerData[im].outlineElementNumber + "']")
+        let element = $id(globalMarkerData[im].outlineElementNumber)
 
         theMarkerToAddAsCode = "<div id = 'marker" + im + "' class = 'marker' data-line = '" + globalMarkerData[im].position + "'></div>" 
         element.innerHTML += theMarkerToAddAsCode
@@ -532,7 +704,7 @@ function displayMarkers(){
         //theMarkerToAdd.onmouseover = function(){element.parentNode.classList.add("noHover")}
         //theMarkerToAdd.onmouseout = function(){element.parentNode.classList.remove("noHover")}
 
-        theMarkerToAdd = document.getElementById("marker" +  im)
+        theMarkerToAdd = $id("marker" +  im)
 
         if (globalMarkerData[im].color && globalMarkerData[im].color != ""){
             theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
@@ -542,11 +714,19 @@ function displayMarkers(){
             
         }
         
-        let markerVerticalPosition = -2
+        // let markerVerticalPosition = -2
+        let markerVerticalPosition = 1 // default position only affects Section, that has no orphan.
 
-        if(outline[globalMarkerData[im].outlineElementNumber].typeAsString != "Section" && areScenesProportional == 1){
+        if((outline[globalMarkerData[im].outlineElementNumber].typeAsString != "Section"
+            ||
+            outline[globalMarkerData[im].outlineElementNumber].numberOfPages > 0)
+             && areScenesProportional == 1){
             markerVerticalPosition = globalMarkerData[im].position - outline[globalMarkerData[im].outlineElementNumber].line.position
             let percentageIntoScene = markerVerticalPosition / outline[globalMarkerData[im].outlineElementNumber].sceneLength
+
+            if(outline[globalMarkerData[im].outlineElementNumber].typeAsString == "Section"){
+                element = element.querySelector(".orphanText")
+            }
 
             markerVerticalPosition = percentageIntoScene * (Number(element.getBoundingClientRect().height) - 12) //-14 is to fit entire marker inside
             
@@ -561,21 +741,192 @@ function displayMarkers(){
     mylog("done in display marker territory")// at " + displayEnd + "(took " + (displayEnd-displayStart) + " ms)")
 }
 
+function displayBeats(){
+   
+    if (globalBeatData.length < 1){return}
+
+    let currentBeats = $$(".beat")
+        for (currentBeat of currentBeats){currentBeat.remove()}
+    let currentPaths = $$(".svgForBeats")
+        for (currentPath of currentPaths){currentPath.remove()}
+    let widthOfColumns = $(".section").getBoundingClientRect().width || $(".sceneheading").getBoundingClientRect().width
+
+    mylog()
+
+    //first lets make one SVG "canvas" the size of the flexiContainer
+        let canvasSize = $id("flexiContainer").getBoundingClientRect()
+        $id("flexiContainer").innerHTML += "<svg id='theCanvas' class='svgForBeats'></svg>"
+        $id("theCanvas").style.position = "absolute"
+        $id("theCanvas").style.left = canvasSize.left + "px"
+        $id("theCanvas").style.top = canvasSize.top + "px"
+        $id("theCanvas").style.width = canvasSize.width + "px"
+        $id("theCanvas").style.height = canvasSize.height + "px"
+        //$id("theCanvas").style.background = "rgba(255,255,255,0.1)"
+
+        mylog("there is now an SVG canvas")
+
+    for (let im = 0; im < globalBeatData.length; im++){
+
+        //set element to parent where we will put the beat
+        let element = $id(globalBeatData[im].outlineElementNumber)
+
+        theBeatToAddAsCode = "<div id = 'beat" + im + "' class='beat' data-storyline='" + globalBeatData[im].storyline + "' data-line='" + globalBeatData[im].position + "'>" + globalBeatData[im].story + "</div>" 
+        element.innerHTML += theBeatToAddAsCode
+
+        theBeatToAdd = $id("beat" +  im)
+
+        theBeatToAdd.style.background = storyColors[globalBeatData[im].storyline - 1]
+        theBeatToAdd.style.left = (5 + (globalBeatData[im].storyline - 1) * 15) + "%"
+        //theBeatToAdd.style.opacity = "0"
+    
+        let beatVerticalPosition = -2
+
+        if((outline[globalBeatData[im].outlineElementNumber].typeAsString != "Section" 
+            ||
+            outline[globalBeatData[im].outlineElementNumber].numberOfPages > 0)
+            && areScenesProportional == 1){
+            beatVerticalPosition = globalBeatData[im].position - outline[globalBeatData[im].outlineElementNumber].line.position
+            let percentageIntoScene = beatVerticalPosition / outline[globalBeatData[im].outlineElementNumber].sceneLength
+
+            if(outline[globalBeatData[im].outlineElementNumber].typeAsString == "Section"){
+                element = element.querySelector(".orphanText")
+            }
+
+            beatVerticalPosition = percentageIntoScene * (Number(element.getBoundingClientRect().height) - 12) //-14 is to fit entire beat inside
+        
+        }
+    
+        theBeatToAdd.style.top = beatVerticalPosition + "px"
+
+        mylog("done adding beat #" + im)
+    
+        //add the connecting lines
+
+
+        //first let's find the previous beat of this storyline (if present)
+        let prev
+        for(prev = im - 1; prev > -1; prev --){
+            if (globalBeatData[prev].storyline == globalBeatData[im].storyline){
+                break
+            }
+        }
+        // now if such previous beat is indeed present, then draw the line
+        if (prev > -1){
+
+            mylog(prev + " " + im)
+  
+            let start = $id("beat" + prev).getBoundingClientRect()
+            let end = $id("beat" + im).getBoundingClientRect()
+
+            let theWidth = start.right - start.left 
+            let theHeight = start.bottom - start.top
+            let midX = start.left + (end.left - start.left)/2 + theWidth/2
+            let midY = start.top + (end.top - start.top)/2 + theHeight/2
+            
+            let xCorrector = widthOfColumns/2
+            //if (start.left == end.left){xCorrector = 0}
+            let yCorrector = 50 //widthOfColumns 
+            //if (start.left != end.left){yCorrector = widthOfColumns}
+            
+            // yCorrector = 200
+
+            
+            let currentStoryline = globalBeatData[im].storyline
+            let thePathID = "path" + im
+            let thePathToAdd = `<path class="allpaths hiddenPath pathOf` + currentStoryline + `" id='` + thePathID + `' D='
+            M ` + (start.left + theWidth/2) + ` ` + 
+                  (start.top + theHeight/2) + `
+            C ` + (start.left + theWidth/2 + xCorrector) + ` ` + 
+                  (start.top + theHeight/2 + yCorrector) + ` ` + 
+                  (end.left + theWidth/2 - xCorrector) + ` ` + (end.top + theHeight/2 - yCorrector) + ` ` + 
+                  (end.left + theWidth/2) + ` ` + (end.top + theHeight/2) + 
+            ` ' fill = "none"/>`
+
+            $id("theCanvas").innerHTML += thePathToAdd
+   
+        }
+
+        //now actually make a duplicate of the last beat, and put it on top!
+            let copyOf = theBeatToAdd.cloneNode(true)
+            let rect = theBeatToAdd.getBoundingClientRect()
+            copyOf.style.position = "absolute"
+            copyOf.style.left = rect.left + "px"
+            copyOf.style.top = rect.top + "px"
+            copyOf.style.opacity = "1"
+            copyOf.id = copyOf.id + "(copy)"
+            copyOf.borderColor = storyColors[globalBeatData[im].storyline - 1] + " !important"
+            copyOf.classList.add("copy", "hiddenBeat")
+            $("#flexiContainer").appendChild(copyOf)
+        
+    }
+
+mylog("exiting")
+}
+
+function beatIsHovered(element){
+
+    mylog()
+
+    //first make sure the canvas is the same size as the flexiContainer!
+    let flexiSize = $id("flexiContainer").getBoundingClientRect()
+        $id("theCanvas").style.width = flexiSize.width
+        $id("theCanvas").style.left = flexiSize.left
+
+    let theHoveredStoryline = element.getAttribute("data-storyline")
+    //element.id.replace("beat", "").replace("(copy)", "")
+    aBeatIsHovered = true
+
+    let allpaths = $$(".allpaths")
+    let thePathsToShow = $$(".pathOf" + theHoveredStoryline)
+    let beatsOnTop = $$(".beat.copy")
+
+    for (let path of allpaths){
+        path.classList.add("hiddenPath")
+    }
+    for (let path of thePathsToShow){
+        path.classList.remove("hiddenPath")
+    }
+    for (let beat of beatsOnTop){
+        if(beat.getAttribute("data-storyline") == theHoveredStoryline){ 
+            beat.classList.remove("hiddenBeat")
+            beat.classList.add("largerBeat")
+        }else{
+            beat.classList.add("hiddenBeat")
+            beat.classList.remove("largerBeat")
+        }
+    }
+}
+
+function unhoverAllBeats() {
+
+    aBeatIsHovered = false
+
+    let allpaths = $$(".allpaths")
+    for (let path of allpaths){
+        path.classList.add("hiddenPath")
+    }
+
+    let beatsOnTop = $$(".beat.copy")
+    for (let beat of beatsOnTop){   
+        beat.classList.add("hiddenBeat")
+        beat.classList.remove("largerBeat") 
+    }
+}
+
 function expandNote(tabWasPressed){
 
     if(!globalNotesData || globalNotesData.length == 0){return}
     exitEdit()
-
-
+    
     if (selectedNote > -1 && tabWasPressed){ //SELECTED THROUGH TAB
-        theNote = document.querySelector("[data-noteNumber='" + selectedNote + "']")
-
-            if(isThisOffScreen(theNote)){
-                scrollNicelyIntoView(theNote) 
-            }
+        theNote = $("[data-noteNumber='" + selectedNote + "']")
+        
+        if(isThisOffScreen(theNote)){
+            scrollNicelyIntoView(theNote) 
+        }
     }
 
-    if ([...event.target.classList].includes("note") && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
+    if ([...event.target.classList].includes("note") && ($id('trashNote'))) { //allow hover others when in tab-cycling
         return
     }
 
@@ -586,46 +937,60 @@ function expandNote(tabWasPressed){
 
         // To prevent blinkage (and remove hover effect from parents when hovering note)
         let bubbleProhibitor = theNote
-        while (bubbleProhibitor.parentNode.id != "flexiContainer"){
+        while (bubbleProhibitor.parentNode && bubbleProhibitor.parentNode.id != "flexiContainer"){
             bubbleProhibitor = bubbleProhibitor.parentNode
             bubbleProhibitor.classList.add("noHover")
             mylog("ADDED noHover to " + bubbleProhibitor.id)
         }
     }
 
-    let noteToUnselect = document.querySelector('.selectedNote')
+    mylog("immedeiately after added NoHover...")
+
+    //add .isSelected to notePanel, to show hovered note in panel if open
+    if($("#notepanel")){
+        selectedNote = theNote.getAttribute("data-noteNumber")
+        $id("notepanelNote" + selectedNote)?.classList.add("isSelected")
+        $id("notepanelNote" + selectedNote)?.firstChild.classList.add("isSelected")
+    }
+
+    mylog("before note to unselect")
+
+
+    let noteToUnselect = $('.selectedNote')
     if (noteToUnselect) {
         noteToUnselect.classList.remove('selectedNote')
     }
     theNote.classList.add('selectedNote')
 
     let theNoteString = theNote.innerHTML
-    let expandedClassList = ""
+    let expandedClassList = "expandedNote" //only to be able to blink in its color
     let position = theNote.getBoundingClientRect()
-    if (position.top == 0 && position.left == 0) {
-        position = theNote.parentNode.parentNode.parentNode.getBoundingClientRect()
+    let sizeOfFlexi = $id("flexiContainer").getBoundingClientRect()
+    
+    if (position.top == 0 && position.left == 0) { 
+        position = theNote.closest(".section").getBoundingClientRect()
         expandedClassList += "omittedNote "}
-    let y = parseInt(JSON.stringify(position.top))
-    let x = parseInt(JSON.stringify(position.left))
+    let y = parseInt(JSON.stringify(position.top - sizeOfFlexi.top))
+    let x = parseInt(JSON.stringify(position.left - sizeOfFlexi.left))
     // let y = position.top
     // let x = position.left
     let yOrigo = document.getElementById('flexiContainer').scrollTop
 
-    let theFirstOutlineItemWidth = document.querySelector("[data-elementCount='0']").getBoundingClientRect()
+    let theFirstOutlineItemWidth = $id("0").getBoundingClientRect()
 
     let expandedWidth = Math.min(theFirstOutlineItemWidth.width, window.innerWidth/2)
     
-    let sceneText = "scene " + theNote.parentNode.parentNode.id
-    if (sceneText.includes("outline")){
-        sceneText = 'section' + theNote.parentNode.parentNode.firstChild.innerHTML
+    let sceneText = "scene " + outline[theNote.closest(".scene")?.id]?.sceneNumber
+    if (!theNote.closest(".scene")){
+        sceneText = 'section ' + theNote.closest(".section").querySelector(".section-heading").innerHTML
     }
 
     let trashDiv = ""
     if (tabWasPressed) {trashDiv = "<div id='trashNote' class='trashNote'>" + trashIcon + "</div>"}
 
-    document.getElementById('flexiContainer').innerHTML += 
+    $id('flexiContainer').innerHTML += 
         "<div id='expandedNote' class='" + expandedClassList + "'>" +
-        "<b class='clickThru'>" +
+        "<b class='clickThru padRight'>" +
         trashDiv +
         "Note in " + sceneText + " </b>" +
         "<text class='clickThru' id='expandedNoteText'>" + theNoteString + "</text></div>"
@@ -638,21 +1003,33 @@ function expandNote(tabWasPressed){
 
     let sizeOfExpandedNote = theExpandedNote.getBoundingClientRect()
 
-    let xPos = Math.min((x + 7.5 - expandedWidth/2), (window.innerWidth - expandedWidth - 40))
+    let xPos = Math.min((x + 7.5 - expandedWidth/2), (sizeOfFlexi.width - expandedWidth - 40))
     let yPos = yOrigo + y + 25
     xPos = Math.max(xPos, 20)
     yPos = Math.max(yPos, 20)
-    if (xPos + sizeOfExpandedNote.width > window.innerWidth - 40) {xPos = window.innerWidth - sizeOfExpandedNote.height - 40}
+    if (xPos + sizeOfExpandedNote.width > sizeOfFlexi.width - 40) {xPos = sizeOfFlexi.width - sizeOfExpandedNote.height - 40}
     if (yPos + sizeOfExpandedNote.height > document.getElementById('flexiContainer').scrollHeight - 40) {yPos = yOrigo + y - 10 - sizeOfExpandedNote.height}
 
     theExpandedNote.style.top = yPos + "px"
-    theExpandedNote.style.left = xPos + "px"	
+    theExpandedNote.style.left = xPos + "px"
+
+    //added to fix color if ! or ? in text:
+        if (theNoteString.startsWith("!"))  {theExpandedNote.style.backgroundColor = "#FF8888"}//"red"}
+        if (theNoteString.startsWith("!!")) {theExpandedNote.style.backgroundColor = "#FF88FF"}//"magenta"}
+        if (theNoteString.startsWith("!!!")){theExpandedNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
+        if (theNoteString.startsWith("?"))  {theExpandedNote.style.backgroundColor = "#88FF88"}//"lime"}
 
 }
 
 function collapseNote(){
 
     mylog(event.type)
+
+        //remove .isSelected from notePanel, to show hovred note in panel if open
+        if($("#notepanel")){
+            $id("notepanelNote" + selectedNote)?.classList.remove("isSelected")
+            $id("notepanelNote" + selectedNote)?.firstChild.classList.remove("isSelected")
+        }
 
     if (event.type == "mouseleave" && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
         return
@@ -701,6 +1078,26 @@ function cycleNotes(shift){
     
     expandNote(true)
     
+}
+
+function AlternateWayToCalculateCurve(){
+
+    let currentStoryline = globalBeatData[im].storyline
+            let thePathID = "path" + im
+            let thePathToAdd = `<path class="allpaths hiddenPath pathOf` + currentStoryline + `" id='` + thePathID + `' D='
+            M ` + (start.left + theWidth/2) + ` ` + 
+                  (start.top + theHeight/2) + `
+            C ` + (start.left + theWidth/2 + xCorrector) + ` ` + 
+                  (start.top + theHeight/2 + yCorrector) + ` ` + 
+                  (midX) + ` ` + (start.top + theHeight/2 + yCorrector) + ` ` + 
+                  (midX) + ` ` + (midY) + `  
+            C ` + (midX) + ` `+ (end.top + theHeight/2 - yCorrector) + ` ` + 
+                  (end.left + theWidth/2 - xCorrector) + ` ` + (end.top + theHeight/2 - yCorrector) + ` ` + 
+                  (end.left + theWidth/2) + ` ` + (end.top + theHeight/2) + 
+            ` ' fill = "none"/>`
+
+            $id("theCanvas").innerHTML += thePathToAdd
+
 }
 
 </script>

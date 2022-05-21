@@ -1,0 +1,244 @@
+<style>
+
+#notepanel{
+
+    position: absolute !important;
+    top: 15px;
+    left: -30%;
+	
+	padding: 5px 5px 0px 5px  !important;
+	margin: 0px !important; 
+
+    height: calc(100% - 65px) !important;
+    width: 30%;
+	
+	font-size: calc(11px * var(--fontSizeFactor)); 
+	font-weight: normal; 
+	line-height: calc(13px * var(--fontSizeFactor)) !important; 
+	
+	border: none !important;
+    
+	border-radius: 0px 6px 6px 0px;
+    background-color: rgba(128,146,164,0.5); /* #999; */
+    background-color: rgba(255,255,255,0.3); /* #999; */
+	
+
+    z-index: 99999;
+    overflow-y: auto;
+
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+
+    transition: flex-grow 0.2s, position 0.2s, transform 0.1s ease-out; 
+	
+}
+
+#notepanel.expanded{
+    transform: translateX(100%);
+}
+
+#flexiContainer.notepanelIsExpanded{
+    width: 69%;
+    margin-left: 31% !important;
+    transition: width 0.6s, margin-left 0.6s !important;
+}
+
+.notepanelNote .notepanelHeadline{
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-weight: bold;
+    font-size: calc(9px * var(--fontSizeFactor)); 
+    line-height: calc(12px * var(--fontSizeFactor)) !important; 
+
+
+    background-color: rgba(0, 0, 0, 0.2);
+    color: rgba(0, 0, 0, 0.5);
+
+    margin: -4px -4px 1px -4px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    padding-bottom: 1px !important;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+}
+
+.notepanelNote{
+
+    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+
+    padding: 4px 4px 1px 4px;
+    margin-bottom: 3px;
+    margin-left: -2px;
+
+    white-space: normal !important;
+    /* border-radius: 4px !important;
+    border: 1px solid var(--note-border) !important;
+    background: var(--note-bottom) !important; */
+
+    /* background-color: rgb(255,255,128); */
+    background-image: repeating-linear-gradient(180deg, transparent 0px, transparent calc(12px * var(--fontSizeFactor)), rgba(0,0,0,0.1) calc(12px * var(--fontSizeFactor)), rgba(0,0,0,0.1) calc(13px * var(--fontSizeFactor)));
+    background-color: rgb(255,255,128);
+    color: rgba(0, 0, 0, 0.75);
+    border:1px solid rgba(0, 0, 0, 0.6 );
+    border-radius: 4px !important;
+
+    /* max-height: 80px; */
+    overflow: hidden;
+    text-overflow: ellipsis !important;
+
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+
+}
+
+.notepanelNote:hover,
+.notepanelNote.isSelected{
+    border-color: black !important;
+    box-shadow: 0 0 0 0.5px black;
+}
+
+.notepanelHeadline.isSelected,
+.notepanelNote:hover > .notepanelHeadline{
+    background-color: black;
+    color: white;
+    pointer-events: none;
+}
+
+
+
+
+</style>
+<script>
+
+function createNotepanel() {
+
+    mylog("createNotepanel")
+    // if($id("notepanel")){mylog("there is already one"); return}
+    if([...$id("notepanel").classList].includes("expanded")){mylog("there is already one"); return}
+    mylog("past the if includes expanded")
+
+    //let notepanel = document.createElement("div")
+    //notepanel.id = "notepanel"
+
+    $id("flexiContainer").classList.add("notepanelIsExpanded")
+    let justToProvokeRedraw = $id("flexiContainer").getBoundingClientRect()
+
+    //$id("flexiContainer").parentNode.insertBefore(notepanel, $id("flexiContainer"))
+    justToProvokeRedraw = $id("notepanel").getBoundingClientRect()
+    
+    //setTimeout(function(){
+        updateNotepanel()
+        //},250)
+
+    $id("notepanel").classList.add("expanded") //again, will animate if only added here.
+    setAllButtons()
+}
+
+function updateNotepanel(){
+
+    mylog("updateNotepanel, which has... " + $id("notepanel").classList || "nothing")
+    
+    //if(!$id("notepanel").classList.contains("expanded")){mylog("...so aborting"); return}
+    if(!globalNotesData || globalNotesData.length == 0){collectNotes("updateNotepanel"); return}
+    
+    // mylog("updateNotePanel... globalNotesData is" + globalNotesData)
+    mylog ("there is globalNotesData: " + globalNotesData.length)
+    
+    let noteNumber = 0
+
+    let currentNotes = $$(".notepanelNote")
+        if (currentNotes.length > 0){
+            for (let note of currentNotes){
+                note.remove()
+            }
+        }
+
+    for(let i = 0; i < globalNotesData.length; i++){
+
+        let elementType = outline[globalNotesData[i].outlineElementNumber]?.typeAsString
+            if (elementType == "Heading"){elementType = "Note in scene " + outline[globalNotesData[i].outlineElementNumber]?.sceneNumber}
+            if (elementType == "Section"){elementType = `Note in ` + outline[globalNotesData[i].outlineElementNumber]?.stringForDisplay?.toUpperCase() + ``}
+
+        let thisNote = document.createElement("div")
+        thisNote.id = "notepanelNote" + i
+        thisNote.classList.add("notepanelNote")
+        thisNote.dataset.line = globalNotesData[i].position
+        thisNote.innerHTML = 
+            // `<p class="notepanelHeadline">`+ outline[globalNotesData[i].outlineElementNumber]?.typeAsString +`: ` + outline[globalNotesData[i].outlineElementNumber].sceneNumber + `</p>`+
+            `<p class="notepanelHeadline">`+ elementType + `</p>`+
+            globalNotesData[i].string.replace(/(\[|\])/g, "")
+
+        let colCode = globalNotesData[i].string.replace(/(\[|\])/g, "")
+        if (colCode.startsWith("!")){thisNote.style.backgroundColor = "#FF8888"}//"red"}
+        if (colCode.startsWith("!!")){thisNote.style.backgroundColor = "#FF88FF"}//"magenta"}
+        if (colCode.startsWith("!!!")){thisNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
+        if (colCode.startsWith("?")){thisNote.style.backgroundColor = "#88FF88"}//"lime"}
+
+        $id("notepanel").appendChild(thisNote)
+    }
+    mylog("end of update notepanel")
+}
+
+function toggleNotepanel() {
+
+    mylog("toggleNotepanel")
+
+    if(![...$id("notepanel").classList].includes("expanded")){
+        createNotepanel()
+        return
+    }
+
+    $id("flexiContainer").classList.remove("notepanelIsExpanded")
+    $id("notepanel").classList.remove("expanded")
+    
+    let currentNotes = $$(".notepanelNote")
+        if (currentNotes.length > 0){
+            for (let note of currentNotes){
+                note.remove()
+            }
+        }
+    
+    // setTimeout(function(){
+    //     $id("notepanel").remove()
+    // }, 200)
+    setAllButtons()
+}
+
+function panelNoteIsHovered(element){
+
+    mylog("HOVERING, namely this: " + element.classList)
+
+    if(!notesAreDisplayed){return}
+
+    panelNoteIsUnhovered() // to make sure only one can be highlighted at one time
+
+    let noteId = element.id
+    noteId =  noteId.substring(13)
+
+    let noteToHover = $id("noteNumber" + noteId)
+    noteToHover.classList.add("selectedNote")
+}
+
+function panelNoteIsUnhovered(element){
+
+    mylog("note is unhovered")
+    if(!notesAreDisplayed){return}
+
+    let allNotes = $$(".note")
+    for (let note of allNotes){
+        note.classList.remove("selectedNote")
+    }
+
+    //mylog("UNHOVERING, namely this: " + element.classList)
+
+    // let noteId = element.id
+    // noteId =  noteId.substring(13)
+
+    // let noteToHover = $id("noteNumber" + noteId)
+    // noteToHover.classList.remove("selectedNote")
+    // noteToHover.classList.add("locateMe")
+}
+
+</script>
