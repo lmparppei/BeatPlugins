@@ -1,15 +1,55 @@
 <style>
 
+:root{
+
+/* --yellow: rgb(255, 210, 0);
+--red: rgb(239,0,73);
+--green: rgb(0,223,121);
+--blue: rgb(0,129,239);
+--cyan: rgb(7, 189, 236);
+--magenta: rgb(236,0,140);
+--orange: rgb(255, 161, 13);
+--purple: rgb(181, 32, 218);
+--pink: rgb(250,111,193);
+--brown: rgb(169, 106, 7);
+--teal: rgb(12, 224, 227);
+--gray: rgb(150, 150, 150);
+--black: rgb(40,40,40);
+--white: rgb(255,255,255);
+--special: rgba(0,0,0,0); */
+
+--yellow: hsl(55, 100%, 75%);
+--red: hsl(5, 100%, 75%);
+--green: hsl(100, 100%, 75%);
+--blue: hsl(212, 100%, 75%);
+--cyan: hsl(175, 100%, 75%);
+--magenta: hsl(315, 100%, 75%);
+--orange: hsl(30, 100%, 75%);
+--purple: hsl(270, 100%, 85%);
+--pink: hsl(330,100%,90%);
+--brown: hsl(37, 55%, 65%);
+--teal: hsl(192, 65%, 67%);
+--gray: hsl(0, 0%, 75%);
+--black: rgb(40,40,40);
+--white: rgb(255,255,255);
+--special: rgba(0,0,0,0);
+
+/* --pageBackground: #222; */
+
+--act-length-opacity: 60%;
+
+--fontSizeFactor: 1;
+}
+
 body {
    background: #fff !important;
    max-height: calc(29.7cm);
 }
 
-:root{
-    --heightFactor: 30;/*29; /*840px;*/ /*calc(29.7 / 2.54) ;*/
-    /* --pageBackground: #fff; */
+/* :root{
+    --heightFactor: 30;/*29; /*840px;*/ /*calc(29.7 / 2.54) ;
     --fontSizeFactor: 0.8;
-}
+} */
 
 #flexiContainer{
 
@@ -51,7 +91,7 @@ body {
     display:none
 } */
 
-.sceneheading {
+.scene {
 	border: 1px solid !important;
 	border-color: #555 !important;
 	box-shadow: none !important;
@@ -62,7 +102,7 @@ body {
     overflow: hidden; 
 }
 
-.uncolorAllScenesBut .sceneheading,
+.uncolorAllScenesBut .scene,
 .dimmedScene {
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0.9) ,rgba(255,255,255,0.9) 100%);
 	color: rgba(0,0,0,0.8) !important; 
@@ -70,46 +110,54 @@ body {
 	/* border: 1px solid rgba(0,0,0,0.3) !important; */
 }
 
-div.sceneheading:nth-child(1 of .sceneheading) {
+div.scene:not(.scene + .scene) {
 
 margin-top: 0.5px !important ;
 
 }
 
-.sectiontext{ 
+.section-heading{ 
      padding-right: 0px;
     max-width: calc(100% - 4.5px)
 }
 
 p.headline {
+    display: block;
     font-weight: 900;
     font-size: 22pt;
-    line-height: 24pt;
+    line-height: 24pt !important;
     text-align: center;
-    padding-top: 40px;
+    /* padding-top: 40px; */
+    margin-top: 40px;
 
-    height: 30px;
+    height: 30px !important;
+    page-break-after:  avoid;
 }
 
-.headline2{
+p.headline2{
+    display: block;
     font-weight: 400;
     font-size: 16pt;
-    line-height: 20pt;
+    line-height: 20pt !important;
     text-align: center;
+
+    page-break-after:  avoid;
 }
 
 .footer{
     font-size: 7pt;
     opacity: 0.4;
     text-align: right;
-    margin-top:40px;
+    /* margin-top:40px; */
 
     width: 21cm; 
     position: absolute;
-    bottom: 0.5in;
+    bottom: 10px;
+    /* position: absolute; */
+    /* bottom: 0.5in; */
 }
 
-a, .padlockIcon{
+    a, .padlockIcon{
     display: none !important;
 }
 
@@ -117,35 +165,36 @@ a, .padlockIcon{
     display: none !important;
 }
 
-.uncolorAllScenesBut .sectiontext {
+.uncolorAllScenesBut .section-heading {
 	color: rgba(0,0,0,0.3);
 }
 
-.level1>.sectiontext,
-.uncolorAllScenesBut .level1>.sectiontext,
-.uncolorAllScenesBut .section.special>.sectiontext,
+.level1>.section-heading,
+.section.special>.section-heading,
+.uncolorAllScenesBut .level1>.section-heading,
+.uncolorAllScenesBut .section.special>.section-heading,
 
-.uncolorAllScenesBut.red .section.red > .sectiontext,
-.uncolorAllScenesBut.orange .section.orange > .sectiontext,
-.uncolorAllScenesBut.yellow .section.yellow > .sectiontext,
-.uncolorAllScenesBut.green .section.green > .sectiontext,
-.uncolorAllScenesBut.teal .section.teal > .sectiontext,
-.uncolorAllScenesBut.cyan .section.cyan > .sectiontext,
-.uncolorAllScenesBut.blue .section.blue > .sectiontext,
-.uncolorAllScenesBut.purple .section.purple > .sectiontext,
-.uncolorAllScenesBut.magenta .section.magenta > .sectiontext,
-.uncolorAllScenesBut.pink .section.pink > .sectiontext,
-.uncolorAllScenesBut.brown .section.brown > .sectiontext,
-.uncolorAllScenesBut.black .section.black > .sectiontext,
-.uncolorAllScenesBut.gray .section.gray > .sectiontext,
-.uncolorAllScenesBut.white .section.white > .sectiontext
+.uncolorAllScenesBut.red .section.red > .section-heading,
+.uncolorAllScenesBut.orange .section.orange > .section-heading,
+.uncolorAllScenesBut.yellow .section.yellow > .section-heading,
+.uncolorAllScenesBut.green .section.green > .section-heading,
+.uncolorAllScenesBut.teal .section.teal > .section-heading,
+.uncolorAllScenesBut.cyan .section.cyan > .section-heading,
+.uncolorAllScenesBut.blue .section.blue > .section-heading,
+.uncolorAllScenesBut.purple .section.purple > .section-heading,
+.uncolorAllScenesBut.magenta .section.magenta > .section-heading,
+.uncolorAllScenesBut.pink .section.pink > .section-heading,
+.uncolorAllScenesBut.brown .section.brown > .section-heading,
+.uncolorAllScenesBut.black .section.black > .section-heading,
+.uncolorAllScenesBut.gray .section.gray > .section-heading,
+.uncolorAllScenesBut.white .section.white > .section-heading
 
 {
 	color: black !important;
 
 }
 
-.hideSlugIfSmall, .sceneheading.hideSlugIfSmall {
+.hideSlugIfSmall, .scene.hideSlugIfSmall {
     color: rgba(0,0,0,0) !important;
 }
 
@@ -159,6 +208,52 @@ a, .padlockIcon{
 
 .note {
     display: none
+}
+
+.scene.special {
+
+    color: gray !important;
+    border-color: lightgray !important; 
+}
+
+.orphanText{
+    border: 1px #aaa dotted;
+    background: 
+        /* repeating-linear-gradient(
+        -45deg,
+        white 0%,
+        white 1%,
+        black 1%,
+        black 1%)
+            , */
+        #eee !important
+        ;
+
+    background: none !important;
+}
+
+.sceneheading,
+.section-heading{ /*to override any white-on-dark onscreen text*/
+    color: black !important
+}
+
+#outerEdge{
+
+    height: max-content !important;
+    /* min-height: calc(29.7cm - 1in) !important; */
+    min-height: calc(29.7cm) !important;
+    display: block;
+
+    /* border: gold 1px solid */
+
+}
+
+.boneyard, 
+.marker, 
+.note, 
+.notepanel {
+
+    display: none;
 }
 
 </style>

@@ -1,6 +1,134 @@
 CHANGELOG
 
 
+v 1.4 (May 21, 2022)
+======================
+
+First of all, a bug correction to life itself: Turns out that the email address for error reporting has been down for a while. If anyone experienced problems due to this, my sincerest apologies. It is now fixed, and for any questions, bugs, or occasional undeserved praise, ftoutliner@eviltomato.com is once again the address to use!
+
+With that taken care of, today marks the release of a quite substantial rewrite of FTOutliner. It's so substantial that I decided to skip a number and call it 1.4. It's my plugin, I can do that. Anyway, here goes:
+
+NEW FEATURES:
+-------------
+
+1. PERHAPS BOTH MOST AND LEAST IMPORTANT: A NEW MENU INTERFACE
+
+   - Commands are now collected in menus, more logically grouped and also with more commands available without remembering a keyboard shortcut. Unless you want to, in which case that still works. You'll find the shortcuts in the menus.
+   - Cycle the menus with F1 in case you want to use them but still don't want to take your fingers off the keyboard. We're all different.
+   - Oh, and if your system is set to dark mode, menus and dialogs of FTOutliner will follow suite.
+
+
+2. the NOTE PANEL is a slide-in panel to show a list of all notes in the document. 
+   Available from the note menu or by pressing §
+
+
+3. the BONEYARD is a special column where you can drag scenes and sequences you don't know where to put.
+
+   - Add a Boneyard act from the Outline Menu (shortcut CMD + B)
+   - Hide/show the Boneyard by clicking it, or using the same shortcut CMD + B once a Boneyard is present
+
+   You can also create your boneyard manually by adding a one-hashtag #ACT at the end of your script and naming it Boneyard, because that's what FTOutliner does when you hit CMD + B. 
+   The Boneyard act then changes behavior into a collapsible area that is visually different from the rest of your structure.
+
+   NOTE: Admittedly, this is more of a hack than an actual feature. An actual Boneyard feature would let you store material that would then not print/export together with the non-boneyard stuff.
+   Since the Boneyard isn't recognized by Beat itself, whatever you store there will still be considered part of your script and will print with the document.
+   So consider the boneyard a storage place for scenes as you work -- still in the document, but visually separated or even hidden from view -- but make sure to manually delete or hide them before distributing.
+
+   (Also, the Boneyard only works in multi-column mode. In one-column mode it just sits like an act at the bottom.)
+
+
+4. QUITE MASSIVE revision to the INDEX CARD feature:
+
+  ONE SINGLE MODE:
+  ----------------
+  - Instead of the two index card modes from before (sections or scenes) there is now only one index card mode. 
+  - In INDEX CARD MODE, you can now choose to display scenes or sequences independently -- effective emulating either of the two previous modes -- but also anything in between:
+    - a. collapsing all scene cards into dots will let you focus on section cards only
+    - b. collapsing all section cards into single lines will let you focus on scene cards only
+    - c. independently expanding the scenes for any section, or the section card for any group of scenes, or anything in between, lets you seamlessly concentrate on any level as you work
+    - d. this sounds complicated. It's not. 
+    
+    - Shortcut E will alternately expand or collapse all scene cards at once. 
+    - Shortcut D will alternately expand or collapse all section cards at once. 
+    - The triangle to the left of scenes, and icon in top corner of sections, will toggle that scene group or section card only.
+
+  EDIT, REARRANGE AND ADD NEW INDEX CARDS -- ALL IN THE FTOUTLINER WINDOW
+  -----------------------------------------------------------------------
+  - Drag and drop to rearrange sequences, scenes, or individual synopsises.
+  - Synopsis can be edited by double-clicking a synopsis in an index card (names of scenes and sections too, since some versions back)
+  - New synopsis can be added by double-clicking the empty area in an index card
+  - New index cards (scene or section) can be added directly below any card by holding ALT and selecting the plus button that appears
+
+  RESIZING
+  --------
+  - Resizing index cards now increases/decreases the number of lines shown, rather than changing it based on aspect ratio as before. This makes zooming in index more predictable and actually useful.
+
+  SO WHAT'S THE POINT WITH ALL THIS THEN? 
+  ---------------------------------------
+  The idea, should you want to, is that you can now use index cards to outline your story from scratch -- all inside of FTOoutliner. Create cards and write directly into them, on a full-screen index card "board", knowing that everything will be stored as fountain text in your Beat document as you work. 
+  This allows you to switch over to normal outline mode at any time -- with FTOutliner next to the normal Beat workspace -- when you feel that you're done using index cards and want to start writing in the document. (But you can of course return to index card mode again should you need to go back to the drawing board and restructure your ideas.)
+
+
+OTHER IMPROVEMENTS:
+-------------------
+
+* DRAGGING-AND-DROPPING has been redesigned and rewritten. It is much more intuitive, much more responsive, and much more reliable. So, yeah.
+
+* NOTES will now show up in FTOutliner even if not on their own line. As a side effect, this also holds true for inline markers and beats (which is a new thing -- see below).
+* NOTES can also take on alternate COLORS when displayed in the outline. Default is yellow, but start your note with !, !! or !!! to have it colored in red, purple and magenta. Start with a ? to have it colored green.
+
+* Scenes and sections will now show in color also if you set an arbitrary HEX color. (Hex colors must be set manually by typing in the editor. But still.)
+* Using the BEAT color scheme now matches the main app much better, for as seamless an experience as possible:
+  - The background is darker, closer to Beat's own sidebar
+  - Text on darker colors will have white text to improve legibility
+  - The white text thing works in the FTOutliner color scheme too, if you should set some dark HEX color.
+
+* You can EXPAND and COLLAPSE sequences (i.e. show/hide scenes of sections) in non-proportional mode very much like in index card mode.
+    - The shortcut is the same as in Index Card mode: Use triangle, or E to toggle ALL scenes between expanded/collapsed.
+
+* Things we may want to set differently for different documents -- view modes, what data to display, and not least the current window position -- are now saved as document defaults rather than plugin defaults. 
+
+* Massive behind-the-scenes rewrite of the outline building code -- allowing for much greater reliability, speed and (which at least makes me a bit happier) easier maintenance. Some of the corrected bugs below wouldn't even have happened with this code to begin with. Hopefully I didn't introduce too many new ones instead. 
+
+* Further improvements to typing speed in sceneheadings and synopsis elements
+* Further improvements to speed when selecting colors for scenes, as well as omitting/unomitting from the context menu
+* Fixed a bug that would stop scenes from being (re)drawn with flexible heights under certain circumstances
+* Fixed a bug whereby adding screenplay text immediately after the first #act element would force a restart of the plugin
+* Fixed a bug whereby adding a synopsis at the absolute top of the document would cause a fatal error
+* Fixed a bug whereby editing the content of a scene or section would throw an error if the original text included a quotation mark
+* Fixed a bug whereby editing the content of a scene or section from the outline could be locked in editing mode if trying to exit by clicking outside
+
+
+WORK IN PROGRESS:
+-----------------
+
+This version contains a few features that are still work in progress. But isn't it the cool thing to do now, to include them in the release anyway and call them beta? 
+Well, here goes. The features below will need further testing, so use with caution and expect changes to behavior in upcoming releases. 
+
+* Work in progress: BEATS
+  I'm actually semi-hesitant as to whether this is indeed a useful feature, but here it is anyway. It's most likely not very useful when writing, but could potentielly work when communicating to others where some certain beats of some certain story arc take place in the screenplay.
+    - To mark the Beats of certain storyline, enter a note with the keyword beat and the name of a storyline: [[beat time travel]]
+    - Press B to toggle the display of all beats in the script
+    - Beats with the same storyline name will automatically have the same color
+    - Hover a beat to display a dashed line combining all beats of the hovered storyline
+  Use with care, let me know if you find any use cases for it.
+  
+* Work in progress: Export outline as HTML. This is extremely bare-bones and probably not useful just yet. But wait and see.
+
+
+
+v 1.23 (feb 18, 2022)
+=====================
+
+* HOTFIX to solve shortcut key combination for English keyboards. In addition to CMD + PLUS, which still works, FTOutliner now also listens for CMD + EQUAL
+
+
+v 1.22 (feb 11, 2022)
+======================
+
+* HOTFIX to solve issue with sluggish behavior when typing in Sceneheadings or Synopsis.
+
+
 v 1.2 (jan 25, 2022)
 ===================
 
@@ -22,8 +150,8 @@ NEW FEATURES:
 * SELECTION TO NEW DOC
   Context menu item to create a new document populated with the contents of any scenes selected in the outline.
   Example workflow to print all scenes of specific color:
-    - ALT-click a color to dim all others
-    - press CMD + A to select all highlighted (i.e.non-dimmed) scenes
+    - ALT-click a colored scene to dim scenes of all other colors
+    - press CMD + A to select all non-dimmed scenes
     - right-click (or CTRL + click) on a selected scene to invoke the context menu
 
 IMPORTANT BUG FIX:
@@ -34,7 +162,7 @@ IMPORTANT BUG FIX:
 SMALLER CHANGES AND BUG FIXES:
 ------------------------------
 
-* IMPROVEMENT: Text that are not part of a scene -- i.e. immediately following a section header, without any preceding sceneheading -- will now be properly reflected in the outline
+* IMPROVEMENT: Text that are not part of a scene -- i.e. immediately following a section header, without any preceding sceneheading -- will now be reflected in the outline (as their own type of striped quasi-scenes)
 * IMPROVEMENT: Markers are recognized even if they contain information after the MARKER COLOR beginning. This way, a marker can read [[MARKER RED: Must rewrite this scene without animals]] and convey the reason the marker is there to begin with. (Note: This is not supported by Beat itself, so if you depend on markers in the document scrollbar do not use this.)
 * Improved ways to resize index card heights through toolbar buttons and new keyboard shortcuts to avoid conflict with US keyboards
 * Improved parsing logic when moving scenes and sequences

@@ -1,10 +1,10 @@
 <style>
 #contextmenu {
     position: absolute;
-    background-color: rgba(192,192,192,0.95);
+    background-color: rgba(192,192,192,0.9);
     border-radius: 6px;
-    font-size: 14px !important;
-    line-height: 20px !important;
+    font-size: 13px !important; /*was 14*/
+    line-height: 16px !important; /*was 20*/
     padding: 6px 10px !important;
     z-index: 9999;
     border: 1px rgb(192, 192, 192) solid;
@@ -12,6 +12,9 @@
     min-width: 200px;
 
     backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+
+    
 }
 
 #contextmenu .visible {
@@ -59,9 +62,9 @@
 }
 
 .colorSquare {
-    width: 16px !important;
-    height: 16px !important;
-    border-radius: 8px !important;
+    width: 14px !important; /*was 16*/
+    height: 14px !important; /*was 16*/
+    border-radius: 50% !important;
     display: inline-block !important;
     padding-top: 4px !important;
     transform: translateY(2.5px);
@@ -69,8 +72,8 @@
 }
 
 .trashCanMenuItem, .eyeWithCrossMenuItem, .eyeMenuItem, .clipboardMenuItem {
-    height: 16px !important;
-    width: 16px !important;
+    height: 14px !important;
+    width: 14px !important;
     display: inline-block !important;
     transform: translateY(2.5px);
 }
@@ -131,17 +134,35 @@
 
 function contextMenu(theRightClickedThing, x, y, rightClick){
 
-    mylog("contextMenu")
+    mylog("from " + JSON.stringify(contextMenu.caller?.name))
+    mylog("clicked this: " + theRightClickedThing.classList)
 
     a = [...theRightClickedThing.classList]
 
+    if (a.includes("editBox")){return}
+
+        if(a.includes("synopsiscontainer") || a.includes("orphanText") || a.includes("sceneheading") || a.includes("section-heading")){
+            
+            while(!a.includes("scene") && !a.includes("section")){
+                theRightClickedThing = theRightClickedThing.parentNode
+                a = [...theRightClickedThing.classList]
+                mylog("iterating up to... " + a)
+            }
+            
+            if (a.includes("section")){ 
+                //because absurdly we need to go back down the sectiontext (and soon up again but oookay.)
+                theRightClickedThing = theRightClickedThing.querySelector(".section-heading")
+                a = [...theRightClickedThing.classList]
+                }
+        } 
+
     //CMD+click to select multiple:
-    if ((rightClick) && (a.includes("sceneheading") || a.includes("sectiontext"))) {      
+    if ((rightClick) && (a.includes("scene") || a.includes("synopsis") || a.includes("section-heading"))) {      
         
-        if (a.includes("sectiontext")){theRightClickedThing = theRightClickedThing.parentNode}
+        if (a.includes("section-heading")){theRightClickedThing = theRightClickedThing.parentNode}
         if (!event.metaKey && !a.includes('isSelected')) {deselectAllElements()}
         
-        createContextMenu(a)
+        createContextMenu(a, x, y)
         theRightClickedThing.classList.add('isSelected')       
         return
     }
@@ -149,32 +170,26 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
     //user chose a color
     if ([...theRightClickedThing.classList].includes('colorListItem')) {
 
-        Beat.call(`
-        Beat.onTextChangeDisabled = true
-	    Beat.onOutlineChangeDisabled = true
-	    Beat.onSelectionChangeDisabled = true
-        `)
-
         closeContextMenu()
 
         let item = theRightClickedThing.id
         if (item == "remove color") {item = "none"}
 
-        let selectedElements = document.getElementsByClassName('isSelected')
+        let selectedElements = $$('.isSelected')
         let elementCountArray = []
 
             for (element of selectedElements) {
 
                 if (areScenesProportional == 1 && [...element.classList].includes("isOmitted")){continue}
                 
-                let elementCount = element.getAttribute("data-elementCount")
+                let elementCount = element.id
                 elementCountArray.push(elementCount)
 
             }
         
         weAreChangingColors = true
         Beat.call("Beat.custom.changeElementColor(" + JSON.stringify(elementCountArray) + ", '" + item + "')")
-
+        
         deselectAllElements()
     }   
 
@@ -184,7 +199,6 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
         closeContextMenu()
 
         if(theRightClickedThing.id == 'contentsToClipboard'){
-            mylog("yup")
             copyContentsToClipboard()
         }
 
@@ -208,7 +222,7 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
 
 function setContextMenuPosition(event, contextMenu) {
 
-    mylog("setContextMenuPosition")
+    mylog()
 
     var mousePosition = {};
     var menuPosition = {};
@@ -229,9 +243,9 @@ return menuPosition;
 
 function deselectAllElements(){
 
-    mylog("deselectAllElements")
+    mylog()
 
-    let selectedElements = document.getElementsByClassName('isSelected')
+    let selectedElements = $$('.isSelected')
 
     if (selectedElements.length){
         for (i = selectedElements.length - 1; i > -1; i--) {
@@ -242,14 +256,16 @@ function deselectAllElements(){
     mylog("end of deselectallelements")
 }
 
-function createContextMenu(clickedThingsClassList){   
+function createContextMenu(clickedThingsClassList, x, y){   
     
-    mylog("createContextMenu")
+    mylog()
+    mylog(clickedThingsClassList)
 
-    let theContextMenu = document.getElementById('contextmenu')
+    let theContextMenu = $id('contextmenu')
     let pluralSuffix = ""
+    let currentlySetColor = "none"
 
-    elements = document.getElementsByClassName('isSelected')
+    let elements = $$('.isSelected')
     let someAreOmitted = false
     let someAreUnOmitted = false
     if (elements.length > 1) {pluralSuffix = "s"}
@@ -258,28 +274,31 @@ function createContextMenu(clickedThingsClassList){
         if(![...element.classList].includes("isOmitted")){someAreUnOmitted = true}
     }
 
-    //mylog("<br>Some are omitted:" + someAreOmitted + ", some not:" + someAreUnOmitted + "<br>")
+    
 
     theContextMenu.innerHTML = "" 
     for (item of colorsArray) {
-        if (item == "Special" && !clickedThingsClassList.includes("sectiontext")){continue}
+        if ([...clickedThingsClassList].includes(item.toLowerCase())){currentlySetColor = item.toLowerCase()}
+        if (item == "Special" && !clickedThingsClassList.includes("section-heading")){continue}
         let iconString = ""
-        if (item == "Remove Color"){iconString = "<p style ='font-size: 26px !important; transform: translateY(-10px); line-height: 24px !important;'>&#xd7;</p>"}
+        if (item == "Remove Color"){iconString = "<p style ='font-size: 22px !important; transform: translateY(-11px); line-height: 24px !important;'>&#xd7;</p>"}
         theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 
             "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'>" + iconString + "</div>  &nbsp;&nbsp;" +
             item + "</li>"
     }
 
-    theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
-    theContextMenu.innerHTML += "<li class='command' id='contentsToClipboard'>" + 
+    if(!clickedThingsClassList.includes("synopsis")){
+        theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
+        theContextMenu.innerHTML += "<li class='command' id='contentsToClipboard'>" + 
             "<div class='clipboardMenuItem clickThru'>" + toNewIcon + "</div>  &nbsp;&nbsp;Selection to New Doc</li>"
+    }
 
     theContextMenu.innerHTML += "<li id='contextMenuDivider1' class='clickThru contextMenuDivider'><hr></li>"
     
-    document.getElementById('contextMenuDivider1').classList.add("displayNone")
+    $id('contextMenuDivider1').classList.add("displayNone")
 
-    if (clickedThingsClassList.includes('sceneheading')){
-        document.getElementById('contextMenuDivider1').classList.remove("displayNone")
+    if (clickedThingsClassList.includes('scene')){
+        $id('contextMenuDivider1').classList.remove("displayNone")
         if (!clickedThingsClassList.includes('isOmitted') || someAreUnOmitted){
         theContextMenu.innerHTML += "<li class='command' id='omitSceneCommand'>" + 
             "<div class='eyeWithCrossMenuItem clickThru'>" + hiddenIcon + "</div>  &nbsp;&nbsp;Omit Scene" + pluralSuffix + "</li>"
@@ -288,11 +307,26 @@ function createContextMenu(clickedThingsClassList){
         theContextMenu.innerHTML += "<li class='command' id='unOmitSceneCommand'>" + 
             "<div class='eyeMenuItem clickThru'>" + showIcon + "</div>  &nbsp;&nbsp;Un-omit Scene" + pluralSuffix + "</li>"
         }
-    theContextMenu.innerHTML += "<li class='command' id='deleteSceneCommand'>" + 
-            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div>  &nbsp;&nbsp;Delete Scene" + pluralSuffix + "</li>"
+    }
+
+    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('synopsis') ||  clickedThingsClassList.includes('section-heading')){
+        $id('contextMenuDivider1').classList.remove("displayNone")
+        let objectType = "scene"
+            if (clickedThingsClassList.includes('synopsis')) objectType = "synopse"
+            if (clickedThingsClassList.includes('section-heading')) objectType = "section"
+        theContextMenu.innerHTML += "<li class='command' id='deleteSceneCommand'>" + 
+            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div>  &nbsp;&nbsp;Delete " + objectType + pluralSuffix + "</li>"
     }
 
 
+    // //statistics section! DISABLED FOR NOW... but might be good if improved!
+    // if (clickedThingsClassList.includes('sceneheading')){
+    //     theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
+    //     let numberOfScenesLikeThis = $$("." + currentlySetColor)
+    //     theContextMenu.innerHTML += "x of " + numberOfScenesLikeThis.length + " scenes of color " + currentlySetColor
+
+    // }
+    
     theContextMenu.classList.add('visible')
     if (x + theContextMenu.offsetWidth > window.innerWidth - 20) {x = x - theContextMenu.offsetWidth}
     if (y + theContextMenu.offsetHeight > window.innerHeight - 20) {y = y - theContextMenu.offsetHeight}
@@ -300,25 +334,27 @@ function createContextMenu(clickedThingsClassList){
     theContextMenu.style.left = x + "px"
 
     contextMenuIsOpen = true
+
+    mylog("done creating")
     
 }
 
 function closeContextMenu(){
 
-    mylog("closeContextMenu")
+    mylog()
 
-    let theContextMenu = document.getElementById('contextmenu')
+    let theContextMenu = $id('contextmenu')
     contextMenuIsOpen = false
     if(theContextMenu){theContextMenu.classList.remove('visible')}
 
-    mylog("exiting closeContextMenu()")
+    mylog("exiting")
 }
 
 function omitScene(){
 
-    mylog("omitScene")
+    mylog()
 
-    let elements = document.getElementsByClassName('isSelected')
+    let elements = $$('.isSelected')
 
         if(areScenesProportional == 1){
             for(element of elements){
@@ -336,7 +372,7 @@ function omitScene(){
                 continue
             }
             if (![...elements[i].classList].includes("isOmitted")){
-            elementsToOmit.push(elements[i].getAttribute("data-elementCount"))
+            elementsToOmit.push(elements[i].id)
             }
         }
 
@@ -345,86 +381,107 @@ function omitScene(){
     }
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
+    weAreChangingColors = true
     Beat.call("Beat.custom.omitScene(" + areScenesProportional + ", [" + [...elementsToOmit] + "])")
     deselectAllElements()
 }
 
 function unOmitScene(){
 
-    mylog("unOmitScene")
+    mylog()
 
     Beat.call("Beat.onTextChangeDisabled = true")
     Beat.call("Beat.onOutlineChangeDisabled = true")
 	Beat.call("Beat.onSelectionChangeDisabled = true")
 
-    elements = document.getElementsByClassName('isSelected')
+    elements = $$('.isSelected')
     let elementsToUnOmit = []
 
         for (i = elements.length - 1; i > -1; i--) {
-            if ([...elements[i].classList].includes("isOmitted")){
-            elementsToUnOmit.push(elements[i].getAttribute("data-elementCount"))
+            if (elements[i].classList.contains("isOmitted")){
+            elementsToUnOmit.push(elements[i].id)
             }
         }
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
+    weAreChangingColors = true
     Beat.call("Beat.custom.unOmitScene([" + [...elementsToUnOmit] + "])")
     deselectAllElements()
 }
 
 function deleteScene(){
 
-    mylog("deleteScene")
+    mylog()
 
-    elements = document.getElementsByClassName('isSelected')
+    elements = $$('.isSelected')
 
         for(element of elements){
             element.classList.add("dimmedScene")
-            // if([...element.classList].includes("isOmitted")){
-            //     Beat.call("Beat.alert('Cannot delete omitted scenes', 'One or more scenes in the range you have selected to delete are currently omitted.\\n\\nPlease first unomit any scene you wish to delete, then try again.')")
-            //     undimAllScenes()
-            //     return
-            // }
         }
 
     let elementsToDelete = []
 
         for (i = elements.length - 1; i > -1; i--) {
-            // mylog(outline[elements[i].getAttribute("data-elementCount")].typeAsString)
-            // if(outline[elements[i].getAttribute("data-elementCount")].typeAsString == "Synopse"){continue}
-            elementsToDelete.push(elements[i].getAttribute("data-elementCount"))
+            elementsToDelete.push(elements[i].id)
         }
         
-    Beat.call("Beat.custom.deleteScene([" + [...elementsToDelete] + "])")
+    weAreChangingColors = true
+    if (elements[0].classList.contains("synopsis")){
+        Beat.call("Beat.custom.deleteSynopsis([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+    }else if (elements[0].classList.contains("section")){
+        Beat.call("Beat.custom.deleteSection([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+    }else{
+        Beat.call("Beat.custom.deleteScene([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+    }
     deselectAllElements()
-    mylog("exiting DeleteScene()")
+    mylog("exiting")
+}
+
+function ifYesToDelete(){ //this is visually-related stuff only and does not alter any actual data 
+
+    mylog("YES TO DELETE: Now shrinking the scenes.")
+
+    let selectedScenes = document.querySelectorAll('.dimmedScene')
+
+    mylog("this many: " + selectedScenes.length)
+
+    for (scene of selectedScenes){
+
+        scene.classList.add("longerAnimation")
+
+        let redraw = scene.getBoundingClientRect()
+
+            scene.style.opacity = "1"
+            scene.style.height = "0"
+            scene.style.minHeight = "0"
+            scene.style.margin = "0"
+        }    
 }
 
 function undimAllScenes(){
 
-    mylog("undimAllScenes")
+    mylog()
     actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
 
-    let elements = document.getElementsByClassName('dimmedScene')
-	// mylog("<br>antal element:" + elements.length + "," + elements +  "<br>")
+    let elements = $$('.dimmedScene')
 
 	for(i = elements.length-1; i > -1; i--){
-		mylog(i + ": " + elements[i] + "<br>")
 		elements[i].classList.remove('dimmedScene')
 	}
 }
 
 function copyContentsToClipboard(){
 
-    mylog("copyContentsToClipboard")
+    mylog()
 
-    let selectedElements = document.getElementsByClassName('isSelected')
+    let selectedElements = $$('.isSelected')
 
     let ranges = []
 
     for (let element of selectedElements){
         let obj = {}
-        obj.start = outline[element.getAttribute("data-elementCount")].sceneStart 
-        obj.end = outline[element.getAttribute("data-elementCount")].sceneEnd
+        obj.start = outline[element.id].sceneStart 
+        obj.end = outline[element.id].sceneEnd
         ranges.push(obj)        
     }
     

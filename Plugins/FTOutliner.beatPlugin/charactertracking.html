@@ -1,26 +1,51 @@
 <style>
 
 #tracking * {
- /* transition: 1s !important; */
- line-height: 16px !important;
- white-space: normal;
+
+    line-height: 16px !important;
+    white-space: normal;
+}
+
+#tracking.settingsWindow{
+
+
+
 }
 
 #tracking *:focus{
     outline: none !important;
 }
 
-.dimmedScene {
-    /* opacity: 10% !important; */
-    background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important;
+.dimmedScene{
+
+    /* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important; */
+    background-image: -webkit-linear-gradient(top, var(--pageBackground) ,var(--pageBackground) 100%) !important;
     color: rgba(0,0,0,0.2) !important;
     fill: rgba(0,0,0,0.2) !important;
     transition: 0s !important;
 }
 
+html[data-outdoors='1'] .dimmedScene{
+
+    border: 1px #777 dotted !important;
+}
+
+/*outdoorsy steeings continue at bottom bc of specificity*/
+
+/* html[data-theme='Beat'] .dimmedScene{
+    background-image: -webkit-linear-gradient(top, rgba(34,34,34,0.9) ,rgba(34,34,34,0.9) 100%) !important;
+
+} */
+
+.dimmedScene > .sceneheading{
+
+    color: rgba(0,0,0,0.3) !important;
+    fill: rgba(0,0,0,0.2) !important;
+    transition: 0s !important;
+}
+
 .dimmedScene > .padlockIcon {
-    /* opacity: 10% !important; */
-    /* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important; */
+
     color: rgba(0,0,0,0.2) !important;
     fill: rgba(0,0,0,0.2) !important;
     transition: 0s !important;
@@ -45,16 +70,12 @@
     fill: rgba(0,0,0,0.2) !important;
 }
 
-/* .printMode.uncolorAllScenesBut .padlockIcon{
-    display: none !important;
-} */
-
 .dimmedScene:hover, .dimmedScene:hover > p {
     color: rgba(255,255,255,0.4) !important;
 }
 
-.section:not(.level1).dimmedSection:not(#flexiContainer.synopsisForSectionsIsOn .dimmedSection), 
-.uncolorAllScenesBut .section:not(.level1):not(#flexiContainer.synopsisForSectionsIsOn .section){
+.section:not(.level1).dimmedSection:not(.indexCards .dimmedSection), 
+.uncolorAllScenesBut .section:not(.level1):not(.indexCards .section){
     
     border-color:rgba(0, 0, 0, 0) !important;
     background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
@@ -62,26 +83,55 @@
     /* border: 1px solid lime !important; */
 }
 
-.dimmedSection>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext),
-.uncolorAllScenesBut .sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext){
-    background-color: rgba(0,0,0,0) !important;
+.dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
+.uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading),
+.dimmedSection > .synopsiscontainer,
+.dimmedSection > .orphanText > .synopsiscontainer,
+.dimmedSection > .synopsiscontainer > .synopsis,
+.dimmedSection > .orphanText > .synopsiscontainer > .synopsis,
+.uncolorAllScenesBut .synopsiscontainer,
+.uncolorAllScenesBut .orphanText > .synopsiscontainer,
+
+.greyonly .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
+.greyonly.uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading),
+.greyonly .dimmedSection > .synopsiscontainer,
+.greyonly .dimmedSection > .orphanText > .synopsiscontainer,
+.greyonly .dimmedSection > .synopsiscontainer > .synopsis,
+.greyonly .dimmedSection > .orphanText > .synopsiscontainer > .synopsis,
+.greyonly.uncolorAllScenesBut .synopsiscontainer,
+.greyonly.uncolorAllScenesBut .orphanText > .synopsiscontainer
+
+.greyonly .dimmedScene > .synopsiscontainer,
+.greyonly .dimmedScene > .orphanText > .synopsiscontainer,
+.greyonly .dimmedScene > .synopsiscontainer > .synopsis,
+.greyonly .dimmedScene > .orphanText > .synopsiscontainer > .synopsis,
+.greyonly.uncolorAllScenesBut .synopsiscontainer,
+.greyonly.uncolorAllScenesBut .orphanText > .synopsiscontainer
+{
+    background: rgba(0,0,0,0) !important;
+    color:rgba(255, 255, 255, 0.10) !important;
 }
 
-.uncolorAllScenesBut.red .section.red > .sectiontext,
-.uncolorAllScenesBut.orange .section.orange > .sectiontext,
-.uncolorAllScenesBut.yellow .section.yellow > .sectiontext,
-.uncolorAllScenesBut.green .section.green > .sectiontext,
-.uncolorAllScenesBut.teal .section.teal > .sectiontext,
-.uncolorAllScenesBut.cyan .section.cyan > .sectiontext,
-.uncolorAllScenesBut.blue .section.blue > .sectiontext,
-.uncolorAllScenesBut.purple .section.purple > .sectiontext,
-.uncolorAllScenesBut.magenta .section.magenta > .sectiontext,
-.uncolorAllScenesBut.pink .section.pink > .sectiontext,
-.uncolorAllScenesBut.brown .section.brown > .sectiontext,
-.uncolorAllScenesBut.black .section.black > .sectiontext,
-.uncolorAllScenesBut.gray .section.gray > .sectiontext,
-.uncolorAllScenesBut.white .section.white > .sectiontext {
+.uncolorAllScenesBut.red .section.red > .section-heading,
+.uncolorAllScenesBut.orange .section.orange > .section-heading,
+.uncolorAllScenesBut.yellow .section.yellow > .section-heading,
+.uncolorAllScenesBut.green .section.green > .section-heading,
+.uncolorAllScenesBut.teal .section.teal > .section-heading,
+.uncolorAllScenesBut.cyan .section.cyan > .section-heading,
+.uncolorAllScenesBut.blue .section.blue > .section-heading,
+.uncolorAllScenesBut.purple .section.purple > .section-heading,
+.uncolorAllScenesBut.magenta .section.magenta > .section-heading,
+.uncolorAllScenesBut.pink .section.pink > .section-heading,
+.uncolorAllScenesBut.brown .section.brown > .section-heading,
+.uncolorAllScenesBut.black .section.black > .section-heading,
+.uncolorAllScenesBut.gray .section.gray > .section-heading,
+.uncolorAllScenesBut.white .section.white > .section-heading {
     color: black !important;
+}
+
+.uncolorAllScenesBut .section:hover{ /* since this doesn't do :not(.level1) this one obviously doesn't work */
+    /* border-left-color: red !important; rgba(255, 255, 255, 0.4) !important; */
+    /* border-left-color: rgba(0, 0, 0, 0) !important; */
 }
 
 #characterButton:is(.red, .orange, .yellow, .green, .teal, .cyan, .blue, .purple, .magenta, .pink, .brown, .grey, .black, .white) {
@@ -132,7 +182,7 @@
     fill: var(--grey) !important;
 }
 
-.section:not(.level1).dimmedSection:hover>.sectiontext:not(#flexiContainer.synopsisForSectionsIsOn .sectiontext){
+.section:not(.level1).dimmedSection:hover>.section-heading:not(#flexiContainer.sectionCards .section-heading){
     background-color: rgba(40,40,40,1) !important;
 }
 
@@ -164,7 +214,8 @@ svg {
 }
 
 #indexCardButton.buttonIsActive svg {
-    transform: scale(0.8) translateY(1.5px) !important;
+    /* transform: scale(0.8) translateY(1.5px) !important; */
+    transform: scale(1) translate(0px, 0px) !important;
 }
 
 .bullets {
@@ -202,10 +253,32 @@ svg {
 
 }
 
+#indexCardBkg{
+    padding-left: 50px !important;
+    padding-top: 3px !important;
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 12px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4)
+
+}
+
+/*@todo remmed out all these SELECT stuffs*/
+
+#selectlistparent{
+
+    width: 50% ;
+}
+
+#selectlistparent select{
+
+}
+
 select, select * {
 
     height: 100% !important;
-    width: 90% !important;
+    width: 100% !important;
     border-radius: 6px !important;
     border: 1px inset;
 
@@ -219,15 +292,35 @@ select, select * {
     padding: 10px !important;
 
     list-style-position: outside;
+    
 }
 
-select::-webkit-scrollbar,
+/* select::-webkit-scrollbar,
 select *::-webkit-scrollbar {
     background: unset;
-}
+}  */
 
 option {
-    line-height: 18px !important;
+    line-height: 20px !important;
+    width: 100% !important;
+    padding: 4px !important;
+}
+
+option:nth-of-type(even){
+    background: #eee;
+
+}
+
+option:checked{
+    background: #027aff !important;
+    background-color: #027aff !important;
+    border: 1px gold dotted
+}
+
+#tracking .normalWindowText{
+    width: 50%;
+    float: left;
+    padding-right: 15px !important;
 }
 
 .normalWindowText li {
@@ -263,78 +356,61 @@ li {
     /* background-color: white; */
 }
 
-#colorDropdown{
+/* #colorDropdown{
     width: 50% !important;
     display: inline;
     background-color: white !important;
     appearance: none !important;
     margin-top: -3px !important;
+} */
+
+html[data-outdoors='1'] .section.dimmedSection > .section-heading {
+
+    color: black !important;
+    
+    /* outline: 1px solid lime !important */
 }
 
 </style>
 
 <div id="tracking" class="settingsWindow" style="display: none;" onblur="toggleTrackingContainer()">
    
-    <div id="upperframe">
-
     <div id="selectlistparent" class="rightfloat" style="height: calc(100% - 40px) !important; text-align: right !important;">
     <select style="height: 100% !important;" multiple onchange="updateFilter()" id="characterMenuList"></select><br/>
-    <button id="deselectAllCharacters" onclick="deselectAllCharacters()">Deselect all</button>
+    
+    <button class="generalButtonStyle" id="deselectAllCharacters" onclick="deselectAllCharacters()">Deselect all</button>
+        <!--p id="okbuttonpara2"-->
+        <button class="generalButtonStyle" id="okbutton2" type="button" onclick="toggleTrackingContainer()">Close</button><!--/p-->
 
     </div>
 
-    <div  id="trackertext"><p class="normalWindowText"><span class="headline">Track characters</span><br/><br/>
+    <div  id="trackertext"><p class="normalWindowText"><span class="headline"><br/>Track characters</span><br/><br/>
 
-        Select characters in the list to highlight scenes where they appear.<br/>
-        Selecting more than one will highlight scenes where ALL are present.<br/><br/>
-        <div id="hints">
-        <b>KEYBOARD SHORTCUTS:</b>
-        <ul>
-        <li>Highlight your nine most frequent characters with keys 1&mdash;9.</li>
-        <li>Hold CMD to select two or more characters simultaneously</li>
-        <li>Deselect all highlights with 0 (zero).</li>
-        <li>Open (and dismiss) this dialog by pressing T for ”Tracking”.</li>
-        </ul>
-        <span class="shortcutText">
-            <b>TIP: </b>You can avoid false positives by adding an empty note inside a name to hide it from being tracked:<br/> <!--span class="scriptTextInWindow"--> ”She grabs the gun Fra[[]]nk gave her”<!--/span--></span>
-        </div>
+        Select characters in the list to highlight scenes where they appear.<br/><br/>
+        CMD + click to select multiple.<br/><br/> 
+        Selecting more than one name will highlight scenes where ALL characters are present.<br/><br/>
+        
+        
     </p>
     </div>
     
-    </div>
-    <hr/>
-    <br/>
-    <div id="trackingoutro">
-        <span class="headline">Isolate scenes/sections by color</span><br/><br/>
-
-        Dim all scenes and sections except for: <select id="colorDropdown" onchange="simulateAltClick()" class="rightfloat"><option>no colors set</option></select><br/>
-        
-        
-        <br/>
-
-        <b>SHORTCUTS:</b> To isolate a color without opening this dialog, ALT+click on a colored scene to dim all others. 
-        (ESC or ALT+clicking anywhere else reverts to normal.)<br/>
-        
-    </div>
-    <div>
-        <br/>
-        <p id="okbuttonpara2" style="text-align: right;"><button id="okbutton2" type="button" onclick="toggleTrackingContainer()">Close</button></p>
-    </div>
 </div>
-
 
 <script>
 
 var iCameFromToggleCharacter = -1
+var iCameFromMenu = false
 var scenesWithCharacters = []
 
 function collectCharacters() {
-    mylog("collectCharacters")
+    mylog()
     //first request the data, then have plugin send that data into makeCharacterMenu
     Beat.call("Beat.custom.addCharacterClasses()")
 }
 
 function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
+
+    globalAllCharacters = allCharacters
 
     if ((!scenesWithCharacters.length) || (scenesWithCharacters != scenesWithCharactersProxy)){
 
@@ -344,9 +420,9 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
         let itemNumber = 0
         scenesWithCharacters = scenesWithCharactersProxy //workaround to make this globally accessible
 
-        if (document.getElementById("characterMenuList").selectedOptions){
+        if ($id("characterMenuList").selectedOptions){
              
-            previouslySelectedCharacters = document.getElementById("characterMenuList").selectedOptions
+            previouslySelectedCharacters = $id("characterMenuList").selectedOptions
             for (character of previouslySelectedCharacters){
                 reselectThese.push(character.value)
             }
@@ -379,11 +455,16 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
     if (iCameFromToggleCharacter != -1){
         toggleSoloCharacter(iCameFromToggleCharacter)
     }
+    if (iCameFromMenu){
+        iCameFromMenu = false
+        trackingMenu()
+    }
 
-    alsoFillColorDropdown()
+    //alsoFillColorDropdown()
 
     document.getElementById("characterMenuList").focus()
     //    updateFilter()
+    mylog("end of collect")
 }
 
 function alsoFillColorDropdown(){
@@ -394,12 +475,11 @@ function alsoFillColorDropdown(){
     for (let color of colorsArray){
         if (color == "Remove Color" || color == "Special"){continue}
 
-        if (document.querySelector("." + color.toLowerCase())){
+        if ($(".scene." + color.toLowerCase() + ", .section." + color.toLowerCase())){
             dropdown += "<option>" + color + "</option>"
 
             if ([...document.getElementById("flexiContainer").classList].includes(color.toLowerCase())){
                 alreadySelected = color
-                //Beat.call("Beat.alert('"+i+"')")
             }
         }
     }
@@ -411,14 +491,14 @@ function alsoFillColorDropdown(){
 
 function updateFilter(scenesWithCharactersProxy){
 
-    mylog("updateFilter")
+    mylog()
 
-    let allScenes = document.getElementsByClassName('sceneheading')
-    let allSections = document.getElementsByClassName('section')
+    let allScenes = $$('.scene')
+    let allSections = $$('.section')
 
     if (scenesWithCharactersProxy) {scenesWithCharacters = scenesWithCharactersProxy} //again making it global
 
-    let selectedCharacters = document.getElementById("characterMenuList").selectedOptions
+    let selectedCharacters = $id("characterMenuList").selectedOptions
 
     if (selectedCharacters.length){
 
@@ -427,7 +507,7 @@ function updateFilter(scenesWithCharactersProxy){
         
             for (i=0; i<outline.length; i++){
                 if (outline[i].typeAsString == "Heading"){
-                    let num = outline[i].sceneNumber
+                    let num = i
                     let removeDim = false
                     if (scenesWithCharacters[num]){
                         removeDim = true
@@ -441,14 +521,9 @@ function updateFilter(scenesWithCharactersProxy){
                             }
                         }
                     }
-                    if (!outline[i].omitted){
-                        if (removeDim == true){document.getElementById(num).classList.remove("dimmedScene")}
-                    }else{
-                         // this will help show character in omitted scene, but only if scene has forced number.
-                         // previously it threw an error, so this is better.
-                         // for scenes with no number ( = normal omitted ones!) filter will miss present characters. 
-                        if (removeDim == true){document.querySelector("[data-elementCount='" + i + "']").classList.remove("dimmedScene")}
-                    }
+
+                    if (removeDim == true){$id(i).classList.remove("dimmedScene")}
+
                 }
             }
     }
@@ -473,6 +548,8 @@ function updateFilter(scenesWithCharactersProxy){
         }
     }
     mylog("end of UpdateFilter")
+
+    //if($id("trackingMenu")){trackingMenu()}
 }
 
 function deselectAllCharacters() {
@@ -481,11 +558,12 @@ function deselectAllCharacters() {
 }
 
 function toggleSoloCharacter(theKey) {
-    mylog("toggleSoloCharacter(" + theKey +")" )
+    mylog()
+    mylog("theKey is " + theKey + "")
 
     theKey --
 
-    if (!characterMenuList || characterMenuList.length == 0) {
+    if (!characterMenuList || characterMenuList.length == 0) {
 
         iCameFromToggleCharacter = theKey + 1
         collectCharacters()
@@ -506,59 +584,61 @@ function toggleSoloCharacter(theKey) {
     }
     iCameFromToggleCharacter = -1
 
-    mylog("still in toggle, before sending to updateFilter()")
+    mylog("exiting, just before sending to updateFilter()")
 
     updateFilter()
 }
 
 function simulateAltClick(){
 
-    let theSelection = document.getElementById("colorDropdown").selectedOptions
-    let theClickedThing = {}
-    theClickedThing.classList = ["sceneheading", theSelection[0].value.toLowerCase()]
-
-    //Beat.call("Beat.alert('"+theClickedThing.classList+"')")
-
-    if ([...document.getElementById("flexiContainer").classList].includes("uncolorAllScenesBut")){
+    let theSelections = document.getElementById("colorDropdown").selectedOptions
+    let theSelection = theSelections[0].value
+    
+    if ($id("flexiContainer").classList.contains("uncolorAllScenesBut")){
         muteColors()    
-    } //if already on, this first time toggles it off before:
+    } //i.e. if already on, this toggles it off before selecting new color
 
-    if (theSelection[0].value != "(None)"){ //do not toggle on if user chose "none"
-        muteColors(theClickedThing)
+    if (theSelection != "(None)"){ //do not toggle on if user chose "none"
+        muteColors($(`.scene.${theSelection.toLowerCase()}, .section.${theSelection.toLowerCase()}`))
     }
+
+    deselectAllElements()
 
 }
 
 
 function muteColors(theClickedThing, shift){
 
-    mylog("muteColors")
+    mylog(theClickedThing?.classList)
     
-    if (!shift && [...document.getElementById("flexiContainer").classList].includes("uncolorAllScenesBut")){
-        document.getElementById("flexiContainer").classList.remove("uncolorAllScenesBut")
+    if (!shift && $id("flexiContainer").classList.contains("uncolorAllScenesBut")){
+        $id("flexiContainer").classList.remove("uncolorAllScenesBut")
         for (let color of colorsArray){
-            if([...document.getElementById("flexiContainer").classList].includes(color.toLowerCase())){
-                document.getElementById("flexiContainer").classList.remove(color.toLowerCase())
-                document.getElementById("characterButton").classList.remove(color.toLowerCase())
+            if($id("flexiContainer").classList.contains(color.toLowerCase())){
+                $id("flexiContainer").classList.remove(color.toLowerCase())
+                $id("characterButton").classList.remove(color.toLowerCase())
             }
         }
         return
     }
 
-    if(!theClickedThing || ![...theClickedThing.classList].includes("sceneheading")){
+    if(!theClickedThing || !theClickedThing.closest(".scene, .section")){
+        mylog("returning bc no closest scene or section")
         return
     }
     
-    document.getElementById("flexiContainer").classList.add("uncolorAllScenesBut")
+    $id("flexiContainer").classList.add("uncolorAllScenesBut")
+    theClickedThing = theClickedThing.closest(".scene, .section")
 
     for (let color of colorsArray){
-        if([...theClickedThing.classList].includes(color.toLowerCase())){
+        if(theClickedThing.classList.contains(color.toLowerCase())){
             document.getElementById("flexiContainer").classList.add(color.toLowerCase())
             document.getElementById("characterButton").classList.add(color.toLowerCase())
             break
         }
     }
     
+    deselectAllElements()
 
 }
 
