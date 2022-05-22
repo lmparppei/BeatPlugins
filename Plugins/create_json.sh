@@ -6,7 +6,8 @@
 IFS=$'\n'
 
 json_escape () {
-    printf '%s' "$1" | python -c 'import json,sys; print(json.dumps(sys.stdin.read(), ensure_ascii=False))'
+    printf '%s' "$1" | python3 -c 'import json,sys; 
+print(json.dumps(sys.stdin.read(), ensure_ascii=False))'
 }
 
 json="{"
