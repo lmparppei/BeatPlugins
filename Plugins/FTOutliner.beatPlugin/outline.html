@@ -1058,6 +1058,8 @@ function recalculateHeights(wherefrom){
 
 	for (section of allSections) {
 
+		if(section.id < 0)continue
+
 			let thisAct = Number(section.getAttribute('data-in-act'));
 			sectionsPerAct[thisAct] ++ 
 
