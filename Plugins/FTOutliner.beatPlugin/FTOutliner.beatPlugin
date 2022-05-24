@@ -3,10 +3,10 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.4
+Version: 1.41
 Compatibility: 1.929
 Type: Tool
-Image: screenshots.jpg
+Image: screenshot.jpg
 
 <Description>
 <style>
