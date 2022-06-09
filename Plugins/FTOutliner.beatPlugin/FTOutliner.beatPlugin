@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.41
+Version: 1.42
 Compatibility: 1.929
 Type: Tool
 Image: screenshot.jpg
@@ -309,7 +309,7 @@ Beat.custom.updateOnlyOneScene = function (location, length) {
 		return
 	}
 
-	if (location<1000){ //crude way so as not to evaluate when past title page
+	if (location < Beat.outline()[0]?.sceneStart){ //look for title page changes only if typing before first outline
 		
 		let a = Beat.currentParser.lineAtPosition(location)
 		if (a.isTitlePage){
@@ -1639,6 +1639,10 @@ if (titlePageLine && titlePageLine.toLowerCase().startsWith("credit:")){
 	documentSubName = titlePageLine.replace(/^credit:\s*/i, "")
 }
 
+if (documentName && (!Beat.getDocumentSetting("documentName") || Beat.getDocumentSetting("documentName") == '""')) Beat.setDocumentSetting("documentName", JSON.stringify(documentName))
+if (documentSubName && (!Beat.getDocumentSetting("documentSubName") || Beat.getDocumentSetting("documentSubName")) == '""') Beat.setDocumentSetting("documentSubName", JSON.stringify(documentSubName))
+//if (!Beat.getDocumentSetting("documentAuthor") || Beat.getDocumentSetting("documentAuthor") == '""') Beat.setDocumentSetting("documentAuthor", xxx)
+
 setWindowTitle()
 
 }
@@ -1651,14 +1655,14 @@ function setWindowTitle() {
 
 	windowTitle = "FTOutliner"
 
-	if (Beat.getDocumentSetting("documentName")) documentName = (Beat.getDocumentSetting("documentName")) || (Beat.getDocumentSetting("documentName"))
-	if (Beat.getDocumentSetting("documentSubName")) documentSubName = (Beat.getDocumentSetting("documentSubName")) || (Beat.getDocumentSetting("documentSubName"))
-	if (Beat.getDocumentSetting("documentAuthor")) documentAuthor = (Beat.getDocumentSetting("documentAuthor")) || (Beat.getDocumentSetting("documentAuthor"))
+	if (Beat.getDocumentSetting("documentName") && Beat.getDocumentSetting("documentName") != '""') documentName = (Beat.getDocumentSetting("documentName")) || (Beat.getDocumentSetting("documentName"))
+	if (Beat.getDocumentSetting("documentSubName")  && Beat.getDocumentSetting("documentSubName") != '""') documentSubName = (Beat.getDocumentSetting("documentSubName")) || (Beat.getDocumentSetting("documentSubName"))
+	if (Beat.getDocumentSetting("documentAuthor")  && Beat.getDocumentSetting("documentAuthor") != '""') documentAuthor = (Beat.getDocumentSetting("documentAuthor")) || (Beat.getDocumentSetting("documentAuthor"))
 
 	//This hopefully solves backwards compatibility and manages names whether stringified or not
-	if (documentName?.startsWith('"'))documentName = JSON.parse(documentName)
-	if (documentSubName?.startsWith('"'))documentSubName = JSON.parse(documentSubName)
-	if (documentAuthor?.startsWith('"'))documentAuthor = JSON.parse(documentAuthor)
+	if (documentName && documentName.startsWith('"'))documentName = JSON.parse(documentName)
+	if (documentSubName && documentSubName.startsWith('"'))documentSubName = JSON.parse(documentSubName)
+	if (documentAuthor && documentAuthor.startsWith('"'))documentAuthor = JSON.parse(documentAuthor)
 
 	if (documentName){windowTitle += " — " + documentName}
 	if (documentName && documentSubName){windowTitle += " (" + documentSubName + ")"}
@@ -1706,6 +1710,18 @@ Beat.custom.blinkTheLine = function(start, end, color, textcolor){
 Beat.custom.sendTextToHTML = function(startIndex, endIndex){
 	allText = Beat.getText()
 	htmlWindow.runJS("receiveText(`" + allText + "`," + startIndex + "," + endIndex + ")")
+}
+
+Beat.custom.sendChangelogToDialog = function(){
+
+	let message = Beat.assetAsString("changelog")
+
+	// Beat.alert(message)
+
+	let jsToRun = `displayAnyBox(${JSON.stringify(message)})`
+	
+	htmlWindow.runJS(jsToRun)
+
 }
 
 Beat.custom.copyRangeToClipboard = function(ranges){
