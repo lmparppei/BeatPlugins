@@ -61,7 +61,8 @@
 
 #aboutBox,
 #printbox,
-#errorWindow{
+#errorWindow,
+#textContainer{
 	height: auto !important;
 	z-index: 9998 !important;
 
@@ -630,6 +631,95 @@ line-height: 18px !important;
 	padding-left: 120px !important;
 }
 
+#---CHANGELOG{}
+
+#textContainer{
+
+max-height: 85%;
+}
+
+[class*=changelog],
+#textContainer *{
+
+/* font-family: 'Courier Prime Sans', monospace; */
+/*font-size: 12px !important; */
+line-height: 18px !important; 
+white-space: pre-wrap !important;
+
+}
+
+.changelog-bold{
+
+	font-weight: 900;
+	font-size: 14pt;
+
+}
+
+.changelog-mosttext,
+.changelog-mosttext p{
+
+	/* color: red; */
+}
+
+.changelog-item,
+.changelog-item-bullet {
+
+	/* margin-left: 3ch !important; */
+	margin-left: 15px !important;
+	/* color: blue; */
+
+	margin-top: 0px !important;
+	margin-bottom: 0px !important;
+	padding-top: 0px !important;
+	padding-bottom: 0px !important;
+	
+
+}
+
+.changelog-item-bullet::before {
+
+	content: "⚫︎";
+	/* content: "*"; */
+	/* margin-left: -2ch !important; */
+	margin-left: -15px !important;
+
+}
+
+.changelog-subitem,
+.changelog-subitem-bullet{
+	
+	/* margin-left: 5ch; */
+	margin-left: 30px;
+	/* color: green */
+}
+
+.changelog-subitem-bullet::before{
+
+	/* content: "◦"; */
+	/* font-size: 20pt; */
+	content: "⚪︎";
+	/* margin-left: -2ch !important; */
+	margin-left: -15px !important;
+	
+}	
+
+.bottomArea{
+
+	position: sticky;
+	bottom: -40px !important;
+	left: 0px !important;
+
+	height: 100px;
+	width: 100%;
+
+	background: linear-gradient(0deg,
+		var(--menu-background) 0%,
+		var(--menu-background) 65%,
+		transparent 100%
+		);
+
+}
+
 </style>
 
 <!-- here's some actual HTML that is not generated from JS. Change when I get the time. -->
@@ -698,8 +788,7 @@ line-height: 18px !important;
 		<br>
 		<p class="mostText"><span class="key">§</span><span class="mostText"> Show/Hide the NOTE PANEL</p>
 		<br/>
-		<p class="mostText" style="margin-left: 0px !important">NOTE: Notes are shown in yellow unless starting with ? (green) or ! to !!! (red, magenta, purple). 
-			Notes that start with a question mark will be colored green.</p>
+		<p class="mostText" style="margin-left: 0px !important">NOTE: Notes are shown in yellow unless starting with ? (green) or !, !! or !!! (red, magenta or purple, respectively). </p>
 		<br/>
 		</div>
 	<div class="collection">
@@ -864,6 +953,61 @@ function displayErrorMessage(information){
 
 }
 
+
+function displayAnyBox(message){
+
+
+	if($id("menu"))$id("menu").remove()
+
+	let textContainer = document.createElement("div")
+		textContainer.id = "textContainer"
+		textContainer.classList.add("settingsWindow")
+		textContainer.style.overflowY = "scroll"
+		textContainer.onclick = function(){toggleTrackingContainer(true)}
+		
+	let innerContainer = document.createElement("div")
+		innerContainer.classList.add("innerDiv")
+		// innerContainer.style.fontFamily = "'Courier Prime Sans', monospace"
+		innerContainer.innerHTML = "<br/><p class='headline'>Version History</p>"
+
+	let bottomArea = document.createElement("div")
+		bottomArea.id = "bottomArea"
+		bottomArea.classList.add("bottomArea")
+
+	let closeButton = document.createElement("div")
+		closeButton.id = "textCloseButton"
+		closeButton.classList.add("generalButtonStyle")
+		closeButton.style.position = "absolute"
+		closeButton.style.bottom = "20px"
+		closeButton.style.left = "50%"
+		closeButton.style.transform = "translateX(-50%)"
+		closeButton.innerHTML = "Sure. Fine. Whatever."
+		closeButton.onclick = function(){toggleTrackingContainer(true)}
+		
+		message = message.replace(/(\n.*\n)\s*-+\s*\n/gm, "<strong><u>$1</u></strong>\n") //underlined
+		message = message.replace(/^[^\S\n]+-\s+(.*)\n/gm, "<p class='changelog-subitem-bullet'> $1</p>") //sub-bullet
+		message = message.replace(/^[^\S\n]+(.*)\n/gm, "<p class='changelog-subitem'>$1</p>\n") //sub no-bullet
+		
+		message = message.replace(/^\*\s+(.*)\n/gm, "<p class='changelog-item-bullet'> $1</p>") //bullet
+
+		message = message.replace(/^(\=+)/gm, "")//"<span class='changelog-bold'>$1</span>")
+		message = message.replace(/^(v\s\d.*)\n/gm, "<hr><br/><span class='changelog-bold'>$1</span>") //bold
+
+		// message = message.replace(/^[^\S\n]+(.*)\n/gm, "<p class='changelog-subitem'>$1</p><br/>")
+
+		// message = message.replace(/\s-\s(.*)\n/g, "<p class='changelog-sub-item'>$1</p>")
+		// message = message.replace(/\*(.*)\n/g, "<p class='changelog-item';'>$1</p>")
+		// message = message.replace(/\n\n/g, "</p><br/><p class='changelog-mosttext'>")
+		message = message.replace(/\n/g, "<br/>")
+		innerContainer.innerHTML += "<p class='changelog-mosttext'>" + message + "</p>"
+	
+	coverContainer.style.display = "block"
+	$id("flexiContainer").appendChild(textContainer)
+	$id("textContainer").appendChild(innerContainer)
+	$id("textContainer").appendChild(bottomArea)
+	$id("bottomArea").appendChild(closeButton)
+	
+}
 
 function displayAboutBox(){
 

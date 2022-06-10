@@ -1,4 +1,21 @@
-CHANGELOG
+
+v 1.42 (June 9, 2022)
+======================
+
+The post-release, how-did-I-not-notice-that update:
+
+BUG FIXES:
+
+* Fixed a bug that if the first section element was not a one-hashtag #ACT, every new section would start its own column until an #ACT was encountered
+* Fixed logic that incorrectly prevented dragging scenes or sequences into acts before the beginning of its first following lower-level section.
+* Added logic to prevent entire #acts from being dragged into the boneyard, since this would in effect convert the boneyard into a normal act.
+* Fixed a bug whereby some screenplay text might under certain circumstances be included in a bug report.
+* Fixed a bug whereby using the ADD button to add a section at the absolute end of a document might cause Beat to freeze
+* Removed shortcut from the Force Restart menu item. It was never supposed be easily triggered (and also used a very local character, so frustrating for most people anyway had they wanted to)
+
+OTHER STUFF:
+
+* Added Version History menu item. You probably know, that's probably how you're reading this right now.
 
 
 v 1.41 (May 24, 2022)
@@ -17,38 +34,35 @@ With that taken care of, today marks the release of a quite substantial rewrite 
 NEW FEATURES:
 -------------
 
-1. PERHAPS BOTH MOST AND LEAST IMPORTANT: A NEW MENU INTERFACE
+* PERHAPS BOTH MOST AND LEAST IMPORTANT: A NEW MENU INTERFACE
 
-   - Commands are now collected in menus, more logically grouped and also with more commands available without remembering a keyboard shortcut. Unless you want to, in which case that still works. You'll find the shortcuts in the menus.
-   - Cycle the menus with F1 in case you want to use them but still don't want to take your fingers off the keyboard. We're all different.
-   - Oh, and if your system is set to dark mode, menus and dialogs of FTOutliner will follow suite.
+  - Commands are now collected in menus, more logically grouped and also with more commands available without remembering a keyboard shortcut. Unless you want to, in which case that still works. You'll find the shortcuts in the menus.
+  - Cycle the menus with F1 in case you want to use them but still don't want to take your fingers off the keyboard. We're all different.
+  - Oh, and if your system is set to dark mode, menus and dialogs of FTOutliner will follow suite.
 
+* the NOTE PANEL is a slide-in panel to show a list of all notes in the document. 
+   
+  - Open it from the Note Menu, or by pressing §
 
-2. the NOTE PANEL is a slide-in panel to show a list of all notes in the document. 
-   Available from the note menu or by pressing §
+* the BONEYARD is a special column where you can drag scenes and sequences you don't know where to put.
 
+  - Add a Boneyard act from the Outline Menu (shortcut CMD + B)
+  - Hide/show the Boneyard by clicking it, or using the same shortcut CMD + B once a Boneyard is present
 
-3. the BONEYARD is a special column where you can drag scenes and sequences you don't know where to put.
+  You can also create your boneyard manually by adding a one-hashtag #ACT at the end of your script and naming it Boneyard, because that's what FTOutliner does when you hit CMD + B. 
+  The Boneyard act then changes behavior into a collapsible area that is visually different from the rest of your structure.
 
-   - Add a Boneyard act from the Outline Menu (shortcut CMD + B)
-   - Hide/show the Boneyard by clicking it, or using the same shortcut CMD + B once a Boneyard is present
+  NOTE: Admittedly, this is more of a hack than an actual feature. An actual Boneyard feature would let you store material that would then not print/export together with the non-boneyard stuff.
+  Since the Boneyard isn't recognized by Beat itself, whatever you store there will still be considered part of your script and will print with the document.
+  So consider the boneyard a storage place for scenes as you work -- still in the document, but visually separated or even hidden from view -- but make sure to manually delete or hide them before distributing.
 
-   You can also create your boneyard manually by adding a one-hashtag #ACT at the end of your script and naming it Boneyard, because that's what FTOutliner does when you hit CMD + B. 
-   The Boneyard act then changes behavior into a collapsible area that is visually different from the rest of your structure.
+  (Also, the Boneyard only works in multi-column mode. In one-column mode it just sits like an act at the bottom.)
 
-   NOTE: Admittedly, this is more of a hack than an actual feature. An actual Boneyard feature would let you store material that would then not print/export together with the non-boneyard stuff.
-   Since the Boneyard isn't recognized by Beat itself, whatever you store there will still be considered part of your script and will print with the document.
-   So consider the boneyard a storage place for scenes as you work -- still in the document, but visually separated or even hidden from view -- but make sure to manually delete or hide them before distributing.
+* QUITE MASSIVE revision to the INDEX CARD feature:
 
-   (Also, the Boneyard only works in multi-column mode. In one-column mode it just sits like an act at the bottom.)
-
-
-4. QUITE MASSIVE revision to the INDEX CARD feature:
-
-  ONE SINGLE MODE:
-  ----------------
-  - Instead of the two index card modes from before (sections or scenes) there is now only one index card mode. 
-  - In INDEX CARD MODE, you can now choose to display scenes or sequences independently -- effective emulating either of the two previous modes -- but also anything in between:
+  - ONE SINGLE MODE:
+    - Instead of the two index card modes from before (sections or scenes) there is now only one index card mode. 
+    - In INDEX CARD MODE, you can now choose to display scenes or sequences independently -- effective emulating either of the two previous modes -- but also anything in between:
     - a. collapsing all scene cards into dots will let you focus on section cards only
     - b. collapsing all section cards into single lines will let you focus on scene cards only
     - c. independently expanding the scenes for any section, or the section card for any group of scenes, or anything in between, lets you seamlessly concentrate on any level as you work
@@ -58,12 +72,11 @@ NEW FEATURES:
     - Shortcut D will alternately expand or collapse all section cards at once. 
     - The triangle to the left of scenes, and icon in top corner of sections, will toggle that scene group or section card only.
 
-  EDIT, REARRANGE AND ADD NEW INDEX CARDS -- ALL IN THE FTOUTLINER WINDOW
-  -----------------------------------------------------------------------
-  - Drag and drop to rearrange sequences, scenes, or individual synopsises.
-  - Synopsis can be edited by double-clicking a synopsis in an index card (names of scenes and sections too, since some versions back)
-  - New synopsis can be added by double-clicking the empty area in an index card
-  - New index cards (scene or section) can be added directly below any card by holding ALT and selecting the plus button that appears
+  - EDIT, REARRANGE AND ADD NEW INDEX CARDS -- ALL IN THE FTOUTLINER WINDOW
+    ~ Drag and drop to rearrange sequences, scenes, or individual synopsises.
+    - Synopsis can be edited by double-clicking a synopsis in an index card (names of scenes and sections too, since some versions back)
+    - New synopsis can be added by double-clicking the empty area in an index card
+    - New index cards (scene or section) can be added directly below any card by holding ALT and selecting the plus button that appears
 
   RESIZING
   --------
@@ -120,7 +133,6 @@ Well, here goes. The features below will need further testing, so use with cauti
   Use with care, let me know if you find any use cases for it.
   
 * Work in progress: Export outline as HTML. This is extremely bare-bones and probably not useful just yet. But wait and see.
-
 
 
 v 1.23 (feb 18, 2022)

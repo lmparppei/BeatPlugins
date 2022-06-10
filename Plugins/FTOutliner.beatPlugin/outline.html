@@ -296,8 +296,8 @@ function startFullUpdate(delayTime) { //not getting loc and len from outlinechan
 	actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
 
 	//document.getElementById('outOfSyncDiv').classList.add('animate');
-	document.getElementById('outOfSyncDiv').style.display = 'block'
-	document.getElementById('flexiContainer').classList.add("wait")
+	$id('outOfSyncDiv').style.display = 'block'
+	flexiContainer.classList.add("wait")
 	
 	if (isRealTimeOn == 0 && weAreChangingColors == false){
 		document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
@@ -548,12 +548,12 @@ function divMaker(location, fullupdate){
 
 		currentItem = outline[num]
 
-		//first creating a FAUX ACT if doc does not start we with a section
-		if (num == 0 && outline[num].typeAsString != "Section") {
-		// if (num == 0 && (outline[num].typeAsString != "Section" || (outline[num].typeAsString == "Section" && Number(outline[num].sectionDepth) > 1))) {
+		//first creating a FAUX ACT if doc does not start with a level 1 section
+			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1)) {
 							
 				let sectionDiv = document.createElement("div")
 					sectionDiv.id = "-1"
+					sectionDiv.classList.add("faux")
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level1")
 					sectionDiv.classList.add("isExpanded")
@@ -566,19 +566,6 @@ function divMaker(location, fullupdate){
 					sectionSynConDiv.classList.add("synopsiscontainer")
 					sectionSynConDiv.dataset.line = currentItem.sceneStart
 					
-					// if(currentItem.sceneStart > 0){ //checks for orphan material before first element
-					// 	//first check for lines that are title material and remove that
-						
-					// 	let orphanDiv = document.createElement("div")
-					// 		orphanDiv.classList.add("orphanText")
-					// 		orphanDiv.classList.add("scene")
-					// 		orphanDiv.id = "orphanStart"
-					// 		orphanDiv.dataset.line = 0
-					// 		orphanDiv.dataset.lengthOfScene = (Number(currentItem.sceneStart) / 1500) //very crude way to make pages from index
-							
-					// 		sectionDiv.appendChild(orphanDiv)
-					// 	}
-						
 					sectionDiv.appendChild(sectionSynConDiv)
 					newFlexi.appendChild(sectionDiv)
 				}
@@ -588,13 +575,17 @@ function divMaker(location, fullupdate){
 			case "Section":
 
 				let parentSection = newFlexi
+
 				if(currentItem.sectionDepth == 1){
 					actLengths[currentAct] = alternatePageNumber
 					actIndex[currentAct] = currentItem.sceneStart
 					currentAct ++
 				}
 
+
+
 				for (let i = num; i > -1; i--){
+
 					if (outline[i].typeAsString == "Section" && outline[i].sectionDepth < currentItem.sectionDepth){
 
 						let allParents = newFlexi.querySelectorAll(".level" + outline[i].sectionDepth)
@@ -603,6 +594,12 @@ function divMaker(location, fullupdate){
 						break
 					}
 				}
+				//below: when there is no initial act, put corresponding stuff inside faux act
+				if(parentSection == newFlexi && outline[num].sectionDepth > 1){
+					parentSection = newFlexi.querySelector(".faux")
+				}
+
+				
 			
 				let sectionDiv = document.createElement("div")
 					sectionDiv.id = num.toString()
@@ -828,11 +825,6 @@ function divMaker(location, fullupdate){
 	if(indexCardMode || areScenesProportional != 1){
 		recallCardState()
 	}
-
-	// // let allScenes = $$(".scene")
-	// // for (let scene of allScenes){
-	// // 	slugSizeObserver.observe(scene)
-	// // }
 
 	actLengths.push(alternatePageNumber) // adding the last page number after the fact
 	actIndex.push(currentItem.sceneEnd)  // index for last page number
@@ -1545,7 +1537,10 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	
 	
 	if (someoneJustPressed.key == "å") {event.preventDefault(); forceRestart()}
-	if (someoneJustPressed.key == "ä") {event.preventDefault(); newPrintBox()}
+	if (someoneJustPressed.key == "ä") {event.preventDefault(); 
+	
+		flexiContainer.classList.toggle("cursorTest")
+	}
 
 	if (someoneJustPressed.key == "Escape") {
 		
@@ -1556,6 +1551,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 		if (helpContainerVisibility == 1) {toggleHelpContainer(); return false}
 		if (settingsContainerVisibility == 1) {toggleSettingsContainer(); return false}
 		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
+		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
+		if ($id('textContainer')){toggleTrackingContainer(true); return false}
 		if (contextMenuIsOpen) {closeContextMenu(); return false}
 		if ($id('expandedNote')) {collapseNote(); return false}
 		if (aBeatIsHovered) {unhoverAllBeats(); return false}
@@ -1592,7 +1589,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	if (someoneJustPressed.key == "a" && event.ctrlKey) {event.preventDefault(); selectAllElements(true)}
 	if (someoneJustPressed.key == "a" && event.metaKey) {event.preventDefault(); selectAllElements(false)}
 
-	if (someoneJustPressed.key == "b" && event.metaKey) {event.preventDefault(); addShowHideBoneyard()}
+	if (someoneJustPressed.key == "b" && event.metaKey) {event.preventDefault(); addShowHideBoneyard(); return}
 	if (someoneJustPressed.key == "b") {event.preventDefault(); toggleDisplayBeats()}
 
 	if (someoneJustPressed.key == "c" && event.ctrlKey) {
@@ -1728,12 +1725,16 @@ function somethingWasClicked() {
 
 	}
 
+	mylog("before if(event.altKey)")
+
 	if(event.altKey){
 		switch(theClickedThing.id){
 			case "addScene":
+				mylog("case: addScene")
 				addElement(theClickedThing)
 				return
 			case "addSection":
+				mylog("case: addSection")
 				addElement(theClickedThing)
 				return
 			default:
@@ -1772,9 +1773,9 @@ function somethingWasClicked() {
 				$id("menu").remove()
 			}
 			$id("printbox")?.remove()
-			if (trackingContainerVisibility==1){
-				toggleTrackingContainer()
-			}
+			// if (trackingContainerVisibility==1){
+				toggleTrackingContainer(true)
+			// }
 			return
 	}
 
@@ -2181,6 +2182,7 @@ function toggleTrackingContainer(close) {
 	if (settingsContainerVisibility == 1){toggleSettingsContainer()}
 	if (helpContainerVisibility == 1){toggleHelpContainer()}
 	$id("aboutBox")?.remove()
+	$("#textContainer")?.remove()
 
 	if($id("menu")){$id("menu").remove()}
 
