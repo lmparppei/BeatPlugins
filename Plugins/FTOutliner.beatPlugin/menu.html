@@ -620,6 +620,7 @@ function toggleNewMenu(whichOne){
         closeNewMenu()
     }
 
+    toggleTrackingContainer(true) // closes all dialogs
     showNewMenu(theClickedThing, whichOne)
 
 }
@@ -650,6 +651,7 @@ function showNewMenu(theClickedThing, whichOne){
 
     document.body.appendChild(menu)
     $id("cover").style.display = "block"
+    $id("cover").style.backgroundColor = "transparent"
 
     fillNewMenu(whichOne)
     setAllButtons()
@@ -743,8 +745,8 @@ function indexCardMenu(){
 
             <p class="hint">When set to multi, every # starts new column</p>
             <hr>
-            <strong class="${(areScenesProportional ==1) ? `greyedout` : ``}">Expand scenes: </strong><span class="shortcut" style="float:right">E</span><br/>
-            <li class="${(areScenesProportional ==1) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.arrowForIndexCards'), true)">
+            <strong class="${(areScenesProportional == 1 || !$(".scene")) ? `greyedout` : ``}">Expand scenes: </strong><span class="shortcut" style="float:right">E</span><br/>
+            <li class="${(areScenesProportional == 1 || !$(".scene")) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.arrowForIndexCards'), true)">
                 <input id="buttonForExpandedScenes" type="checkbox">
                     <label for="buttonForExpandedScenes" class="labelBefore">None</label>
                         <div class="switch" style="float:none !important; display: inline-block;"></div>
@@ -788,7 +790,7 @@ function showStuffMenu(){
     innerMenu.classList.add("menuContents")
     innerMenu.innerHTML = /*html*/`
     <ul>    
-        <p class="name">Details Menu</p>
+        <p class="name">View Menu</p>
 
         <strong>Show info:</strong><br/>
         <li  onclick="toggleShowSceneNumbers()">
@@ -810,12 +812,28 @@ function showStuffMenu(){
         <li onclick="zoomSizes('+')">Increase Font Size<span class="shortcut" style="float:right">&#8984;+</span></li>
         <li onclick="zoomSizes('-')">Decrease Font Size<span class="shortcut" style="float:right">&#8984;-</span></li>
         <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li-->
+
         <hr>
-        <strong>More stuff:</strong><br/>
+        
         <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis()">
             <input id="buttonForSynopsis" type="checkbox">
                 <div class="switch"></div> 
-                    <label for="buttonForSynopsis">Show Synopsis<span class="shortcut" style="float:right">Y</span></label>
+                    <label for="buttonForSynopsis">Show Inline Synopsis<span class="shortcut" style="float:right">Y</span></label>
+        </li>
+        <li style="padding-left: 30px !important;"
+            ${(flexiContainer.classList.contains("showSynopsisInScenes") && !flexiContainer.classList.contains("indexcards")) ? ``: `class="greyedout"`} onclick="flexiContainer.classList.toggle('onlySynopsis'); setAllButtons()">
+            <input id="buttonForOnlySynopsis" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForOnlySynopsis">...and Hide Slugs<span class="shortcut" style="float:right">^Y</span></label>
+        </li>
+        
+        <hr>
+        <strong>Visual modes:</strong><br/>
+        
+        <li  onclick="outdoorMode(); setAllButtons()">
+            <input id="buttonForOutdoor" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForOutdoor">High Contrast Mode<span class="shortcut" style="float:right">H</span></label>
         </li>
         <li  onclick="$id('flexiContainer').classList.toggle('greyonly'); setAllButtons()">
             <input id="buttonForGreyOnly" type="checkbox">
@@ -879,7 +897,9 @@ $id("menu").appendChild(innerMenu)
 
 function trackingMenu(from){
 
-    $id("menu").innerHTML = "<br/><br/><br/><center>Loading...</center><br/><br/><br/>"
+    if($id("menu").innerHTML == ""){
+        $id("menu").innerHTML = "<br/><br/><br/><center>Loading...</center><br/><br/><br/>"
+    }
     
     mylog(trackingMenu.caller.name)
     if(trackingMenu.caller.name != "makeCharacterMenu" && trackingMenu.caller.name != "onclick" ){
@@ -919,6 +939,14 @@ function trackingMenu(from){
         ${characterString}
         
         <hr>
+        <li onclick="toggleExcludeVoiceOvers()">
+            <input id="buttonForVoiceOvers" type="checkbox">
+                <div class="switch"></div>
+                    <label for="buttonForVoiceOvers" style="pointer-events: none">
+                        Show (V.O.) and (PRELAP)<span class="shortcut" style="float:right"></span>
+                    </label>
+        </li>
+        <hr>
         <li onclick="closeNewMenu(); toggleTrackingContainer()">See more characters...<span class="shortcut" style="float:right">T</span></li>
         <li onclick="deselectAllCharacters()">Deselect all characters<span class="shortcut" style="float:right">0</span></li>
             <hr>
@@ -932,79 +960,50 @@ function trackingMenu(from){
         </li>
         <p class="hint">SHORTCUT:<br/>Also select color by ALT + clicking on a scene.<br/>ALT + click on an empty space to reset.</p>
     </ul>
-`
+    `
 
+    $id("menu").innerHTML = ""
+    $id("menu").appendChild(innerMenu)
 
-$id("menu").innerHTML = ""
-$id("menu").appendChild(innerMenu)
+    {$id("buttonForVoiceOvers").checked = !userDefault.excludeVoiceOvers}
 
-alsoFillColorDropdown()
+    alsoFillColorDropdown()
 }
 
 function zoomMenu(){
 
-innerMenu = document.createElement("div")
+    innerMenu = document.createElement("div")
 
-innerMenu.id = "zoomMenu"
-innerMenu.classList.add("menuContents")
-innerMenu.innerHTML = /*html*/`
-<ul>    
+    innerMenu.id = "zoomMenu"
+    innerMenu.classList.add("menuContents")
+    innerMenu.innerHTML = /*html*/`
+    <ul>    
     <p class="name">Zoom Menu</p>
 
         <li onclick="zoomSizes('+')">Zoom Font Size<span class="shortcut" style="float:right">&#8984;+</span></li>
+        
         <li onclick="zoomSizes('-')">Zoom Font Size<span class="shortcut" style="float:right">&#8984;-</span></li>
+        
         <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li>
         <hr>
+        
         <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('+')">
             Increase Index Card Size
             <span class="shortcut" style="float:right">^&#8984;+</span></li>
-        <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('-')">
+        
+            <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('-')">
             Decrease Index Card Size
             <span class="shortcut" style="float:right">^&#8984;-</span></li>
-        <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('0')">
+        
+            <li ${indexCardMode ? `` : `class="greyedout"`} onclick="changeIndexCardHeight('0')">
             Reset Index Card Size
             <span class="shortcut" style="float:right">^&#8984;0</span></li>
-        <!--hr>
-    <li>
-        <input id="buttonForNotes" type="checkbox" onclick="toggleDisplayNotes()"">
-            <div class="switch" onclick="toggleDisplayNotes()"></div>  
-                <label for="buttonForNotes">Notes<span class="shortcut" style="float:right">N</span></label>
-    </li>
-    <li>
-        <input id="buttonForMarkers" type="checkbox" onclick="toggleDisplayMarkers()">
-            <div class="switch" onclick="toggleDisplayMarkers()"></div>
-                <label for="buttonForMarkers">Markers<span class="shortcut" style="float:right">M</span></label>
-    </li>
-    <li>
-        <input id="buttonForBeats" type="checkbox" onclick="toggleDisplayBeats()">
-            <div class="switch" onclick="toggleDisplayBeats()"></div> 
-                <label for="buttonForBeats">Beats<span class="shortcut" style="float:right">B</span></label>
-    </li>
-    <hr>
-    <li onclick="cycleNotes()">Open Next Note<span class="shortcut" style="float:right">&#8677;</span></li>
-    <li onclick="cycleNotes(true)">Open Previous Note<span class="shortcut" style="float:right">&#8679;&#8677;</span></li>
-    <hr>
-        <strong>Note Panel: </strong><span class="shortcut" style="float:right">§</span><br/>
-        <li class="centered" onclick="toggleNotepanel()">
-            <input id="buttonForNotePanel" type="checkbox">
-                <label for="buttonForNotePanel" class="labelBefore">Closed</label>
-                    <div class="switch"></div>
-                <label for="buttonForNotePanel" class="labelAfter">Open</label>
-        </li-->
     </ul>
 `
 
-$id("menu").innerHTML = ""
-$id("menu").appendChild(innerMenu)
-// setAllButtons()
-// $id("buttonForFlexible").checked = (areScenesProportional == 1)
-// $id("buttonForOneColumn").checked = (oneColumnOutline == 0)
-// $id("buttonForNumbers").checked = (whatAreSceneNumbers == "inline")
-// $id("buttonForPages").checked = (whatArePageNumbers == "inline")
-// $id("buttonForLength").checked = (whatAreSceneLengths == "inline")
-// $id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))
-// setButtonForExpandedSc
-// setButtonForExpandedSections()enes()
+    $id("menu").innerHTML = ""
+    $id("menu").appendChild(innerMenu)
+
 }
 
 function settingsMenu(){
@@ -1012,7 +1011,15 @@ function settingsMenu(){
     let debugMenuItems = (loggingIsOn || altIsBeingPressed)? 
         /*html*/ `
         <hr>
-        <strong>Debugging features:</strong><br/>
+        <strong>Development:</strong><br/>
+        <li onclick='Beat.call("Beat.custom.outlineToJSON()")'>
+                <p>Outline as JSON &gt; New Doc
+                <span class="shortcut" style="float:right"></span></p>
+            </li>
+        <!--li onclick='Beat.call("Beat.custom.linesToJSON()")'>
+                <p>Lines as JSON &gt; New Doc
+                <span class="shortcut" style="float:right"></span></p>
+            </li-->
             <li onclick='toggleConsole()'>
                 <input id='buttonForLogging' type='checkbox'>
                     <div class='switch'></div>  
@@ -1066,9 +1073,12 @@ function settingsMenu(){
             <p style="color: red!important">Support…
                 <span class="shortcut" style="float:right"></span></li-->
         <hr>
+        <li onclick="Beat.call('Beat.custom.sendChangelogToDialog()')">
+                Version History...
+                <span class="shortcut" style="float:right"></span></li>
         <li onclick="forceRestart()">
                 Force restart
-                <span class="shortcut" style="float:right">Å</span></li>
+                <span class="shortcut" style="float:right"></span></li>
         ${debugMenuItems}
         </ul>
 `
@@ -1097,7 +1107,7 @@ function exportMenu(){
             <span class="shortcut" style="float:right">&#8984;E</span></li>    
     <hr>
     <li onclick="newPrintBox()">
-            Print/Export Settings
+            Print/Export Settings...
             <span class="shortcut" style="float:right">⇧⌘P</li>    
     </ul>
     `
@@ -1182,13 +1192,18 @@ function setAllButtons(){
     if($id("buttonForMarkers")){$id("buttonForMarkers").checked = (markersAreDisplayed == true)}
     if($id("buttonForBeats")){$id("buttonForBeats").checked = (beatsAreDisplayed == true)}
     if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
+
     if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}
+    if($id("buttonForOnlySynopsis")){$id("buttonForOnlySynopsis").checked = (flexiContainer.classList.contains("onlySynopsis"))}
     
     if($id("buttonForGreyOnly")){$id("buttonForGreyOnly").checked = ($id("flexiContainer").classList.contains("greyonly"))}
+    if($id("buttonForOutdoor")){$id("buttonForOutdoor").checked = (outdoor == 1)}
     
     mylog("indexcards = " + indexCardMode + " & AreScenesProp = " + areScenesProportional)
 
     if($id("buttonForLogging")){$id("buttonForLogging").checked = loggingIsOn}
+
+    if($id("buttonForVoiceOvers")){$id("buttonForVoiceOvers").checked = !userDefault.excludeVoiceOvers}
 
     saveCurrentState()
 }

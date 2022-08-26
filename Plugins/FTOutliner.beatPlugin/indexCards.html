@@ -53,6 +53,7 @@ function anArrowWasClicked(theClickedThing, triggeredWithKey){
 			}
 		}
 		setAllButtons()
+		rememberCardState()
 		return
 	}
 
@@ -98,6 +99,7 @@ function anArrowWasClicked(theClickedThing, triggeredWithKey){
 	}
 
 	setAllButtons()
+	rememberCardState()
 }
 
 
@@ -126,12 +128,16 @@ function rememberCardState(){
 		// if(outlineBeforeUpdate[i].typeAsString != "Section"){continue}
 
 		// section = $id(sectionNumber)
+
+		//remmed out the below on 2022-08-17
+		//if(section.classList.contains("level1"))continue //THIS IS THE PROBLEM: We SHOULD save the state for acts too!
 		
 		let a = [...section.classList].includes("isExpanded")
 		let b = [...section.classList].includes("collapsedSection")
 		//let elementNumber = section.id
 		if(a){section.classList.add("noAnimation")}
 		if(b){section.classList.add("noAnimation")}
+		let c = section.getBoundingClientRect()
 		
 		cardStateForScenes[sectionNumber] = a
 		cardStateForSections[sectionNumber] = b
@@ -154,13 +160,13 @@ function makeCardStateEqual(){
 	//first: is the number of sections equal?
 	let newSections = []
 		for (let num = 0; num < outline.length; num ++) {
-			if(outline[num].typeAsString == "Section")
+			if(outline[num].typeAsString == "Section" && outline[num].sectionDepth > 1) //2022-06-16 added sectiondepth -- does this help with anomaly?
 			newSections.push(num)
 		}
 		
 	let oldSections = []
 		for (let num = 0; num < outlineBeforeUpdate.length; num ++) {
-			if(outlineBeforeUpdate[num].typeAsString == "Section")
+			if(outlineBeforeUpdate[num].typeAsString == "Section" && outlineBeforeUpdate[num].sectionDepth > 1) //2022-06-16 added sectiondepth -- does this help with anomaly?
 			oldSections.push(num)
 		}
 	
@@ -209,7 +215,9 @@ function makeCardStateEqual(){
 			//this just means a section was renamed, so all is well. 
 			//return and use the saved values as is.
 			mylog("We decided either nothing changed, or it's probably just a renamed section")
+
 			outlineBeforeUpdate = JSON.parse(JSON.stringify(outline))
+			// rememberCardState()
 			return
 
 		}else{
@@ -311,9 +319,16 @@ function makeCardStateEqual(){
 
 function recallCardState(){
 
-	mylog()
+	mylog("=========================================")
+	mylog("=========================================")
+	mylog("=========================================")
 	mylog("when we get here, there are " + $$(".section").length + " sections in the document.") 
 	mylog("The cardstates are this long: " + cardStateForScenes.length + " and " + cardStateForSections.length)
+	mylog("====================================")
+	mylog(cardStateForScenes)
+	mylog("====================================")
+	mylog(cardStateForSections)
+	mylog("====================================")
 	
 	if(!outlineBeforeUpdate || outlineBeforeUpdate.length == 0){
 		
@@ -322,7 +337,8 @@ function recallCardState(){
 		// }else{
 			// this sets All scenes open + All sections closed if opening file without saved defaults
 			
-			let sections = $$(".section")
+			//let sections = $$(".section:not(.level1)") //added :not here 2022-06-16 -- does that help with anomaly?
+			let sections = $$(".section") //removed it again 2022-08-17 bc scenes following acts were collapsed!?
 			let i = 0
 			for (section of sections){
 				// section.classList.add("isExpanded")
@@ -341,12 +357,13 @@ function recallCardState(){
 		makeCardStateEqual()
 	}
 				
-	let sections = $$(".section")
+	//let sections = $$(".section:not(.level1)") //added :not here 2022-06-16 -- does that help with anomaly?
+	let sections = $$(".section") //removed again 2022-08-17 same reason as above
 	mylog("and the number of sections is " + sections.length)
 
 	if (sections.length != cardStateForScenes.length ||
 		sections.length != cardStateForSections.length){
-			mylog("this shouldn't happen, but cardState... & number of sections differ!")
+			mylog("this shouldn't happen, but cardState arrays & actual number of sections differ!")
 		return
 	}
 
@@ -358,12 +375,9 @@ function recallCardState(){
 
 		for (let i = 0; i < sections.length; i++){
 
-			if (cardStateForScenes[i] == true){
-				sections[i].classList.add("isExpanded")
-			}
-			if (cardStateForSections[i] == true){
-				sections[i].classList.add("collapsedSection")
-			}		
+			sections[i].classList.toggle("isExpanded", cardStateForScenes[i])
+			sections[i].classList.toggle("collapsedSection", cardStateForSections[i])
+			let redraw = sections[i].getBoundingClientRect()
 		}
 
 	allStuff = $$(".synopsiscontainer, .scene")

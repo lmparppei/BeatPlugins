@@ -1,7 +1,8 @@
 <style>
 #contextmenu {
     position: absolute;
-    background-color: rgba(192,192,192,0.9);
+    /* background-color: rgba(192,192,192,0.9); */
+    background-color: rgba(232,232,232,0.9);
     border-radius: 6px;
     font-size: 13px !important; /*was 14*/
     line-height: 16px !important; /*was 20*/
@@ -137,39 +138,43 @@ function contextMenu(theRightClickedThing, x, y, rightClick){
     mylog("from " + JSON.stringify(contextMenu.caller?.name))
     mylog("clicked this: " + theRightClickedThing.classList)
 
+    if(theRightClickedThing.classList.contains("editBox"))return
+    
     a = [...theRightClickedThing.classList]
 
-    if (a.includes("editBox")){return}
-
-        if(a.includes("synopsiscontainer") || a.includes("orphanText") || a.includes("sceneheading") || a.includes("section-heading")){
+    if(theRightClickedThing.classList.contains("synopsiscontainer") || theRightClickedThing.classList.contains("orphanText") || theRightClickedThing.classList.contains("sceneheading") || theRightClickedThing.classList.contains("section-heading")){
             
-            while(!a.includes("scene") && !a.includes("section")){
-                theRightClickedThing = theRightClickedThing.parentNode
-                a = [...theRightClickedThing.classList]
-                mylog("iterating up to... " + a)
+        theRightClickedThing = theRightClickedThing.closest(".scene, .section")
+            
+        if (theRightClickedThing.classList.contains("section")){ 
+            //because absurdly we need to go back down the sectiontext (and soon up again but oookay.)
+            theRightClickedThing = theRightClickedThing.querySelector(".section-heading")
             }
-            
-            if (a.includes("section")){ 
-                //because absurdly we need to go back down the sectiontext (and soon up again but oookay.)
-                theRightClickedThing = theRightClickedThing.querySelector(".section-heading")
-                a = [...theRightClickedThing.classList]
-                }
-        } 
+    } 
 
-    //CMD+click to select multiple:
-    if ((rightClick) && (a.includes("scene") || a.includes("synopsis") || a.includes("section-heading"))) {      
+    //create the context menu.
+
+    if ((rightClick) && (theRightClickedThing.classList.contains("scene") || theRightClickedThing.classList.contains("synopsis") || theRightClickedThing.classList.contains("section-heading"))) {      
         
-        if (a.includes("section-heading")){theRightClickedThing = theRightClickedThing.parentNode}
-        if (!event.metaKey && !a.includes('isSelected')) {deselectAllElements()}
+        if (theRightClickedThing.classList.contains("section-heading")){theRightClickedThing = theRightClickedThing.parentNode}
+        if (theRightClickedThing.classList.contains("sceneheading")){theRightClickedThing = theRightClickedThing.parentNode}
+        if (!event.metaKey && !theRightClickedThing.classList.contains('isSelected')) {deselectAllElements()}
         
+        theRightClickedThing.classList.add('isSelected')
+        a = [...theRightClickedThing.classList]
         createContextMenu(a, x, y)
-        theRightClickedThing.classList.add('isSelected')       
+        flexiContainer.classList.remove("wait")       
         return
     }
 
-    //user chose a color
-    if ([...theRightClickedThing.classList].includes('colorListItem')) {
+    
 
+    //user chose a color
+    if (theRightClickedThing.classList.contains('colorListItem')) {
+
+        flexiContainer.classList.toggle("wait", true)
+        let redraw = flexiContainer.getBoundingClientRect()
+        
         closeContextMenu()
 
         let item = theRightClickedThing.id
@@ -272,9 +277,7 @@ function createContextMenu(clickedThingsClassList, x, y){
     for (element of elements){
         if([...element.classList].includes("isOmitted")){someAreOmitted = true}
         if(![...element.classList].includes("isOmitted")){someAreUnOmitted = true}
-    }
-
-    
+    }    
 
     theContextMenu.innerHTML = "" 
     for (item of colorsArray) {
@@ -283,7 +286,7 @@ function createContextMenu(clickedThingsClassList, x, y){
         let iconString = ""
         if (item == "Remove Color"){iconString = "<p style ='font-size: 22px !important; transform: translateY(-11px); line-height: 24px !important;'>&#xd7;</p>"}
         theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 
-            "<div class='colorSquare clickThru' style='background-color: var(--" + item.toLowerCase() + ")'>" + iconString + "</div>  &nbsp;&nbsp;" +
+            "<div class='colorSquare clickThru' style='background-color: hsl(var(--" + item.toLowerCase() + "))'>" + iconString + "</div>  &nbsp;&nbsp;" +
             item + "</li>"
     }
 
@@ -291,14 +294,23 @@ function createContextMenu(clickedThingsClassList, x, y){
         theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
         theContextMenu.innerHTML += "<li class='command' id='contentsToClipboard'>" + 
             "<div class='clipboardMenuItem clickThru'>" + toNewIcon + "</div>  &nbsp;&nbsp;Selection to New Doc</li>"
+
+        // theContextMenu.innerHTML += "<li id='contextMenuDivider3' class='clickThru contextMenuDivider'><hr></li>"
+        // theContextMenu.innerHTML += "<li class='command' id='addMarker'>" + 
+        //     "<div class='addMarkerMenuItem clickThru'>" +  "" + "</div>  &nbsp;&nbsp;Add Marker</li>"
+        // theContextMenu.innerHTML += "<li class='command' id='addNote'>" + 
+        //     "<div class='addNoteMenuItem clickThru'>" +  "" + "</div>  &nbsp;&nbsp;Add Note</li>"
     }
 
     theContextMenu.innerHTML += "<li id='contextMenuDivider1' class='clickThru contextMenuDivider'><hr></li>"
     
     $id('contextMenuDivider1').classList.add("displayNone")
 
-    if (clickedThingsClassList.includes('scene')){
+    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('sceneheading')){
         $id('contextMenuDivider1').classList.remove("displayNone")
+                // theContextMenu.innerHTML += `<li>${clickedThingsClassList}</li>`
+                // theContextMenu.innerHTML += `<li>${someAreOmitted}</li>`
+                // theContextMenu.innerHTML += `<li>${someAreUnOmitted}</li>`
         if (!clickedThingsClassList.includes('isOmitted') || someAreUnOmitted){
         theContextMenu.innerHTML += "<li class='command' id='omitSceneCommand'>" + 
             "<div class='eyeWithCrossMenuItem clickThru'>" + hiddenIcon + "</div>  &nbsp;&nbsp;Omit Scene" + pluralSuffix + "</li>"
@@ -309,13 +321,13 @@ function createContextMenu(clickedThingsClassList, x, y){
         }
     }
 
-    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('synopsis') ||  clickedThingsClassList.includes('section-heading')){
+    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('sceneheading') || clickedThingsClassList.includes('synopsis') ||  clickedThingsClassList.includes('section-heading')){
         $id('contextMenuDivider1').classList.remove("displayNone")
         let objectType = "scene"
             if (clickedThingsClassList.includes('synopsis')) objectType = "synopse"
             if (clickedThingsClassList.includes('section-heading')) objectType = "section"
         theContextMenu.innerHTML += "<li class='command' id='deleteSceneCommand'>" + 
-            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div>  &nbsp;&nbsp;Delete " + objectType + pluralSuffix + "</li>"
+            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div><span style='float:right; color: gray;'>⌘⌫</span>  &nbsp;&nbsp;Delete " + objectType + pluralSuffix + "</li>"
     }
 
 
@@ -414,6 +426,7 @@ function deleteScene(){
     mylog()
 
     elements = $$('.isSelected')
+    if (elements.length == 0) return
 
         for(element of elements){
             element.classList.add("dimmedScene")

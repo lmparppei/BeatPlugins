@@ -976,7 +976,8 @@ function expandNote(tabWasPressed){
     // let x = position.left
     let yOrigo = document.getElementById('flexiContainer').scrollTop
 
-    let theFirstOutlineItemWidth = $id("0").getBoundingClientRect()
+    // let theFirstOutlineItemWidth = $id("0").getBoundingClientRect()
+    let theFirstOutlineItemWidth = $(".section, .scene")?.getBoundingClientRect()
 
     let expandedWidth = Math.min(theFirstOutlineItemWidth.width, window.innerWidth/2)
     
