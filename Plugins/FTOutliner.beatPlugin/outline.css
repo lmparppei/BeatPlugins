@@ -498,7 +498,7 @@ body {
 	pointer-events: all;
 }
 
-.showSynopsisInScenes .synopsiscontainer{
+.showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
 	display: block;
 	background: none !important;
 	margin: 0;
@@ -2657,7 +2657,7 @@ button:hover{
 -- SHOWING INLINE SYNOPSIS ------------------ {}
 --------------------------------------------- {}
 
-.showSynopsisInScenes .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
+.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
 	:not(.nonProportionalMode section:not(.isExpanded) > .scene >.synopsiscontainer){
 	display: block;
 }
