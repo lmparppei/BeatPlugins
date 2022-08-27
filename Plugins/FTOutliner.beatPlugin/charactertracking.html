@@ -475,7 +475,9 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
 
 
     }
-    if (iCameFromToggleCharacter != -1){
+    mylog("testing check for allCharacters.length, which is now " + allCharacters.length)
+        // if (iCameFromToggleCharacter != -1){ //previous version, without check --> memory leak?
+    if (iCameFromToggleCharacter != -1 && allCharacters.length > 0){
         toggleSoloCharacter(iCameFromToggleCharacter)
     }
     if (iCameFromMenu){
@@ -483,10 +485,8 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
         trackingMenu()
     }
 
-    //alsoFillColorDropdown()
-
     document.getElementById("characterMenuList").focus()
-    //    updateFilter()
+
     mylog("end of collect")
 }
 
@@ -515,6 +515,7 @@ function alsoFillColorDropdown(){
 function updateFilter(scenesWithCharactersProxy){
 
     mylog()
+    
 
     let allScenes = $$('.scene')
     let allSections = $$('.section')
@@ -588,6 +589,7 @@ function toggleSoloCharacter(theKey) {
     if (!characterMenuList || characterMenuList.length == 0) {
 
         iCameFromToggleCharacter = theKey + 1
+        mylog("is this the loop?")
         collectCharacters()
         return
     }

@@ -25,6 +25,7 @@ BUG FIXES:
 * Fixed a bug whereby deleting all scenes and sections in a document would crash FTOutliner instead of going back to the welcome screen
 * Fixed annoying behavior that if clicking (selecting) a synopsis some distance down inside an index card, the card would scroll back to the top so that the selected synopsis disappeared out of view.
 * Fixed a bug whereby moving a synopsis out of a (then empty) section could cause the section to become a synopsis. 
+* Fixed a rare but quite impairing memory leak that happened if hitting keyboard shortcut (number) for character tracking in document where no characters had yet been added
 * Other minor bug fixes.
 
 OTHER STUFF:
