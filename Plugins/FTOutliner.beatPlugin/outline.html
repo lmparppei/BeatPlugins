@@ -1373,8 +1373,9 @@ function saveCurrentState() {
 		documentSubName: JSON.stringify(documentSubName),
 		documentAuthor: JSON.stringify(documentAuthor),
 
-		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")) 
+		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
+		trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis
 	}
 
 	userDefault = {
@@ -2093,6 +2094,19 @@ function toggleExcludeVoiceOvers(){
 	updateFilter()
 	//collectCharacters()
 	
+	setAllButtons()
+
+}
+
+function toggleIncludeSynopsis(){
+
+	documentSetting.trackingIncludesSynopsis = !documentSetting.trackingIncludesSynopsis
+
+	saveCurrentState()
+
+	updateFilter()
+	//collectCharacters()
+
 	setAllButtons()
 
 }

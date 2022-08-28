@@ -943,7 +943,14 @@ function trackingMenu(from){
             <input id="buttonForVoiceOvers" type="checkbox">
                 <div class="switch"></div>
                     <label for="buttonForVoiceOvers" style="pointer-events: none">
-                        Show (V.O.) and (PRELAP)<span class="shortcut" style="float:right"></span>
+                        Include (V.O.) and (PRELAP)<span class="shortcut" style="float:right"></span>
+                    </label>
+        </li>
+        <li onclick="toggleIncludeSynopsis()">
+            <input id="buttonForIncludeSynopsis" type="checkbox">
+                <div class="switch"></div>
+                    <label for="buttonForIncludeSynopsis" style="pointer-events: none">
+                        Include mentions in Synopsis<span class="shortcut" style="float:right"></span>
                     </label>
         </li>
         <hr>
@@ -966,6 +973,7 @@ function trackingMenu(from){
     $id("menu").appendChild(innerMenu)
 
     {$id("buttonForVoiceOvers").checked = !userDefault.excludeVoiceOvers}
+    {$id("buttonForIncludeSynopsis").checked = documentSetting.trackingIncludesSynopsis}
 
     alsoFillColorDropdown()
 }

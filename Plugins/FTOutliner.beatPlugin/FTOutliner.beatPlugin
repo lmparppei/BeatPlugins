@@ -410,14 +410,15 @@ function titleCaseThis(str) {
 	let upper = true;
 	let newStr = "";
 	for (let i = 0, l = str.length; i < l; i++) {
-	  if (str[i] == " ") {
+	  if (str[i] == " " || str[i] == "-") {
 		upper = true;
-		  newStr += " ";
+		  newStr += str[i];
 		continue;
 	  }
 	  newStr += upper ? str[i].toUpperCase() : str[i].toLowerCase();
 	  upper = false;
 	}
+	// Beat.log("titleCase of " + str + " is now" + newStr)
 	return newStr;
 }
 
@@ -480,6 +481,8 @@ function makeStoringDefaultsDiv(){
 	documentSetting.documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
 	
 	documentSetting.boneyardIsClosed = Beat.getDocumentSetting("boneyardIsClosed") || false
+
+	documentSetting.trackingIncludesSynopsis = Beat.getDocumentSetting("trackingIncludesSynopsis") || true
 
 	thePanelWidth = Beat.getDocumentSetting("thePanelWidth");
 		if(!thePanelWidth){thePanelWidth = 800}
@@ -593,6 +596,7 @@ Beat.custom.addCharacterClasses = function() {
 
 	const outline = [...Beat.outline()]
 	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
+	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
 
 	for (scene of allScenes){
 		const lines = Beat.linesForScene(scene)
@@ -629,10 +633,27 @@ Beat.custom.addCharacterClasses = function() {
 					charactersInScene += spacelessName + " "
 				}
 			}
-			if (line.typeAsString() == "Action") {
+
+			if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {
+
 				for (let i=0; i<copyOfCharacters.length; i++){
 					let name = copyOfCharacters[i]
-					if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+					//new matching
+					// Beat.log("now matching: " + name)
+					// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
+					// let matchString = line.string.match(regOfName, "i")
+					// Beat.log(matchString)
+					// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
+					
+					//old matching
+					//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+					
+					let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
+					if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
+						// Beat.log("YES (add). The match is: " + matchIndex)
+						Beat.log(line.string.substr(matchIndex, name.length))
+
 						copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
 						let spacelessName = name.replace(/ /g, "_")
 						spacelessName = spacelessName.replace(/\'|\"/g, "-")
@@ -649,6 +670,7 @@ Beat.custom.addCharacterClasses = function() {
 Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateTrueOrFalse){
 
 	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
+	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
 	const scene = Beat.outline()[outlineNumber]
 	// const sceneNumber = Beat.outline()[outlineNumber].sceneNumber
 
@@ -687,10 +709,25 @@ Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateT
 				charactersInScene += spacelessName + " "
 			}
 		}
-		if (line.typeAsString() == "Action") {
-			for (let i=0; i<copyOfCharacters.length; i++){
+
+		if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {			for (let i=0; i<copyOfCharacters.length; i++){
 				let name = copyOfCharacters[i]
-				if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+				//new matching
+				// Beat.log("now matching: " + name)
+				// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
+				// let matchString = line.string.match(regOfName, "i")		
+				// Beat.log(matchString)
+				// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
+
+				//old matching
+				//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+				let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
+				if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
+					//Beat.log("YES (reev). The match is: " + matchIndex)
+					Beat.log(line.string.substr(matchIndex, name.length))
+
 					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
 					let spacelessName = name.replace(/ /g, "_")
 					spacelessName = spacelessName.replace(/\'|\"/g, "-")

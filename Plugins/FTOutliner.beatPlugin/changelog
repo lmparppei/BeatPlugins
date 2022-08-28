@@ -1,18 +1,28 @@
 
-v 1.43 (Aug 26, 2022)
+
+v 1.43 (Aug 28, 2022)
 ======================
 
 IMPROVEMENTS:
 
+1. Character Tracking
+
+* FToutliner now correctly recognizes names in action paragraphs also when they have uppercase letters inside of them, such as McArthur or Jean-Paul or King of Rock-n-Roll.
+* Ftoutliner can now also highlight scenes where a characters is mentioned in a synopsis -- useful when outlining in Index Card Mode (although do note that to be recognized as a character, every name must have a speech somewhere in the document.) This can be toggled in the Tracking Menu.
+* Finally, FToutliner can now skip occurences of a name when it talks in (V.O.) or (PRELAP) only, and thus probably not actually present in the scene. This can be toggled in the Tracking Menu.
+
+2. High Contrast Mode 
+
 * Added a HIGH CONTRAST MODE, accessible from the View Menu (or shortcut H). With it, the use of colors is reduced to a minimum. Used in tandem with All Colors To Grey you'll get a very black-on-white version of FTOutliner indeed.
-* When filtering by character name, unchecking "SHOW (V.O.) AND (PRELAP)" in the tracking menu will filter out scenes where the character appears not to be actually present in the scene.
+
+3. Some More Things
+
 * PINNING AN ACT allows you to make any act column WIDER than the others (most useful in Index Card Mode, if you want to see more of the act you're working with -- but it's there in the other views too). Click the pin icon that appears when hovering an ACT HEADER, or press Q and SHIFT + Q to pin the next/previous act. Unpin again by clicking the pin icon, hitting Escape, or cycling through all columns with Q to the end.
 * Also changed two (three) behaviors while editing a synopsis to allow seeing more text at once: 
   - the affected act column now automatically gets pinned (i.e. wider than the others). Most useful in Index Card mode but applies to all views.
   - if needed, the affected index card automatically resizes to fit its entire content. Applies to Index Card mode only.
   - index cards that are not being edited will be slightly dimmed (requires Safari 15.4)
 * Changed behavior when editing text (double-clicking a synopsis, sceneheading or section) that the text's initial state is now selected
-
 * Added cmd+backspace shortcut to delete currently selected synopsis/scene/section element(s) wihtout opening the context menu
 * Added ability to hide the sceneheading when displaying inline synopsis in flexible or non-proportional modes
 * Added button when opening FTOutliner without outline elements in the main document, offering to preopulate the document with some acts and sequences to start off with 
