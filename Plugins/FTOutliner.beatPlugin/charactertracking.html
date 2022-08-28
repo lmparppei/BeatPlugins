@@ -23,11 +23,23 @@
     color: rgba(0,0,0,0.2) !important;
     fill: rgba(0,0,0,0.2) !important;
     transition: 0s !important;
+
 }
 
-html[data-outdoors='1'] .dimmedScene{
+html[data-outdoors='1'] #flexiContainer .dimmedScene,
+html[data-outdoors='1'] #flexiContainer.indexcards .dimmedScene > .sceneheading {
 
-    border: 1px #777 dotted !important;
+    border-color: #ddd !important;
+    border-style: dotted !important;
+
+    /* background: #eee !important; */
+    
+    /* border-color: transparent !important; */
+}
+
+html[data-outdoors='1'] #flexiContainer .dimmedScene > .sceneheading{
+
+    color: #ddd !important;
 }
 
 /*outdoorsy steeings continue at bottom bc of specificity*/
@@ -74,8 +86,10 @@ html[data-outdoors='1'] .dimmedScene{
     color: rgba(255,255,255,0.4) !important;
 }
 
-.section:not(.level1).dimmedSection:not(.indexCards .dimmedSection), 
-.uncolorAllScenesBut .section:not(.level1):not(.indexCards .section){
+.section:not(.level1).dimmedSection:not(.indexCards .dimmedSection)
+/* ,  */
+/* .uncolorAllScenesBut .section:not(.level1):not(.indexCards .section) */
+{
     
     border-color:rgba(0, 0, 0, 0) !important;
     background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
@@ -84,13 +98,13 @@ html[data-outdoors='1'] .dimmedScene{
 }
 
 .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
-.uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading),
+/* .uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading), */
 .dimmedSection > .synopsiscontainer,
 .dimmedSection > .orphanText > .synopsiscontainer,
 .dimmedSection > .synopsiscontainer > .synopsis,
 .dimmedSection > .orphanText > .synopsiscontainer > .synopsis,
-.uncolorAllScenesBut .synopsiscontainer,
-.uncolorAllScenesBut .orphanText > .synopsiscontainer,
+/* .uncolorAllScenesBut .synopsiscontainer, */
+/* .uncolorAllScenesBut .orphanText > .synopsiscontainer, */
 
 .greyonly .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
 .greyonly.uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading),
@@ -112,7 +126,7 @@ html[data-outdoors='1'] .dimmedScene{
     color:rgba(255, 255, 255, 0.10) !important;
 }
 
-.uncolorAllScenesBut.red .section.red > .section-heading,
+/* .uncolorAllScenesBut.red .section.red > .section-heading,
 .uncolorAllScenesBut.orange .section.orange > .section-heading,
 .uncolorAllScenesBut.yellow .section.yellow > .section-heading,
 .uncolorAllScenesBut.green .section.green > .section-heading,
@@ -127,7 +141,7 @@ html[data-outdoors='1'] .dimmedScene{
 .uncolorAllScenesBut.gray .section.gray > .section-heading,
 .uncolorAllScenesBut.white .section.white > .section-heading {
     color: black !important;
-}
+} */
 
 .uncolorAllScenesBut .section:hover{ /* since this doesn't do :not(.level1) this one obviously doesn't work */
     /* border-left-color: red !important; rgba(255, 255, 255, 0.4) !important; */
@@ -140,46 +154,46 @@ html[data-outdoors='1'] .dimmedScene{
 }
 
 #characterButton.red > svg path{
-    fill: var(--red) !important;
+    fill: hsla(var(--red),100%) !important;
 }
 #characterButton.orange > svg path{
-    fill: var(--orange) !important;
+    fill: hsla(var(--orange),100%) !important;
 }
 #characterButton.yellow > svg path{
-    fill: var(--yellow) !important;
+    fill: hsla(var(--yellow),100%) !important;
 }
 #characterButton.green > svg path{
-    fill: var(--green) !important;
+    fill: hsla(var(--green),100%) !important;
 }
 #characterButton.teal > svg path{
-    fill: var(--teal) !important;
+    fill: hsla(var(--teal),100%) !important;
 }
 #characterButton.cyan > svg path{
-    fill: var(--cyan) !important;
+    fill: hsla(var(--cyan),100%) !important;
 }
 #characterButton.blue > svg path{
-    fill: var(--blue) !important;
+    fill: hsla(var(--blue),100%) !important;
 }
 #characterButton.purple > svg path{
-    fill: var(--purple) !important;
+    fill: hsla(var(--purple),100%) !important;
 }
 #characterButton.magenta > svg path{
-    fill: var(--magenta) !important;
+    fill: hsla(var(--magenta),100%) !important;
 }
 #characterButton.pink > svg path{
-    fill: var(--pink) !important;
+    fill: hsla(var(--pink),100%) !important;
 }
 #characterButton.brown > svg path{
-    fill: var(--brown) !important;
+    fill: hsla(var(--brown),100%) !important;
 }
 #characterButton.black > svg path{
-    fill: var(--black) !important;
+    fill: hsla(var(--black),100%) !important;
 }
 #characterButton.white > svg path{
-    fill: var(--white) !important;
+    fill: hsla(var(--white),100%) !important;
 }
 #characterButton.grey > svg path{
-    fill: var(--grey) !important;
+    fill: hsla(var(--grey),100%) !important;
 }
 
 .section:not(.level1).dimmedSection:hover>.section-heading:not(#flexiContainer.sectionCards .section-heading){
@@ -364,9 +378,18 @@ li {
     margin-top: -3px !important;
 } */
 
-html[data-outdoors='1'] .section.dimmedSection > .section-heading {
+html[data-outdoors='1'] #flexiContainer .section.dimmedSection{
 
-    color: black !important;
+    color: purple
+    
+}
+
+html[data-outdoors='1'] .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
+html[data-outdoors='1'] #flexiContainer .dimmedSection > .section-heading {
+
+    color: #ddd !important;
+    opacity: 1;
+    border: 1px dotted #ddd !important;
     
     /* outline: 1px solid lime !important */
 }
@@ -452,7 +475,9 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
 
 
     }
-    if (iCameFromToggleCharacter != -1){
+    mylog("testing check for allCharacters.length, which is now " + allCharacters.length)
+        // if (iCameFromToggleCharacter != -1){ //previous version, without check --> memory leak?
+    if (iCameFromToggleCharacter != -1 && allCharacters.length > 0){
         toggleSoloCharacter(iCameFromToggleCharacter)
     }
     if (iCameFromMenu){
@@ -460,10 +485,8 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
         trackingMenu()
     }
 
-    //alsoFillColorDropdown()
-
     document.getElementById("characterMenuList").focus()
-    //    updateFilter()
+
     mylog("end of collect")
 }
 
@@ -492,6 +515,7 @@ function alsoFillColorDropdown(){
 function updateFilter(scenesWithCharactersProxy){
 
     mylog()
+    
 
     let allScenes = $$('.scene')
     let allSections = $$('.section')
@@ -506,8 +530,9 @@ function updateFilter(scenesWithCharactersProxy){
         for (scene of allScenes){scene.classList.add("dimmedScene")}
         
             for (i=0; i<outline.length; i++){
-                if (outline[i].typeAsString == "Heading"){
+                if (outline[i].typeAsString == "Heading" || outline[i].typeAsString == "Section"){
                     let num = i
+
                     let removeDim = false
                     if (scenesWithCharacters[num]){
                         removeDim = true
@@ -523,6 +548,7 @@ function updateFilter(scenesWithCharactersProxy){
                     }
 
                     if (removeDim == true){$id(i).classList.remove("dimmedScene")}
+                    if (removeDim == true){$id(i).classList.remove("dimmedSection")}
 
                 }
             }
@@ -548,12 +574,11 @@ function updateFilter(scenesWithCharactersProxy){
         }
     }
     mylog("end of UpdateFilter")
-
-    //if($id("trackingMenu")){trackingMenu()}
 }
 
 function deselectAllCharacters() {
     characterMenuList.selectedIndex = -1; 
+    if($id("trackingMenu")){trackingMenu()}
     updateFilter()
 }
 
@@ -566,6 +591,7 @@ function toggleSoloCharacter(theKey) {
     if (!characterMenuList || characterMenuList.length == 0) {
 
         iCameFromToggleCharacter = theKey + 1
+        mylog("is this the loop?")
         collectCharacters()
         return
     }
@@ -586,6 +612,7 @@ function toggleSoloCharacter(theKey) {
 
     mylog("exiting, just before sending to updateFilter()")
 
+    if($id("trackingMenu")){trackingMenu()}
     updateFilter()
 }
 
@@ -610,6 +637,7 @@ function simulateAltClick(){
 function muteColors(theClickedThing, shift){
 
     mylog(theClickedThing?.classList)
+    // alertThis(theClickedThing.classList)
     
     if (!shift && $id("flexiContainer").classList.contains("uncolorAllScenesBut")){
         $id("flexiContainer").classList.remove("uncolorAllScenesBut")
@@ -622,20 +650,30 @@ function muteColors(theClickedThing, shift){
         return
     }
 
-    if(!theClickedThing || !theClickedThing.closest(".scene, .section")){
+    if(!theClickedThing || !theClickedThing.closest(".synopsis, .scene, .section")){
         mylog("returning bc no closest scene or section")
         return
     }
     
     $id("flexiContainer").classList.add("uncolorAllScenesBut")
-    theClickedThing = theClickedThing.closest(".scene, .section")
+    theClickedThing = theClickedThing.closest(".synopsis, .scene, .section")
+
+    let foundOne = false
 
     for (let color of colorsArray){
         if(theClickedThing.classList.contains(color.toLowerCase())){
             document.getElementById("flexiContainer").classList.add(color.toLowerCase())
             document.getElementById("characterButton").classList.add(color.toLowerCase())
+            foundOne = true
             break
         }
+    }
+
+    if (!foundOne && theClickedThing.classList.contains("synopsis")){
+        
+        theClickedThing = theClickedThing.closest(".scene, .section")
+        // alertThis(theClickedThing.classList)
+        muteColors(theClickedThing, true)
     }
     
     deselectAllElements()

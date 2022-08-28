@@ -332,6 +332,7 @@ function onDragEnd(e, cancelButton){
     mylog("onDragEnd")
 
     $id("flexiContainer").classList.remove("drag")
+    flexiContainer.classList.remove("not-allowed")
     Beat.call(`
         Beat.setSelectedRange(${rangeStart},0)
         `)
@@ -410,7 +411,8 @@ function onDragEnter(e) {
 
 function onDragLeave(e) {
 
-    
+    flexiContainer.classList.toggle("not-allowed", false)   
+
     e.preventDefault()
     e.stopPropagation()
 
@@ -419,6 +421,12 @@ function onDragLeave(e) {
 function closeDropZone(timer){
 
     mylog("from " + closeDropZone.caller.name)
+
+    //re-hide expanded synopsiscontainers
+        let emptyContainers = $$(".temporarilyShowSynopsisContainer")
+        for (let container of emptyContainers){
+            container.classList.remove("temporarilyShowSynopsisContainer")
+        }
 
     previousDropZonePosition = false
     previouslyDraggedOverElement = false
@@ -523,6 +531,9 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
              draggedOver.closest(".section").classList.contains("collapsedSection")) {
         draggedOver.closest(".section").classList.remove("collapsedSection")
         return
+    }else if (draggedOver.classList.contains("scene") || draggedOver.classList.contains("sceneheading")){
+        draggedOver.closest(".scene").classList.add("temporarilyShowSynopsisContainer")
+        return
     }else{
         closeDropZone()
         return
@@ -622,6 +633,12 @@ function onDragOverForSections(e, draggedOver){
         }
     }
 
+    //disallow dragging an #ACT into the #BONEYARD
+    if ($id("ghost").firstChild.classList.contains("level1") && draggedOver.classList.contains("boneyard")){
+        flexiContainer.classList.toggle("not-allowed", true)   
+        return
+    }
+
     //after or before?
         beforeOrAfter = "afterend"
             let bounding = draggedOver.getBoundingClientRect()
@@ -666,8 +683,11 @@ function onDragOverForSections(e, draggedOver){
     //now adjusting everything if draggedOver was level1 (fri 13)
         if(draggedOver.classList.contains("level1")){
             
-            if (draggedOver.querySelector(".scene, .section") && !draggedOver.classList.contains("boneyard")){return}
-            // so below this point only applies to empty acts or boneyard
+            // COMMENTED OUT THIS BC IT STOPPED SECTIONS FROM BEING DROPPED AFTER #ACT BEFORE ##SECTION
+            // Look out for any side effects!
+                // if (draggedOver.querySelector(".scene, .section") && !draggedOver.classList.contains("boneyard")){    
+                //     return}
+                // // so below this point only applies to empty acts or boneyard
             
             // first correctly store drop index
             dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1
@@ -771,7 +791,8 @@ function onDragOverForScenes(e, draggedOver){
         }
 
     mylog("Now setting bounding for what we hover")
-
+    // mylog("which by the way is a " + draggedOver.classList)
+    // mylog("and hoveringsection is " + hoveringSection)
 
     //setting boundings -- simple, unless hovering section
 
@@ -792,7 +813,7 @@ function onDragOverForScenes(e, draggedOver){
             }
 
             bounding = sectionbounding
-        }else if(draggedOver.closest(".section").classList.contains("level1")){
+        }else if(hoveringSection && draggedOver.closest(".section").classList.contains("level1")){
             draggedOver = draggedOver.closest(".level1")
         }
 
@@ -857,10 +878,11 @@ function onDragOverForScenes(e, draggedOver){
                 }
     }
     
+    mylog("we are here" + draggedOver.classList)
     //now adjusting everything if draggedOver was level1 (fri 13)
     if(draggedOver.classList.contains("level1")){
 
-            if (draggedOver.querySelector(".scene, .section") && !draggedOver.classList.contains("boneyard")){return}
+            if (draggedOver.querySelector(".scene, .section") && !draggedOver.classList.contains("boneyard")){mylog(1); return}
             // so below this point only applies to empty acts, or boneyard regardless
             
             // first correctly store drop index
@@ -1114,9 +1136,9 @@ function receiveText(allText, startIndex, endIndex){
     //globalEndTime = new Date()
     // Beat.log("Sending the entire raw screenplay takes..." + (globalEndTime - globalStartTime) +" ms")
 
-    Beat.log("this is the string")
-    Beat.log(selectedScreenplay)
-    Beat.log(selectedScreenplay.match(/\n/g))
+    // Beat.log("this is the string")
+    // Beat.log(selectedScreenplay)
+    // Beat.log(selectedScreenplay.match(/\n/g))
 
     //if (debugContainerVisibility != 1){toggleDebugContainer()}
     //debugContainer.innerHTML = allText.substring(rangeStart, rangeEnd).replace("\n","<br/>")

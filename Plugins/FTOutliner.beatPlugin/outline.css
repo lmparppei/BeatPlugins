@@ -52,6 +52,15 @@ time, mark, audio, video {
 
 	--indexReferenceForHeight: auto;
 	--pageBackground: #555;
+	--hslPageBackground: 0, 0%, 33%;
+
+	--menu-background: rgb(240, 240, 240); /*was 232*/
+	--menu-border-color: #c1c1c1;
+	--menu-color: rgb(233,233,233);
+
+	--wider-width: 4;
+
+	--colorTransparency: 100%;
 }
 
 :root, 
@@ -59,43 +68,44 @@ html[data-theme='FTOutliner']{
 
 	--indexCardHeight: 140px;
 
-	--yellow: hsl(60, 70%, 70%); 
-	--red: hsl(0, 70%, 70%); 
-	--green: hsl(120, 70%, 70%); 
-	--blue: hsl(220, 70%, 70%); 
-	--cyan: hsl(180, 70%, 70%); 
-	--magenta: hsl(320, 70%, 70%); 
-	--orange: hsl(30, 70%, 70%); 
-	--purple: hsl(260, 70%, 70%); 
-	--pink: hsl(340, 70%, 85%); 
-	--brown: hsl(32, 30%, 70%); 
-	--teal: hsl(205,70%,70%);
-	--gray: hsl(0, 0%, 80%);
-	--black: hsl(0, 0%, 40%);
-	--white: hsl(0, 0%, 100%); 
+	--yellow: 60, 70%, 70%; 
+	--red: 0, 70%, 70%; 
+	--green: 120, 70%, 70%; 
+	--blue: 220, 70%, 70%; 
+	--cyan: 180, 70%, 70%; 
+	--magenta: 320, 70%, 70%; 
+	--orange: 30, 70%, 70%; 
+	--purple: 260, 70%, 70%; 
+	--pink: 340, 70%, 85%; 
+	--brown: 32, 30%, 70%; 
+	--teal: 205,70%,70%;
+	--gray: 0, 0%, 80%;
+	--black: 0, 0%, 40%;
+	--white: 0, 0%, 100%; 
 	--special: rgba(0,0,0,0);
 
 }
 
 html[data-theme='Beat']{
 
-	--yellow: rgb(255, 210, 0);
-	--red: rgb(239,0,73);
-	--green: rgb(0,223,121);
-	--blue: rgb(0,129,239);
-	--cyan: rgb(7, 189, 236);
-	--magenta: rgb(236,0,140);
-	--orange: rgb(255, 161, 13);
-	--purple: rgb(181, 32, 218);
-	--pink: rgb(250,111,193);
-	--brown: rgb(169, 106, 7);
-	--teal: rgb(12, 224, 227);
-	--gray: rgb(150, 150, 150);
-	--black: rgb(40,40,40);
-	--white: rgb(255,255,255);
+	--yellow: 49, 100%, 50%;
+	--red: 342, 100%, 47%;
+	--green: 153, 100%, 44%;
+	--blue: 208, 100%, 47%;
+	--cyan: 192, 94%, 48%;
+	--magenta: 324, 100%, 46%;
+	--orange: 37, 100%, 53%;
+	--purple: 288, 74%, 49%;
+	--pink: 325, 93%, 71%;
+	--brown: 37, 92%, 35%;
+	--teal: 181, 90%, 47%;
+	--gray: 0, 0%, 59%;
+	--black: 0, 0%, 16%;
+	--white: 0, 0%, 100%;
 	--special: rgba(0,0,0,0);
 
 	--pageBackground: #222;
+	--hslPageBackground: 0, 0%, 13%;
 	
 	--act-length-opacity: 60%;
 
@@ -111,8 +121,7 @@ html[data-outdoors='1'] .scene:not(.nonProportionalMode .scene:not(.isExpanded >
 
 	/* box-shadow: 0 0 1px #222 !important; */
 	box-shadow: none !important; 
-	border: 1px solid #555 !important
-
+	border: 1px solid #555 !important;
 }
 
 html[data-outdoors='1'] .sceneheading:not(.nonProportionalMode .sceneheading:not(.isExpanded > .sceneheading)){
@@ -146,6 +155,11 @@ html, body {
 	/* background-color: var(--pageBackground) !important; */
 	height: 100% !important;
 	padding: 0px !important;
+
+}
+
+*{
+	scroll-behavior: smooth !important;
 }
 
 body {
@@ -202,26 +216,28 @@ body {
 	display: none;
 }
 
-#flexiContainer.wait,
+body:has(.drag) * {
+
+	cursor: move !important
+}
+
+/* #flexiContainer.wait,
 #flexiContainer.wait > *,
-#flexiContainer.wait * {
+#flexiContainer.wait *, */
+body:has(.wait) * {
 	cursor: wait !important;
 }
 
-[draggable=true],
-[draggable=true] * {
-	cursor: default;
+body:has(.not-allowed) * {
+
+	cursor: no-drop !important
+
 }
 
-/* .drag *,
-.drag .ghost *{
-	cursor:move !important;
-}
-
-#flexiContainer.drag *.beingDragged:hover,
-#flexiContainer.drag *.beingDragged *:hover {
-	cursor: move !important;
-} */
+/* 	[draggable=true],
+	[draggable=true] * {
+		cursor:grab !important;
+	} */
 
 
 .positionRelative {
@@ -272,6 +288,7 @@ body {
 	pointer-events: none; /*testing if this breaks somethgin*/
 
 	/* transition: width 0.8s !important; */
+	transition: flex-grow 0.2s ease-out !important;
 }
 
 .section-heading {
@@ -321,6 +338,7 @@ body {
 	flex-grow: 1 !important;
 	flex-basis: 0 !important;
 	min-width: 0px !important;
+
 }
 
 .level1 > .section-heading {
@@ -329,6 +347,44 @@ body {
 
 	text-align: center;
 	/* line-height: calc(30px * var(--fontSizeFactor)) !important; */
+}
+
+.wider {
+
+    flex-grow: var(--wider-width) !important;
+}
+
+.widerButton,
+.widerButtonOn {
+	display: none
+}
+
+.widerButtonOn {
+	transform: scale(0.8)
+}
+
+.level1:not(.wider) > .section-heading:hover > .widerButton, 
+.level1.wider > .section-heading > .widerButtonOn {
+
+	display: unset;
+	position: absolute;
+	margin-right: 0px; 
+	margin-top: 2px;
+	right: 0px;
+
+	height: calc(12px * var(--fontSizeFactor));
+	width: 30px;
+	/* background-color: #777; */
+	border-radius: 1000px;
+	fill: white;
+
+	opacity: 0.4;
+
+}
+
+.widerButton:hover,
+.widerButtonOn:hover{
+	opacity: 1 !important;
 }
 
 .scene, .orphanText{
@@ -422,9 +478,13 @@ body {
 	;
 }
 
-.nonProportionalMode:not(.showSynopsisInScenes):not(.indexcards) .orphanText{
+.nonProportionalMode:not(.indexcards) .orphanText:not(.showSynopsisInScenes .orphanText:has(.synopsis)){
 	display: none;
 	height: 0px;
+}
+
+.nonProportionalMode.showSynopsisInScenes .orphanText:has(.synopsis){
+	height: auto !important;
 }
 
 .synopsiscontainer{
@@ -438,7 +498,7 @@ body {
 	pointer-events: all;
 }
 
-.showSynopsisInScenes .synopsiscontainer{
+.showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
 	display: block;
 	background: none !important;
 	margin: 0;
@@ -446,7 +506,8 @@ body {
 
 }
 
-.synopsis {
+.synopsis,
+.inSynopse.editBox{
 
 	font-size: calc(10px * var(--fontSizeFactor)); 
 	font-weight: normal;
@@ -516,10 +577,15 @@ body {
 }
 
 .indexcards .synopsiscontainer{
-
-	transition: height 0.1s;
-
+	/* transition-delay: height 0.1s !important; */
+	/* transition: height 0.2s ease-in-out !important; */ 
+		/*remmed out above bc another .indexcards .synopsiscontainer below at line 872 */
+	/* border: 1px dotted lime */
 }
+.indexcards .special > .synopsiscontainer{
+	transition: none !important;
+}
+
 .indexcards .level1 > .orphanText {
 
 	height: auto !important;
@@ -585,6 +651,23 @@ body {
 	min-height: 120%;
 	
 }
+
+/* .indexcards .level1:nth-of-type(even)::before{
+
+	content: " ";
+	background: linear-gradient(yellow, red, green);
+	position: absolute;
+	
+	top: 0px;
+	left: -5px;
+	opacity: 1;
+	width: 100%;
+	height: inherit;
+
+	z-index: -2;
+
+
+} */
 
 .indexcards.oneColumnOutline .level1:nth-of-type(even){
 	height: auto !important;
@@ -657,8 +740,8 @@ body {
 	/* border: 10px solid green !important; */
 }
 
-.indexcards .isOmitted{
-	margin-left: 20px;
+.indexcards .isExpanded > .scene.isOmitted{
+	margin-left: 20px !important;
 }
 
 .indexcards .orphanText {
@@ -677,6 +760,7 @@ body {
 	border-bottom: 1px solid black;
 	background: rgba(0, 0, 0, 0.2);
 	border-radius: 3px 3px 0 0;
+
 }
 
 .indexcards .scene::before {
@@ -695,6 +779,10 @@ body {
 	transition: none !important;
 
 }
+
+/* .indexcards .isOmitted.scene::before{
+	width: 0px;
+} */
 
 .indexcards #dropDiv + .scene::before {
 
@@ -731,19 +819,24 @@ transform: translateY(-3px);
 
 .section > .orphanText > .synopsiscontainer > .synopsis:not(.indexcards .section > .orphanText > .synopsiscontainer > .synopsis),
 .section > .synopsiscontainer > .synopsis:not(.indexcards .section > .synopsiscontainer > .synopsis){
-	color: white !important;
+	/* color: white !important; */
+	color: white ;
 }
 
 /* .indexcards  */
 .synopsis::before {
 	position: absolute;
-	content: "";
+	content: "•";
+	font-size: calc(22px * var(--fontSizeFactor));
+	line-height: calc(0px * var(--fontSizeFactor));
 	margin-left: -11px;
+	margin-left: -15px;
 	margin-top: calc(5.5px * var(--fontSizeFactor));
 	height: calc(4px * var(--fontSizeFactor));
 	width: calc(4px * var(--fontSizeFactor));
 	border-radius: 50%;
-	background-color: black;
+	color: inherit !important;
+	/* background-color: black; */
 }
 
 /* .indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer){ */
@@ -769,11 +862,25 @@ transform: translateY(-3px);
 	background-attachment: local;
 
 	height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))); 
+	min-height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))) !important; 
 	width: 100%;
 	overflow-x: hidden;
 	overflow-y: scroll;
 
 	pointer-events: all;
+
+	transition:  min-height 0.2s, height 0.2s ;
+
+}
+
+.indexcards .section.special > .synopsiscontainer,
+.indexcards .section.special > .orphanText,
+.indexcards .section.special > .orphanText > .synopsiscontainer,
+.indexcards .collapsedSection > .synopsiscontainer,
+.indexcards .collapsedSection > .orphanText,
+.indexcards .collapsedSection > .orphanText > .synopsiscontainer {
+
+	min-height: 0px !important;
 
 }
 
@@ -783,8 +890,15 @@ transform: translateY(-3px);
 
 } */
 
+.indexcards .isSelected > .synopsiscontainer:not(.level1 > .synopsiscontainer) > .synopsis:hover{
+
+	background-image: linear-gradient(rgba(128,128,128,0.7),rgba(128,128,128,0.7)) !important;
+	/* border: red 2px solid; */
+
+}
+
 /* .indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):hover > .synopsis:last-child::after{ */
-.indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):hover::after{
+.indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer)::after{
 
 	/* margin-top: calc(14px * var(--fontSizeFactor)) */
 
@@ -797,14 +911,14 @@ transform: translateY(-3px);
 	color: black;
 	box-sizing: border-box;
 
-	margin-top: calc(14px * var(--fontSizeFactor));
+	/* margin-top: calc(14px * var(--fontSizeFactor)); */
 	width: 100%;
 	overflow: visible !important; /*new*/
 	height: 0px !important; /*new*/
 	/*margin-top: 0px !important; /*new*/
 	/* transform: translateY(calc(14px * var(--fontSizeFactor))); */
 
-	content: "double-click to add synopsis";
+	content: " ";
 	text-align: center;
 	font-weight: normal;
 	white-space: normal !important;
@@ -816,6 +930,13 @@ transform: translateY(-3px);
 
 	padding: 0 5px !important;
 
+}
+
+.indexcards:not(:has(.isBeingEdited)) .synopsiscontainer:not(.level1 > .synopsiscontainer):hover::after{
+
+	content: "double-click to add";
+
+	
 }
 
 .indexcards .level1 > .orphanText,
@@ -835,7 +956,7 @@ transform: translateY(-3px);
 }
 
 .level1 > .synopsiscontainer:hover,
-.level1 > .oprhanText{
+.level1 > .orphanText{
 	/* overflow: visible !important; */
 }
 
@@ -861,6 +982,8 @@ transform: translateY(-3px);
 	overflow: visible;
 }
 
+.indexcards .special:not(.collapsedSection) > .orphanText,
+.indexcards .special:not(.collapsedSection) > .orphanText > .synopsiscontainer,
 .indexcards .special:not(.collapsedSection) > .synopsiscontainer{
 
 	height: auto;
@@ -895,6 +1018,7 @@ transform: translateY(-3px);
 .indexcards .collapsedSection > .orphanText > .synopsiscontainer,
 .indexcards .collapsedSection > .orphanText {
 	height: 0px !important;
+	min-height: 0px !important;
 	padding: 0;
 	opacity: 0;
 }
@@ -959,6 +1083,7 @@ transform: translateY(-3px);
 	content: "\25BA";
 	/* color: #888 !important; */
 	color: inherit !important;
+	font-style: normal !important;
 
 	transition: transform 0.2s !important;
 	
@@ -1155,19 +1280,64 @@ transform: translateY(-3px);
 	transition: border 50ms ;
 }
 	
-.isOmitted {
-	background: 	repeating-linear-gradient(
+.indexcards .isOmitted > .synopsiscontainer,
+.isOmitted:not(.sceneheading) {
+	background:
+			linear-gradient(
+				to right,
+				hsla(var(--hslPageBackground), 20%) 0%,
+				hsla(var(--hslPageBackground), 20%) 12px,
+				hsla(var(--hslPageBackground), 70%) 12px,
+				hsla(var(--hslPageBackground), 70%) 100%)
+			, 	
+			repeating-linear-gradient(
 			-45deg,
-			rgba(0,0,0,0.1) 0px,
-			rgba(0,0,0,0.1) 3px,
-			rgba(255,255,255,0.05) 3px,
-			rgba(255,255,255,0.05) 6px)
-			,
-	rgba(221, 221, 221, 1);
-	color: rgba(0,0,0,0.9);
+			hsla(var(--hslPageBackground), 30%) 0px,
+			hsla(var(--hslPageBackground), 30%) 3px, 
+			/* rgba(0,0,0,.3) 0px,
+			rgba(0,0,0,.3) 3px,  */
+			rgba(255,255,255,0.2) 3px,
+			rgba(255,255,255,0.2) 6px)
+			/* , */
+	/* rgba(221, 221, 221, 1) */
+	;
+	/* color: rgba(0,0,0,0.9); */
+
 	font-style: italic;
 	margin-left: 16px;
+
+	--colorTransparency: 80%;
 }
+
+:not(.indexcards) .isExpanded > .isOmitted.scene > .arrowForIndexCards{
+
+	margin-left: -10px !important;
+
+}
+
+.isOmitted > .sceneheading
+/* .isOmitted > .synopsiscontainer > .synopsis */
+{
+
+	opacity: 70%;
+	background: none !important;
+	background-image: none !important;
+	background-color: transparent !important;
+	padding-left: 18px !important;
+}
+
+.isOmitted > .synopsiscontainer > .synopsis {
+
+	padding-left: 16px !important;
+	margin-left: 16px !important;
+	opacity: 70%;
+}
+
+/* .scene.isOmitted {
+
+	opacity: 0.8 !important;
+
+} */
 
 xxx:not(.nonProportionalMode) .isOmitted{
 	max-height: 0px;
@@ -1307,7 +1477,7 @@ p >.clear{
 	border-color: #bbb !important;
 
 	/* padding-top: 0px !important; this is important. */
-	*/
+	
 	
 .text-shift {
 	line-height: calc(17px * var(--fontSizeFactor)) !important;
@@ -1316,71 +1486,85 @@ p >.clear{
 	}
 
 .section.yellow:not(.level1) > .section-heading,
+.scene.yellow > .synopsiscontainer,
 .indexcards .section.yellow:not(.level1) > .synopsiscontainer,
 .indexcards .section.yellow:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--yellow); 
+	background-color: hsla(var(--yellow), var(--colorTransparency)); 
 }
 .section.red:not(.level1) > .section-heading,
+.scene.red > .synopsiscontainer,
 .indexcards .section.red:not(.level1) > .synopsiscontainer,
 .indexcards .section.red:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--red);
+	background-color: hsla(var(--red), var(--colorTransparency));
 }
 .section.green:not(.level1) > .section-heading,
+.scene.green > .synopsiscontainer,
 .indexcards .section.green:not(.level1) > .synopsiscontainer,
 .indexcards .section.green:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--green);
+	background-color: hsla(var(--green), var(--colorTransparency));
 }
 .section.blue:not(.level1) > .section-heading,
+.scene.blue > .synopsiscontainer,
 .indexcards .section.blue:not(.level1) > .synopsiscontainer,
 .indexcards .section.blue:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--blue);
+	background-color: hsla(var(--blue), var(--colorTransparency));
 }
 .section.cyan:not(.level1) > .section-heading,
+.scene.cyan > .synopsiscontainer,
 .indexcards .section.cyan:not(.level1) > .synopsiscontainer,
 .indexcards .section.cyan:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--cyan);
+	background-color: hsla(var(--cyan), var(--colorTransparency));
 }
 .section.teal:not(.level1) > .section-heading,
+.scene.teal > .synopsiscontainer,
 .indexcards .section.teal:not(.level1) > .synopsiscontainer,
 .indexcards .section.teal:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--teal);
+	background-color: hsla(var(--teal), var(--colorTransparency));
 }
 .section.magenta:not(.level1) > .section-heading,
+.scene.magenta > .synopsiscontainer,
 .indexcards .section.magenta:not(.level1) > .synopsiscontainer,
 .indexcards .section.magenta:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--magenta);
+	background-color: hsla(var(--magenta), var(--colorTransparency));
 }
 .section.pink:not(.level1) > .section-heading,
+.scene.pink > .synopsiscontainer,
 .indexcards .section.pink:not(.level1) > .synopsiscontainer,
 .indexcards .section.pink:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--pink);
+	background-color: hsla(var(--pink), var(--colorTransparency));
 }
 .section.orange:not(.level1) > .section-heading,
+.scene.orange > .synopsiscontainer,
 .indexcards .section.orange:not(.level1) > .synopsiscontainer,
 .indexcards .section.orange:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--orange);
+	background-color: hsla(var(--orange), var(--colorTransparency));
 }
 .section.brown:not(.level1) > .section-heading,
+.scene.brown > .synopsiscontainer,
 .indexcards .section.brown:not(.level1) > .synopsiscontainer,
 .indexcards .section.brown:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--brown);
+	background-color: hsla(var(--brown), var(--colorTransparency));
 }
 .section.purple:not(.level1) > .section-heading,
+.scene.purple > .synopsiscontainer,
 .indexcards .section.purple:not(.level1) > .synopsiscontainer,
 .indexcards .section.purple:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--purple);
+	background-color: hsla(var(--purple), var(--colorTransparency));
 }
 .section.black:not(.level1) > .section-heading,
+.scene.black > .synopsiscontainer,
 .indexcards .section.black:not(.level1) > .synopsiscontainer,
 .indexcards .section.black:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--black);
+	background-color: hsla(var(--black), var(--colorTransparency));
 }
 .section.white:not(.level1) > .section-heading,
+.scene.white > .synopsiscontainer,
 .indexcards .section.white:not(.level1) > .synopsiscontainer,
 .indexcards .section.white:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: var(--white);
+	background-color: hsla(var(--white), var(--colorTransparency));
 }
 .section.special:not(.level1) > .section-heading,
+/* .indexcards .scene.special > .synopsiscontainer, */
 .indexcards .section.special:not(.level1) > .synopsiscontainer,
 .indexcards .section.special:not(.level1) > .orphanText > .synopsiscontainer{
 	background-color: var(--special);
@@ -1391,43 +1575,43 @@ p >.clear{
 }
 
 .section.yellow:not(.level1){
-	border-color: var(--yellow) !important; 
+	border-color: hsla(var(--yellow), var(--colorTransparency)) !important; 
 }
 .section.red:not(.level1){
-	border-color: var(--red) !important; 
+	border-color: hsla(var(--red), var(--colorTransparency)) !important; 
 }
 .section.green:not(.level1){
-	border-color: var(--green) !important; 
+	border-color: hsla(var(--green), var(--colorTransparency)) !important; 
 }
 .section.blue:not(.level1){
-	border-color: var(--blue) !important; 
+	border-color: hsla(var(--blue), var(--colorTransparency)) !important; 
 }
 .section.cyan:not(.level1){
-	border-color: var(--cyan) !important; 
+	border-color: hsla(var(--cyan), var(--colorTransparency)) !important; 
 }
 .section.teal:not(.level1){
-	border-color: var(--teal) !important; 
+	border-color: hsla(var(--teal), var(--colorTransparency)) !important; 
 }
 .section.magenta:not(.level1){
-	border-color: var(--magenta) !important; 
+	border-color: hsla(var(--magenta), var(--colorTransparency)) !important; 
 }
 .section.pink:not(.level1){
-	border-color: var(--pink) !important; 
+	border-color: hsla(var(--pink), var(--colorTransparency)) !important; 
 }
 .section.orange:not(.level1){
-	border-color: var(--orange) !important; 
+	border-color: hsla(var(--orange), var(--colorTransparency)) !important; 
 }
 .section.brown:not(.level1){
-	border-color: var(--brown) !important; 
+	border-color: hsla(var(--brown), var(--colorTransparency)) !important; 
 	}
 .section.purple:not(.level1){
-	border-color: var(--purple) !important; 
+	border-color: hsla(var(--purple), var(--colorTransparency)) !important; 
 	}
 .section.black:not(.level1){
-	border-color: var(--black) !important; color: hsl(0deg, 0%, 75%) !important;
+	border-color: hsla(var(--black), var(--colorTransparency)) !important; color: hsl(0deg, 0%, 75%) !important;
 	}
 .section.white:not(.level1){
-	border-color: var(--white) !important;
+	border-color: hsla(var(--white), var(--colorTransparency)) !important;
 	}
 .section.special:not(.level1) {
 	background-image: none;
@@ -1437,192 +1621,169 @@ p >.clear{
 	text-align: center;
 	}
 
+/*ONE TO REPLACE THEM ALL?*/
 
-.uncolorAllScenesBut .scene:not(.scene.special){
-	/* background-color: rgba(255,255,255,0.1) !important; */
-	/* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.95) ,rgba(85,85,85,0.95) 100%); */
-	background-image: -webkit-linear-gradient(top, rgba(90,90,90,1) ,rgba(90,90,90,1) 100%);
-	color: rgba(0,0,0,0.3) !important;
-}
+	.uncolorAllScenesBut.red .scene:not(.red), 
+	.uncolorAllScenesBut.yellow .scene:not(.yellow),
+	.uncolorAllScenesBut.orange .scene:not(.orange),
+	.uncolorAllScenesBut.green .scene:not(.green), 
+	.uncolorAllScenesBut.teal .scene:not(.teal),
+	.uncolorAllScenesBut.cyan .scene:not(.cyan),
+	.uncolorAllScenesBut.blue .scene:not(.blue),
+	.uncolorAllScenesBut.purple .scene:not(.purple),
+	.uncolorAllScenesBut.magenta .scene:not(.magenta),
+	.uncolorAllScenesBut.pink .scene:not(.pink),
+	.uncolorAllScenesBut.brown .scene:not(.brown),
+	.uncolorAllScenesBut.gray .scene:not(.gray),
+	.uncolorAllScenesBut.white .scene:not(.white),
+	.uncolorAllScenesBut.black .scene:not(.black),
 
-.uncolorAllScenesBut .section-heading:not(.level1 > .section-heading):not(.section.special > .section-heading){
-	background-image: -webkit-linear-gradient(top, #999 ,#999 100%);
-}
+	.uncolorAllScenesBut.red .sceneheading:not(.red), 
+	.uncolorAllScenesBut.yellow .sceneheading:not(.yellow),
+	.uncolorAllScenesBut.orange .sceneheading:not(.orange),
+	.uncolorAllScenesBut.green .sceneheading:not(.green), 
+	.uncolorAllScenesBut.teal .sceneheading:not(.teal),
+	.uncolorAllScenesBut.cyan .sceneheading:not(.cyan),
+	.uncolorAllScenesBut.blue .sceneheading:not(.blue),
+	.uncolorAllScenesBut.purple .sceneheading:not(.purple),
+	.uncolorAllScenesBut.magenta .sceneheading:not(.magenta),
+	.uncolorAllScenesBut.pink .sceneheading:not(.pink),
+	.uncolorAllScenesBut.brown .sceneheading:not(.brown),
+	.uncolorAllScenesBut.gray .sceneheading:not(.gray),
+	.uncolorAllScenesBut.white .sceneheading:not(.white),
+	.uncolorAllScenesBut.black .sceneheading:not(.black),
 
-.indexcards.uncolorAllScenesBut .synopsiscontainer:not(.scene.special > .synopsiscontainer){
-	background-image: -webkit-linear-gradient(top, #bbb ,#bbb 100%);
-}
+	.uncolorAllScenesBut.red .section-heading:not(.red):not(.level1 > .section-heading):not(.special), 
+	.uncolorAllScenesBut.yellow .section-heading:not(.yellow):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.orange .section-heading:not(.orange):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.green .section-heading:not(.green):not(.level1 > .section-heading):not(.special), 
+	.uncolorAllScenesBut.teal .section-heading:not(.teal):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.cyan .section-heading:not(.cyan):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.blue .section-heading:not(.blue):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.purple .section-heading:not(.purple):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.magenta .section-heading:not(.magenta):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.pink .section-heading:not(.pink):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.brown .section-heading:not(.brown):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.gray .section-heading:not(.gray):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.white .section-heading:not(.white):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.black .section-heading:not(.black):not(.level1 > .section-heading):not(.special),
+	
+	.uncolorAllScenesBut.red .synopsiscontainer:not(.red), 
+	.uncolorAllScenesBut.yellow .synopsiscontainer:not(.yellow),
+	.uncolorAllScenesBut.orange .synopsiscontainer:not(.orange),
+	.uncolorAllScenesBut.green .synopsiscontainer:not(.green), 
+	.uncolorAllScenesBut.teal .synopsiscontainer:not(.teal),
+	.uncolorAllScenesBut.cyan .synopsiscontainer:not(.cyan),
+	.uncolorAllScenesBut.blue .synopsiscontainer:not(.blue),
+	.uncolorAllScenesBut.purple .synopsiscontainer:not(.purple),
+	.uncolorAllScenesBut.magenta .synopsiscontainer:not(.magenta),
+	.uncolorAllScenesBut.pink .synopsiscontainer:not(.pink),
+	.uncolorAllScenesBut.brown .synopsiscontainer:not(.brown),
+	.uncolorAllScenesBut.gray .synopsiscontainer:not(.gray),
+	.uncolorAllScenesBut.white .synopsiscontainer:not(.white),
+	.uncolorAllScenesBut.black .synopsiscontainer:not(.black),
 
-.uncolorAllScenesBut .scene:not(.scene.special) > .sceneheading{
-	color: rgba(0,0,0,0.3) !important;
-}
+	.uncolorAllScenesBut.red .synopsiscontainer:not(.red) > .synopsis:not(.red), 
+	.uncolorAllScenesBut.yellow .synopsiscontainer:not(.yellow) > .synopsis:not(.yellow),
+	.uncolorAllScenesBut.orange .synopsiscontainer:not(.orange) > .synopsis:not(.orange),
+	.uncolorAllScenesBut.green .synopsiscontainer:not(.green) > .synopsis:not(.green), 
+	.uncolorAllScenesBut.teal .synopsiscontainer:not(.teal) > .synopsis:not(.teal),
+	.uncolorAllScenesBut.cyan .synopsiscontainer:not(.cyan) > .synopsis:not(.cyan),
+	.uncolorAllScenesBut.blue .synopsiscontainer:not(.blue) > .synopsis:not(.blue),
+	.uncolorAllScenesBut.purple .synopsiscontainer:not(.purple) > .synopsis:not(.purple),
+	.uncolorAllScenesBut.magenta .synopsiscontainer:not(.magenta) > .synopsis:not(.magenta),
+	.uncolorAllScenesBut.pink .synopsiscontainer:not(.pink) > .synopsis:not(.pink),
+	.uncolorAllScenesBut.brown .synopsiscontainer:not(.brown) > .synopsis:not(.brown),
+	.uncolorAllScenesBut.gray .synopsiscontainer:not(.gray) > .synopsis:not(.gray),
+	.uncolorAllScenesBut.white .synopsiscontainer:not(.white) > .synopsis:not(.white),
+	.uncolorAllScenesBut.black .synopsiscontainer:not(.black) > .synopsis:not(.black)
+	{
+		background-image: 
+			-webkit-linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0.1)),
+			-webkit-linear-gradient(top, var(--pageBackground), var(--pageBackground) 100%)
+		;
+		/* background-image: transparent !important;
+		background-color: transparent !important; */
 
-.uncolorAllScenesBut.red .scene.red, 
-.uncolorAllScenesBut.yellow .scene.yellow,
-.uncolorAllScenesBut.orange .scene.orange,
-.uncolorAllScenesBut.green .scene.green, 
-.uncolorAllScenesBut.teal .scene.teal,
-.uncolorAllScenesBut.cyan .scene.cyan,
-.uncolorAllScenesBut.blue .scene.blue,
-.uncolorAllScenesBut.purple .scene.purple,
-.uncolorAllScenesBut.magenta .scene.magenta,
-.uncolorAllScenesBut.pink .scene.pink,
-.uncolorAllScenesBut.brown .scene.brown,
-.uncolorAllScenesBut.gray .scene.gray,
-.uncolorAllScenesBut.white .scene.white,
-.uncolorAllScenesBut.black .scene.black
-{
-	background-image: none;
-	filter: none !important;
-	opacity: 1;
-}
+		border-color: rgba(0, 0, 0, 0.2) !important;
+		box-shadow: none !important;
+		color: rgba(0, 0, 0, 0.5) !important;
+	}
 
-.uncolorAllScenesBut.red .section-heading.red, 
-.uncolorAllScenesBut.yellow .section-heading.yellow,
-.uncolorAllScenesBut.orange .section-heading.orange,
-.uncolorAllScenesBut.green .section-heading.green, 
-.uncolorAllScenesBut.teal .section-heading.teal,
-.uncolorAllScenesBut.cyan .section-heading.cyan,
-.uncolorAllScenesBut.blue .section-heading.blue,
-.uncolorAllScenesBut.purple .section-heading.purple,
-.uncolorAllScenesBut.magenta .section-heading.magenta,
-.uncolorAllScenesBut.pink .section-heading.pink,
-.uncolorAllScenesBut.brown .section-heading.brown,
-.uncolorAllScenesBut.gray .section-heading.gray,
-.uncolorAllScenesBut.white .section-heading.white,
-.uncolorAllScenesBut.black .section-heading.black
-{
-	background-image: none !important;
-	filter: none !important;
-	opacity: 1;
-}
+	.uncolorAllScenesBut.red .section:not(.red), 
+	.uncolorAllScenesBut.yellow .section:not(.yellow),
+	.uncolorAllScenesBut.orange .section:not(.orange),
+	.uncolorAllScenesBut.green .section:not(.green), 
+	.uncolorAllScenesBut.teal .section:not(.teal),
+	.uncolorAllScenesBut.cyan .section:not(.cyan),
+	.uncolorAllScenesBut.blue .section:not(.blue),
+	.uncolorAllScenesBut.purple .section:not(.purple),
+	.uncolorAllScenesBut.magenta .section:not(.magenta),
+	.uncolorAllScenesBut.pink .section:not(.pink),
+	.uncolorAllScenesBut.brown .section:not(.brown),
+	.uncolorAllScenesBut.gray .section:not(.gray),
+	.uncolorAllScenesBut.white .section:not(.white),
+	.uncolorAllScenesBut.black .section:not(.black){
 
-.indexcards.uncolorAllScenesBut.red .synopsiscontainer.red, 
-.indexcards.uncolorAllScenesBut.yellow .synopsiscontainer.yellow,
-.indexcards.uncolorAllScenesBut.orange .synopsiscontainer.orange,
-.indexcards.uncolorAllScenesBut.green .synopsiscontainer.green, 
-.indexcards.uncolorAllScenesBut.teal .synopsiscontainer.teal,
-.indexcards.uncolorAllScenesBut.cyan .synopsiscontainer.cyan,
-.indexcards.uncolorAllScenesBut.blue .synopsiscontainer.blue,
-.indexcards.uncolorAllScenesBut.purple .synopsiscontainer.purple,
-.indexcards.uncolorAllScenesBut.magenta .synopsiscontainer.magenta,
-.indexcards.uncolorAllScenesBut.pink .synopsiscontainer.pink,
-.indexcards.uncolorAllScenesBut.brown .synopsiscontainer.brown,
-.indexcards.uncolorAllScenesBut.gray .synopsiscontainer.gray,
-.indexcards.uncolorAllScenesBut.white .synopsiscontainer.white,
-.indexcards.uncolorAllScenesBut.black .synopsiscontainer.black
-{
-	background-image: none !important;
-	filter: none !important;
-	opacity: 1;
-}
+		border-color: transparent !important;
 
-.uncolorAllScenesBut.red .section.red, 
-.uncolorAllScenesBut.yellow .section.yellow,
-.uncolorAllScenesBut.orange .section.orange,
-.uncolorAllScenesBut.green .section.green, 
-.uncolorAllScenesBut.teal .section.teal,
-.uncolorAllScenesBut.cyan .section.cyan,
-.uncolorAllScenesBut.blue .section.blue,
-.uncolorAllScenesBut.purple .section.purple,
-.uncolorAllScenesBut.magenta .section.magenta,
-.uncolorAllScenesBut.pink .section.pink,
-.uncolorAllScenesBut.brown .section.brown,
-.uncolorAllScenesBut.gray .section.gray,
-.uncolorAllScenesBut.white .section.white,
-.uncolorAllScenesBut.black .section.black
-{
-	border-left-style: solid !important;
-	border-left-width: 3px !important;
-}
-
-
-.uncolorAllScenesBut.black .black:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.red .red:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.orange .orange:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.yellow .yellow:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.green .green:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.teal .teal:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.cyan .cyan:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.blue .blue:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.purple .purple:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.magenta .magenta:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.pink .pink:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.brown .brown:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.gray .gray:not(.hideSlugIfSmall):not(.dimmedScene),
-.uncolorAllScenesBut.white .white:not(.hideSlugIfSmall):not(.dimmedScene){
-	color: black !important;
-}
+	}
 
 .synopsis.yellow,
 .scene.yellow{
-/* , .section.yellow>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--yellow) !important;
+	background-color: hsla(var(--yellow), var(--colorTransparency)) !important;
 	}
 .synopsis.red,
 .scene.red{
-/* .section.red>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--red) !important;
+	background-color: hsla(var(--red), var(--colorTransparency)) !important;
 	}
 .synopsis.green,
 .scene.green{
-/* , .section.green>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--green) !important;
+	background-color: hsla(var(--green), var(--colorTransparency)) !important;
 	}
 .synopsis.blue,
 .scene.blue{
-	/* , .section.blue>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--blue) !important;
+	background-color: hsla(var(--blue), var(--colorTransparency)) !important;
 	}
 .synopsis.cyan,
 .scene.cyan{
-	/* , .section.cyan>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--cyan) !important;
+	background-color: hsla(var(--cyan), var(--colorTransparency)) !important;
 	}
 .synopsis.teal,
 .scene.teal{
-	/* , .section.teal>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--teal) !important;
+	background-color: hsla(var(--teal), var(--colorTransparency)) !important;
 	}
 .synopsis.magenta,
 .scene.magenta{
-	/* , .section.magenta>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--magenta) !important;
+	background-color: hsla(var(--magenta), var(--colorTransparency)) !important;
 	}
 .synopsis.orange,
 .scene.orange{
-	/* , .section.orange>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--orange) !important;
+	background-color: hsla(var(--orange), var(--colorTransparency)) !important;
 	}
 .synopsis.purple,
 .scene.purple{
-	/* , .section.purple>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--purple) !important;
+	background-color: hsla(var(--purple), var(--colorTransparency)) !important;
 	}
 .synopsis.pink,
 .scene.pink{
-	/* , .section.pink>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--pink) !important;
+	background-color: hsla(var(--pink), var(--colorTransparency)) !important;
 	}
 .synopsis.brown,
 .scene.brown{
-	/* , .section.brown>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--brown) !important;
+	background-color: hsla(var(--brown), var(--colorTransparency)) !important;
 	}
 .synopsis.black,
 .scene.black{
-	/* , .section.black>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--black) !important;
+	background-color: hsla(var(--black), var(--colorTransparency)) !important;
 	}
 .synopsis.gray,
 .scene.gray{
-	/* , .section.gray>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--gray) !important;
+	background-color: hsla(var(--gray), var(--colorTransparency)) !important;
 	}
 .synopsis.white,
 .scene.white{
-	/* , .section.white>.synopseForSection>.thisIsASynopsis { */
-	background-color: var(--white) !important;
+	background-color: hsla(var(--white), var(--colorTransparency)) !important;
 	}
 
 .scene.special, 
@@ -1648,6 +1809,7 @@ p >.clear{
 	color: white !important;
 	background-image: linear-gradient(black 0%, black 100%) !important;
 }
+
 .synopsis.isSelected:hover {
 	/* outline: 3px green solid !important; */
 	color: white !important;
@@ -1778,8 +1940,12 @@ p.tooltipInfo{
 	left: 3px;
 }
 
-.indicator p { /*for debugging purposes only*/
-	display: none !important; /*block for on*/
+.indicator p{
+	display: none ;
+}
+
+.loggingIsOn .indicator p { /*for debugging purposes only*/
+	display: block !important; /*block for on*/
 	float: right !important;
 	padding: 0px 2px !important;
 	background-color: red !important;
@@ -2016,7 +2182,8 @@ p.tooltipInfo{
 	/* background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.8) 100%) !important;	 */
 	color: white !important;
 }
-.scene.isSelected > .synopsiscontainer > .synopsis{
+.scene.isSelected > .synopsiscontainer > .synopsis,
+.section.isSelected > .synopsiscontainer > .synopsis {
 	/* background-image: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.8) 100%) !important;	 */
 	color: white !important;
 }
@@ -2487,10 +2654,10 @@ button:hover{
 }
 
 --------------------------------------------- {}
--- SHOWING SYNOPSE INSTEAD OF SCENEHEADING -- {}
+-- SHOWING INLINE SYNOPSIS ------------------ {}
 --------------------------------------------- {}
 
-.showSynopsisInScenes .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
+.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
 	:not(.nonProportionalMode section:not(.isExpanded) > .scene >.synopsiscontainer){
 	display: block;
 }
@@ -2504,7 +2671,9 @@ button:hover{
 }
 
 .showSynopsisInScenes:not(.indexcards) .scene:not(.hideSlugIfSmall) .sceneheading{
-	opacity: 0.3;
+	opacity: 0.5;
+	font-weight: bold;
+	
 	/* font-style: italic; */
 }
 
@@ -2530,6 +2699,15 @@ button:hover{
 	max-height: calc(100% - 14px * var(--fontSizeFactor)) !important;
 }
 
+.showSynopsisInScenes:not(.indexcards) .scene.temporarilyShowSynopsisContainer > .synopsiscontainer:not(:has(.synopsis)){
+
+	height: calc(14px * var(--fontSizeFactor)) !important;
+	/* outline: 1px lime solid !important; */
+	/* background-color: gold !important; */
+
+}
+
+
 /* #flexiContainer.showSynopsisInsteadOfSceneheading:not(.sceneCards):not(.sectionCards) .section .iAmASyn:not(.sceneheading .iAmASyn){
 	color: hsl(0, 0%, 60%) !important;
 } */
@@ -2537,7 +2715,13 @@ button:hover{
 
 .showSynopsisInScenes:not(.indexcards) .scene:hover .synopsis,
 .showSynopsisInScenes:not(.indexcards) .synopsiscontainer:hover .synopsis{
-	color: white !important;
+	color: white !important
+}
+
+.showSynopsisInScenes:not(.indexcards) .synopsis {
+
+	margin-top: 1px
+
 }
 
 /* .showSynopsisInsteadOfSceneheading.nonProportionalMode .scene{
@@ -2545,29 +2729,66 @@ button:hover{
 	height: auto !important;
 } */
 
+.showSynopsisInScenes.onlySynopsis:not(.indexcards) .sceneheading{
+	display: none;
+}
+.showSynopsisInScenes.onlySynopsis:not(.indexcards):not(.nonProportionalMode) .synopsiscontainer{
+
+	max-height: calc(100% - 0px * var(--fontSizeFactor)) !important;
+}
+
 #--------------------------------------------- {}
 #----- TURNING_OFF_COLORS -------------------- {}
 #--------------------------------------------- {}
 
 .greyonly .scene:not(.special),
-.greyonly.indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):not(.special > .synopsiscontainer):not(.dimmedScene .synopsiscontainer):not(.dimmedSection > .synopsiscontainer):not(.dimmedSection > .orphanText > .synopsiscontainer) { 
+html:not(html[data-outdoors='1']) .greyonly.indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):not(.special > .synopsiscontainer):not(.dimmedScene .synopsiscontainer):not(.dimmedSection > .synopsiscontainer):not(.dimmedSection > .orphanText > .synopsiscontainer) { 
 	background-color: #ddd !important;
 }
 
-html[data-outdoors='1'] .greyonly .scene:not(.special){
-	background-color: #eee !important;
+.greyonly:not(html[data-outdoors='1'] .greyonly) .section-heading:not(.level1>.section-heading):not(.special>.section-heading):not(.section-heading:hover):not(.section:hover>.section-heading) { 
+	background-color: #ccc !important;
+}
+
+.greyonly .section:not(.level1):not(.special):not(.dimmedSection):not(.section:hover):not(.uncolorAllScenesBut .section) {
+	border-color: #bbb !important;
+}
+
+html:not([data-outdoors='1']) #flexiContainer.greyonly .synopsis{
+	background: transparent !important;
+}
+
+.debug{
+	display: none;
+}
+
+.showDebug .debug{
+	font-weight: bold;
+	display: unset !important;
+}
+
+.noAnimation{
+	/* transition: all 0s !important; */
+	transition: none !important;
+}
+
+#---------------- HI CONTRAST --------------{}
+
+html[data-outdoors='1'] /* .greyonly */ .scene:not(.special){
+	/* background-color: #eee !important; */
 	font-weight: 600 !important;
 }
 
-html[data-outdoors='1'] .greyonly .showSceneLength,
-html[data-outdoors='1'] .greyonly .showSceneNum{
+html[data-outdoors='1'] /* .greyonly */ .showSceneLength,
+html[data-outdoors='1'] /* .greyonly */ .showSceneNum{
 	/* background-color: #eee !important; */
-	font-weight: 900 !important;
+	/* font-weight: 900 !important; */
+	opacity: 1 !important;
 }
 
-html[data-outdoors='1'] .greyonly .section-heading,
-html[data-outdoors='1'] .boneyardIsClosed.greyonly .boneyard::before,
-html[data-outdoors='1'] .greyonly .section-heading > .showSectionPageNumber{
+html[data-outdoors='1'] /*.greyonly*/ .section-heading,
+html[data-outdoors='1'] .boneyardIsClosed/*.greyonly*/ .boneyard::before,
+html[data-outdoors='1'] /*.greyonly*/ .section-heading > .showSectionPageNumber{
 	/* background-color: #eee !important;
 	font-weight: 600 !important; */
 	color: black !important;
@@ -2585,26 +2806,271 @@ background: 	repeating-linear-gradient(
 ;
 }
 
-.greyonly .section-heading:not(.level1>.section-heading):not(.special>.section-heading):not(.section-heading:hover):not(.section:hover>.section-heading) { 
-	background-color: #bbb !important;
+html[data-outdoors='1'] /*.indexcards*/ .section:not(.level1){
+
+	/* border-top: 3px solid !important; */
+	/* border-left: 3px solid black !important; */
+	border-left-width: 5px !important;
+	border-left-style: solid !important;
+	border-radius:6px !important;
+	padding-left: 3px !important;
+	
 }
 
-.greyonly .section:not(.level1):not(.special):not(.dimmedSection):not(.section:hover):not(.uncolorAllScenesBut .section) {
-	border-color: #bbb !important;
+html[data-outdoors='1'] .indexcards .section:not(.level1) > .section-heading{
+
+	border-style: solid !important;
+
 }
 
-.debug{
-	display: none;
+html[data-outdoors='1'] /*.indexcards*/ .section > .section-heading:not(.level1 > .section-heading){
+	color: black !important;
+	background: white !important;
+	border-top: 1px black solid;
+	border-left: 1px black solid;
+	border-right: 1px black solid;
+	}
+
+html[data-outdoors='1'] :not(.indexcards) .section > .section-heading:not(.level1 > .section-heading){
+
+	border-bottom: 1px black solid;
 }
 
-.showDebug .debug{
-	font-weight: bold;
-	display: unset !important;
+
+html[data-outdoors='1'] /*.indexcards*/ .section:hover > .section-heading:not(.level1 > .section-heading){
+
+	color: white !important;
+	background: black !important;
+
 }
 
-.noAnimation{
-	transition: all 0s !important;
+html[data-outdoors='1'] :not(.indexcards) .section.special > .section-heading{
+	border: none !important
 }
+
+
+html[data-outdoors='1'] /*.indexcards*/ .level1 .synopsis,
+html[data-outdoors='1'] .section.special > .synopsiscontainer > .synopsis
+{
+	color: black !important
+	}
+
+
+html[data-outdoors='1'] .indexcards .isExpanded > .scene:not(.special),
+html[data-outdoors='1'] .indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):not(.level1 > .orphanText > .synopsiscontainer):not(.special > .synopsiscontainer):not(.special > .orphanText > .synopsiscontainer):not(.dimmedScene .synopsiscontainer):not(.dimmedSection > .synopsiscontainer):not(.dimmedSection > .orphanText > .synopsiscontainer):not(.scene > .synopsiscontainer) { 
+
+	border-left: 1px solid black !important;
+	border-right: 1px solid black !important;
+	border-bottom: 1px solid black !important;
+	/* background-color: white !important; */
+	background-image: linear-gradient(white, white);
+
+}
+
+html[data-outdoors='1'] :not(.indexcards) .synopsis{
+	background: transparent !important;
+	color: black !important;
+	/* outline: 1px red solid !important; */
+}
+
+
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.red::before{color: hsla(var(--red),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.orange::before{color: hsla(var(--orange),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.yellow::before{color: hsla(var(--yellow),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.green::before{color: hsla(var(--green),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.teal::before{color: hsla(var(--teal),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.cyan::before{color: hsla(var(--cyan),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.blue::before{color: hsla(var(--blue),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.purple::before{color: hsla(var(--purple),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.pink::before{color: hsla(var(--pink),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.magenta::before{color: hsla(var(--magenta),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.brown::before{color: hsla(var(--brown),100%) !important;}
+html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.grey::before{color: hsla(var(--grey),100%) !important;}
+/* html[data-outdoors='1'] :not(.indexcards) .synopsis.red::before{color: var(--red)} */
+
+
+
+html[data-outdoors='1'] .indexcards .synopsis:hover{
+	color: white !important;
+	background-color: black !important;
+}
+
+html[data-outdoors='1'] .synopsis.isSelected {
+	color: white !important;
+	background-color: black !important;
+	background-image: linear-gradient(black, black);
+	background: black !important;
+}
+
+.synopsis:hover::before,
+.synopsis.isSelected::before{
+	color: black !important;
+}
+
+html[data-outdoors='1'] .indexcards .section:hover .sectionArrow {
+
+	border-color: white !important;
+	opacity: 1;
+
+}
+
+/* html[data-outdoors='1'] .scene:not(.indexcards .section:not(.isExpanded > .scene)) { */
+/* html[data-outdoors='1'] .scene:not(:not(.section.isExpanded > .scene)) { */
+/* html[data-outdoors='1'] :not(.indexcards) .scene, */
+html[data-outdoors='1'] .scene:not(.indexcards .scene),
+html[data-outdoors='1'] .indexcards .isExpanded > .scene,
+html[data-outdoors='1'] .indexcards .isExpanded > .scene > .synopsiscontainer {
+
+	/* background-color: red !important; */
+	background-image: linear-gradient(white, white) !important;
+
+	color: black !important;
+
+}
+
+html[data-outdoors='1'] .dimmedScene .synopsis{
+
+	color: #ddd !important;
+
+}
+
+html[data-outdoors='1'] .orphanText {
+
+	background: 	repeating-linear-gradient(
+		-45deg,
+		transparent 0px,
+		transparent 3px,
+		rgba(0,0,0,0.1) 3px,
+		rgba(0,0,0,0.1) 6px)
+		/* ,
+rgba(221, 221, 221, 1) !important */
+;
+}
+
+html[data-outdoors='1'] .sceneheading {
+
+	color: black !important;
+	fill: black !important;
+	background-color: white !important;
+	mix-blend-mode: darken;
+	/* font-weight: bold; */
+}
+
+/* html[data-outdoors='1'] .indexcards .scene,
+html[data-outdoors='1'] .indexcards .sceneheading {
+
+	background: red;
+
+} */
+
+html[data-outdoors='1'] .indexcards .scene:hover > .sceneheading{
+
+	background-color: black !important;
+}
+
+html[data-outdoors='1'] .scene:hover > .sceneheading {
+
+	color: white !important;
+	background-color: transparent !important;
+	mix-blend-mode: normal;
+	opacity: 1 !important;
+
+}
+
+html[data-outdoors='1'] .padlockIcon, 
+html[data-outdoors='1'] .showSceneNum {
+
+	opacity: 0.6;
+	font-weight: normal;
+}
+
+html[data-outdoors='1'] .indexcards .arrowForIndexCards::before {
+	left: -12.5px !important;
+	top: -2px !important;
+}
+
+html[data-outdoors='1'] .indexcards .section.isExpanded > .scene > .arrowForIndexCards::before {
+	left: -21px !important;
+	/* border: red 1px solid !important; */
+}
+
+html[data-outdoors='1'] .arrowForIndexCards:hover::before {
+	
+	color: black !important;
+} 
+
+html[data-outdoors='1'] :not(.indexcards) .section:hover > .synopsiscontainer > .synopsis:not(.isSelected) {
+	color: black !important;
+}
+
+html[data-outdoors='1'] #flexiContainer/*:not(.indexcards)*/ .synopsis:hover {
+	color: white !important;
+	background-color: black !important;
+}
+
+html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .section-heading{
+/* html[data-outdoors='1'] .indexcards .section.isSelected > .section-heading .synopsiscontainer { */
+
+	background: black !important;
+	color: white !important;
+	opacity: 1 !important;
+
+}
+
+html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .synopsiscontainer,
+html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .synopsiscontainer > .synopsis{
+
+	background: transparent !important;
+	color: black !important;
+
+}
+
+
+
+html[data-outdoors='1']   .scene.isSelected,
+html[data-outdoors='1']   .scene.isSelected > .sceneheading,
+html[data-outdoors='1']   .scene.isSelected > .synopsiscontainer{
+	/* html[data-outdoors='1'] .indexcards .section.isSelected > .section-heading .synopsiscontainer { */
+	
+		color: white !important;
+		/* border: 30px lime !important; */
+		
+		opacity: 1 !important;
+		background-image: linear-gradient(black, black) !important;
+	
+	}
+
+	/* .scene.isSelected{
+
+		border: 300px yellow solid !important;
+	} */
+
+html[data-outdoors='1'] #flexiContainer:not(.indexcards):not(.greyonly) .scene:not(.dimmedScene)::after,
+html[data-outdoors='1'] #flexiContainer.indexcards:not(.greyonly) .isExpanded .scene.scene:not(.dimmedScene)::after{
+
+	content: " ";
+	height: calc(100% + 2px);
+	position: absolute;
+	top: -1px;
+	left: -7px;
+
+	width: 4px;
+	border-radius: 1000px;
+	border: 0px;
+
+	background-color: inherit !important;
+
+
+}
+
+html[data-outdoors='1'] .widerButton,
+html[data-outdoors='1'] .widerButtonOn{
+
+	fill: black !important;
+
+}
+
+
 
 
 #--------------------------------------------- {}

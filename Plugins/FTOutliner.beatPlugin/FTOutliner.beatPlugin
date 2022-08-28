@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.42
+Version: 1.43
 Compatibility: 1.929
 Type: Tool
 Image: screenshot.jpg
@@ -272,9 +272,8 @@ Beat.onTextChange(function (location, length) {
 
 	if(location){ //check if we are in an outline element and if so disreagard this call
 		let outlineDetector = Beat.currentParser.lineAtIndex(location)
-		if (outlineDetector.typeAsString() == "Section" 
-			|| outlineDetector.typeAsString() == "Heading" 
-			|| outlineDetector.typeAsString() == "Synopse"){
+		
+		if (outlineDetector?.isOutlineElement()){
 
 			Beat.log("            >>> ENDING onTextChange bc writing in outline")
 			return
@@ -411,14 +410,15 @@ function titleCaseThis(str) {
 	let upper = true;
 	let newStr = "";
 	for (let i = 0, l = str.length; i < l; i++) {
-	  if (str[i] == " ") {
+	  if (str[i] == " " || str[i] == "-") {
 		upper = true;
-		  newStr += " ";
+		  newStr += str[i];
 		continue;
 	  }
 	  newStr += upper ? str[i].toUpperCase() : str[i].toLowerCase();
 	  upper = false;
 	}
+	// Beat.log("titleCase of " + str + " is now" + newStr)
 	return newStr;
 }
 
@@ -443,6 +443,8 @@ function makeStoringDefaultsDiv(){
 	userDefault.invertTextOnDark = Beat.getUserDefault("invertTextOnDark")
 		if(userDefault.invertTextOnDark != "false"){userDefault.invertTextOnDark = true}
 
+	userDefault.excludeVoiceOvers = Beat.getUserDefault("excludeVoiceOvers") || false
+	 	if(userDefault.excludeVoiceOvers != "true"){userDefault.excludeVoiceOvers = false}
 
 	documentSetting.areScenesProportional = Beat.getDocumentSetting("showProportional") || 1
 		if(documentSetting.areScenesProportional != "0"){documentSetting.areScenesProportional = "1"}
@@ -479,6 +481,8 @@ function makeStoringDefaultsDiv(){
 	documentSetting.documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
 	
 	documentSetting.boneyardIsClosed = Beat.getDocumentSetting("boneyardIsClosed") || false
+
+	documentSetting.trackingIncludesSynopsis = Beat.getDocumentSetting("trackingIncludesSynopsis") || true
 
 	thePanelWidth = Beat.getDocumentSetting("thePanelWidth");
 		if(!thePanelWidth){thePanelWidth = 800}
@@ -551,7 +555,8 @@ function ____________________CHARACTER_TRACKING___________________(){}
 Beat.custom.addCharacterClasses = function() {
 
 	let allLines = Beat.lines()
-	let allScenes = Beat.scenes()
+	//let allScenes = Beat.scenes()
+	let allScenes = Beat.outline()
 	charactersArray = []
 	let occurrencesForCharacter = []
 
@@ -591,6 +596,8 @@ Beat.custom.addCharacterClasses = function() {
 	// I now have all characters. Time to evaluate scenes.
 
 	const outline = [...Beat.outline()]
+	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
+	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
 
 	for (scene of allScenes){
 		const lines = Beat.linesForScene(scene)
@@ -598,12 +605,23 @@ Beat.custom.addCharacterClasses = function() {
 		let copyOfCharacters = [...charactersArray]
 		let charactersInScene = ""
 
+		//Beat.log("now evaluating characters in a... " + scene.typeAsString() + " with " + lines.length + " lines")
+
 		for (line of lines){
 
 			if (line.omitted){continue}
 
 			if (line.typeAsString() == "Character") {
 				let name = line.string
+
+				if(excludeVoiceOvers){
+					Beat.log("I AM CHECKING FOR EXLUSION, because EXCLUDE = " + excludeVoiceOvers)
+					let extension = name.match(/\((.*)\)/)
+					if(extension){
+						if (["VO", "V.O", "V.O.", "PRELAP"].includes(extension[1].toUpperCase())) continue
+					}
+				} 
+
 				name = name.replace(/^\^/, "")
 				name = name.replace(/^@/, "")
 				name = name.replace(/\(.*\)/gm, '');
@@ -618,10 +636,27 @@ Beat.custom.addCharacterClasses = function() {
 					charactersInScene += spacelessName + " "
 				}
 			}
-			if (line.typeAsString() == "Action") {
+
+			if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {
+
 				for (let i=0; i<copyOfCharacters.length; i++){
 					let name = copyOfCharacters[i]
-					if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+					//new matching
+					// Beat.log("now matching: " + name)
+					// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
+					// let matchString = line.string.match(regOfName, "i")
+					// Beat.log(matchString)
+					// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
+					
+					//old matching
+					//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+					
+					let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
+					if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
+						// Beat.log("YES (add). The match is: " + matchIndex)
+						Beat.log(line.string.substr(matchIndex, name.length))
+
 						copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
 						let spacelessName = name.replace(/ /g, "_")
 						spacelessName = spacelessName.replace(/\'|\"/g, "-")
@@ -637,6 +672,8 @@ Beat.custom.addCharacterClasses = function() {
 
 Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateTrueOrFalse){
 
+	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
+	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
 	const scene = Beat.outline()[outlineNumber]
 	// const sceneNumber = Beat.outline()[outlineNumber].sceneNumber
 
@@ -650,6 +687,16 @@ Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateT
 
 		if (line.typeAsString() == "Character") {
 			let name = line.string
+
+			if(excludeVoiceOvers){
+				Beat.log("I AM CHECKING FOR EXLUSION, because EXCLUDE = " + excludeVoiceOvers)
+
+				let extension = name.match(/\((.*)\)/)
+				if(extension){
+					if (["OS", "O.S.", "VO", "V.O.", "PRELAP"].includes(extension[1].toUpperCase())) continue
+				}
+			} 
+
 			name = name.replace(/^\^/, "")
 			name = name.replace(/^@/, "")
 			name = name.replace(/\(.*\)/gm, '');
@@ -665,10 +712,25 @@ Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateT
 				charactersInScene += spacelessName + " "
 			}
 		}
-		if (line.typeAsString() == "Action") {
-			for (let i=0; i<copyOfCharacters.length; i++){
+
+		if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {			for (let i=0; i<copyOfCharacters.length; i++){
 				let name = copyOfCharacters[i]
-				if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+				//new matching
+				// Beat.log("now matching: " + name)
+				// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
+				// let matchString = line.string.match(regOfName, "i")		
+				// Beat.log(matchString)
+				// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
+
+				//old matching
+				//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
+
+				let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
+				if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
+					//Beat.log("YES (reev). The match is: " + matchIndex)
+					Beat.log(line.string.substr(matchIndex, name.length))
+
 					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
 					let spacelessName = name.replace(/ /g, "_")
 					spacelessName = spacelessName.replace(/\'|\"/g, "-")
@@ -1124,9 +1186,15 @@ Beat.custom.deleteSynopsis = function(elementsToDelete, warningsAreOn) {
 
 		for (let j=0; j<elementsToDelete.length; j++){
 
-			theLength = outline[elementsToDelete[j]].line.string.length		
-			Beat.replaceRange(outline[elementsToDelete[j]].position, theLength, "")
+			//WARNING: look into this -- arent I deleting stuff that have disappeared, in psitions that have changed?
+
+			theLength = outline[elementsToDelete[j]].line.string.length
 		
+			let where = Math.abs(outline[elementsToDelete[j]].position)
+			
+			// Beat.replaceRange(outline[elementsToDelete[j]].position, theLength, "")
+			Beat.replaceRange(where, theLength, "")
+			checkForDoubleBlankLines(where + 1)
 		}
 	
 		Beat.onTextChangeDisabled = false
@@ -1287,6 +1355,7 @@ Beat.custom.checkBlankLines = function(position){
 
 	//used when calling from HTML
 	checkForDoubleBlankLines(position)
+
 }
 
 function checkForDoubleBlankLines(position){
@@ -1297,18 +1366,17 @@ function checkForDoubleBlankLines(position){
 
 	for (dbl=0; dbl<15; dbl++){
 
-		let indexOfLineAbove = parser.lineAtPosition(position - 1)?.position
-		// let lineAbove = parser.lineAtPosition(indexOfLineAbove)?.string
+		let indexOfLineAbove = JSON.parse(JSON.stringify(parser.lineAtPosition(position - 1)?.position || 0))
+
 		let lineAbove = parser.lineAtPosition(indexOfLineAbove)?.typeAsString()
-		// let line = parser.lineAtPosition(position)?.string
 		let line = parser.lineAtPosition(position)?.typeAsString()
 
 		if (line == "Empty" && lineAbove == "Empty"){
-			// Beat.alert("now this")
 			Beat.replaceRange(position, 1, "")
 		}
 
-		position = indexOfLineAbove
+		// position = indexOfLineAbove
+		position --
 	}
 }
 
@@ -1561,7 +1629,7 @@ Beat.custom.exportThis = function (content, classListOfFlexiContainer) {
 		+
 		((documentSubName) ? `<p class="headline2">`+ documentSubName + `</p>`: ``)
 		+
-		`<div id='flexiContainer' class='` + classListOfFlexiContainer + `' style = "outline: 1px lime solid; height: 80vh !important">` +
+		`<div id='flexiContainer' class='` + classListOfFlexiContainer + `'>` + //`' style = "outline: 1px lime solid; height: 80vh !important">` +
 		content +
 		`</div>
 		<p class="footer"><span style="float:right">Created using BEAT and the FTOUTLINER plugin.</span><span style="float:left">Writer: ` + documentAuthor + `</span><br/>
@@ -1673,9 +1741,15 @@ function setWindowTitle() {
 Beat.custom.blinkTheLine = function(start, end, color, textcolor){
 
 	// Beat.alert(start, end)
-	//start = Beat.currentParser.lineAtIndex(start).position
+	//start = Beat.currentParser.lineAtIndex(start)?.position
 
-	if (start != Beat.currentParser.lineAtIndex(start).position){end --} //removes extra character added to include CR if not full line
+	if(Beat.currentParser.lineAtIndex(start) == null){
+		Beat.dispatch(function(){
+			callingNoneExistingFunctionToCrashBeat()
+		})
+	}
+
+	if (start != Beat.currentParser.lineAtIndex(start)?.position){end --} //removes extra character added to include CR if not full line
 
 	Beat.timer(0.25, function () {
 		Beat.textBackgroundHighlight(color, start, end)
@@ -1741,3 +1815,25 @@ Beat.custom.copyRangeToClipboard = function(ranges){
 	Beat.newDocument(textToCopy)
 
 }
+
+Beat.custom.outlineToJSON = function(){
+	let a = Beat.outlineAsJSON()
+	Beat.newDocument(a)
+}
+
+Beat.custom.linesToJSON = function(){
+
+	let lines = Beat.lines()
+	let linesAsJSON = []
+
+	for (line of lines){
+		linesAsJSON.push(line.forSerialization())
+	}
+
+	linesAsJSON = JSON.stringify(linesAsJSON)
+	Beat.log(linesAsJSON)
+	Beat.newDocument(linesAsJSON)
+
+}
+
+

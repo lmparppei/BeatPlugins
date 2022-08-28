@@ -4,7 +4,8 @@
 
 
 <div id="debug" class="debugWindow" style="display: none"></div>
-<div id="flexiContainer" ondblclick="editContent()" class=""></div> 
+<!-- <div id="flexiContainer" ondblclick="editContent()" class=""></div>  -->
+<div id="flexiContainer" class=""></div> 
 <div id="cover" class="blurWindow" style="display: none" onclick="closeNewMenu(); toggleTrackingContainer(true); storeAndClosePrintbox(false)"></div>
 
 <div id="buttonRow">
@@ -13,9 +14,9 @@
 <!-- <div id="indexCardSizeButton" class="bottomButton"><div id="indexCardPlus" class="roundButton">&#x25B2;</div><div id="indexCardMinus" class="roundButton">&#x25BC;</div></div> -->
 <div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
 <div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
-<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')">N</div>
+<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
 <div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
-<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')">Z</div>
+<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
 <!--div id="speedReport" class="bottomButton" onclick="toggleHelpContainer()">&#8984;</div-->
 <!-- <div id="speedometer"></div> -->
 </div>
@@ -28,6 +29,14 @@
 <script>
 
 //@note all the buttons are here
+
+// $id("flexiContainer").ondblclick = function(event){
+document.addEventListener("dblclick", function(event){
+	event.preventDefault()
+	event.stopPropagation()
+	mylog(event)			
+	editContent(event)
+})
 
 $id("flexiContainer").ondragstart = function(event){onDragStart(event)}
 $id("flexiContainer").ondragend = function(event){onDragEnd(event)}
@@ -285,7 +294,7 @@ function unhover(){
 	}
 }
 
-// ========== UPDATING THE TIMELINE ==========
+// MARK: - ========== UPDATING THE TIMELINE ==========
 
 function __________TIMELINE (){}
 		
@@ -539,6 +548,8 @@ function divMaker(location, fullupdate){
 	let actIndex = []
 	let alternatePageNumber = 0
 
+	let lowerLevelNum = -1
+
 	//Make scencards expanded or collapsed as before
 		if(outlineBeforeUpdate && outline.length != outlineBeforeUpdate.length){
 			makeCardStateEqual()
@@ -580,9 +591,16 @@ function divMaker(location, fullupdate){
 					actLengths[currentAct] = alternatePageNumber
 					actIndex[currentAct] = currentItem.sceneStart
 					currentAct ++
+
+					// //this did not help to put pagenumber in faux act, unclear why!
+						// if (currentAct == 1 && $(".faux")){				
+						// 	actlengthDiv = document.createElement("div")
+						// 	actlengthDiv.classList.add("showActLength")
+						// 	$(".faux").appendChild(actlengthDiv)
+						// }
 				}
 
-
+				if(currentItem.sectionDepth > 1)lowerLevelNum ++
 
 				for (let i = num; i > -1; i--){
 
@@ -628,8 +646,10 @@ function divMaker(location, fullupdate){
 					if(outlineBeforeUpdate && outline.length == outlineBeforeUpdate.length){
 						let isExpanded = cardStateForScenes[num]
 						let collapsedSection = cardStateForSections[num]
+						let isPinned = $id(num.toString())?.classList.contains("wider")
 						if(isExpanded)sectionDiv.classList.add("isExpanded")
 						if(collapsedSection && currentItem.sectionDepth > 1)sectionDiv.classList.add("collapsedSection")
+						if(isPinned)sectionDiv.classList.add("wider")
 					}
 
 				let sectionheaderDiv = document.createElement("div")
@@ -655,12 +675,16 @@ function divMaker(location, fullupdate){
 					sectionheaderDiv.appendChild(pagenumberDiv)
 					}
 
-					if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
+					// if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
+					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
 					sectionheaderDiv.innerHTML += currentItem.stringForDisplay
+					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
+
 
 				let sectionSynConDiv = document.createElement("div")
 					sectionSynConDiv.id = "synopsisContainerFor" + num
 					sectionSynConDiv.classList.add("synopsiscontainer")
+					sectionSynConDiv.classList.add("noAnimation")
 					sectionSynConDiv.dataset.line = currentItem.sceneStart
 					if(currentItem.color){
 						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
@@ -681,9 +705,9 @@ function divMaker(location, fullupdate){
 							orphanDiv.dataset.lengthOfScene = currentItem.numberOfPages	
 
 						//FINALLY, this *SHOULD* remove size-related blinkage?
-						if (areScenesProportional == 1){
+						//if (areScenesProportional == 1){
 						orphanDiv.style.height = `calc(${currentItem.numberOfPages}px * var(--heightFactor))`
-						}
+						//}
 						
 							
 						sectionDiv.appendChild(sectionheaderDiv)
@@ -778,6 +802,16 @@ function divMaker(location, fullupdate){
 					sceneSynConDiv.classList.add("synopsiscontainer")
 					sceneSynConDiv.dataset.line = currentItem.sceneStart
 
+					if(currentItem.color){
+						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
+							sceneSynConDiv.style.backgroundColor = currentItem.color
+						}else{
+							sceneSynConDiv.classList.add(currentItem.color.toLowerCase())
+						}
+					// }else{
+					// 	sectionSynConDiv.style.backgroundColor = "#bbb"
+					}
+
 				sceneheadingDiv.innerHTML += "<span class='slugtext'>"
 					if(loggingIsOn){sceneheadingDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
 				sceneheadingDiv.innerHTML += currentItem.stringForDisplay.toUpperCase() + "</span>"
@@ -840,7 +874,6 @@ function divMaker(location, fullupdate){
 
 	recalculateHeights()
 	reevaluateColorContrast()
-
 }
 
 function __________OUTLINE_GRAPHICS(){}
@@ -887,11 +920,14 @@ function reevaluateColorContrast(){
 	for (let item of allItems){
 		let styles = window.getComputedStyle(item)
 		let $rgb
-		if(item.backgroundColor){
+		if(styles.backgroundColor && styles.backgroundColor != "rgba(0, 0, 0, 0)"){
 			$rgb = makeRGB(styles.backgroundColor)
 		}else{
+			// let parentItem = item.closest(".synopsiscontainer")
+			// if (!parentItem){parentItem = item.closest(".scene")}
 			let parentItem = item.closest(".scene")
-			if (!parentItem){parentItem = item.closest(".section")?.querySelector(".section-heading")}
+			if (!parentItem && indexCardMode){parentItem = item.closest(".section")?.querySelector(".section-heading")}
+			if (!parentItem && !indexCardMode){parentItem = item.closest(".level1")}
 			if (!parentItem)return
 			styles = window.getComputedStyle(parentItem)
 			$rgb = makeRGB(styles.backgroundColor)
@@ -900,6 +936,8 @@ function reevaluateColorContrast(){
 		
 			let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
 			item.style.color = (blackOrWhite > 128) ? "black" : "white"
+
+			// item.innerHTML = styles.backgroundColor + ((blackOrWhite > 128) ? "black" : "white") + item.innerHTML
 	}
 
 	mylog("exiting")
@@ -976,7 +1014,7 @@ function recalculateHeights(wherefrom){
 		sectionsPerAct.push(0)
 	}
 
-	if (allScenes.length == 0 && allSections.length == 0){
+	if ((allScenes.length == 0 && allSections.length == 0) || !outline || outline.length == 0){
 		mylog("returns from recalculateHeights because no scenes and no sections")
 		return} 
 
@@ -1007,7 +1045,8 @@ function recalculateHeights(wherefrom){
 
 	function putOntoScreen() {
 
-		if (theIndicatorIsInElement){
+		if (theIndicatorIsInElement && theIndicatorIsInElement > 0){
+			// alertThis(theIndicatorIsInElement)
 			if(isThisOffScreen($id(theIndicatorIsInElement))){
 				scrollNicelyIntoView($id(theIndicatorIsInElement))
 			}	
@@ -1119,22 +1158,25 @@ function positionTheIndicator(theIndicator){
 
 		let theIndicatorPercentage
 	
-		// if(theIndicator){
 		theIndicatorIsInElement = theIndicator.getAttribute('data-outlineElementCount');
 		theIndicatorPercentage = Number(theIndicator.getAttribute('data-percentageIntoScene'));
-	// }
 
 			let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(theIndicator.parentNode).getPropertyValue("height")));
 			let theIndicatorPosition = theIndicatorParentHeight * theIndicatorPercentage
 			if (theIndicatorPercentage == -1) {theIndicatorPosition = 11 * currentZoomLevel}
 			theIndicator.style.top = theIndicatorPosition + "px"
 
-			//scrollNicelyIntoView($id(theIndicatorIsInElement)) //was only this, but then things ALWAYS scrolled to the center.
 			if (theIndicatorIsInElement){
 			if(isThisOffScreen($id(theIndicatorIsInElement))){
 				scrollNicelyIntoView($id(theIndicatorIsInElement))
 			}	
 		}
+
+	if(currentParentScroll){
+		
+		let a = $id(theIndicatorIsInElement).querySelector(".synopsiscontainer")
+			a.scrollTo({left: 0, top: currentParentScroll, behavior: "instant"})
+	}
 }
 
 function hideSlugFor(entries){
@@ -1143,17 +1185,15 @@ function hideSlugFor(entries){
 
 	//don't think i will go back to resizeobserver, so "entries" will probably never be passed here.
 	
-	// if(entries){
-
-	// 	for (let entry of entries){
-			
-	// 		if (Number(entry.contentRect.height) < (10.5 * currentZoomLevel)){
-	// 			entry.target.classList.add("hideSlugIfSmall")
-	// 		}else{
-	// 			entry.target.classList.remove("hideSlugIfSmall")
-	// 		}
-	// 	}
-	// }else{
+		// if(entries){
+		// 	for (let entry of entries){
+		// 		if (Number(entry.contentRect.height) < (10.5 * currentZoomLevel)){
+		// 			entry.target.classList.add("hideSlugIfSmall")
+		// 		}else{
+		// 			entry.target.classList.remove("hideSlugIfSmall")
+		// 		}
+		// 	}
+		// }else{
 
 		let scenes = $$(".scene")
 			
@@ -1181,14 +1221,21 @@ function youAreHere(location, length, positionChangeOnly){
 		return
 	}
 
-	if(document.getElementById('youAreHere')){
-		document.getElementById('youAreHere').remove()
-	}
-	
 	let whichSceneAreWeIn = 0
 		while ((outline[whichSceneAreWeIn + 1]) && outline[whichSceneAreWeIn + 1].line.position - 0 <= location){ 		
 			whichSceneAreWeIn ++
-		}	
+		}
+
+		//This was added to keep the scroll of enclosing index card when selecting a synopsis (2022-07-02)
+		currentParentScroll = $id(whichSceneAreWeIn)?.closest(".scene, .section")?.querySelector(".synopsiscontainer")?.scrollTop
+
+		if(document.getElementById('youAreHere')){
+			document.getElementById('youAreHere').remove()
+		}
+
+		if (outline[whichSceneAreWeIn].typeAsString != "Synopse"){
+			currentParentScroll = false
+		}
 		while(outline[whichSceneAreWeIn].typeAsString == "Synopse"){
 			whichSceneAreWeIn--
 			if(whichSceneAreWeIn < 0){whichSceneAreWeIn = 0; break}
@@ -1258,7 +1305,8 @@ function youAreHere(location, length, positionChangeOnly){
 		"data-percentageIntoScene='" + percentageIntoScene + "' " +
 		"data-outlineElementCount='" + whichSceneAreWeIn + "' " +
 		"data-theSceneNumber = '" + whichSceneNumberAreWeIn + "' " + 
-		">"+"<p>"+ location + " (" + outline[whichSceneAreWeIn].typeAsString + ")</p></div>"
+		">"+"<p>"+ location + //" (" + outline[whichSceneAreWeIn].typeAsString + ")" + 
+		"</p></div>"
 		
 		if(placeToPutIndicator){
 			placeToPutIndicator.innerHTML += theIndicatorHTML
@@ -1285,6 +1333,7 @@ function numberIntoEights(theNumber) {
 
 }
 
+// MARK: - UI RELATED
 
 function __________UI_RELATED_STUFF (){}
 
@@ -1324,8 +1373,9 @@ function saveCurrentState() {
 		documentSubName: JSON.stringify(documentSubName),
 		documentAuthor: JSON.stringify(documentAuthor),
 
-		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")) 
+		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
+		trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis
 	}
 
 	userDefault = {
@@ -1334,7 +1384,9 @@ function saveCurrentState() {
 		colorScheme: colorScheme,
 
 		loggingIsOn: loggingIsOn,
-		invertTextOnDark: invertTextOnDark
+		invertTextOnDark: invertTextOnDark,
+
+		excludeVoiceOvers: userDefault.excludeVoiceOvers
 	}
 
 	mylog ("now looping all defaults into object")
@@ -1537,10 +1589,10 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	
 	
 	if (someoneJustPressed.key == "å") {event.preventDefault(); forceRestart()}
-	if (someoneJustPressed.key == "ä") {event.preventDefault(); 
+	// if (someoneJustPressed.key == "ä") {event.preventDefault(); 
 	
-		flexiContainer.classList.toggle("cursorTest")
-	}
+	// 	flexiContainer.classList.toggle("cursorTest")
+	// }
 
 	if (someoneJustPressed.key == "Escape") {
 		
@@ -1554,6 +1606,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
 		if ($id('textContainer')){toggleTrackingContainer(true); return false}
 		if (contextMenuIsOpen) {closeContextMenu(); return false}
+		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
 		if ($id('expandedNote')) {collapseNote(); return false}
 		if (aBeatIsHovered) {unhoverAllBeats(); return false}
 		if (beatsAreDisplayed) {toggleDisplayBeats(); return false}
@@ -1599,15 +1652,19 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 			weAreChangingColors = true
 			startSmallUpdate()
 		}
+		setAllButtons()
 		return}
 		if (someoneJustPressed.key == "c") {event.preventDefault(); toggleColorScheme()}
 		
 	if (someoneJustPressed.key == "d" && event.metaKey) {event.preventDefault(); deselectAllElements(false)}
 	if (someoneJustPressed.key == "d") {event.preventDefault(); expandOrCollapseSections(); return}
-
 	if (someoneJustPressed.key == "e" && event.metaKey) {event.preventDefault(); togglePrintMode(true); return}
 	if (someoneJustPressed.key == "e") {event.preventDefault(); anArrowWasClicked($(".arrowForIndexCards"), true); return}
 	if (someoneJustPressed.key == "f" && !event.metaKey) {event.preventDefault(); toggleProportional()}
+	
+	if (someoneJustPressed.key == "h") {event.preventDefault(); outdoorMode()}
+	
+	// if (someoneJustPressed.key == "j") {event.preventDefault(); Beat.call("Beat.custom.alertJSON()"); return}
 
 	if (someoneJustPressed.key == "l") {event.preventDefault(); toggleShowSceneLength()}
 	if (someoneJustPressed.key == "m") {event.preventDefault(); toggleDisplayMarkers()}
@@ -1617,17 +1674,19 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	if (someoneJustPressed.key == "p" && event.shiftKey && event.metaKey) {event.preventDefault(); event.stopPropagation(); newPrintBox(); return}
 	if (someoneJustPressed.key == "p" && event.metaKey) {event.preventDefault(); togglePrintMode(); return}
 	if (someoneJustPressed.key == "p") {event.preventDefault(); toggleShowPageNumbers()}
+
+	if (someoneJustPressed.key.toLowerCase() == "q") {event.preventDefault(); makeWider(false, true, event.shiftKey)}
 	
 	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
 	if (someoneJustPressed.key == "s" && !event.metaKey) {event.preventDefault(); toggleShowSceneNumbers()}
 	if (someoneJustPressed.key == "t") {event.preventDefault(); toggleTrackingContainer()}
-	if (someoneJustPressed.key == "u") {event.preventDefault(); outdoorMode()}
 	
 	if (someoneJustPressed.key == "w" && event.metaKey) {event.preventDefault(); Beat.call("Beat.custom.reallyQuit(true)")}
 	if (someoneJustPressed.key == "w") {event.preventDefault(); toggleWarnings()}
 
 	if (someoneJustPressed.key == "x") {event.preventDefault(); toggleIndexCardMode()}
-	if (someoneJustPressed.key == "y") {event.preventDefault(); toggleDisplaySynopsis()}
+	if (someoneJustPressed.key == "y" && !event.ctrlKey) {event.preventDefault(); toggleDisplaySynopsis()}
+	if (someoneJustPressed.key == "y" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("onlySynopsis"); setAllButtons()}
 	if (someoneJustPressed.key == "z" && event.metaKey) {saveCurrentState(); weAreChangingColors == true} //hack to improve redraw speed when undoing
 
 
@@ -1638,6 +1697,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	if (someoneJustPressed.key == "§") {event.preventDefault(); 
 		toggleNotepanel();
 		return}
+
+	if (someoneJustPressed.key == "Backspace" && event.metaKey) {event.preventDefault(); deleteScene()}
 
 	if (someoneJustPressed.key == "Tab" && event.ctrlKey && event.shiftKey) {Beat.call("Beat.previousTab()"); return}
 	if (someoneJustPressed.key == "Tab" && event.ctrlKey) {Beat.call("Beat.nextTab()"); return}
@@ -1725,6 +1786,8 @@ function somethingWasClicked() {
 
 	}
 
+	if (a.includes("widerButton") || a.includes("widerButtonOn")) {makeWider(theClickedThing)}
+
 	mylog("before if(event.altKey)")
 
 	if(event.altKey){
@@ -1777,6 +1840,8 @@ function somethingWasClicked() {
 				toggleTrackingContainer(true)
 			// }
 			return
+		case "flexiContainer":
+			if($(".wider"))makeWider($(".wider"))
 	}
 
 	//ADDED TO FIX WHAT CONSIDERS CLICKED when in Index Card Mode
@@ -1892,11 +1957,85 @@ function somethingWasClicked() {
 		theClickedThing.closest(".section").classList.add("isSelected")
 	}
 
+	// setTimeout(makeWider(theClickedThing),210)
+
 	mylog("end of sthWasClicked -- " + theClickedThing.classList)
 
 	if (gotoIndex) {goto(gotoIndex, theClickedThing, length)}
 	mylog("now returning")
 }
+
+function makeWider(theClickedThing, cycledWithKey, shift){
+
+		theRoot.style.setProperty('--wider-width', $$(".level1").length/2);
+
+
+		if (theClickedThing && theClickedThing.closest(".level1").classList.contains("wider")){
+			let allWidened = $$(".wider")
+			allWidened.forEach(element => {
+				element.classList.remove("wider")
+			})
+			return
+		}
+	
+		// let allActs = $$(".level1")
+		// if(!theClickedThing?.classList.contains("editBox")){
+		// 	allActs.forEach(element => {
+		// 		element.classList.remove("wider")
+		// 	})
+		// }
+		// let theSelection = $$(".isSelected")
+
+		if (theClickedThing) {
+			$(".wider")?.classList.remove("wider")
+			theClickedThing.closest(".level1").classList.add("wider")
+			return
+		}
+		// if(indexCardMode && theSelection.length == 1 && (
+		// 	theSelection[0].classList.contains("section") ||
+		// 	theSelection[0].classList.contains("synopsis") ||
+		// 	theSelection[0].classList.contains("scene")
+		// )){
+		// 	theSelection[0].closest(".level1").classList.add("wider")
+		// }
+
+		if (!cycledWithKey) return
+
+		let allActs = $$(".level1")
+		let currentlyWidened = $(".wider") || null
+			if(allActs.length = 0)return
+
+		if(currentlyWidened && $(".isSelected")){
+			$(".wider").classList.remove("wider")
+			return
+		}
+	
+		let value = [].indexOf.call(allActs, currentlyWidened)
+
+		value += (shift ? -1 : 1) 
+			if(value < -1)value = allActs.length - 1
+			if(value > allActs.length - 1)value =  - 1
+			// if(!currentlyWidened && $(".isSelected")){
+			if($(".isSelected")){
+				value = [].indexOf.call(allActs, $(".isSelected").closest(".level1"))
+			}
+
+		currentlyWidened?.classList.remove("wider")
+		if(value > -1) allActs[value].classList.add("wider")
+
+			
+			// for (let i = 0; i < allActs.length; i++){
+			// 	if (allActs[i].classList.contains("wider")) break
+			// }
+		
+			// allActs[i].classList.remove("wider")
+
+			// i++
+			// if (i > allActs.length) i = 0
+			// allActs[i].classList.add("wider")
+
+		// }
+	}
 
 function walkTheOutline(e){
 
@@ -1945,6 +2084,32 @@ function walkTheOutline(e){
 }
 
 function __________TOGGLERS(){}
+
+function toggleExcludeVoiceOvers(){
+
+	userDefault.excludeVoiceOvers = !userDefault.excludeVoiceOvers
+
+	saveCurrentState()
+	
+	updateFilter()
+	//collectCharacters()
+	
+	setAllButtons()
+
+}
+
+function toggleIncludeSynopsis(){
+
+	documentSetting.trackingIncludesSynopsis = !documentSetting.trackingIncludesSynopsis
+
+	saveCurrentState()
+
+	updateFilter()
+	//collectCharacters()
+
+	setAllButtons()
+
+}
 
 function toggleInvertText(){
 
@@ -2014,7 +2179,7 @@ function toggleIndexCardMode(firstrun){
 						
 			//document.getElementById("indexCardButton").classList.add("buttonIsActive")
 			document.getElementById("flexiContainer").classList.add("indexcards")
-			document.getElementById("flexiContainer").classList.remove("showSynopsisInScenes")
+			// document.getElementById("flexiContainer").classList.remove("showSynopsisInScenes")
 			document.getElementById("indexCardButton").innerHTML = newIndexCardIcon
 			
 	}else{
@@ -2036,6 +2201,7 @@ function toggleIndexCardMode(firstrun){
 	youAreHere()
 	recalculateHeights("from toggleIndexCardMode")
 	saveCurrentState()
+	reevaluateColorContrast()
 
 	if(notesAreDisplayed){toggleDisplayNotes(); toggleDisplayNotes()}
 	if(markersAreDisplayed){toggleDisplayMarkers(); toggleDisplayMarkers()}
@@ -2211,6 +2377,7 @@ function outdoorMode(){
 
 	outdoor = 1 - outdoor
 	document.documentElement.setAttribute('data-outdoors', outdoor)
+	setAllButtons()
 
 
 }
@@ -2267,6 +2434,12 @@ function toggleProportional(absolute) {
 		toggleDisplayBeats()
 	}
 
+	// if (flexiContainer.classList.contains("showSynopsisInScenes")){
+	// 	alertThis("yes")
+	// 	toggleDisplaySynopsis()
+	// 	toggleDisplaySynopsis()
+	// }
+
 
 	mylog("In toggleProportional, before RecalculateHeights()")
 	recalculateHeights("from ToggleProportional")
@@ -2275,6 +2448,7 @@ function toggleProportional(absolute) {
 
 	setAllButtons()
 	saveCurrentState()
+	reevaluateColorContrast()
 }
 
 function toggleRealTime() { 
@@ -2305,10 +2479,9 @@ function goto(gotoIndex, theClickedThing, length, blinkColor){
 	mylog("goto " + gotoIndex)
 
 	let classes = [...theClickedThing.classList]
-	if (classes.includes("theSlugLine") || classes.includes("scene") || classes.includes("section") || classes.includes("thisIsASynopsis")){
+	if (classes.includes("sceneheading") || classes.includes("scene") || classes.includes("section") || classes.includes("synopsis")){
 		Beat.call("Beat.scrollToScene(Beat.currentParser.sceneAtIndex(" + gotoIndex + "))")
 	}
-
 		
 	if (classes.includes("showActLength")){gotoIndex ++}
 	gotoIndex = Math.min(gotoIndex, absoluteTextLength - 1)
@@ -2349,8 +2522,8 @@ function goto(gotoIndex, theClickedThing, length, blinkColor){
 	blinkColor = blinkColor || "#888888"
 	textColor = textColor || false
 	//Beat.call("Beat.alert('" + length + "','" + theClickedThing.classList + "')")
-	
-	let blinkLength = length || "Beat.currentParser.lineAtIndex(" + gotoIndex + ").string.length + 1"
+
+	let blinkLength = length || "Beat.currentParser.lineAtIndex(" + gotoIndex + ")?.string?.length + 1"
 	Beat.call("Beat.custom.blinkTheLine(" + gotoIndex + "," + blinkLength + ", '" + blinkColor + "' , '" + textColor + "');")
 		
 		// //This previouse selected a clicked note -- temporarily disabled because blinking is enough?
@@ -2465,6 +2638,8 @@ function isThisOffScreen(element){
 	mylog("======== determining off/onscreen for..." + element?.classList)
 	mylog("=====================")
 
+	if(!element) return
+
 	let rect = element.getBoundingClientRect()
 
 	// mylog("this is the element's measurements:")
@@ -2490,6 +2665,14 @@ function scrollNicelyIntoView(element){
 	mylog("scrollNicely")
 
 	if(weAreCurrentlyEditingText){return}
+
+	//OLD JS METHOD
+		// location.hash = "#" + element.id
+		// return
+
+	//Webkit 15.4
+		// element.scrollIntoView(smooth, center)
+		// return
 
 		let elementRect = element.getBoundingClientRect()
 		let frameRect = document.getElementById("flexiContainer").getBoundingClientRect()
@@ -2543,6 +2726,8 @@ function toggleConsole(){
 
 	loggingIsOn = !loggingIsOn
 	if($id("buttonForLogging")){$id("buttonForLogging").checked = loggingIsOn}
+
+	flexiContainer.classList.toggle("loggingIsOn", loggingIsOn)
 
 	if(loggingIsOn){Beat.call("Beat.openConsole()")}
 

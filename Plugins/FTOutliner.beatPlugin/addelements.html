@@ -288,6 +288,9 @@ function addElement(theClickedThing, whatToAdd){
         if(outline[outlineElementNumber].typeAsString == "Section"){
             while(outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){outlineElementNumber ++}
             position = outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1
+            
+            //Hack to avoid adressing index outside of screenplay length:
+            if(outlineElementNumber = outline.length)position -= 1
         }
     }
 
@@ -301,6 +304,7 @@ function addElement(theClickedThing, whatToAdd){
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
 
+    mylog(position)
     Beat.call(`
         Beat.addString("\\n${addString}\\n", ${position})
         Beat.custom.checkBlankLines(${position + 3})

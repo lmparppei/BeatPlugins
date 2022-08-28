@@ -120,6 +120,30 @@ var newIndexCardIcon = /*svg*/`
     </svg>
 `
 
+var pinIcon = /*svg*/`
+    <svg width="100%" height="100%" viewBox="0 0 415 415" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+        <g transform="matrix(1,0,0,1,-5429.13,-393.183)">
+            <g transform="matrix(1,0,0,1,-0.648294,0)">
+                <g transform="matrix(0.707107,0.707107,-0.707107,0.707107,1522.78,-4355.75)">
+                    <path d="M6349.43,457.862L6328.66,457.862L6328.66,387.341L6499.28,387.341L6499.28,457.862L6478.5,457.862L6478.5,585.597C6529.61,605.802 6564.98,649.229 6564.98,699.493L6437.72,699.493L6437.72,821.439L6413.97,888.633L6390.22,821.439L6390.22,699.493L6262.96,699.493C6262.96,649.229 6298.33,605.802 6349.43,585.597L6349.43,457.862Z"/>
+                </g>
+            </g>
+        </g>
+    </svg>
+`
+
+var pinPushedIcon = /*svg*/`
+    <svg width="100%" height="100%" viewBox="0 0 363 363" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+        <g transform="matrix(1,0,0,1,-6827.59,-409.855)">
+            <g transform="matrix(1,0,0,1,-0.648294,0)">
+                <g transform="matrix(1,0,0,1,0.648294,0)">
+                    <path d="M6866.44,700.812C6812.81,632.25 6814.34,536.248 6873.31,477.279C6906.81,443.784 6952.25,428.82 6997.82,431.971C6982.62,438.212 6968.39,447.491 6956.08,459.805C6905.82,510.068 6906.13,592.149 6956.97,642.984C7007.8,693.82 7089.88,694.135 7140.15,643.872C7152.46,631.557 7161.74,617.333 7167.98,602.13C7171.13,647.698 7156.17,693.143 7122.67,726.638C7063.71,785.6 6967.72,787.14 6899.16,733.531L6867.34,765.349C6859.47,773.218 6845.75,772.272 6836.71,763.238C6827.68,754.204 6826.73,740.48 6834.6,732.61C6834.83,732.385 6835.06,732.167 6835.29,731.957L6866.44,700.812ZM6964.54,478.177C6957.14,517.753 6970.26,562.676 7003.77,596.183C7037.27,629.69 7082.2,642.811 7121.77,635.412C7078.51,673.505 7012.02,671.521 6970.22,629.726C6928.43,587.932 6926.44,521.444 6964.54,478.177ZM7006.87,435.532C7044.74,397.66 7110.78,402.211 7154.26,445.688C7197.74,489.165 7202.29,555.21 7164.42,593.081C7126.55,630.953 7060.5,626.402 7017.03,582.925C6973.55,539.448 6969,473.403 7006.87,435.532Z"/>
+                </g>
+            </g>
+        </g>
+    </svg>
+`
+
 
 var scenesWereProportionalBeforeIndexMode = false
 var actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening if an error fires
@@ -260,6 +284,9 @@ var documentSubName = false
 var documentAuthor = false
 
 var outdoor = 0
+
+var butWeAreInASynopsis = false
+var currentParentScroll = false
 
 
 </script>

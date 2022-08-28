@@ -43,7 +43,7 @@
 	height: 650px !important;
 	width: 650px !important; 
 	padding: 40px;
-	background-color:rgba(240,240,239,0.95); 
+	background-color:rgba(240,240,240,0.95); 
 	border: 0,5px black solid;
 	border-radius:12px;
 	z-index: 9998;
@@ -285,21 +285,34 @@ label input{
 	height: 70% !important;
 }
 
-#emptyScreenMessage, #emptyScreenMessage > p, #emptyScreenMessage > h1, #emptyScreenMessage > h1 > b {
+#emptyScreenMessage, #emptyScreenMessage > p, 
+#emptyScreenMessage > h1, 
+#emptyScreenMessage > h1 > b {
+
+font-size: 16px !important;
+line-height: 20px !important;
+
 margin-top: auto !important; 
 margin-bottom: auto !important; 
 color: white !important; 
 white-space: normal !important;
 margin-left: auto !important;
 margin-right: auto !important;
-line-height: 16px !important;
 
 min-width: 100px !important;
 max-width: 80% !important;
+
+/* outline: red 1px solid !important */
 }
 
-#emptyScreenMessage > h1, #emptyScreenMessage > h1 > b {
-	line-height: 24px !important;
+#emptyScreenMessage > h1, 
+#emptyScreenMessage > h1 > b {
+	/* line-height: 24px !important; */
+	font-weight: 700 !important;
+}
+
+html[data-outdoors='1'] #emptyScreenMessage *:not(button:hover){
+	color: black !important;
 }
 
 #helpWindow {
@@ -668,7 +681,7 @@ white-space: pre-wrap !important;
 	margin-left: 15px !important;
 	/* color: blue; */
 
-	margin-top: 0px !important;
+	margin-top: 6px !important;
 	margin-bottom: 0px !important;
 	padding-top: 0px !important;
 	padding-bottom: 0px !important;
@@ -707,16 +720,20 @@ white-space: pre-wrap !important;
 
 	position: sticky;
 	bottom: -40px !important;
-	left: 0px !important;
+	left: -40px !important;
+
+	margin-left: -40px !important;
 
 	height: 100px;
-	width: 100%;
+	width: calc(100% + 80px);
 
 	background: linear-gradient(0deg,
 		var(--menu-background) 0%,
 		var(--menu-background) 65%,
 		transparent 100%
 		);
+
+	mix-blend-mode: screen;
 
 }
 
@@ -778,6 +795,7 @@ white-space: pre-wrap !important;
 		<br/>
 	
 		<p class="mostText"><span class="key">Y</span> show/hide sYnopsis <br/>(always shown Index Card Mode)</p>	
+		<p class="mostText"><span class="key">^</span><span class="key">Y</span> hide sceneheadings when synopsis is shownn</p>	
 	</div>
 	<div class="collection">
 		<p class="subheading"><b>SCRIPT NOTES &amp; MARKERS</b></p>
@@ -821,6 +839,7 @@ white-space: pre-wrap !important;
 		<br/>
 		<p class="mostText"><span class="key">C</span> toggle color scheme</p>
 		<p class="mostText"><span class="key">^</span><span class="key">C</span> temporarily disable scene colors</p>
+		<p class="mostText"><span class="key">H</span> toggle Hi Contrast (black and white only) mode</p>
 		<br/>
 		<p class="mostText" style="margin: 0px !important;"><span style="margin-top: 2px; float:left;">NOTE: For US keyboards, substitute </span><span class="key">+</span> with <span class="key">=</span></p>
 		
@@ -880,6 +899,8 @@ function displayEmptyScreenMessage(){
 
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
+	
+	flexiContainer.classList.remove("wait")
 
 	document.getElementById("flexiContainer").innerHTML = /*html*/`
 	
@@ -888,10 +909,41 @@ function displayEmptyScreenMessage(){
 	<p>&nbsp;</p>
 	<p>This is a plugin that will show your screenplay divided into acts and sequences, and with your scenes displayed in a top-to-bottom timeline fashion with their size proportional to their length in the script.</p>
 	<p>&nbsp;</p>
-	<p>As soon as you add some structural elements into the document window this text will go away.</p>
+	<p>As soon as you add some structural elements into the document window this text will go away.<br/>
+		Or click the button below to have some basic elements added for you!</p>
 	<p>&nbsp;</p>
 	<p>Happy writing!</p>
+	<p>&nbsp;</p>
+	<p style="text-align: center; margin-top: 60px !important;">
+	<button class="generalButtonStyle" onclick="addTemplate()" style="text-align: center; font-size: 14px !important">Sure! Add some elements to get me started!</button>
+	</p>
 	`
+}
+
+function addTemplate(){
+
+	let contentString = /*html*/ `#ACT I\\n\\n##Sequence 1\\n\\nInt. Somewhere -- day\\n\\nInt. Somewhere ELSE -- day\\n\\n##Sequence 2\\n\\nInt. ANOTHER PLACE -- day\\n\\nInt. YET ANOTHER PLACE -- day\\n\\n#ACT II\\n\\n##Sequence 3\\n\\nExt. some other location -- night\\n\\nInt. AND ONE MORE -- NIGHT\\n\\nInt. THEN THIS ONE -- day\\n\\n##Sequence 4\\n\\nInt. AND ALSO THIS -- DAY\\n\\nInt. FOLLOWED BY THIS -- day\\n\\n#ACT III\\n\\n##Sequence 5\\n\\nInt. Then finally the last few scenes -- evening\\n\\n##Sequence 6\\n\\nint. Just one more after this -- night\\n\\nInt. And thats it -- dusk\\n`
+
+	Beat.call(`Beat.replaceRange(0, 0, "${contentString}")`)
+
+	// let hardCodedNumberOfScenes = 12
+
+	// for (let i = 0; i < hardCodedNumberOfScenes; i++){
+	// 	cardStateForSections.push("false")
+	// 	cardStateForScenes.push("false")
+	// }
+
+	setTimeout(function(){
+
+		let allSections = $$(".section:not(.level1)")
+		for (section of allSections){
+
+			section.classList.add("isExpanded")
+
+		}
+
+	}, 600)
+
 }
 
 
@@ -985,7 +1037,8 @@ function displayAnyBox(message){
 		closeButton.onclick = function(){toggleTrackingContainer(true)}
 		
 		message = message.replace(/(\n.*\n)\s*-+\s*\n/gm, "<strong><u>$1</u></strong>\n") //underlined
-		message = message.replace(/^[^\S\n]+-\s+(.*)\n/gm, "<p class='changelog-subitem-bullet'> $1</p>") //sub-bullet
+		message = message.replace(/^[^\S\n]+-\s+(.*)\n/gm, "<p class='changelog-subitem-bullet'> $1</p>\n") //sub-bullet
+		message = message.replace(/\n<p class='changelog-subitem-bullet'>/gm, "<p class='changelog-subitem-bullet'>") //sub-bullet double linebreak
 		message = message.replace(/^[^\S\n]+(.*)\n/gm, "<p class='changelog-subitem'>$1</p>\n") //sub no-bullet
 		
 		message = message.replace(/^\*\s+(.*)\n/gm, "<p class='changelog-item-bullet'> $1</p>") //bullet
@@ -1025,25 +1078,25 @@ function displayAboutBox(){
 			Hi. I'm Fredrik T Olsson. I am a Swedish screenwriter.<br/>
 			<br/> 
 			Ever since starting out in this profession, I have longed for someone to create a screenwriting app with an outline feature that's more than just a list of scenes. One that would give me a visual overview of my story, that would simplify navigation as well as help me structure and re-structure, and where notes and scene lengths and other important info were available right there in the outline where they belong.<br/>
-			&nbsp;  When Beat came along and allowed for external plugins, I decided to try my hand at making one myself. This is the result.<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;When Beat came along and allowed for external plugins, I decided to try my hand at making one myself. This is the result.<br/>
 			<br/>
 			One year into the existence of FTOutliner, Beat has become the screenwriting app I live in. My gratitude to Lauri-Matti Parppei for creating Beat in the first place (and then tirelessly helping this javascript newbie understand my ways around the API) knows almost no limits.<br/>
-			&nbsp;  It would be an understatement to say I can't imagine myself writing in another app again, and without FTOutliner on one half of the screen helping me navigate.<br/>
-			&nbsp;  That is my current setup, and I use it daily for the work I do. Here's hoping it will help you as much as it has helped me.<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;At this point, I don't think I could imagine myself writing in another app again, and without FTOutliner on one half of the screen helping me navigate.<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;That is my current setup, and I use it daily for the work I do. Here's hoping it will help you as much as it has helped me.<br/>
 			<br/>
 			I'm not a coder, so you might well find quirks that aren't intended. If you do, please let me know.<br/>
-			&nbsp;  Oh, and if you don't, but just happen to like my plugin, feel free to tell me that too. We're all screenwriters; it's not like we get too many pats on our backs for what we do.<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Oh, and if you don't, but just happen to like my plugin, feel free to tell me that too. We're all screenwriters; it's not like we get too many pats on our backs for what we do.<br/>
 			<br/>
 			Questions, feedback and bug reports can be sent to <a href="mailto:ftoutliner@eviltomato.com">ftoutliner@eviltomato.com</a><br/>
 			<br/>
-			Finally, why call it FTOutliner? That's an awfully contrived name. Well. You probably guessed it. While I pretend it's short for Flexible Time, I'm really just trying to get my initials in there. Again, we're all screenwriters. If we don't take credit, we rarely get it. <br/>
+			Finally, why FTOutliner? That's an awfully contrived name. Well. I pretend it's short for Flexible Time. But of course it isn't. I'm really just trying to get my initials in there. Again, we're all screenwriters. If we don't take credit, we rarely get it. <br/>
 			<br/>
 			This plugin, its design, code and underlying ideas, to any degree that they can be copyrighted and claimed, should be considered © Fredrik T Olsson 2021—2022 and onwards. If you like what you see, please don't steal it. I put a lot of work into it.<br/>
-			&nbsp;  Also, I am providing it for free and as is, which means that while I am continuously doing my best to ensure that FTOutliner won't cause any harm to what you (or I) write, by using it you acknowledge that the usual legalese applies. Which basically means that should anything bad happen all the same, you were the one taking a chance on a free, hobbyist app, and I cannot be held responsible. So there.<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Also, I am providing it for free and as is, which means that while I am continuously doing my best to ensure that FTOutliner won't cause any harm to what you (or I) write, by using it you acknowledge that the usual legalese applies. Which basically means that should anything bad happen all the same, you were the one taking a chance on a free, hobbyist app, and I cannot be held responsible. So there.<br/>
 			<br/>
 			That's about it, I think! Happy writing! Let's tell some exciting stories!<br/>
 			<br/>
-			Version: 1.4<br/>
+			Version: 1.43<br/>
 			© Fredrik T Olsson, 2021—2022<br/>
 
 	</p>

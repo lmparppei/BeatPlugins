@@ -18,7 +18,7 @@
 --white: rgb(255,255,255);
 --special: rgba(0,0,0,0); */
 
---yellow: hsl(55, 100%, 75%);
+/* --yellow: hsl(55, 100%, 75%);
 --red: hsl(5, 100%, 75%);
 --green: hsl(100, 100%, 75%);
 --blue: hsl(212, 100%, 75%);
@@ -32,6 +32,22 @@
 --gray: hsl(0, 0%, 75%);
 --black: rgb(40,40,40);
 --white: rgb(255,255,255);
+--special: rgba(0,0,0,0); */
+
+--yellow: 55, 100%, 75%;
+--red: 5, 100%, 75%;
+--green: 100, 100%, 75%;
+--blue: 212, 100%, 75%;
+--cyan: 175, 100%, 75%;
+--magenta: 315, 100%, 75%;
+--orange: 30, 100%, 75%;
+--purple: 270, 100%, 85%;
+--pink: 330,100%,90%;
+--brown: 37, 55%, 65%;
+--teal: 192, 65%, 67%;
+--gray: 0, 0%, 75%;
+--black: 0, 0%, 16%;
+--white: 0, 0%, 100%;
 --special: rgba(0,0,0,0);
 
 /* --pageBackground: #222; */
@@ -39,6 +55,10 @@
 --act-length-opacity: 60%;
 
 --fontSizeFactor: 1;
+}
+
+* {
+    background-image: none;
 }
 
 body {
