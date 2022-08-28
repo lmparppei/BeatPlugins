@@ -555,7 +555,8 @@ function ____________________CHARACTER_TRACKING___________________(){}
 Beat.custom.addCharacterClasses = function() {
 
 	let allLines = Beat.lines()
-	let allScenes = Beat.scenes()
+	//let allScenes = Beat.scenes()
+	let allScenes = Beat.outline()
 	charactersArray = []
 	let occurrencesForCharacter = []
 
@@ -603,6 +604,8 @@ Beat.custom.addCharacterClasses = function() {
 		const sceneNumber = outline.indexOf(scene)//scene.sceneNumber
 		let copyOfCharacters = [...charactersArray]
 		let charactersInScene = ""
+
+		//Beat.log("now evaluating characters in a... " + scene.typeAsString() + " with " + lines.length + " lines")
 
 		for (line of lines){
 

@@ -530,8 +530,9 @@ function updateFilter(scenesWithCharactersProxy){
         for (scene of allScenes){scene.classList.add("dimmedScene")}
         
             for (i=0; i<outline.length; i++){
-                if (outline[i].typeAsString == "Heading"){
+                if (outline[i].typeAsString == "Heading" || outline[i].typeAsString == "Section"){
                     let num = i
+
                     let removeDim = false
                     if (scenesWithCharacters[num]){
                         removeDim = true
@@ -547,6 +548,7 @@ function updateFilter(scenesWithCharactersProxy){
                     }
 
                     if (removeDim == true){$id(i).classList.remove("dimmedScene")}
+                    if (removeDim == true){$id(i).classList.remove("dimmedSection")}
 
                 }
             }

@@ -937,7 +937,12 @@ function trackingMenu(from){
         <p class="name">Tracking Menu</p>
         <strong>Filter by character:</strong><br/>
         ${characterString}
+
+        <hr>
         
+        <li onclick="deselectAllCharacters()">Deselect all characters<span class="shortcut" style="float:right">0</span></li>
+        <li onclick="closeNewMenu(); toggleTrackingContainer()">Full character list...<span class="shortcut" style="float:right">T</span></li>
+
         <hr>
         <li onclick="toggleExcludeVoiceOvers()">
             <input id="buttonForVoiceOvers" type="checkbox">
@@ -954,9 +959,6 @@ function trackingMenu(from){
                     </label>
         </li>
         <hr>
-        <li onclick="closeNewMenu(); toggleTrackingContainer()">See more characters...<span class="shortcut" style="float:right">T</span></li>
-        <li onclick="deselectAllCharacters()">Deselect all characters<span class="shortcut" style="float:right">0</span></li>
-            <hr>
             <strong style="padding: 6px">Filter by color:</strong><br/><!--note here!-->
             <li style="padding-top: 0px !important" class="hasSelect">
                 <span class="dropDownSpan">
