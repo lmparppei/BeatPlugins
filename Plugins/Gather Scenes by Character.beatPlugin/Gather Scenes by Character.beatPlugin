@@ -49,7 +49,7 @@ for (const scene of Beat.scenes()) {
 		const type = line.typeAsString();
 
 		// Immediately add this scene if it contains dialogue with the person
-		if ((type == "Character" || type == "Double Dialogue Character")) {
+		if ((type == "Character" || type == "Dual Dialogue Character")) {
 			// Strip V.O. etc.
 			const characterCue = line.characterName().trim()
 
