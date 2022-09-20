@@ -216,13 +216,17 @@ function hover() {
 
 	//Actual stuff before going to unhover: 
 	//NOTEPANEL...
-		if(element.classList.contains("notepanelNote")){
+		if(element.classList.contains("notepanelNote") || element.classList.contains("notepanelReview")){
 			panelNoteIsHovered(element)
 			return
 		}
 	//BEATS...
 		if(element.classList.contains("beat")){
 			beatIsHovered(element)
+			return
+		}
+		if(element.classList.contains("review")){
+			highlightReviewInPanel(element)
 			return
 		}
 
@@ -282,8 +286,12 @@ function unhover(){
 	let element = event.target
 	let relatedElement = event.relatedTarget
 
-	if(relatedElement && [...relatedElement.classList].includes("notepanelNote")){
+	if(relatedElement && ([...relatedElement.classList].includes("notepanelNote") || [...relatedElement.classList].includes("notepanelReview"))){
 		panelNoteIsUnhovered(relatedElement)
+	}
+
+	if(relatedElement && (relatedElement.classList.contains("review"))){
+		highlightReviewInPanel()
 	}
 	
 	previouslyHovered = false
@@ -403,10 +411,11 @@ function completeRun(location, length){ //Called AT STARTUP and (when non-realti
 	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")
 }
 
-function updateEverything(json, location, length, pagesAsString, absoluteLength) {
+function updateEverything(json, location, length, pagesAsString, absoluteLength, pageBreakPositions) {
 	mylog()
 
 	if(pagesAsString) {pages = pagesAsString} //unique to everything
+	if(pageBreakPositions) {pageBreaks = pageBreakPositions} // same...
 
 	outline = JSON.parse(json)
 	absoluteTextLength = absoluteLength //making it global...
@@ -428,6 +437,9 @@ function updateEverything(json, location, length, pagesAsString, absoluteLength)
 	if (notesAreDisplayed || markersAreDisplayed || beatsAreDisplayed || $id("notepanel")){
 		collectNotes("updateEverything")
 	}
+	if (reviewsAreDisplayed){collectReviews()}
+
+	collectRevisionIndices()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
@@ -450,7 +462,7 @@ function updateEverything(json, location, length, pagesAsString, absoluteLength)
 	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
 }
 
-function updateOneScene(json, scene, pagesForChangedScene, location, length, absoluteLength){
+function updateOneScene(json, scene, pagesForChangedScene, location, length, absoluteLength, pageBreakForChangedScene){
 	mylog()
 	mylog(json.length + ", location passed is" + location)
 
@@ -459,6 +471,7 @@ function updateOneScene(json, scene, pagesForChangedScene, location, length, abs
 	addSceneEnds()
 	
 	pages[scene] = pagesForChangedScene // Note: scene here now means outline item
+	pageBreaks[scene] = pageBreakForChangedScene
 	
 	if(outline.length < 1){displayEmptyScreenMessage(); return}
 	
@@ -474,6 +487,10 @@ function updateOneScene(json, scene, pagesForChangedScene, location, length, abs
 	if (notesAreDisplayed || markersAreDisplayed || beatsAreDisplayed || $id("notepanel")){
 		collectNotes("updateOneScene")
 	}
+
+	if (reviewsAreDisplayed){collectReviews()}
+
+	collectRevisionIndices()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
@@ -561,6 +578,9 @@ function divMaker(location, fullupdate){
 
 		//first creating a FAUX ACT if doc does not start with a level 1 section
 			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1)) {
+
+				actLengths[currentAct] = 0
+				currentAct ++
 							
 				let sectionDiv = document.createElement("div")
 					sectionDiv.id = "-1"
@@ -579,6 +599,11 @@ function divMaker(location, fullupdate){
 					
 					sectionDiv.appendChild(sectionSynConDiv)
 					newFlexi.appendChild(sectionDiv)
+
+					let actlengthDiv = document.createElement("div")
+						actlengthDiv.classList.add("showActLength")
+						sectionDiv.appendChild(actlengthDiv)
+					
 				}
 		
 		switch(currentItem.typeAsString){
@@ -588,7 +613,15 @@ function divMaker(location, fullupdate){
 				let parentSection = newFlexi
 
 				if(currentItem.sectionDepth == 1){
-					actLengths[currentAct] = alternatePageNumber
+					// actLengths[currentAct] = alternatePageNumber
+					actLengths[currentAct] = currentItem.startsOnPage
+
+						let checkback = 1 // check for preceding line break, looking past synopsis/hidden scenes
+						while(outline[num - checkback] && (outline[num - checkback].typeAsString == "Synopse" || outline[num - checkback].omitted)){
+							checkback ++
+						}
+						if (pageBreaks[num - checkback]) actLengths[currentAct] = currentItem.startsOnPage - 1 //correct page number if forced page break
+
 					actIndex[currentAct] = currentItem.sceneStart
 					currentAct ++
 
@@ -670,13 +703,15 @@ function divMaker(location, fullupdate){
 					
 					let pagenumberDiv = document.createElement("div")
 						pagenumberDiv.classList.add("showSectionPageNumber")
-						pagenumberDiv.innerHTML = "Pg " + Math.max(Math.ceil(alternatePageNumber), 1) + "."
+						//pagenumberDiv.innerHTML = "Pg " + Math.max(Math.ceil(alternatePageNumber), 1) + "."
+						pagenumberDiv.innerHTML = "Pg " + Math.max(Math.floor(currentItem.startsOnPage), 1) + "."
 
 					sectionheaderDiv.appendChild(pagenumberDiv)
 					}
 
 					// if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
-					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
+					// if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
+					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += "#" + outline.indexOf(currentItem)}
 					sectionheaderDiv.innerHTML += currentItem.stringForDisplay
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
@@ -709,6 +744,7 @@ function divMaker(location, fullupdate){
 						orphanDiv.style.height = `calc(${currentItem.numberOfPages}px * var(--heightFactor))`
 						//}
 						
+						if(pageBreaks && pageBreaks[num])addPageBreak(orphanDiv)
 							
 						sectionDiv.appendChild(sectionheaderDiv)
 						sectionDiv.appendChild(orphanDiv)
@@ -795,6 +831,10 @@ function divMaker(location, fullupdate){
 				let pageCountSpan = document.createElement("SPAN")
 					pageCountSpan.innerHTML = numberIntoEights(currentItem.numberOfPages)
 					pageCountSpan.classList.add("showSceneLength")
+						if(pageBreaks && pageBreaks[num]){
+							pageCountSpan.innerHTML = numberIntoEights(pageBreaks[num]) //shows ACTUAL length, without blankness
+						}
+
 					sceneheadingDiv.appendChild(pageCountSpan)
 
 				let sceneSynConDiv = document.createElement("div")
@@ -813,10 +853,51 @@ function divMaker(location, fullupdate){
 					}
 
 				sceneheadingDiv.innerHTML += "<span class='slugtext'>"
-					if(loggingIsOn){sceneheadingDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
+					// if(loggingIsOn){sceneheadingDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
+					if(loggingIsOn){sceneheadingDiv.innerHTML += "#" + outline.indexOf(currentItem)}
+				//if(pageBreaks[num]) sceneheadingDiv.innerHTML += pageBreaks[num] + " ... "
+				// sceneheadingDiv.innerHTML += "pg. " + currentItem.startsOnPage + " -- "
 				sceneheadingDiv.innerHTML += currentItem.stringForDisplay.toUpperCase() + "</span>"
 				sceneDiv.appendChild(sceneheadingDiv)
 				sceneDiv.appendChild(sceneSynConDiv)
+
+				if(pageBreaks && pageBreaks[num])addPageBreak(sceneDiv)
+
+				function addPageBreak(whereToAdd){
+
+					blankDiv = document.createElement("div")
+					blankDiv.id = "blankPageFor" + num
+					blankDiv.classList.add("blankPage")
+					
+					blankDiv.style.top = 100 * pageBreaks[num]/currentItem.numberOfPages + "%"
+					blankDiv.style.height =  100.5 - (100 * pageBreaks[num]/currentItem.numberOfPages) + "%"
+						let nextActualScene = 1
+						while(outline[num + nextActualScene] && outline[num + nextActualScene].typeAsString == "Synopse"){nextActualScene ++}
+					blankDiv.dataset.line = outline[num + nextActualScene]?.sceneStart - 4
+					blankDiv.dataset.length = outline[num + nextActualScene]?.sceneStart - 1
+					// blankDiv.innerHTML = outline[num + 1]?.sceneStart - 4
+
+					whereToAdd.appendChild(blankDiv)
+
+				}
+
+				if(pageDividers[num]){
+
+					//sceneheadingDiv.innerHTML = [...pageDividers[num]] + sceneheadingDiv.innerHTML
+
+					for (let p = 0; p < pageDividers[num].length - (pageBreaks[num] ? 1 : 0); p++){
+
+						let divider = document.createElement("div")
+							divider.id = "divider" + num + "-" + p
+							divider.classList.add("pageDivider")
+							divider.innerHTML = Math.trunc(currentItem.startsOnPage + 1 + p)
+
+							divider.style.top = 100 * pageDividers[num][p]/currentItem.numberOfPages + "%"
+
+						sceneDiv.appendChild(divider)
+
+					}
+				}
 
 				lastSection.appendChild(sceneDiv)
 
@@ -843,7 +924,7 @@ function divMaker(location, fullupdate){
 		} 
 
 		if(currentItem.numberOfPages){alternatePageNumber += Number(currentItem.numberOfPages)}
-		if(currentItem.typeAsString == "Heading"){alternatePageNumber += 2/58}
+		// if(currentItem.typeAsString == "Heading"){alternatePageNumber += 2/58}
 
 	}
 
@@ -860,11 +941,14 @@ function divMaker(location, fullupdate){
 		recallCardState()
 	}
 
-	actLengths.push(alternatePageNumber) // adding the last page number after the fact
+	//actLengths.push(alternatePageNumber) // adding the last page number after the fact // previously made an alt number but why?
+	//actLengths.push(currentItem.startsOnPage + currentItem.sceneLength) // adding the last page number after the fact
+	actLengths.push(Math.floor(currentItem.startsOnPage + currentItem.numberOfPages)) // adding the last page number after the fact
 	actIndex.push(currentItem.sceneEnd)  // index for last page number
+	
 	let allActPages = $$(".showActLength")
 	for (let i = 0; i < allActPages.length; i++){
-		allActPages[i].innerHTML = "Pg " + Math.ceil(actLengths[i + 1]) + "."
+		allActPages[i].innerHTML = "Pg " + Math.trunc(actLengths[i + 1]) + "."
 		allActPages[i].dataset.line = actIndex[i+1]
 	}
 
@@ -874,6 +958,9 @@ function divMaker(location, fullupdate){
 
 	recalculateHeights()
 	reevaluateColorContrast()
+
+		//NEW: Let's try to map out any revision marks!
+		// if(documentSetting.showRevisions)collectRevisionIndices()
 }
 
 function __________OUTLINE_GRAPHICS(){}
@@ -972,6 +1059,8 @@ function recalculatePages(){
 	let startsOnPage = 1
 	let elementNumber = 0
 
+		pageDividers = []
+
 	for (line in outline){
 		let currentLine = outline[line]
 
@@ -979,13 +1068,40 @@ function recalculatePages(){
 			//if((currentLine.typeAsString != "Heading" && currentLine.typeAsString != "Synopse") || currentLine.omitted == true){
 			if((currentLine.typeAsString == "Synopse") || currentLine.omitted == true || currentLine.titlePage){
 				outline[elementNumber].startsOnPage = startsOnPage
+				outline[elementNumber].numberOfPages = 0 //just a test 2022-09-05
 				elementNumber ++
 			 	continue
 			}
 	
-		outline[elementNumber].startsOnPage = startsOnPage
+		outline[elementNumber].startsOnPage = startsOnPage 
 		outline[elementNumber].numberOfPages = pages[elementNumber]
-		startsOnPage += pages[elementNumber]
+
+				if(pageBreaks && pageBreaks[elementNumber]) {
+
+					let whereThisSceneEnds = Math.ceil(startsOnPage + pageBreaks[elementNumber])
+					let thisScenesLength = whereThisSceneEnds - startsOnPage
+					
+					outline[elementNumber].numberOfPages = thisScenesLength // in order to hit a full page
+					
+				}
+
+				//let's try to add page dividers
+				if (Math.trunc(startsOnPage + outline[elementNumber].numberOfPages) >= Math.trunc(startsOnPage)){
+
+					let numberOfDividers = Math.trunc(startsOnPage + outline[elementNumber].numberOfPages) - Math.trunc(startsOnPage)
+						pageDividers[elementNumber] = []
+
+					for (let i = 0; i < numberOfDividers; i++){
+
+						let lengthToDivider = Math.ceil(startsOnPage) - startsOnPage + i
+						pageDividers[elementNumber].push(lengthToDivider)
+
+					}
+				}
+
+		//In prep for next round -- this is where next scene will start.
+		let extraLineForHeadings = (currentLine.typeAsString == "Heading" && !pageBreaks[elementNumber]) ? 2/58 : 0
+		startsOnPage += outline[elementNumber].numberOfPages + extraLineForHeadings
 
 		elementNumber ++
 	}
@@ -1267,6 +1383,11 @@ function youAreHere(location, length, positionChangeOnly){
 		
 	var percentageIntoScene = (location - thisScenesBeginning) / (thisScenesEnd - thisScenesBeginning); // must also fix end position in plugin before delivering JSON
 	
+		if (pageBreaks[whichSceneAreWeIn]){
+
+			percentageIntoScene = percentageIntoScene * pageBreaks[whichSceneAreWeIn]/outline[whichSceneAreWeIn].numberOfPages
+		}
+
 		if(!outline[whichSceneAreWeIn].sceneNumber || outline[whichSceneAreWeIn].typeAsString == "Section"){
 			
 			percentageIntoScene = -1
@@ -1354,6 +1475,14 @@ function saveCurrentState() {
 		showPages: whatArePageNumbers,
 		oneColumnOutline: oneColumnOutline,
 		currentZoomLevel: currentZoomLevel,
+		notepanelWidth: parseInt(getComputedStyle(theRoot).getPropertyValue('--note-panel-width')),
+
+		noteButtonGreen: $id("noteButtonGreen").checked,
+		noteButtonYellow: $id("noteButtonYellow").checked,
+		noteButtonRed: $id("noteButtonRed").checked,
+		noteButtonMagenta: $id("noteButtonMagenta").checked,
+		noteButtonPurple: $id("noteButtonPurple").checked,
+		noteButtonReview: $id("noteButtonReview").checked,
 
 		indexCardMode: indexCardMode,
 		indexCardHeight: indexCardHeight,
@@ -1364,6 +1493,7 @@ function saveCurrentState() {
 		notesAreDisplayed: notesAreDisplayed,
 		markersAreDisplayed: markersAreDisplayed,
 		beatsAreDisplayed: beatsAreDisplayed,
+		reviewsAreDisplayed: reviewsAreDisplayed,
 
 		greyonly: ($id("flexiContainer").classList.contains("greyonly")),
 		notepanel: ($id("notepanel").classList.contains("expanded")),
@@ -1375,7 +1505,9 @@ function saveCurrentState() {
 
 		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
-		trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis
+		trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis,
+
+		showRevisions: documentSetting.showRevisions
 	}
 
 	userDefault = {
@@ -1441,6 +1573,23 @@ function getDefaults(){
 		whatArePageNumbers = documentSetting.whatArePageNumbers || "inline"
 		oneColumnOutline = documentSetting.oneColumnOutline || 0
 		currentZoomLevel = documentSetting.currentZoomLevel || 1
+		if (documentSetting.notepanelWidth) theRoot.style.setProperty('--note-panel-width', documentSetting.notepanelWidth + "px") 
+
+		// alertThis(documentSetting.noteButtonGreen)
+		// alertThis(documentSetting.noteButtonYellow)
+		// alertThis(documentSetting.noteButtonRed)
+		// alertThis(documentSetting.noteButtonMagenta)
+		// alertThis(documentSetting.noteButtonPurple)
+		// alertThis(documentSetting.noteButtonReview)
+
+		// if ($(".noteButtons")){
+		// 	if($id("noteButtonGreen")) $id("noteButtonGreen")?.checked = (documentSetting.noteButtonGreen) || true
+		// 	if($id("noteButtonYellow")) $id("noteButtonYellow")?.checked = (documentSetting.noteButtonYellow) || true
+		// 	if($id("noteButtonRed")) $id("noteButtonRed")?.checked = (documentSetting.noteButtonRed) || true
+		// 	if($id("noteButtonMagenta")) $id("noteButtonMagenta")?.checked = (documentSetting.noteButtonMagenta) || true
+		// 	if($id("noteButtonPurple")) $id("noteButtonPurple")?.checked = (documentSetting.noteButtonPurple) || true
+		// 	if($id("noteButtonReview")) $id("noteButtonReview")?.checked = (documentSetting.noteButtonReview) || false
+		// }
 
 		indexCardHeight = documentSetting.indexCardHeight || 5
 		indexCardMode = documentSetting.indexCardMode || false
@@ -1453,6 +1602,7 @@ function getDefaults(){
 		notesAreDisplayed = documentSetting.notesAreDisplayed || false
 		markersAreDisplayed = documentSetting.markersAreDisplayed || false
 		beatsAreDisplayed = documentSetting.beatsAreDisplayed || false
+		reviewsAreDisplayed = documentSetting.reviewsAreDisplayed || false
 
 		$id("flexiContainer").classList.toggle("greyonly", documentSetting.greyonly || false)
 		if (documentSetting.notepanel){toggleNotepanel()}
@@ -1607,6 +1757,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 		if ($id('textContainer')){toggleTrackingContainer(true); return false}
 		if (contextMenuIsOpen) {closeContextMenu(); return false}
 		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
+		if ($('.expandedReview')) {collapseReviews(); return false}
 		if ($id('expandedNote')) {collapseNote(); return false}
 		if (aBeatIsHovered) {unhoverAllBeats(); return false}
 		if (beatsAreDisplayed) {toggleDisplayBeats(); return false}
@@ -1677,7 +1828,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 
 	if (someoneJustPressed.key.toLowerCase() == "q") {event.preventDefault(); makeWider(false, true, event.shiftKey)}
 	
-	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
+	// if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
+	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleDisplayReviews()}
 	if (someoneJustPressed.key == "s" && !event.metaKey) {event.preventDefault(); toggleShowSceneNumbers()}
 	if (someoneJustPressed.key == "t") {event.preventDefault(); toggleTrackingContainer()}
 	
@@ -1691,6 +1843,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 
 
 	// 2. NON-LETTERS
+
+	if (someoneJustPressed.key == "*") {event.preventDefault(); toggleShowRevisions()}
 	
 	if (someoneJustPressed.key == "F1") {event.preventDefault(); cycleMenus(event.shiftKey)}
 	if (someoneJustPressed.key == "?") {event.preventDefault(); toggleHelpContainer()}
@@ -1720,7 +1874,11 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 
 	// 4. ARROWS
 
-	if (someoneJustPressed.code == "ArrowUp" || someoneJustPressed.code == "ArrowDown"){event.preventDefault(); walkTheOutline(event)}
+	if ((someoneJustPressed.code == "ArrowUp" || someoneJustPressed.code == "ArrowDown")
+		&&
+		(!someoneJustPressed.metaKey && !someoneJustPressed.ctrlKey)){
+			event.preventDefault(); walkTheOutline(event)
+	}
 
 	// 5. MODIFIERS
 		
@@ -1949,6 +2107,19 @@ function somethingWasClicked() {
 	if([...theClickedThing.classList].includes('note')){	
 		length = theClickedThing.innerHTML.replace(/\<br\>/g, "\n").length + 5
 	}
+	if (theClickedThing.classList.contains("review")){
+		expandReview(theClickedThing)
+		length = parseInt(theClickedThing.getAttribute("data-length")) + 1
+	}else{
+		expandReview()
+	}
+
+
+	if (a.includes("revision")){
+
+		length = theClickedThing.dataset.length + 1
+		
+	}
 
 	if(theClickedThing.classList.contains('scene') || theClickedThing.classList.contains('sceneheading') || theClickedThing.classList.contains('synopsis') ){
 		theClickedThing.classList.add('isSelected')
@@ -2134,6 +2305,7 @@ function toggleOneColumnOutline() {
 	if(notesAreDisplayed){toggleDisplayNotes(); toggleDisplayNotes()}
 	if(markersAreDisplayed){toggleDisplayMarkers(); toggleDisplayMarkers()}
 	if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
+	if(reviewsAreDisplayed){toggleDisplayReviews(); toggleDisplayReviews()}
 }
 	
 function toggleDebugContainer() { 
@@ -2206,6 +2378,7 @@ function toggleIndexCardMode(firstrun){
 	if(notesAreDisplayed){toggleDisplayNotes(); toggleDisplayNotes()}
 	if(markersAreDisplayed){toggleDisplayMarkers(); toggleDisplayMarkers()}
 	if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
+	if(reviewsAreDisplayed){toggleDisplayReviews(); toggleDisplayReviews()}
 
 	mylog("end cycling index card mode")
 }
@@ -2257,6 +2430,26 @@ function toggleWarnings() {
 	saveCurrentState()
 }
 
+function toggleShowRevisions() {
+
+	mylog(" from " + documentSetting.showRevisions)
+
+	documentSetting.showRevisions = (documentSetting.showRevisions === false)
+
+	if(documentSetting.showRevisions){
+		collectRevisionIndices()
+	}else{
+		let currentDivs = $$(".revision")
+		if(currentDivs.length > 0){
+			currentDivs.forEach(element => {
+				element.remove()
+			});
+		}
+	}
+	
+	setAllButtons()
+}
+
 function toggleDisplayNotes() {
 	mylog("toggleDisplayNotes")
 	notesAreDisplayed = (notesAreDisplayed == false)
@@ -2290,6 +2483,24 @@ function toggleDisplayMarkers() {
 	}
 	setAllButtons()
 	//saveCurrentState()
+}
+
+function toggleDisplayReviews() {
+
+	mylog()
+	reviewsAreDisplayed = (reviewsAreDisplayed == false)
+
+	if(reviewsAreDisplayed){
+		flexiContainer.classList.add("reviewsAreDisplayed")
+		collectReviews()
+	}else{
+		flexiContainer.classList.remove("reviewsAreDisplayed")
+		let existingReviews = $$(".review")
+		for (existingReview of existingReviews){existingReview.remove()}
+	}
+
+	setAllButtons()
+
 }
 
 function toggleDisplayBeats() {
@@ -2434,6 +2645,11 @@ function toggleProportional(absolute) {
 		toggleDisplayBeats()
 	}
 
+	if (reviewsAreDisplayed){
+		toggleDisplayReviews()
+		toggleDisplayReviews()
+	}
+
 	// if (flexiContainer.classList.contains("showSynopsisInScenes")){
 	// 	alertThis("yes")
 	// 	toggleDisplaySynopsis()
@@ -2495,7 +2711,7 @@ function goto(gotoIndex, theClickedThing, length, blinkColor){
 
 	let elementColor = window.getComputedStyle(theClickedThing).backgroundColor
 	let textColor
-	if (classes.includes("scene") && elementColor){
+	if ((classes.includes("scene") || classes.includes("revision")) && elementColor){
 		let values = elementColor.replace(/rgb(a)*\(/, "").replace(")", "").split(",")
 		let rgbAsHex = ""
 		for (value of values){

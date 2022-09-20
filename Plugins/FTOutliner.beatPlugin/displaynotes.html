@@ -36,7 +36,12 @@
     /* see outline.css*/
 }
 
-.markersAreDisplayed .noteContainer{
+/* .markersAreDisplayed .noteContainer{ */
+.scene:has(.review) .noteContainer{
+    right: 10px !important
+}
+
+.scene:has(.marker) .noteContainer{
     right: 20px !important
 }
 
@@ -550,6 +555,131 @@ function collectNotes(wherefrom){
     Beat.call("Beat.custom.collectNotes()")
 }
 
+function collectReviews(){
+
+    Beat.call("Beat.custom.collectReviews()")
+}
+
+function collectReviewsAndThenCreateDoc(){
+
+    Beat.call("Beat.custom.collectReviews(true)")
+}
+
+function createDocFromReviews(reviewsData){
+
+    let newDocumentContents = ">Below is a summary of all REVIEW items in the script<\n\n"
+        newDocumentContents += ">**" + (documentName?.toUpperCase() || "UNTITLED") +"**<\n"
+    let review = 0
+
+    for (element of outline){
+
+        mylog("in da loop!:" + element.line.string)
+
+        if(review >= reviewsData.length) break
+
+        if (outline.indexOf(element) == reviewsData[review].outlineElementNumber){
+
+            let nearestHeading = element
+            let nearestHeadingNumber = outline.indexOf(nearestHeading)
+                while(nearestHeading.typeAsString != "Heading" && nearestHeading.typeAsString != "Section" && nearestHeadingNumber > 0){nearestHeading = outline[nearestHeadingNumber - 1]}
+
+
+            newDocumentContents += `\n**-----------------------------------------------------------**\n`
+            newDocumentContents += `\n${nearestHeading.line.string} ${(nearestHeading.sceneNumber ? ("#" + nearestHeading.sceneNumber + "#") : "")}\n\n`
+        }
+
+        while (outline[reviewsData[review].outlineElementNumber] == element){
+
+            mylog("in da while" + reviewsData[review].string)
+
+            newDocumentContents += "!_*REVIEW #" + review + "*_\n"
+            newDocumentContents += "!*(re: " + entireScreenplay.substr(reviewsData[review].range[0], reviewsData[review].range[1]).trim().replaceAll("\n\n", "\n").replaceAll("\n", "*\n*") + ")*\n\n"
+            newDocumentContents += `${reviewsData[review].string.trim()}\n`
+            
+            review++
+
+            if(review >= reviewsData.length) break
+
+            if(reviewsData[review].outlineElementNumber == reviewsData[review - 1].outlineElementNumber){
+                newDocumentContents += `\n>------------------------------<\n\n`
+            }
+
+        }
+
+        mylog("DONE°°°")
+    }
+
+
+    Beat.call("Beat.newDocument(`" + newDocumentContents + "`)")
+
+}
+
+function displayReviews(reviewsData){
+
+    if(!outline){return} //or else error on plugin startup
+
+    globalReviewsData = reviewsData
+    if($id("notepanel")){
+        updateNotepanel()
+        if(!reviewsAreDisplayed)return
+    }
+
+    let existingReviews = $$(".review")
+    for (existingReview of existingReviews){
+        existingReview.remove()
+    }
+
+    // alertThis(JSON.stringify(globalReviewsData))
+
+    for (review of reviewsData){
+
+        text = review.string
+        position = review.range[0]
+        element = review.outlineElementNumber
+        
+        let revdiv = document.createElement("div")
+            revdiv.id = "review" + reviewsData.indexOf(review)
+            revdiv.classList = "review"
+            revdiv.style.position = "absolute"
+            revdiv.dataset.line = position
+            revdiv.dataset.length = review.range[1]
+            revdiv.innerHTML = "✓"
+
+            mylog(revdiv.id)
+            
+        let parentElement = $id(element).closest(".scene, .section")
+            if (outline[parentElement.id].typeAsString == "Heading"){
+                distance = 100 * (position - outline[parentElement.id].sceneStart) / (outline[parentElement.id].sceneEnd - outline[parentElement.id].sceneStart)
+                revdiv.style.top = `calc(${distance}% - 14px)` //the 14px is to align note with speech bubble pointer!
+            }else{
+                revdiv.style.top = "0%"
+            }
+
+        parentElement.appendChild(revdiv)
+    }
+
+    mylog("and were done")
+
+}
+
+function highlightReviewInPanel(element){
+
+    if(!element){
+        elementsToUnselect = $$(".notepanelReview.isSelected")
+        for (el of elementsToUnselect){
+            el.classList.remove("isSelected")
+        }
+        return
+    }
+
+    if(!flexiContainer.classList.contains("notepanelIsExpanded"))return
+
+    let elementInPanel = "notepanelR" + element.id.substr(1)
+    
+    $id(elementInPanel)?.classList.add("isSelected")
+
+}
+
 function displayNotes(notesData, markerData, beatData){
     mylog()
 
@@ -560,6 +690,12 @@ function displayNotes(notesData, markerData, beatData){
     if(beatData){globalBeatData = beatData}
 
     notesData = globalNotesData
+    
+    if(markersAreDisplayed){displayMarkers()}
+    if(beatsAreDisplayed){displayBeats()}
+    if($id("notepanel")?.classList.contains("expanded") && notesData.length > 0){updateNotepanel()}
+
+    if(!notesAreDisplayed)return
 
     let existingNotes = document.querySelectorAll(".note, .noteContainer")
     if(existingNotes){
@@ -567,10 +703,6 @@ function displayNotes(notesData, markerData, beatData){
             existingNote.remove()
         }
     }
-
-    if(markersAreDisplayed){displayMarkers()}
-    if(beatsAreDisplayed){displayBeats()}
-    if($id("notepanel")?.classList.contains("expanded") && notesData.length > 0){updateNotepanel()}
 
     //Deleted parsing markers because already served in markerData
     // markers = [] //resetting markers every time we re-calculate notes, since markers are just notes
@@ -677,6 +809,55 @@ function displayNotes(notesData, markerData, beatData){
     }
 
   mylog("end of collect and displayNotes()")
+}
+
+function createDocFromNotes(){
+
+if(!globalNotesData)collectNotes()
+
+let newDocumentContents = ">Below is a summary of all NOTES in the script<\n\n"
+    newDocumentContents += ">**" + (documentName?.toUpperCase() || "UNTITLED") +"**<\n"
+let note = 0
+
+for (element of outline){
+
+    mylog("in da loop!:" + element.line.string)
+
+    if(note >= globalNotesData.length) break
+
+    if (outline.indexOf(element) == globalNotesData[note].outlineElementNumber){
+
+        let nearestHeading = element
+        let nearestHeadingNumber = outline.indexOf(nearestHeading)
+            while(nearestHeading.typeAsString != "Heading" && nearestHeading.typeAsString != "Section" && nearestHeadingNumber > 0){nearestHeading = outline[nearestHeadingNumber - 1]}
+
+        newDocumentContents += `\n**-----------------------------------------------------------**\n`
+        newDocumentContents += `\n${nearestHeading.line.string} ${(nearestHeading.sceneNumber ? ("#" + nearestHeading.sceneNumber + "#") : "")}\n\n`
+    }
+
+    while (outline[globalNotesData[note].outlineElementNumber] == element){
+
+        mylog("in da while" + globalNotesData[note].string)
+
+        // newDocumentContents += "*re: " + entireScreenplay.substr(globalNotesData[note].range[0], globalNotesData[note].range[1]).trim().replaceAll("\n", "*\n*") + "*\n\n"
+        newDocumentContents += `${globalNotesData[note].string.trim()}\n`
+        
+        note++
+
+        if(note >= globalNotesData.length) break
+
+        if(globalNotesData[note].outlineElementNumber == globalNotesData[note - 1].outlineElementNumber){
+            newDocumentContents += `\n>------------------------------<\n\n`
+        }
+
+    }
+
+    mylog("DONE°°°")
+}
+
+
+Beat.call("Beat.newDocument(`" + newDocumentContents + "`)")
+
 }
 
 function displayMarkers(){
@@ -916,6 +1097,7 @@ function unhoverAllBeats() {
 function expandNote(tabWasPressed){
 
     if(!globalNotesData || globalNotesData.length == 0){return}
+    if($("#editBox"))return
     exitEdit()
     
     if (selectedNote > -1 && tabWasPressed){ //SELECTED THROUGH TAB
@@ -1049,35 +1231,115 @@ function collapseNote(){
     }
 }
 
+function expandReview(theClickedThing){
+
+    reviewNumber = theClickedThing?.id.replace("review", "")
+
+    collapseReviews()
+    
+    if(!theClickedThing)return
+    mylog("hej, nummer" + reviewNumber)
+
+    expandedReview = $id("review"+reviewNumber)
+    mylog(expandedReview)
+    expandedReview.classList.add("expandedReview")
+    // setTimeout(() => {
+        expandedReview.innerHTML = "<div class='reviewHeadline'>REVIEW #" + reviewNumber + "</div>"
+        expandedReview.innerHTML += globalReviewsData[reviewNumber].string
+    // }, 0.05);
+
+    $id("notepanelReview" + reviewNumber)?.classList.add("isSelected")
+
+}
+
+function collapseReviews(){
+
+    let expandedReviews = $$(".expandedReview")
+    for (expandedReview of expandedReviews){
+        expandedReview.classList.remove("expandedReview")
+        expandedReview.innerHTML = "✓"
+    }
+    
+    $(".notepanelReview.isSelected")?.classList.remove("isSelected")
+
+}
+
 function cycleNotes(shift){
 
     mylog("cycleNotes")
       
-    if(!notesAreDisplayed){
+    if(!notesAreDisplayed && !reviewsAreDisplayed){
         toggleDisplayNotes()
         return
     }
-    
-    //IF a hovered note is open, tab solidifies that note (=trashnote on) instead of opening next
-    if (document.getElementById('expandedNote') && !document.getElementById('trashNote')){
-        selectedNote = shift ? (selectedNote + 1) : (selectedNote - 1)
-    }
 
     
-    if (document.getElementById('expandedNote')){
+
+    // if(!globalNotesData)collectNotes()
+    // if(!globalReviewsData)collectReviews()
+
+    let cyclables = []
+    if (notesAreDisplayed) cyclables = cyclables.concat(globalNotesData)
+    if (reviewsAreDisplayed) cyclables = cyclables.concat(globalReviewsData)
+
+    if (notesAreDisplayed && reviewsAreDisplayed){
+        
+        // cyclables.sort((a,b) => (a.outlineElementNumber > b.outlineElementNumber) ? 1 : ((b.outlineElementNumber > a.outlineElementNumber) ? -1 : 0))
+        cyclables.sort((a,b) => (a.position > b.position) ? 1 : ((b.position > a.position) ? -1 : 0))
+        
+    }
+
+    //convoluted way to set "cycle" to currently open note or review
+    let cycle = -1
+        if($(".expandedNote")){
+            cycle = cyclables.indexOf(globalNotesData[selectedNote])
+        }
+        if($(".expandedReview")){
+            cycle = cyclables.indexOf(globalReviewsData[$(".expandedReview").id.replace("review", "")])
+        }
+
+    // alertThis(JSON.stringify(cyclables))
+
+    
+    // //IF a hovered note is open, tab solidifies that note (=trashnote on) instead of opening next
+    // if (document.getElementById('expandedNote') && !document.getElementById('trashNote')){
+    //     selectedNote = shift ? (selectedNote + 1) : (selectedNote - 1)
+    // }
+    
+    
+    if ($id('expandedNote')){
         collapseNote()
+    }
+    if ($('.expandedReview')){
+        collapseReviews()
     }
     
     if (!shift){
-        selectedNote ++
+        //selectedNote ++
+        cycle ++
     } else {
-        selectedNote --
+        //selectedNote --
+        cycle --
     }
     
-    if (selectedNote > document.querySelectorAll(".note").length-1) {selectedNote = 0}
-    if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
-    
-    expandNote(true)
+    // if (selectedNote > document.querySelectorAll(".note").length-1) {selectedNote = 0}
+    // if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
+    if (cycle > cyclables.length-1) {cycle = 0}
+    if (cycle < 0) {cycle = cyclables.length-1}
+        
+    if(cyclables[cycle].string.startsWith("[[")) {
+        selectedNote = globalNotesData.indexOf(cyclables[cycle])
+        expandNote(true)
+    }else{
+        expandReview($id("review" + globalReviewsData.indexOf(cyclables[cycle])))
+    }
+
+    let cycledElement = $("#expandedNote, .expandedReview")
+    if(isThisOffScreen(cycledElement)){
+
+        scrollNicelyIntoView(cycledElement)
+
+    }
     
 }
 
@@ -1101,4 +1363,304 @@ function AlternateWayToCalculateCurve(){
 
 }
 
+function collectRevisionIndices(){
+
+    if (!documentSetting.showRevisions)return
+
+mylog("======")
+mylog("======")
+mylog("======")
+mylog("======")
+mylog("======")
+mylog("======")
+
+    Beat.call(`Beat.custom.collectRevisionsInPlugin()`)
+
+}
+
+function paintRevisions(changedAsJSON, reviewAsJSON){
+
+    // //if (alreadyRunningPainting)return
+    // alreadyRunningPainting = true
+
+    let changedObject = JSON.parse(changedAsJSON)
+    let reviewObject = JSON.parse(reviewAsJSON)
+
+    let currentDivs = $$(".revision")
+    if(currentDivs.length > 0){
+        currentDivs.forEach(element => {
+            element.remove()
+        });
+    }
+
+    for (line of reviewObject.Addition){
+        
+        mylog(line)
+    
+        let changeStart = line[0]
+        let changeLength = line[1]
+        let changeColor = line[2]
+
+        let outlineNumber
+
+        for (let i = 0; i < outline.length - 1; i++) {
+            // mylog(outline[i].sceneStart)
+            outlineNumber = -1000
+            if (outline[i]?.sceneStart > changeStart) {
+                    outlineNumber = i - 1
+                    while(outline[outlineNumber]?.typeAsString == "Synopse"){outlineNumber --}
+                    // mylog("found: " + outlineNumber)
+                break}
+        }
+
+        if(outlineNumber < -999){
+            mylog("no outline")
+            outlineNumber = outline.length - 1}
+
+        let revisionDiv = document.createElement("div")
+            revisionDiv.id = "revisionAtIndex" + changeStart
+
+        let changeStartPercent = 100 * (changeStart - outline[outlineNumber]?.sceneStart) / (outline[outlineNumber]?.range.length)
+        let changeEndPercent = 100 * changeLength / (outline[outlineNumber]?.range.length)
+
+        // now no more reading values, so lets rename outlineNumber
+        if(outline[outlineNumber]?.typeAsString == "Section"){
+                outlineNumber = "orphanInside" + outlineNumber
+            }
+            
+            revisionDiv.style.position = "absolute"
+            revisionDiv.style.top = changeStartPercent + "%"
+            revisionDiv.style.height = changeEndPercent + "%"
+
+            // revisionDiv.style.backgroundColor = changeColor
+            revisionDiv.classList.add("revision")
+            revisionDiv.classList.add(changeColor)
+            // revisionDiv.style.width = "120%"
+            // revisionDiv.style.left = "-10%"
+            revisionDiv.dataset.line = changeStart
+            revisionDiv.dataset.length = changeLength
+
+            if($id(outlineNumber))$id(outlineNumber).appendChild(revisionDiv)
+    
+    }
+
+    // alreadyRunningPainting = false
+
+}
+
+
 </script>
+
+<style>
+    
+    .revision{
+        
+        /* opacity: 40%; */
+        
+        border-width: .5px;
+        border-style: solid;
+        border-radius: 2px;
+
+        width: calc(100% + 20px);
+        left: -10px;
+
+        opacity: 0.5
+
+    }
+    
+    .revision.blue{
+        background-color: rgba(51, 129, 239, 0.66);
+        border-color: rgba(51, 129, 239, 1);
+    }
+    .revision.orange{
+        background-color: rgba(250, 161, 15, 0.66);
+        border-color: rgba(250, 161, 15, 1)
+    }
+    .revision.purple{
+        background-color: rgba(181, 33, 218, 0.66);
+        border-color: rgba(181, 33, 218, 1)
+    }
+    .revision.green{
+        background-color: rgba(32, 223, 121,0.66);
+        border-color: rgba(32, 223, 121, 1)
+    }
+
+    .revision:hover{
+        opacity: 1;
+    }
+
+    thisIsTurnedOff.revision::before{
+        content: "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *";
+
+        position: absolute;
+        top: 1px !important;
+        right: 2px !important;
+        width: calc(0.04px * var(--heightFactor)) !important;
+        height: calc(100% - 1px) !important;
+        
+        overflow: hidden !important;
+        font-size: calc(0.08px * var(--heightFactor));
+        line-height: calc(0.08px * var(--heightFactor));
+
+        /* outline: 1px solid lime */
+    }
+
+    .review{
+
+        height: 12px;
+        width: 18px;
+        background-color: #ffe575;
+        border: 1px solid hsl(49, 37%, 16%);
+        border-radius: 4px;
+        color: #7f723a;
+
+        right: -12px; 
+
+        text-align: center;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: 8px;
+        font-weight: bold;
+        line-height: 10px;
+
+        z-index: 999;
+
+        pointer-events: all;
+    }
+
+    .review.expandedReview{
+
+        /* overflow: hidden; */
+        white-space: pre-wrap !important;
+        word-wrap: break-word;
+
+        right: 8px;
+
+        height: auto !important;
+        width: auto !important;
+        max-width: 80% !important;
+        min-width: 50% !important;
+        padding: 18px 12px 40px 12px; /*was 8 for top*/
+
+        font-size: 11px;
+        line-height: 14px;
+        font-weight: normal;
+        text-align: left;
+        color: black;
+
+        border-radius: 10px;
+        border-color: #7f723a;
+
+        /* transition: 0.05s; */
+
+        z-index: 9999;
+
+        box-shadow: 3px 3px 12px rgba(0,0,0,0.4);
+
+        translate: 0 -6px;
+
+    }
+
+    .review > .reviewHeadline{
+
+        position: absolute;
+        top: 0;
+        left: -1px;
+        padding: 0px 12px 0px 12px;
+        background-color: #7f723a;
+        color: #ffe575;
+
+        border-radius: 10px 10px 0 0 ;
+
+        font-weight: bold;
+        font-size: 8px;
+        width: calc(100% + 2px);
+
+    }
+
+    .review::after{
+
+        position: absolute;
+        bottom: -3px;
+        left: 3px;
+
+        content: " ";
+        
+        border: 4px solid transparent;
+        border-top: 0px solid transparent;
+        border-left: 4px solid #ffe575;
+
+    }
+
+    .review.expandedReview::after{
+
+        width: 0px;
+        height: 0px;
+
+        border-right: 0px;
+        border-top: 4px transparent solid;
+        border-bottom: 4px transparent solid;
+        border-left: 8px solid #ffe575;
+
+        /* border-color: lime !important; */
+
+        top: 16px; /*was 10*/
+        left: unset;
+        right: -6.44px !important;
+
+    }
+
+    .review::before{
+
+        position: absolute;
+        bottom: -5.44px;
+        left: 2px;
+
+        content: " ";
+
+        border: 5.44px solid transparent;
+        border-top: 0px solid transparent;
+        border-left: 5.44px solid hsl(49, 37%, 16%);
+
+    }
+
+    .review.expandedReview::before{
+
+        width: 0px;
+        height: 0px;
+
+        border-right: 0px;
+        border-top: 5px transparent solid;
+        border-bottom: 5px transparent solid;
+        border-left: 8px solid #7f723a;
+
+        /* border-color: lime !important; */
+
+        top: 15px; /*was 9*/
+        left: unset;
+        right: -8px !important;
+
+    }
+
+    .review.selectedNote,
+    .review:hover {
+
+        background: hsl(49, 37%, 16%) !important;
+        border-color: black;
+
+    }
+
+    .review:hover::before,
+    .review.selectedNote::before {
+        border-color: transparent !important;
+        border-left-color: black !important;
+        background: transparent !important;
+    }
+
+    .review:hover::after,
+    .review.selectedNote::after {
+        border-color: transparent !important;
+        border-left-color: hsl(49, 37%, 16%) !important;
+        background: transparent !important;
+    }
+
+</style>

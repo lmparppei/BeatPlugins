@@ -279,10 +279,10 @@ function createContextMenu(clickedThingsClassList, x, y){
         if(![...element.classList].includes("isOmitted")){someAreUnOmitted = true}
     }    
 
-    theContextMenu.innerHTML = "" 
+    theContextMenu.innerHTML = ""
     for (item of colorsArray) {
         if ([...clickedThingsClassList].includes(item.toLowerCase())){currentlySetColor = item.toLowerCase()}
-        if (item == "Special" && !clickedThingsClassList.includes("section-heading")){continue}
+        if (item == "Special" && !clickedThingsClassList.includes("section")){continue}
         let iconString = ""
         if (item == "Remove Color"){iconString = "<p style ='font-size: 22px !important; transform: translateY(-11px); line-height: 24px !important;'>&#xd7;</p>"}
         theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 

@@ -872,6 +872,11 @@ innerMenu.innerHTML = /*html*/`
             <div class="switch"></div>
                 <label for="buttonForMarkers">Markers<span class="shortcut" style="float:right">M</span></label>
     </li>
+    <li onclick="toggleDisplayReviews()">
+        <input id="buttonForReviews" type="checkbox">
+            <div class="switch"></div> 
+                <label for="buttonForReviews">Reviews<span class="shortcut" style="float:right">R</span></label>
+    </li>
     <li onclick="toggleDisplayBeats()">
         <input id="buttonForBeats" type="checkbox">
             <div class="switch"></div> 
@@ -888,6 +893,15 @@ innerMenu.innerHTML = /*html*/`
                     <div class="switch"></div>
                 <label for="buttonForNotePanel" class="labelAfter">Open</label>
         </li>
+    <hr>
+        <li onclick='createDocFromNotes(); closeNewMenu()'>
+                <p>All Notes to New Doc
+                <span class="shortcut" style="float:right"></span></p>
+            </li>
+        <li onclick='Beat.call("Beat.custom.sendTextToHTML(); Beat.custom.collectReviews(true)"); closeNewMenu()'>
+                <p>All Reviews to New Doc
+                <span class="shortcut" style="float:right"></span></p>
+            </li>
     </ul>
 `
 
@@ -1026,10 +1040,10 @@ function settingsMenu(){
                 <p>Outline as JSON &gt; New Doc
                 <span class="shortcut" style="float:right"></span></p>
             </li>
-        <!--li onclick='Beat.call("Beat.custom.linesToJSON()")'>
-                <p>Lines as JSON &gt; New Doc
+        <li onclick='Beat.call("Beat.custom.linesToJSON()")'>
+                <p>Lines as JSON &gt; Beat.console
                 <span class="shortcut" style="float:right"></span></p>
-            </li-->
+            </li>
             <li onclick='toggleConsole()'>
                 <input id='buttonForLogging' type='checkbox'>
                     <div class='switch'></div>  
@@ -1054,7 +1068,7 @@ function settingsMenu(){
         <li onclick="toggleRealTime()">
             <input id="buttonForRealTimeUpdates" type="checkbox">
                 <div class="switch"></div>  
-                    <label for="buttonForRealTimeUpdates">Disable Real Time<span class="shortcut" style="float:right">R</span></label>
+                    <label for="buttonForRealTimeUpdates">Disable Real Time<span class="shortcut" style="float:right"></span></label>
         </li>
         <p class="hint">If you experience lag while typing, you can disable real-time updating. As soon as FTOutliner is focused again, it will catch up with your changes.</p>
 
@@ -1201,6 +1215,7 @@ function setAllButtons(){
     if($id("buttonForNotes")){$id("buttonForNotes").checked = (notesAreDisplayed == true)}
     if($id("buttonForMarkers")){$id("buttonForMarkers").checked = (markersAreDisplayed == true)}
     if($id("buttonForBeats")){$id("buttonForBeats").checked = (beatsAreDisplayed == true)}
+    if($id("buttonForReviews")){$id("buttonForReviews").checked = (reviewsAreDisplayed == true)}
     if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
 
     if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}
