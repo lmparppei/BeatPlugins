@@ -1477,12 +1477,12 @@ function saveCurrentState() {
 		currentZoomLevel: currentZoomLevel,
 		notepanelWidth: parseInt(getComputedStyle(theRoot).getPropertyValue('--note-panel-width')),
 
-		noteButtonGreen: $id("noteButtonGreen").checked,
-		noteButtonYellow: $id("noteButtonYellow").checked,
-		noteButtonRed: $id("noteButtonRed").checked,
-		noteButtonMagenta: $id("noteButtonMagenta").checked,
-		noteButtonPurple: $id("noteButtonPurple").checked,
-		noteButtonReview: $id("noteButtonReview").checked,
+		noteButtonGreen: $id("noteButtonGreen")?.checked || true,
+		noteButtonYellow: $id("noteButtonYellow")?.checked || true,
+		noteButtonRed: $id("noteButtonRed")?.checked || true,
+		noteButtonMagenta: $id("noteButtonMagenta")?.checked || true,
+		noteButtonPurple: $id("noteButtonPurple")?.checked || true,
+		noteButtonReview: $id("noteButtonReview")?.checked || false,
 
 		indexCardMode: indexCardMode,
 		indexCardHeight: indexCardHeight,
@@ -1499,9 +1499,9 @@ function saveCurrentState() {
 		notepanel: ($id("notepanel").classList.contains("expanded")),
 		showSynopsisInScenes: ($id("flexiContainer").classList.contains("showSynopsisInScenes")),
 
-		documentName: JSON.stringify(documentName),
-		documentSubName: JSON.stringify(documentSubName),
-		documentAuthor: JSON.stringify(documentAuthor),
+		documentName: JSON.stringify((documentName || "")),
+		documentSubName: JSON.stringify((documentSubName || "")),
+		documentAuthor: JSON.stringify((documentAuthor || "")),
 
 		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
@@ -1509,6 +1509,8 @@ function saveCurrentState() {
 
 		showRevisions: documentSetting.showRevisions
 	}
+
+	mylog("documentSettings done")
 
 	userDefault = {
 		realTimeUpdates: isRealTimeOn,
