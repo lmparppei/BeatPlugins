@@ -1,4 +1,4 @@
-v 1.44 (september 20, 2022)
+v 1.44 (september 24, 2022)
 ======================
 
 NEW FEATURES AND IMPROVEMENTS:
@@ -33,6 +33,7 @@ BUG FIXES AND IMPROVEMENTS
 * When editing a synopsis, hitting return with no text entered now deletes the synopsis altogether. It's been leaving an orphan = behind for a while, which, well, you know. Wasn't intentional.  
 * Fixed a bug that would crash FTOutliner if a note was hovered while editing a synopsis, sceneheading or section.
 * Fixed long-standing bug (you should have told me!) which produced an error alert when deleting or omitting the last scene in script. 
+* And finally almost fixed how FTOutliner handles document titles for the window title bar and/or headlines for print. Basically, if you don't have a title page, what you enter in the title dialog rules. If there's text in both places, what you entered/edited last will have precedence. But most of all, I hope we won't be seing any crashes due to this again. Or printouts that claim your script is called FALSE.  
 
 
 v 1.43 (Aug 28, 2022)

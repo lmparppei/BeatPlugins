@@ -165,11 +165,6 @@ window.addEventListener('load', function () {
 //	EVENTLISTENERS FOR keypresses and such
 function setAllEventlisteners(){
 
-	// const objectsOfZeroHeight = new ResizeObserver((entries))
-	// const myObserver = new ResizeObserver(entries => whenStuffAreZero());
-	//objectsOfZeroHeight.observe($$(".sceneheading"))
-	// alertThis(objectsOfZeroHeight)
-
 	window.onerror = function(message, source, lineno, colno, error) {
 		// mylog("===== ERROR =====", false, true)
 		mylog("===== ERROR =====", true)
@@ -1477,12 +1472,12 @@ function saveCurrentState() {
 		currentZoomLevel: currentZoomLevel,
 		notepanelWidth: parseInt(getComputedStyle(theRoot).getPropertyValue('--note-panel-width')),
 
-		noteButtonGreen: $id("noteButtonGreen")?.checked || true,
-		noteButtonYellow: $id("noteButtonYellow")?.checked || true,
-		noteButtonRed: $id("noteButtonRed")?.checked || true,
-		noteButtonMagenta: $id("noteButtonMagenta")?.checked || true,
-		noteButtonPurple: $id("noteButtonPurple")?.checked || true,
-		noteButtonReview: $id("noteButtonReview")?.checked || false,
+		noteButtonGreen: $id("noteButtonGreen")? $id("noteButtonGreen").checked : true,
+		noteButtonYellow: $id("noteButtonYellow")? $id("noteButtonYellow").checked : true,
+		noteButtonRed: $id("noteButtonRed")? $id("noteButtonRed").checked : true,
+		noteButtonMagenta: $id("noteButtonMagenta")? $id("noteButtonMagenta").checked : true,
+		noteButtonPurple: $id("noteButtonPurple")? $id("noteButtonPurple").checked : true,
+		noteButtonReview: $id("noteButtonReview")? $id("noteButtonReview").checked : false,
 
 		indexCardMode: indexCardMode,
 		indexCardHeight: indexCardHeight,
@@ -1499,9 +1494,9 @@ function saveCurrentState() {
 		notepanel: ($id("notepanel").classList.contains("expanded")),
 		showSynopsisInScenes: ($id("flexiContainer").classList.contains("showSynopsisInScenes")),
 
-		documentName: JSON.stringify((documentName || "")),
-		documentSubName: JSON.stringify((documentSubName || "")),
-		documentAuthor: JSON.stringify((documentAuthor || "")),
+		documentName: (documentName || false),
+		documentSubName: (documentSubName || false),
+		documentAuthor: (documentAuthor || false),
 
 		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
@@ -1541,14 +1536,14 @@ function saveCurrentState() {
 }
 
 function getDefaults(){
-	mylog()
+	Beat.log("BELOW SHOULD BE A LIST OF STUFF")
 
 	for([key,value] of Object.entries(userDefault)){
-		mylog(key +": " + value)
+		Beat.log(key +": " + value)
 	}
 
 	for([key,value] of Object.entries(documentSetting)){
-		mylog(key +": " + value)
+		Beat.log(key +": " + value)
 	}
 
 	mylog("Objects retreived")
@@ -1558,6 +1553,7 @@ function getDefaults(){
 		loggingIsOn = userDefault.loggingIsOn || false
 		isRealTimeOn = userDefault.isRealTimeOn || 1
 		colorScheme = userDefault.colorScheme || "Beat"
+		Beat.log("colorScheme is " + colorScheme + " because userdef is " + userDefault.colorScheme)
 		warningsAreOn = userDefault.warningsAreOn
 			warningsAreOn = (warningsAreOn == true)
 
@@ -1576,13 +1572,6 @@ function getDefaults(){
 		oneColumnOutline = documentSetting.oneColumnOutline || 0
 		currentZoomLevel = documentSetting.currentZoomLevel || 1
 		if (documentSetting.notepanelWidth) theRoot.style.setProperty('--note-panel-width', documentSetting.notepanelWidth + "px") 
-
-		// alertThis(documentSetting.noteButtonGreen)
-		// alertThis(documentSetting.noteButtonYellow)
-		// alertThis(documentSetting.noteButtonRed)
-		// alertThis(documentSetting.noteButtonMagenta)
-		// alertThis(documentSetting.noteButtonPurple)
-		// alertThis(documentSetting.noteButtonReview)
 
 		// if ($(".noteButtons")){
 		// 	if($id("noteButtonGreen")) $id("noteButtonGreen")?.checked = (documentSetting.noteButtonGreen) || true
@@ -1621,14 +1610,14 @@ function getDefaults(){
 			mylog("#" + i + " -- scene: " + cardStateForScenes[i] + ", section:  " + cardStateForSections[i])
 			}
 
-		documentName = documentSetting.documentName || ""
-		documentSubName = documentSetting.documentSubName || ""
-		documentAuthor = documentSetting.documentAuthor || ""
-
+		documentName = documentSetting.documentName
+		documentSubName = documentSetting.documentSubName
+		documentAuthor = documentSetting.documentAuthor
 
 	//NOW EXECUTING SOM STUFF BASED ON THE DEFAULTS WE GOT!
 
 	document.documentElement.setAttribute('data-theme', colorScheme)
+	Beat.log("setting color to " + colorScheme)
 	$id("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
 
 	if(areScenesProportional != 1){
@@ -2653,7 +2642,6 @@ function toggleProportional(absolute) {
 	}
 
 	// if (flexiContainer.classList.contains("showSynopsisInScenes")){
-	// 	alertThis("yes")
 	// 	toggleDisplaySynopsis()
 	// 	toggleDisplaySynopsis()
 	// }

@@ -106,7 +106,9 @@ var outlineJustFired
 var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
 	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), thePanelHeight) 
 
-fetchDocumentTitles()
+// fetchDocumentTitles()
+loopToFetchDocumentTitles()
+setWindowTitle()
 
 // =======================
 // END OF GLOBAL VARIABLES
@@ -436,7 +438,7 @@ function makeJSON(){
 
 	for (let i = 0; i < outlineItems.length; i ++){
 
-		outlineItems[i].pageBreak = "knulla"
+		outlineItems[i].pageBreak = "---"
 
 	}
 
@@ -528,8 +530,11 @@ function makeStoringDefaultsDiv(){
 	documentSetting.showSynopsisInScenes = Beat.getDocumentSetting("showSynopsisInScenes") || false
 
 	documentSetting.documentName = Beat.getDocumentSetting("documentName") || false
+	if(documentSetting.documentName) documentSetting.documentName = JSON.stringify(documentSetting.documentName)
 	documentSetting.documentSubName = Beat.getDocumentSetting("documentSubName") || false
+	if(documentSetting.documentSubName) documentSetting.documentSubName = JSON.stringify(documentSetting.documentSubName)
 	documentSetting.documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
+	if(documentSetting.documentAuthor) documentSetting.documentAuthor = JSON.stringify(documentSetting.documentAuthor)
 	
 	documentSetting.boneyardIsClosed = Beat.getDocumentSetting("boneyardIsClosed") || false
 
@@ -575,7 +580,14 @@ function makeStoringDefaultsDiv(){
 		allDefaults += `}
 	
 		Beat.call("Beat.log('Successfully done')")
+		
+		documentName = documentSetting.documentName //hack to transfer value to global variable
+		documentSubName = documentSetting.documentSubName //hack to transfer value to global variable
+		documentAuthor = documentSetting.documentAuthor //hack to transfer value to global variable
+
 		</script>`
+
+		Beat.log(allDefaults)
 
 	return allDefaults
 }
@@ -1720,9 +1732,14 @@ Beat.custom.exportThis = function (content, classListOfFlexiContainer) {
 
 Beat.custom.printThis = function (content, classListOfFlexiContainer) {
 
-	documentName = JSON.parse(Beat.getDocumentSetting("documentName")) || false
-	documentSubName = JSON.parse(Beat.getDocumentSetting("documentSubName")) || false
-	documentAuthor = JSON.parse(Beat.getDocumentSetting("documentAuthor")) || false
+	documentName = Beat.getDocumentSetting("documentName") || false
+	if(documentName == "false")documentName = false
+	documentSubName = Beat.getDocumentSetting("documentSubName") || false
+	if(documentSubName == "false")documentSubName = false
+	documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
+	if(documentAuthor == "false")documentAuthor = false
+
+	loopToFetchDocumentTitles()
 
 	if (!documentName){
 		let message1 = "Print outline without title?"
@@ -1769,20 +1786,46 @@ Beat.custom.printThis = function (content, classListOfFlexiContainer) {
 	)		
 }
 
+function loopToFetchDocumentTitles(){
+
+	let allLines = Beat.lines()
+	for (line of allLines){
+
+		if (line.isTitlePage && line.string){
+			fetchDocumentTitles(line.string)
+		}else{
+			break
+		}
+	}
+	return
+}
+
 function fetchDocumentTitles (titlePageLine) {
+
+if(!titlePageLine)return
+
+//so what we need to do is:
+// if there is a titlepageline, keep going as is -- this function works now
+// but if there is no titlepageline value (which means startup) then we need to do a loop over all lines before first outline element (if there is a such) and call the stuff in here for every line
+// 3. We also must check for saved values when opening the printdialog, bc what is saved here seems not to show there.
 
 // order of priority: 
 // 1st -- check if there are values, because if so they win:
 
-if (titlePageLine && titlePageLine.toLowerCase().startsWith("title:")){
+let documentName = Beat.getDocumentSetting("documentName") || false
+if (documentName = "false") documentName = false
+let documentSubName = Beat.getDocumentSetting("documentSubName") || false
+if (documentSubName = "false") documentSubName = false
+
+if (!documentName && titlePageLine && titlePageLine.toLowerCase().startsWith("title:")){
 	documentName = titlePageLine.replace(/^title:\s*/i, "").toUpperCase()
 }
-if (titlePageLine && titlePageLine.toLowerCase().startsWith("credit:")){
+if (!documentSubName && titlePageLine && titlePageLine.toLowerCase().startsWith("credit:")){
 	documentSubName = titlePageLine.replace(/^credit:\s*/i, "")
 }
 
-if (documentName && (!Beat.getDocumentSetting("documentName") || Beat.getDocumentSetting("documentName") == '""')) Beat.setDocumentSetting("documentName", JSON.stringify(documentName))
-if (documentSubName && (!Beat.getDocumentSetting("documentSubName") || Beat.getDocumentSetting("documentSubName")) == '""') Beat.setDocumentSetting("documentSubName", JSON.stringify(documentSubName))
+if (documentName) Beat.setDocumentSetting("documentName", documentName)
+if (documentSubName) Beat.setDocumentSetting("documentSubName", documentSubName)
 //if (!Beat.getDocumentSetting("documentAuthor") || Beat.getDocumentSetting("documentAuthor") == '""') Beat.setDocumentSetting("documentAuthor", xxx)
 
 setWindowTitle()
@@ -1797,14 +1840,36 @@ function setWindowTitle() {
 
 	windowTitle = "FTOutliner"
 
-	if (Beat.getDocumentSetting("documentName") && Beat.getDocumentSetting("documentName") != '""') documentName = (Beat.getDocumentSetting("documentName")) || (Beat.getDocumentSetting("documentName"))
-	if (Beat.getDocumentSetting("documentSubName")  && Beat.getDocumentSetting("documentSubName") != '""') documentSubName = (Beat.getDocumentSetting("documentSubName")) || (Beat.getDocumentSetting("documentSubName"))
-	if (Beat.getDocumentSetting("documentAuthor")  && Beat.getDocumentSetting("documentAuthor") != '""') documentAuthor = (Beat.getDocumentSetting("documentAuthor")) || (Beat.getDocumentSetting("documentAuthor"))
+	// if (Beat.getDocumentSetting("documentName") && Beat.getDocumentSetting("documentName") != '""') documentName = (Beat.getDocumentSetting("documentName")) //|| (Beat.getDocumentSetting("documentName"))
+	// if (Beat.getDocumentSetting("documentSubName")  && Beat.getDocumentSetting("documentSubName") != '""') documentSubName = (Beat.getDocumentSetting("documentSubName")) //|| (Beat.getDocumentSetting("documentSubName"))
+	// if (Beat.getDocumentSetting("documentAuthor")  && Beat.getDocumentSetting("documentAuthor") != '""') documentAuthor = (Beat.getDocumentSetting("documentAuthor")) //|| (Beat.getDocumentSetting("documentAuthor"))
+	let documentName = (Beat.getDocumentSetting("documentName")) || false
+	let documentSubName = (Beat.getDocumentSetting("documentSubName")) || false
+	let documentAuthor = (Beat.getDocumentSetting("documentAuthor")) || false
 
 	//This hopefully solves backwards compatibility and manages names whether stringified or not
-	if (documentName && documentName.startsWith('"'))documentName = JSON.parse(documentName)
-	if (documentSubName && documentSubName.startsWith('"'))documentSubName = JSON.parse(documentSubName)
-	if (documentAuthor && documentAuthor.startsWith('"'))documentAuthor = JSON.parse(documentAuthor)
+	if(documentName == "false") documentName = false
+	if(documentSubName == "false") documentSubName = false
+	if(documentAuthor == "false") documentAuthor = false
+	if(documentName) documentName = documentName.replace(/"*/g, ``)
+	if(documentSubName)documentSubName =documentSubName.replace(/"*/g, ``)
+	if(documentAuthor)documentAuthor = documentAuthor.replace(/"*/g, ``)
+
+	Beat.log("ABOUT TO PARSE DOCUMENT NAME")
+	Beat.log(documentName)
+	Beat.log(documentSubName)
+	Beat.log(documentAuthor)
+
+
+	// while(documentName && documentName.startsWith(`"`)) documentName = documentName.substr(1)
+	// while(documentName && documentName.substr(documentName.length - 1, 1) == `"`) documentName = documentName.substr(0, documentName.length - 1)
+	// while(documentSubName && documentSubName.startsWith(`"`)) documentSubName = documentSubName.substr(1)
+	// while(documentSubName && documentSubName.substr(documentSubName.length - 1, 1) == `"`) documentSubName = documentSubName.substr(0, documentSubName.length - 1)
+	// while(documentAuthor && documentAuthor.startsWith(`"`)) documentAuthor = documentAuthor.substr(1)
+	// while(documentAuthor && documentAuthor.substr(documentAuthor.length - 1, 1) == `"`) documentAuthor = documentAuthor.substr(0, documentAuthor.length - 1)
+	
+	// if (documentSubName && documentSubName.startsWith('"'))documentSubName = JSON.parse(documentSubName)
+	// if (documentAuthor && documentAuthor.startsWith('"'))documentAuthor = JSON.parse(documentAuthor)
 
 	if (documentName){windowTitle += " — " + documentName}
 	if (documentName && documentSubName){windowTitle += " (" + documentSubName + ")"}

@@ -330,7 +330,7 @@ body.notepanelIsBeingResized > * {
     background-color: #7f723a;
     color: #ffe575;
 
-    /* border-radius: 10px 10px 0 0 ; */
+    border-radius: 4px 4px 0 0 ;
 
     font-weight: bold;
     font-size: 8px;
@@ -469,9 +469,6 @@ function updateNotepanel(){
 
     if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0))return
     
-    // let noteNumber = 0
-    mylog("hello?")
-    
     if(globalNotesData?.length > 0){
         mylog("looping notes in panel")
         for(let i = 0; i < globalNotesData.length; i++){
@@ -523,9 +520,7 @@ function updateNotepanel(){
                     whereToInsert = note
                 }
 
-                mylog("sofarsogood")
                 while(whereToInsert?.nextSibling && whereToInsert?.nextSibling?.classList.contains("notepanelReview")) whereToInsert = whereToInsert.nextSibling
-                mylog("still well?")
                 if(whereToInsert)whereToInsert.insertAdjacentElement("afterend", thisReview)
                 if(!whereToInsert)$id("notepanel").appendChild(thisReview)
 
