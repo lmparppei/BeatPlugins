@@ -1131,6 +1131,10 @@ function newPrintBox(){
 		printbox.id = "printbox"
 		printbox.classList.add("settingsWindow")
 
+	let nameValue = (documentName == "false")? "" : documentName
+	let subNameValue = (documentSubName == "false")? "" : documentSubName
+	let authorValue = (documentAuthor == "false")? "" : documentAuthor
+
 	let contents = /*html*/`
 
 	<div id="innerDiv">
@@ -1139,10 +1143,9 @@ function newPrintBox(){
 	<p>The following text will be used for information in the printed/exported page. <br/>
 		Fields that are left blank will print blank.</p>
 	<br/>
-	<p>
-	<label for="screenplayname" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Title &nbsp;</label><input type="text" tabindex="1" id="screenplayname" style="width: 74%;" value="${documentName}" placeholder="The name of your screenplay"><br/>
-	<label for="subheader" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Subheader &nbsp;</label><input type="text" tabindex="2" id="subheader" style="width: 74%" value="${documentSubName}" placeholder="episode number, name of draft, etc"><br/>
-	<label for="writernames" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Writer(s) &nbsp;</label><input type="text" tabindex="3" id="writernames" style="width: 74%" value="${documentAuthor}" placeholder="That would be you"><br/>
+	<label for="screenplayname" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Title &nbsp;</label><input type="text" tabindex="1" id="screenplayname" style="width: 74%;" value="${nameValue}" placeholder="The name of your screenplay"><br/>
+	<label for="subheader" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Subheader &nbsp;</label><input type="text" tabindex="2" id="subheader" style="width: 74%" value="${subNameValue}" placeholder="episode number, name of draft, etc"><br/>
+	<label for="writernames" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Writer(s) &nbsp;</label><input type="text" tabindex="3" id="writernames" style="width: 74%" value="${authorValue}" placeholder="That would be you"><br/>
 	</p>
 
 	<br/>&nbsp;
@@ -1174,9 +1177,9 @@ function storeAndClosePrintbox(yesToStore){
 
 if(yesToStore){
 
-	documentName = $id("screenplayname").value || ""
-	documentSubName = $id("subheader").value || ""
-	documentAuthor = $id("writernames").value || ""
+	documentName = $id("screenplayname").value 
+	documentSubName = $id("subheader").value 
+	documentAuthor = $id("writernames").value 
 
 	saveCurrentState()
 	Beat.call(`Beat.custom.setTheWindowTitle()`)

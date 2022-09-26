@@ -482,8 +482,8 @@ function exitEdit(theElement, changesWereConfirmed) {
     
         if (newContent == /\\n\s*/){newContent = ""}
         if (newContent == "\\n" || newContent == "\\n "){newContent = ""}
-        if ([...theElement.classList].includes("synopsis") && newContent != ""){ //should effectively delete the synopsis element if left empty
 
+        if ([...theElement.classList].includes("synopsis") && newContent != ""){ //should effectively delete the synopsis element if left empty
             //1. divide synopsis with line breaks into separate synopsis elements
             newContent = newContent.replace(/\\n/g, "\\n= ")
 
@@ -513,6 +513,8 @@ function exitEdit(theElement, changesWereConfirmed) {
             let length = outline[currentOutlineCount].line.range.length
             
             //mylog(newContent)
+
+            // alertThis(shownLine + "\n\n" + line, newContent)
             
             let resultingLine = line.replace(shownLine, newContent)
             if (shownLine == ""){
@@ -521,10 +523,12 @@ function exitEdit(theElement, changesWereConfirmed) {
 
             // alertThis("shownLine: " + shownLine, "line: " + line + "\n" + "line.replace(shownLine, newContent) : " + resultingLine)
 
-
             if (outline[currentOutlineCount].typeAsString == "Heading" && !resultingLine.startsWith(".") && !resultingLine.startsWith("INT") && !resultingLine.startsWith("EXT")){
                 resultingLine = "." + resultingLine
             }
+
+            //Hacky fix to eliminate orphan = after change of outline.line.string for synopsis
+            if (theElement.classList.contains("synopsis") && (resultingLine.trim() == "=" || resultingLine.trim() == "")){resultingLine = ""}
 
             Beat.call(`
                 Beat.onTextChangeDisabled = true
@@ -545,6 +549,7 @@ function exitEdit(theElement, changesWereConfirmed) {
 
             // $id("printButton").innerHTML = "YUP. And the element is " + theElement.id + ", " + theElement.classList
 
+            if(!theElement)theElement = $(".isBeingEdited")
 
             theElement.draggable = initialDraggability
             if([...theElement.classList].includes("synopsis")){

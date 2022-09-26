@@ -1,3 +1,39 @@
+v 1.44 (september 24, 2022)
+======================
+
+NEW FEATURES AND IMPROVEMENTS:
+
+1. NOTES and REVIEWS
+
+* REVIEWS (as created in Beat using cmd+R) can now be displayed in FTOutliner just like notes and markers. Toggle with R.
+* Pressing TAB in FTOutliner now cycles NOTES, or REVIEWS, or BOTH depending on what is currently set to display.
+* The NOTEPANEL now allows ticking/unticking notes per COLOR should you want to display a subset only
+* That same NOTEPANEL now also shows REVIEWS. If you tick them.
+* And you can resize that same NOTEPANEL to the width of your liking. 
+* Enough with the NOTEPANEL.
+* And finally, there are two new menu commands to CREATE A NEW DOCUMENT with a list of all NOTES or REVIEWS compiled from the current screenplay.
+
+2. FORCED PAGE BREAKS
+
+* If the document has FORCED PAGEBREAKS, they are now visually represented in the Flexible View as jagged scene ends, rendering the empty space as empty rather than as if it were written scene material.
+* Scenes with manual page breaks will now have their lengths-in-eights measured based on the actual written scene, excluding any white empty trailing page. 
+* Scenes with forced page breaks now also have their heights more correctly calculated.
+
+3. REVISIONS
+
+* REVISIONS can now be displayed in the outline. Revised lines will be shown as overlaid blocks in the coreresponding revision color. Toggle with * (no menu item connected yet -- for now it's shortcut key-only).
+
+FURTHER CHANGES
+
+* The R shortcut key for toggling Real Time Updating has been removed (it now toggles Reviews instead). The menu item is still available under the settings menu, although most likely, FTOutliner (and Beat itself) has overcome the issues that made Beat too slow on certain machines. 
+
+BUG FIXES AND IMPROVEMENTS
+
+* Material before the first #ACT -- i.e. when there's a first column without an act title -- used to not have a page count displayed at the bottom. It now does.
+* When editing a synopsis, hitting return with no text entered now deletes the synopsis altogether. It's been leaving an orphan = behind for a while, which, well, you know. Wasn't intentional.  
+* Fixed a bug that would crash FTOutliner if a note was hovered while editing a synopsis, sceneheading or section.
+* Fixed long-standing bug (you should have told me!) which produced an error alert when deleting or omitting the last scene in script. 
+* And finally almost fixed how FTOutliner handles document titles for the window title bar and/or headlines for print. Basically, if you don't have a title page, what you enter in the title dialog rules. If there's text in both places, what you entered/edited last will have precedence. But most of all, I hope we won't be seing any crashes due to this again. Or printouts that claim your script is called FALSE.  
 
 
 v 1.43 (Aug 28, 2022)

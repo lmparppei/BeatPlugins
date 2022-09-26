@@ -1,16 +1,21 @@
 <style>
 
+:root{
+
+    --note-panel-width: 200px /*25%; /*was 30*/
+}
+
 #notepanel{
 
     position: absolute !important;
     top: 15px;
-    left: -30%;
+    left: calc(-1 * var(--note-panel-width));
 	
-	padding: 5px 5px 0px 5px  !important;
+	padding: 5px 10px 0px 10px  !important;
 	margin: 0px !important; 
 
     height: calc(100% - 65px) !important;
-    width: 30%;
+    width: var(--note-panel-width);
 	
 	font-size: calc(11px * var(--fontSizeFactor)); 
 	font-weight: normal; 
@@ -35,13 +40,66 @@
 }
 
 #notepanel.expanded{
-    transform: translateX(100%);
+    /* transform: translateX(100%); */
+    left: 0 !important;
+}
+
+#notepanel.expanded #drag-bar{
+
+    position: fixed;
+
+    width: 10px;
+    height: 100%;
+    /* right: 0px; */
+    left: calc(var(--note-panel-width) - 10px);
+    top: 0px;
+
+    /* margin-top: auto;
+    margin-bottom: auto; */
+
+
+    background: transparent;
+
+    cursor: ew-resize !important ;
+
+    z-index: 100;
+
+}
+
+#notepanel ::-webkit-scrollbar{
+
+    z-index: 99;
+
+}
+
+#notepanel.expanded #drag-bar:hover{
+
+    /* border-right: 2px solid rgba(255, 255, 255, 0.4); */
+    background-color: rgba(0,128,155,0);
+    transition: border-color 0.2s, border-width 0.2s;
+    transition-delay: border-color 0.2s, border-width 0.2s;
+
+    cursor: ew-resize !important 
+
+
+}
+
+body.notepanelIsBeingResized * ,
+body.notepanelIsBeingResized > * {
+
+    cursor: ew-resize !important;
+
 }
 
 #flexiContainer.notepanelIsExpanded{
-    width: 69%;
-    margin-left: 31% !important;
+    width: calc(99% - var(--note-panel-width));
+    margin-left: calc(1% + var(--note-panel-width))!important;
     transition: width 0.6s, margin-left 0.6s !important;
+}
+
+.noAnimation,
+#flexiContainer.notepanelIsExpanded.noAnimation{
+	transition: none !important;
 }
 
 .notepanelNote .notepanelHeadline{
@@ -106,7 +164,204 @@
     pointer-events: none;
 }
 
+.noteButtons{
 
+    /* position: fixed !important; */
+    width: 100%;
+    height: auto;
+    top: 0px;
+    left: 0px;
+
+    margin-bottom: 2px;
+
+}
+
+.noteButton{
+
+    position: relative;
+    appearance: none;
+
+    margin-left: 0px;
+    margin-right: 1px;
+
+    width: 12px;
+    height: 12px;
+
+    border-radius: 2px;
+    border: 1px rgba(0, 0, 0, 0.5) solid; 
+
+    display: none;
+}
+
+.noteButton:checked::after{
+
+    position: absolute;
+    top: -2px;
+    left: 0;
+    width: 100%;
+
+    content: "✓";
+    text-align: center !important;
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.6);
+
+}
+
+#notepanelReviewIcon{
+
+    position: absolute;
+    right: 10px;
+    top: 7px;
+
+    height: 12px;
+        width: 18px;
+        background-color: hsl(49, 40%, 73%);
+        border: 1px solid hsl(49, 37%, 16%);
+        border-radius: 4px;
+        color: rgba(0, 0, 0, 0);
+
+        /* right: -12px;  */
+
+        /* scale: 90%; */
+        /* filter: grayscale(1); */
+        /* font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: 8px;
+        font-weight: bold;
+        line-height: 10px; */
+}
+
+#notepanelReviewIcon:has(:checked){
+    background-color: #ffe575;
+}
+
+#notepanelReviewIcon .noteButton{
+
+    border: none;
+    width: 100%;
+    top: -3px;
+
+}
+
+#notepanelReviewIcon::after{
+
+    position: absolute;
+    bottom: -2px;
+    left: 3px;
+    height: 0;
+    /* top: inherit; */
+
+    content: " " !important;
+
+    border: 3px solid transparent;
+    border-top: 0px solid transparent;
+    border-left: 3px solid hsl(49, 40%, 73%);
+
+}
+
+#notepanelReviewIcon:has(:checked)::after{
+    border-left: 3px solid #ffe575;
+}
+
+#notepanelReviewIcon::before{
+
+    position: absolute;
+    bottom: -4.44px;
+    left: 2px;
+
+    content: " ";
+
+    border: 4.44px solid transparent;
+    border-top: 0px solid transparent;
+    border-left: 4.44px solid hsl(49, 37%, 16%);
+
+    z-index: -1
+
+}
+
+#notepanel:has(.greenNote) #noteButtonGreen     {display: inline-block; background: #88FF88;}
+#notepanel:has(.yellowNote) #noteButtonYellow   {display: inline-block; background: rgb(255,255,128);}
+#notepanel:has(.redNote) #noteButtonRed         {display: inline-block; background: #FF8888;}
+#notepanel:has(.magentaNote) #noteButtonMagenta {display: inline-block; background: #FF88FF;}
+#notepanel:has(.purpleNote) #noteButtonPurple   {display: inline-block; background: #9088FF;}
+#notepanel:has(.notepanelReview) #noteButtonReview       {display: inline-block;}
+
+#notepanel:has(#noteButtonGreen:not(:checked)) .greenNote       {display: none;}
+#notepanel:has(#noteButtonYellow:not(:checked)) .yellowNote     {display: none;}
+#notepanel:has(#noteButtonRed:not(:checked)) .redNote           {display: none;}
+#notepanel:has(#noteButtonMagenta:not(:checked)) .magentaNote   {display: none;}
+#notepanel:has(#noteButtonPurple:not(:checked)) .purpleNote     {display: none;}
+#notepanel:has(#noteButtonReview:not(:checked)) .notepanelReview{display: none;}
+
+/* body:not(:has(.review)) #notepanelReviewIcon {display: none} */
+
+.notepanelReview{
+
+    position: relative;
+
+    white-space: normal;
+    word-wrap: break-word;
+
+    padding: 11px 5px 2px 8px;
+    margin-bottom: 3px;
+    margin-left: -1px;
+    margin-right: 0px;
+
+    background-color: #ffe575;
+        border: 1px solid #7f723a;
+        border-radius: 4px;
+        color: #7f723a;
+
+        font-size: calc(10px * var(--fontSizeFactor));
+        line-height: calc(14px * var(--fontSizeFactor));
+        font-weight: normal;
+        text-align: left;
+        color: rgba(0, 0, 0, 0.75);
+
+        box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+
+}
+
+.notepanelReview > .reviewHeadline{
+
+    position: absolute;
+    top: 0;
+    left: -1px;
+    padding: 0px 8px 0px 8px;
+    background-color: #7f723a;
+    color: #ffe575;
+
+    border-radius: 4px 4px 0 0 ;
+
+    font-weight: bold;
+    font-size: 8px;
+    line-height: 10px;
+    width: calc(100% + 2px);
+
+}
+
+.notepanelReview:hover,
+.notepanelReview.isSelected{
+
+    border-color: black !important;
+    box-shadow: 0 0 0 0.5px black;
+
+}
+
+.notepanelReview:hover > .reviewHeadline,
+.notepanelReview.isSelected > .reviewHeadline{
+
+    background-color: black;
+    color: white;
+    pointer-events: none;
+
+}
+
+/* #notepanel:has(.noteButton:not(#noteButtonReview):checked) > .notepanelReview{
+
+    margin-left: 15px;
+    transition: margin 0.2;
+
+} */
 
 
 </style>
@@ -133,7 +388,59 @@ function createNotepanel() {
         //},250)
 
     $id("notepanel").classList.add("expanded") //again, will animate if only added here.
+
+    if(!$(".noteButtons")){
+        $id("notepanel").innerHTML = /*html*/`<div class='noteButtons'>
+                <input type='checkbox' ${documentSetting.noteButtonGreen ? `checked` : ``} id='noteButtonGreen' class='noteButton'>
+                <input type='checkbox' ${documentSetting.noteButtonYellow ? `checked` : ``} id='noteButtonYellow' class='noteButton'>
+                <input type='checkbox' ${documentSetting.noteButtonRed ? `checked` : ``} id='noteButtonRed' class='noteButton'>
+                <input type='checkbox' ${documentSetting.noteButtonMagenta ? `checked` : ``} id='noteButtonMagenta' class='noteButton'>
+                <input type='checkbox' ${documentSetting.noteButtonPurple ? `checked` : ``} id='noteButtonPurple' class='noteButton'>
+                <div id="notepanelReviewIcon"><input type='checkbox' ${documentSetting.noteButtonReview ? `checked` : ``} id='noteButtonReview' class='noteButton'></div>
+            </div>
+            <div id="drag-bar" onmousedown="resizeNotepanel()"></div>`
+            + $id("notepanel").innerHTML
+    }
+
     setAllButtons()
+}
+
+function resizeNotepanel(){
+
+    mylog("in here!")
+
+    document.body.classList.add("notepanelIsBeingResized")
+    flexiContainer.classList.add("noAnimation")
+    let redraw = flexiContainer.getBoundingClientRect()
+
+    mylog(JSON.stringify(flexiContainer.classList))
+
+    document.addEventListener("mouseup", finalizeResizingNotepanel)
+    document.addEventListener("mousemove", resizing)
+
+}
+
+function resizing(e){
+
+    mylog("in resizing")
+
+    e = e || window.event
+    
+        let x = e.pageX
+
+        theRoot.style.setProperty("--note-panel-width", x + "px")
+    
+        mylog(x)
+}
+
+
+function finalizeResizingNotepanel(){
+
+    document.removeEventListener("mouseup", finalizeResizingNotepanel)
+    document.removeEventListener("mousemove", resizing)
+    document.body.classList.remove("notepanelIsBeingResized")
+    flexiContainer.classList.remove("noAnimation")
+
 }
 
 function updateNotepanel(){
@@ -141,43 +448,85 @@ function updateNotepanel(){
     mylog("updateNotepanel, which has... " + $id("notepanel").classList || "nothing")
     
     //if(!$id("notepanel").classList.contains("expanded")){mylog("...so aborting"); return}
-    if(!globalNotesData || globalNotesData.length == 0){collectNotes("updateNotepanel"); return}
+    if(!globalNotesData || globalNotesData.length == 0){collectNotes()}
+    if(!globalReviewsData || globalReviewsData.length == 0){collectReviews()}
     
-    // mylog("updateNotePanel... globalNotesData is" + globalNotesData)
-    mylog ("there is globalNotesData: " + globalNotesData.length)
+    mylog ("globalNotesData: " + globalNotesData?.length)
+    mylog ("globalReviewsData: " + globalReviewsData?.length)
     
-    let noteNumber = 0
-
     let currentNotes = $$(".notepanelNote")
-        if (currentNotes.length > 0){
-            for (let note of currentNotes){
-                note.remove()
-            }
+    if (currentNotes.length > 0){
+        for (let note of currentNotes){
+            note.remove()
         }
-
-    for(let i = 0; i < globalNotesData.length; i++){
-
-        let elementType = outline[globalNotesData[i].outlineElementNumber]?.typeAsString
-            if (elementType == "Heading"){elementType = "Note in scene " + outline[globalNotesData[i].outlineElementNumber]?.sceneNumber}
-            if (elementType == "Section"){elementType = `Note in ` + outline[globalNotesData[i].outlineElementNumber]?.stringForDisplay?.toUpperCase() + ``}
-
-        let thisNote = document.createElement("div")
-        thisNote.id = "notepanelNote" + i
-        thisNote.classList.add("notepanelNote")
-        thisNote.dataset.line = globalNotesData[i].position
-        thisNote.innerHTML = 
-            // `<p class="notepanelHeadline">`+ outline[globalNotesData[i].outlineElementNumber]?.typeAsString +`: ` + outline[globalNotesData[i].outlineElementNumber].sceneNumber + `</p>`+
-            `<p class="notepanelHeadline">`+ elementType + `</p>`+
-            globalNotesData[i].string.replace(/(\[|\])/g, "")
-
-        let colCode = globalNotesData[i].string.replace(/(\[|\])/g, "")
-        if (colCode.startsWith("!")){thisNote.style.backgroundColor = "#FF8888"}//"red"}
-        if (colCode.startsWith("!!")){thisNote.style.backgroundColor = "#FF88FF"}//"magenta"}
-        if (colCode.startsWith("!!!")){thisNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
-        if (colCode.startsWith("?")){thisNote.style.backgroundColor = "#88FF88"}//"lime"}
-
-        $id("notepanel").appendChild(thisNote)
     }
+    let currentReviews = $$(".notepanelReview")
+    if (currentReviews.length > 0){
+        for (let review of currentReviews){
+            review.remove()
+        }
+    }
+
+    if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0))return
+    
+    if(globalNotesData?.length > 0){
+        mylog("looping notes in panel")
+        for(let i = 0; i < globalNotesData.length; i++){
+
+            let elementType = outline[globalNotesData[i].outlineElementNumber]?.typeAsString
+                if (elementType == "Heading"){elementType = "Note in scene " + outline[globalNotesData[i].outlineElementNumber]?.sceneNumber}
+                if (elementType == "Section"){elementType = `Note in ` + outline[globalNotesData[i].outlineElementNumber]?.stringForDisplay?.toUpperCase() + ``}
+
+            let thisNote = document.createElement("div")
+                thisNote.id = "notepanelNote" + i
+                thisNote.classList.add("notepanelNote")
+                thisNote.dataset.line = globalNotesData[i].position
+                thisNote.innerHTML = 
+                    // `<p class="notepanelHeadline">`+ outline[globalNotesData[i].outlineElementNumber]?.typeAsString +`: ` + outline[globalNotesData[i].outlineElementNumber].sceneNumber + `</p>`+
+                    `<p class="notepanelHeadline">`+ elementType + `</p>`+
+                    globalNotesData[i].string.replace(/(\[|\])/g, "")
+
+            let colCode = globalNotesData[i].string.replace(/(\[|\])/g, "")
+            if (/^!{1}(?!!)/.test(colCode)){thisNote.style.backgroundColor = "#FF8888"; thisNote.classList.add("redNote")}//"red"}
+            if (/^!{2}(?!!)/.test(colCode)){thisNote.style.backgroundColor = "#FF88FF"; thisNote.classList.add("magentaNote")}//"magenta"}
+            if (/^!{3}/.test(colCode)){thisNote.style.backgroundColor = "#9088FF"; thisNote.classList.add("purpleNote")}//"#8000FF"}
+            if (colCode.startsWith("?")){thisNote.style.backgroundColor = "#88FF88"; thisNote.classList.add("greenNote")}//"lime"}
+            if (!colCode.startsWith("?") && !colCode.startsWith("!")) thisNote.classList.add("yellowNote")
+
+            $id("notepanel").appendChild(thisNote)
+        }
+    }
+
+    mylog("notesdone")
+
+    if(globalReviewsData?.length > 0){
+        mylog("looping reviews in panel")
+        for(let i = 0; i < globalReviewsData.length; i++){
+
+            let thisReview = document.createElement("div")
+                thisReview.id = "notepanelReview" + i
+                thisReview.classList.add("notepanelReview")
+                thisReview.dataset.line = globalReviewsData[i].range[0]
+                thisReview.innerHTML = "<div class='reviewHeadline'>REVIEW #" + i + "</div>"
+
+                thisReview.innerHTML += globalReviewsData[i].string
+
+                let notesInPanel = $$(".notepanelNote")
+                let whereToInsert
+                for(let note of notesInPanel){
+                    if (note.dataset.line && note.dataset.line > globalReviewsData[i].range[0]){
+                        break
+                    }
+                    whereToInsert = note
+                }
+
+                while(whereToInsert?.nextSibling && whereToInsert?.nextSibling?.classList.contains("notepanelReview")) whereToInsert = whereToInsert.nextSibling
+                if(whereToInsert)whereToInsert.insertAdjacentElement("afterend", thisReview)
+                if(!whereToInsert)$id("notepanel").appendChild(thisReview)
+
+        }
+    }
+
     mylog("end of update notepanel")
 }
 
@@ -210,15 +559,23 @@ function panelNoteIsHovered(element){
 
     mylog("HOVERING, namely this: " + element.classList)
 
-    if(!notesAreDisplayed){return}
+    if(!notesAreDisplayed && !reviewsAreDisplayed){return}
 
     panelNoteIsUnhovered() // to make sure only one can be highlighted at one time
 
-    let noteId = element.id
-    noteId =  noteId.substring(13)
+    let prefix = ""
+    if(element.id.startsWith("notepanelNote")){
+        noteId = element.id.replace("notepanelNote", "")
+        prefix = "noteNumber"
+    }
+    if(element.id.startsWith("notepanelReview")){
+        noteId = element.id.replace("notepanelReview", "")
+        prefix = "review"
+    }
+    if(!noteId)return
 
-    let noteToHover = $id("noteNumber" + noteId)
-    noteToHover.classList.add("selectedNote")
+    let noteToHover = $id(prefix + noteId)
+    noteToHover?.classList.add("selectedNote")
 }
 
 function panelNoteIsUnhovered(element){
@@ -226,7 +583,7 @@ function panelNoteIsUnhovered(element){
     mylog("note is unhovered")
     if(!notesAreDisplayed){return}
 
-    let allNotes = $$(".note")
+    let allNotes = $$(".note, .review")
     for (let note of allNotes){
         note.classList.remove("selectedNote")
     }

@@ -153,6 +153,7 @@ var absoluteTextLength
 var globalNotesData
 var globalMarkerData
 var globalBeatData
+var globalReviewsData
 var weAreCurrentlyEditingText = false
 var currentlyHoveredElement = false // this holds the currently hovered element so that any time we press ALT, buttons will appear
 
@@ -223,6 +224,7 @@ var notesAreDisplayed = false;
 var markersAreDisplayed = false;
 var synopsisAreDisplayed = false;
 var beatsAreDisplayed = false;
+var reviewsAreDisplayed = false;
 var scenesAreHidden = false;
 var oneColumnOutline;
 var indexCardMode = false;
@@ -254,7 +256,7 @@ var logArray=[]
 
 // GLOBAL DOCUMENT-RELATED VARIABLES
 
-var outline, pages
+var outline, pages, pageBreaks
 var heightFactor = 10 //initial value if all else fails
 var unDistributableHeight
 
@@ -279,14 +281,16 @@ var entireScreenplay
 var globalStartTime
 var globalEndTime
 
-var documentName = false
-var documentSubName = false
-var documentAuthor = false
+var documentName
+var documentSubName
+var documentAuthor
 
 var outdoor = 0
 
 var butWeAreInASynopsis = false
 var currentParentScroll = false
 
+var pageDividers = []
 
+// var alreadyRunningPainting = false
 </script>

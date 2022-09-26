@@ -276,4 +276,30 @@ p.headline2{
     display: none;
 }
 
+.blankPage{
+
+    box-sizing: border-box !important;
+
+    /* border-top: 10px transparent !important; prepare space for cogs */
+	background-image: none !important;
+                    /* linear-gradient(transparent, transparent),
+					linear-gradient(to bottom right, 
+						transparent 50.5%, 
+						var(--pageBackground) 50.5%), 
+					linear-gradient(to bottom left, 
+						transparent 50.5%, 
+						var(--pageBackground) 50.5%), */
+					/* linear-gradient(var(--pageBackground),var(--pageBackground)); */
+
+    background: white !important;
+
+    border-top: 1px dotted #555 !important;
+
+    /* border-left: 2px solid white !important;
+    border-right: 2px solid white !important;
+    border-bottom: 2px solid white !important; */
+    /* outline: lime 1px solid; */
+
+}
+
 </style>
