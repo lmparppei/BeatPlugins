@@ -1,0 +1,132 @@
+<div id='header'>
+	
+	Character <select id="names" onchange="select(this)">
+    #NAMES#
+	</select>
+</div>
+
+<div id='content'>
+	<!-- <button onclick="Beat.call('Beat.restart()')">Restart</button> -->
+	<div id='lines'><p class='tip'>Select a character from the drop down list to begin editing their lines.</p></div>
+	<div id='debug'></div>
+</div>
+
+<style>
+	* { box-sizing: border-box; }
+	body {
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+	#header {
+		background-color: #111;
+		color: #eee;
+		padding: .5rem;
+	}
+	#content {
+		padding: .5rem;
+	}
+
+	.tip {
+		margin-top: 5em;
+		text-align: center;
+		font-size: 1.3em;
+		padding: 2em;
+		color: #aaa;
+	}
+
+	.line {
+		margin-top: .1rem;
+	}
+	
+	.line textarea {
+		width: 100%;
+		padding: .4rem;
+		font-size: 1.2em;
+		height: auto;
+		min-height: 40px;
+		word-wrap: break-word;
+		font-family: monospace;
+		resize: none;
+		border: solid 1px #ccc;
+	}
+</style>
+
+<script>
+
+var d = document.getElementById("debug")
+
+function select(el) {
+	Beat.call("Beat.custom.linesForCharacter(\"" + el.value + "\")")
+}
+
+function addNames(names) {
+	let options = ""
+	for (const name of names) {
+		options += "<option value=\"" + name + "\">" + name + "</option>"
+	}
+
+	let e = document.getElementById('names')
+	e.innerHTML = options
+}
+
+function addLines(lines) {
+	let e = document.getElementById('lines')
+
+	let html = ""
+	for (const line of lines) {
+		html += "<div class='line'><textarea uuid='" + line.uuid + "' onfocus='moveTo(this)' oninput='editDialogue(this)'>" + line.string + "</textarea></div>"
+	}
+
+	e.innerHTML = html
+
+	document.querySelectorAll("textarea").forEach((e) => {
+		if (e.scrollHeight > 40) {
+			e.style.height = e.scrollHeight + 3 + "px"
+		}
+		e.addEventListener("keyup", constrainInput);
+	})
+}
+
+function constrainInput(event) { 
+	if (event.keyCode == 13) {
+		event.preventDefault()
+		focusNextElement()
+		return
+	}
+}
+
+function focusNextElement () {
+    //add all elements we want to include in our selection
+    var focussableElements = 'textarea, a:not([disabled]), button:not([disabled]), input[type=text]:not([disabled]), [tabindex]:not([disabled]):not([tabindex="-1"])';
+    if (document.activeElement && document.activeElement.form) {
+        var focussable = Array.prototype.filter.call(document.activeElement.form.querySelectorAll(focussableElements),
+        function (element) {
+            //check for visibility while always include the current activeElement 
+            return element.offsetWidth > 0 || element.offsetHeight > 0 || element === document.activeElement
+        });
+        var index = focussable.indexOf(document.activeElement);
+        if(index > -1) {
+           var nextElement = focussable[index + 1] || focussable[0];
+           nextElement.focus();
+        }                    
+    }
+}
+
+function editDialogue(el) {
+	el.value = el.value.replace(/[\r\n\v]+/g, '')
+	
+	if (el.scrollHeight > 40) {
+		el.style.height = "";
+		el.style.height = el.scrollHeight + 3 + "px"
+	}
+	
+	let uuid = el.getAttribute("uuid")
+	Beat.call("Beat.custom.edit('" + uuid + "', " + JSON.stringify(el.value) + ")")
+}
+
+function moveTo(el) {
+	let uuid = el.getAttribute("uuid")
+	Beat.call("Beat.custom.moveToUUID('" + uuid + "')")
+}
+
+</script>
