@@ -2,7 +2,7 @@
 
 Location List
 Description: Quick and dirty list of shooting locations
-Version: 0.5
+Version: 1.0
 Copyright: Lauri-Matti Parppei
 
 */
@@ -37,7 +37,7 @@ function csv() {
 }
 
 for (let scene of scenes) {
-	let string = scene.line.cleanedString().toUpperCase()
+	let string = scene.line.stripFormatting().toUpperCase()
 	let headings = string.substring(string.indexOf(" ")).split(" - ")
 
 	let location = ""

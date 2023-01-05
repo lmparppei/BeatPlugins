@@ -1,0 +1,155 @@
+/*
+
+Dialogue Editor
+Copyright: Lauri-Matti Parppei 2022
+
+Plugin Type: Tool
+Version: 0.5
+
+Image: screenshot.jpg
+Description: See, browse and edit the lines of a single character. 
+
+*/
+
+require("Template")
+
+let currentName = null // String
+let names = getNames() // [String]
+
+let html = Beat.assetAsString("ui.html")
+let optionLine = new Template("<option value='{{character}}''>{{character}}</option>")
+
+let optionList = ""
+for (const n of names) {
+	optionList += optionLine.withData({ character: n })
+}
+html = html.replace("#NAMES#", optionList)
+
+// Create window and move it slightly to the right
+let window = Beat.htmlWindow(html, 320, 500, function () {
+	Beat.end()
+})
+let frame = window.getFrame()
+window.setFrame(frame.x + 300, frame.y, frame.width, frame.height)
+
+
+// ##### Editor methods called from the UI window
+
+Beat.custom = {
+	linesForCharacter(name) {
+		getLinesForCharacter(name)
+	},
+
+	moveToUUID(uuid) {
+		// Select a line in the editor based on UUID
+		let line = findDialogueLine(uuid)
+		if (line == null) return;
+
+		Beat.scrollTo(line.position)
+		Beat.setSelectedRange(line.position, line.length)
+	},
+
+	edit(uuid, string) {
+		// Replace content. Disable change listener while we make these changes.
+		let line = findDialogueLine(uuid)
+		Beat.onTextChangeDisabled = true
+		Beat.replaceRange(line.position, line.length, string)
+		Beat.onTextChangeDisabled = false
+	}
+}
+
+
+// ##### Change listener
+// If the text was changed *outside* our dialogue editor, we'll need to update the lines
+
+let updateTimer = null
+Beat.onTextChange(
+    function (loc, len) {
+        if (currentName.length == 0 || currentName == null) return;
+        if (updateTimer != null) updateTimer.invalidate()
+
+        updateTimer = Beat.timer(1.0, function () {
+        	Beat.log("---> update")
+        	getLinesForCharacter(currentName)
+        	updateTimer = null
+    	})
+        
+    }
+);
+
+
+// ##### Get character names and lines
+
+function getNames() // -> [names]
+{
+	const lines = Beat.lines()
+	let names = [""] // [String]
+
+	for (const line of lines) {
+		if (line.type == Beat.type.character || line.type == Beat.type.dualDialogueCharacter) {
+			let name = line.characterName()
+			if (!names.includes(name)) {
+				names.push(name)
+			}
+		}
+	}
+
+	return names
+}
+
+function getLinesForCharacter(name) {
+	currentName = name
+	let lines = Beat.lines()
+	let charLines = []
+
+	var inBlock = false
+
+	for (const line of lines) {
+		if (line.type == Beat.type.character || line.type == Beat.type.dualDialogueCharacter) {
+			if (line.characterName() == name) {
+				inBlock = true
+				continue
+			}
+		}
+
+		else if (inBlock) {
+			if ((line.isDialogueElement() || line.isDualDialogueElement()) && line.length > 0) {
+				charLines.push(line)
+			} else {
+				inBlock = false
+			}
+		}
+	}
+
+	let items = []
+	for (const line of charLines) {
+		let json = line.forSerialization()
+
+		let string = json.string
+		string = string.replaceAll("\"", "\\\"")
+		string = string.replaceAll("<", "&lt;")
+		
+		let item = "{ uuid: \"" + json.uuid + "\", string: \"" + string + "\"}"
+		items.push(item)
+	}
+
+	// Send the JSON to window
+	window.runJS("addLines(["  +  items.join(",") +  "])")
+}
+
+
+// ##### Line lookup
+
+function findDialogueLine(uuid) {
+	let lines = Beat.lines()
+
+	for (const line of lines) {
+		let json = line.forSerialization()
+		if (!line.isDialogueElement() && !line.isDualDialogueElement()) continue;
+
+		if (json.uuid == uuid) {
+			return line
+		}
+	}
+	return null
+}
