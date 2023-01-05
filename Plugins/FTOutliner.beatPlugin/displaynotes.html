@@ -46,26 +46,191 @@
 }
 
 .marker {
-    background-color: transparent;
+    /* background-color: transparent; */
+    background: grey;
     position: absolute;
     right: -2px;
     height: 0px;
-    width: 20px;
-    border-top: 6px solid grey;
-    border-bottom: 6px solid grey;
-    border-right: 7.5px solid grey;
-    border-left: 6px solid transparent;
-
-    /* border-radius: 0 3.5px 0 0;  */
-
-    /* box-shadow: 1.5px 1.5px 2.5px rgba(0,0,0,0.25); */
+    height: 12px;
+    min-width: 20px;
+    width: auto; /* for purpose of marker name */
+    max-width: 80%;
 
     pointer-events: all !important;
 
+    padding-right: 4px;
+
     z-index: 998;
 
-    opacity: 0.8;
+    /* opacity: 0.8; */
+
+    color: white;
+    font-weight: bold;
+    font-size: 10px !important;
+    line-height: 15px !important;
+    overflow: hidden;
+
+    border: 1px rgba(0,0,0,0.6) solid;
+
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
+
+    transition: max-width 0.2s;
+
 }
+
+.marker::after{
+
+    content: "";
+    position: absolute;
+    top: -3.44px;
+    left: -2px;
+
+    border-left: 8px rgba(0,0,0,0.6) solid;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid transparent;
+
+    height: 1px;
+    width: 100%;
+    display: block;
+
+}
+
+.marker .markertext{
+
+    position: relative;
+    display: inline-block;
+
+    top: -2px;
+    left: 10px;
+
+    width: calc(100% - 7px);
+    height: 16px;
+    margin-right: 10px;
+    
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    z-index: 9999;
+
+    pointer-events: none;
+
+    opacity: 1;
+
+}
+
+#flexiContainer.indexcards .marker,
+#flexiContainer.nonProportionalMode .marker {
+    position: absolute;
+
+    top: 1px !important;
+    right: 2px; 
+    
+    height: 10px;
+    width: 15px !important;
+    max-width: none !important;
+    min-width: 0px !important;
+    padding: none;
+
+    transform: rotate(-90deg);
+
+    pointer-events: all !important;
+}
+
+#flexiContainer.indexcards .marker::after,
+#flexiContainer.nonProportionalMode .marker::after {
+
+    left: -2px;
+    top: -3.44px !important;
+
+    border-top-width: 7px;
+    border-bottom-width: 7px;
+
+}
+
+#flexiContainer.indexcards .section>.marker,
+#flexiContainer.nonProportionalMode .section>.marker {
+    /* top: -2px !important; */
+    z-index: 9999 !important;
+}
+
+#flexiContainer.indexcards :nth-child(2 of .marker),
+#flexiContainer.nonProportionalMode :nth-child(2 of .marker){
+    right: 14px;
+}
+#flexiContainer.indexcards :nth-child(3 of .marker),
+#flexiContainer.nonProportionalMode :nth-child(3 of .marker){
+    right: 26px !important;
+}
+#flexiContainer.indexcards :nth-child(4 of .marker),
+#flexiContainer.nonProportionalMode :nth-child(4 of .marker){
+    right: 38px !important;
+}
+#flexiContainer.indexcards :nth-child(5 of .marker),
+#flexiContainer.nonProportionalMode :nth-child(5 of .marker){
+    right: 50px !important;
+}
+
+/* #flexiContainer.indexcards .marker::after,
+#flexiContainer.nonProportionalMode .marker::after {
+
+width: 15px;
+height: 13px;
+left: -7.5px;
+top: -6.5px;
+
+}
+
+#flexiContainer.indexcards .marker::before,
+#flexiContainer.nonProportionalMode .marker::before {
+    position: absolute;
+    top: -6px;
+    left: -7px;
+    width: 14px;
+    height: 11px;
+    content: " ";
+
+    border-top: 0.5px solid white;
+    border-right: 1px solid #333;
+    border-bottom: 0.5px solid black; 
+    opacity: 0.4;
+} */
+
+.marker:hover {
+    /* transform: translateX(-3px) scaleX(1.3);
+    transition: 0.05s;  */
+    /* filter: grayscale(1) invert(1) contrast(2) */
+    background-image: linear-gradient(rgba(0,0,0,0.6) 0%,rgba(0,0,0,0.6) 100%);
+    opacity: 1;
+    color: white !important;
+}
+
+#flexiContainer .faux .marker .markertext,
+#flexiContainer.unShowMarkerText .marker .markertext,
+#flexiContainer.indexcards .marker .markertext,
+#flexiContainer.nonProportionalMode .marker .markertext {
+
+    /* display:none; */
+    width: 0px;
+    opacity: 0;
+    text-overflow: clip;
+    transition-delay: 0.2s
+
+}
+
+#flexiContainer.unShowMarkerText .marker {
+
+    max-width: 20px
+}
+
+
+#flexiContainer.indexcards .marker:hover,
+#flexiContainer.nonProportionalMode .marker:hover {
+    transform: translateY(2px) scaleY(1.3) scaleX(0.8) rotate(-90deg) !important;
+    transition: 0.1s;
+}
+
 
 .beat{
     position: absolute;
@@ -138,123 +303,6 @@
 
 .hiddenPath{
     display: none;
-}
-
-/* .marker {
-
-    background: 
-        conic-gradient(from 225deg at 6px 50%, transparent 90deg, green 90deg 200deg)
-    ;
-    position: absolute;
-    right: -3px;
-    height: 12px;
-    width: 20px;
-    border: 1px black solid;
-    border-left: none;
-
-    box-shadow: 1.5px 1.5px 1.5px rgba(0,0,0,0.4);
-
-    pointer-events: all !important;
-
-    /* clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 8px 50%); */
-    /*opacity: 0.8;
-
-} */
-
-.marker::after {
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    width: 20px;
-    height: 12px;
-    content: " ";
-
-    box-sizing: border-box;
-
-    border-top: 1px solid black;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;   
-
-    /* border-radius: 0 3px 0 0; */
-
-    background: conic-gradient(from 180deg at 7.5px 50%, transparent 45deg, black 45deg 135deg, transparent 135deg);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
-
-
-    opacity: 0.7;
-}
-
-
-#flexiContainer.indexcards .marker,
-#flexiContainer.nonProportionalMode .marker {
-    background-color: transparent;
-    position: absolute;
-
-    top: 0px !important;
-    right: 2px; 
-    
-    height: 0px;
-    width: 12px;
-    border-top: 6px solid grey;
-    border-bottom: 6px solid grey;
-    border-right: 7.5px solid grey;
-    border-left: 7.5px solid transparent;
-
-    box-shadow: 0.5px 1px 1px rgba(0,0,0,0.4);
-    transform: rotate(-90deg) scaleY(0.8);
-
-    pointer-events: all !important;
-}
-
-#flexiContainer.indexcards .section>.marker,
-#flexiContainer.nonProportionalMode .section>.marker {
-    /* top: -2px !important; */
-    z-index: 9999 !important;
-}
-
-#flexiContainer.indexcards .marker:nth-of-type(2),
-#flexiContainer.nonProportionalMode .marker:nth-of-type(2){
-    right: 2px;
-}
-#flexiContainer.indexcards .marker:nth-of-type(3),
-#flexiContainer.nonProportionalMode .marker:nth-of-type(3){
-    right: 16px;
-}
-
-#flexiContainer.indexcards .marker::after,
-#flexiContainer.nonProportionalMode .marker::after {
-
-width: 15px;
-height: 13px;
-left: -7.5px;
-top: -6.5px;
-
-}
-
-#flexiContainer.indexcards .marker::before,
-#flexiContainer.nonProportionalMode .marker::before {
-    position: absolute;
-    top: -6px;
-    left: -7px;
-    width: 14px;
-    height: 11px;
-    content: " ";
-
-    border-top: 0.5px solid white;
-    border-right: 1px solid #333;
-    border-bottom: 0.5px solid black; 
-    opacity: 0.4;
-}
-
-.marker:hover {
-    transform: translateX(-3px) scaleX(1.3);
-    transition: 0.05s; 
-}
-
-#flexiContainer.indexcards .marker:hover,
-#flexiContainer.nonProportionalMode .marker:hover {
-    transform: translateY(2px) scaleY(1.3) scaleX(0.8) rotate(-90deg) !important;
-    transition: 0.1s;
 }
 
 .hideSlugIfSmall > .noteContainer {
@@ -730,27 +778,33 @@ function displayNotes(notesData, markerData, beatData){
         }
         mylog("now putting in place note #" + i + "; ")// + outline[notesData[i].outlineElementNumber].string)
 
-        let element = $id(notesData[i].outlineElementNumber)
-        // let thisNote = notesData[i].string.replace(/(\[|\])/g, "")
+        let element = $id(notesData[i].outlineElementNumber) || $(".faux")
+        if(!element)return
+        
         let thisNote = notesData[i].string.replace(/(\[\[)/, "").replace(/(\]\]$)/, "")
         let notesDivStart = ""
         let notesDivEnd = ""
         let currentContainer = 'noteContainer' + notesData[i].outlineElementNumber
         let parentSize = element.getBoundingClientRect()
+        mylog("ok")
             if (element.classList.contains("section")){
-                parentSize = element.querySelector(".section-heading").getBoundingClientRect()
+                parentSize = element.querySelector(".section-heading")?.getBoundingClientRect()
             }
             if (element.querySelector(".orphanText")){
-                parentSize = element.querySelector(".orphanText").getBoundingClientRect()
+                parentSize = element.querySelector(".orphanText")?.getBoundingClientRect()
             }
 
+            mylog("ok")
+
         let howFarBackWasPreviousNonMarker = 1
-        while(i > 0 && notesData[i - howFarBackWasPreviousNonMarker].string.toLowerCase().startsWith("[[marker")){howFarBackWasPreviousNonMarker ++}
+        while(i > 0 && notesData[i - howFarBackWasPreviousNonMarker].string?.toLowerCase().startsWith("[[marker")){howFarBackWasPreviousNonMarker ++}
 
         if (i == 0 || i > 0 && notesData[i - howFarBackWasPreviousNonMarker].outlineElementNumber != notesData[i].outlineElementNumber) {
         //if (i == notesData.length - 1 || i < notesData.length - 1 && notesData[i+1].outlineElementNumber != notesData[i].outlineElementNumber) {
 
             element.innerHTML += "<div id='" + currentContainer + "' class='noteContainer clickThru'>" + "</div>"
+
+
 
             $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")// was "0px"
 
@@ -776,15 +830,21 @@ function displayNotes(notesData, markerData, beatData){
 
         }
 
-        let percentageBasedPosition = Math.max(((notesData[i].position - outline[notesData[i].outlineElementNumber].sceneStart) / outline[notesData[i].outlineElementNumber].sceneLength) * (parentSize.height - (15 * currentZoomLevel) - 0),0) // the minus 0 used to be -12, now taking full height into use.
+        
+        let percentageBasedPosition = 0
+        if(!element.classList.contains("faux")){
+            percentageBasedPosition = Math.max(((notesData[i].position - outline[notesData[i].outlineElementNumber]?.sceneStart) / outline[notesData[i].outlineElementNumber]?.sceneLength) * (parentSize.height - (15 * currentZoomLevel) - 0),0) // the minus 0 used to be -12, now taking full height into use.
+        }
+mylog("bad yet?")
         if (element.id.includes("outline") && element.querySelector(".orphanText")) {
             let skip = 1
             while(outline[notesData[i].outlineElementNumber + skip]?.typeAsString == "Synopse"){
                 skip ++
             }
-            percentageBasedPosition = (notesData[i].position - outline[notesData[i].outlineElementNumber].sceneStart)/(outline[notesData[i].outlineElementNumber + skip]?.sceneStart - outline[notesData[i].outlineElementNumber].sceneStart) * (parentSize.height - (15 * currentZoomLevel) - 0)
+            percentageBasedPosition = (notesData[i].position - outline[notesData[i].outlineElementNumber]?.sceneStart)/(outline[notesData[i].outlineElementNumber + skip]?.sceneStart - outline[notesData[i].outlineElementNumber]?.sceneStart) * (parentSize.height - (15 * currentZoomLevel) - 0)
         }
 
+        mylog("hanging in?")
 
         notesDivStart += "<div class='note collapsed' " 
         notesDivStart += "data-line='" + notesData[i].position + "' " 
@@ -840,7 +900,7 @@ for (element of outline){
         mylog("in da while" + globalNotesData[note].string)
 
         // newDocumentContents += "*re: " + entireScreenplay.substr(globalNotesData[note].range[0], globalNotesData[note].range[1]).trim().replaceAll("\n", "*\n*") + "*\n\n"
-        newDocumentContents += `${globalNotesData[note].string.trim()}\n`
+        newDocumentContents += `${globalNotesData[note].string.replace("[[", "").replace("]]", "").replace("<br/>", "\n").replace(/^!+|^\?+/, "").trim()}\n`
         
         note++
 
@@ -872,10 +932,16 @@ function displayMarkers(){
 
     for (let im = 0; im < globalMarkerData.length; im++){
 
-        let element = $id(globalMarkerData[im].outlineElementNumber)
+        let element = $id(globalMarkerData[im].outlineElementNumber) || $(".faux")
+        if(!element)return
 
-        theMarkerToAddAsCode = "<div id = 'marker" + im + "' class = 'marker' data-line = '" + globalMarkerData[im].position + "'></div>" 
+        theMarkerToAddAsCode = "<div id = 'marker" + im + 
+                    //"' data-content = '" + globalMarkerData[im].story + //this is to make :after border equally wide as parent
+                    "' class = 'marker' data-line = '" + globalMarkerData[im].position + 
+                    "'><div class='markertext'>" + (globalMarkerData[im].story || "") + "</div></div>" 
+                    // "'><div class='markertext'>" + (globalMarkerData[im].position || "") + "</div></div>" 
         element.innerHTML += theMarkerToAddAsCode
+        
 
         // theMarkerToAdd = document.createElement("div")
         // theMarkerToAdd.id = "marker" + i
@@ -888,24 +954,28 @@ function displayMarkers(){
         theMarkerToAdd = $id("marker" +  im)
 
         if (globalMarkerData[im].color && globalMarkerData[im].color != ""){
-            theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
-            theMarkerToAdd.style.borderTopColor = globalMarkerData[im].color
-            theMarkerToAdd.style.borderBottomColor = globalMarkerData[im].color
-            //theMarkerToAdd.style.backgroundColor = globalMarkerData[im].color
-            
+            // theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
+            // theMarkerToAdd.style.borderTopColor = globalMarkerData[im].color
+            // theMarkerToAdd.style.borderBottomColor = globalMarkerData[im].color
+            theMarkerToAdd.style.backgroundColor = globalMarkerData[im].color
         }
+
+        let markerColor = window.getComputedStyle(theMarkerToAdd).backgroundColor //will be rgb
+        theMarkerToAdd.style.color = blackOrWhite(markerColor) || "red"
         
         // let markerVerticalPosition = -2
         let markerVerticalPosition = 1 // default position only affects Section, that has no orphan.
 
-        if((outline[globalMarkerData[im].outlineElementNumber].typeAsString != "Section"
-            ||
-            outline[globalMarkerData[im].outlineElementNumber].numberOfPages > 0)
-             && areScenesProportional == 1){
-            markerVerticalPosition = globalMarkerData[im].position - outline[globalMarkerData[im].outlineElementNumber].line.position
-            let percentageIntoScene = markerVerticalPosition / outline[globalMarkerData[im].outlineElementNumber].sceneLength
+        mylog("ASfasfasdf")
 
-            if(outline[globalMarkerData[im].outlineElementNumber].typeAsString == "Section"){
+        if((outline[globalMarkerData[im].outlineElementNumber]?.typeAsString != "Section"
+            ||
+            outline[globalMarkerData[im].outlineElementNumber]?.numberOfPages > 0)
+             && areScenesProportional == 1){
+            markerVerticalPosition = globalMarkerData[im].position - outline[globalMarkerData[im].outlineElementNumber]?.line.position
+            let percentageIntoScene = markerVerticalPosition / outline[globalMarkerData[im].outlineElementNumber]?.sceneLength
+
+            if(outline[globalMarkerData[im].outlineElementNumber]?.typeAsString == "Section"){
                 element = element.querySelector(".orphanText")
             }
 
@@ -949,7 +1019,8 @@ function displayBeats(){
     for (let im = 0; im < globalBeatData.length; im++){
 
         //set element to parent where we will put the beat
-        let element = $id(globalBeatData[im].outlineElementNumber)
+        let element = $id(globalBeatData[im].outlineElementNumber) || $(".faux")
+        if(!element)return
 
         theBeatToAddAsCode = "<div id = 'beat" + im + "' class='beat' data-storyline='" + globalBeatData[im].storyline + "' data-line='" + globalBeatData[im].position + "'>" + globalBeatData[im].story + "</div>" 
         element.innerHTML += theBeatToAddAsCode
@@ -962,14 +1033,14 @@ function displayBeats(){
     
         let beatVerticalPosition = -2
 
-        if((outline[globalBeatData[im].outlineElementNumber].typeAsString != "Section" 
+        if((outline[globalBeatData[im].outlineElementNumber]?.typeAsString != "Section" 
             ||
-            outline[globalBeatData[im].outlineElementNumber].numberOfPages > 0)
+            outline[globalBeatData[im].outlineElementNumber]?.numberOfPages > 0)
             && areScenesProportional == 1){
-            beatVerticalPosition = globalBeatData[im].position - outline[globalBeatData[im].outlineElementNumber].line.position
-            let percentageIntoScene = beatVerticalPosition / outline[globalBeatData[im].outlineElementNumber].sceneLength
+            beatVerticalPosition = globalBeatData[im].position - outline[globalBeatData[im].outlineElementNumber]?.line.position
+            let percentageIntoScene = beatVerticalPosition / outline[globalBeatData[im].outlineElementNumber]?.sceneLength
 
-            if(outline[globalBeatData[im].outlineElementNumber].typeAsString == "Section"){
+            if(outline[globalBeatData[im].outlineElementNumber]?.typeAsString == "Section"){
                 element = element.querySelector(".orphanText")
             }
 
@@ -1159,13 +1230,14 @@ function expandNote(tabWasPressed){
     let yOrigo = document.getElementById('flexiContainer').scrollTop
 
     // let theFirstOutlineItemWidth = $id("0").getBoundingClientRect()
-    let theFirstOutlineItemWidth = $(".section, .scene")?.getBoundingClientRect()
+    let theFirstOutlineItemWidth = $(".section:not(.faux), .scene")?.getBoundingClientRect()
 
     let expandedWidth = Math.min(theFirstOutlineItemWidth.width, window.innerWidth/2)
     
-    let sceneText = "scene " + outline[theNote.closest(".scene")?.id]?.sceneNumber
+    let sceneText = "in scene " + outline[theNote.closest(".scene")?.id]?.sceneNumber
     if (!theNote.closest(".scene")){
-        sceneText = 'section ' + theNote.closest(".section").querySelector(".section-heading").innerHTML
+        let a = theNote.closest(".section")?.querySelector(".section-heading")?.innerHTML
+        sceneText = a? ('in section ' + theNote.closest(".section")?.querySelector(".section-heading")?.innerHTML) : "before first section"
     }
 
     let trashDiv = ""
@@ -1175,7 +1247,7 @@ function expandNote(tabWasPressed){
         "<div id='expandedNote' class='" + expandedClassList + "'>" +
         "<b class='clickThru padRight'>" +
         trashDiv +
-        "Note in " + sceneText + " </b>" +
+        "Note " + sceneText + " </b>" +
         "<text class='clickThru' id='expandedNoteText'>" + theNoteString + "</text></div>"
 
     let theExpandedNote = document.getElementById('expandedNote')
@@ -1279,8 +1351,8 @@ function cycleNotes(shift){
     // if(!globalReviewsData)collectReviews()
 
     let cyclables = []
-    if (notesAreDisplayed) cyclables = cyclables.concat(globalNotesData)
-    if (reviewsAreDisplayed) cyclables = cyclables.concat(globalReviewsData)
+    if (notesAreDisplayed && globalNotesData) cyclables = cyclables.concat(globalNotesData)
+    if (reviewsAreDisplayed && globalReviewsData) cyclables = cyclables.concat(globalReviewsData)
 
     if (notesAreDisplayed && reviewsAreDisplayed){
         
@@ -1326,6 +1398,8 @@ function cycleNotes(shift){
     // if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
     if (cycle > cyclables.length-1) {cycle = 0}
     if (cycle < 0) {cycle = cyclables.length-1}
+
+    mylog(cycle + ", " + cyclables.length)
         
     if(cyclables[cycle].string.startsWith("[[")) {
         selectedNote = globalNotesData.indexOf(cyclables[cycle])

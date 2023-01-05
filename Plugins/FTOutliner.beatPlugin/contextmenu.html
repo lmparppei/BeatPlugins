@@ -440,7 +440,11 @@ function deleteScene(){
         
     weAreChangingColors = true
     if (elements[0].classList.contains("synopsis")){
-        Beat.call("Beat.custom.deleteSynopsis([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+        for (e of elementsToDelete) {
+            elementsToDelete[elementsToDelete.indexOf(e)] = JSON.stringify(e)
+        }
+        let doThis = `Beat.custom.deleteSynopsis([${[...elementsToDelete]}], ${warningsAreOn})`
+        Beat.call(doThis)
     }else if (elements[0].classList.contains("section")){
         Beat.call("Beat.custom.deleteSection([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
     }else{

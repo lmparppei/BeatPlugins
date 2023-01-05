@@ -34,10 +34,35 @@
     pointer-events: all !important;
 
     display: none;
-    overflow:hidden;
+    /* overflow:hidden; */
+    /* clip-path: inset(0 round 50%); */
     opacity: 0.9;
 
     transform: translate(-110%, -110%);
+    transform: translate(-50%, -90%);
+}
+
+.addButton::before{
+
+    content: "";
+    position: absolute;
+    box-sizing: content-box;
+    top: -20px;
+    left: -20px;
+    height: 100%;
+    width: 100%;
+
+    border: 20px solid transparent;
+    border-radius: 30px;
+
+    transition: 0.2s
+
+}
+
+.addButton:hover::before{
+
+    border: 20px solid rgba(255, 255, 255, 0.15);
+
 }
 
 .addButton > p{
@@ -67,31 +92,42 @@ p.addScene,
 p.addSection{
 
     display: none;
-    width: 55px !important;
+    opacity: 0 !important;
+    width: 54px !important;
+    height: 16px !important;
     font-size: 9px !important;
     top: 0px;
+    left: 0px;
     padding-top: 2px !important;
 
     text-transform: uppercase;
     line-height: 11px !important;
     
     border-right: 2px white solid;
+    border-radius: 30px 0 0 30px;
     pointer-events: all;
+
+    transition-delay: opacity 0.2s !important;
 }
 
 p.addSection{
-    left: 53px
+    left: 54px;
+    width: 52px !important;
+    border-radius: 0 30px 30px 0;
+    border-right: none;
 }
 
-.addButton:hover>p.addScene,
-.addButton:hover>p.addSection{
+.addButton:hover > p.addScene,
+.addButton:hover > p.addSection{
     display: inline-block;
-    transition-delay: 0.1ms;
+    opacity: 1 !important;
+    transition-delay: opacity 0.2s !important;
 }
 
 .addButton>p.addScene:hover,
 .addButton>p.addSection:hover{
-    background: #555
+    background: #ccc;
+    color: black !important;
 }
 
 .addButton:hover{
@@ -100,28 +136,13 @@ p.addSection{
     opacity: 0.9;
     height: 20px !important;
     width: 110px !important;
-    border-radius: 8px !important;
+    border-radius: 30px !important;
 
-    transform: translate(-90%, -110%);
+    transform: translate(-50%, -90%);
 
 
     transition: height 0.1s, width 0.1s !important;
 
-}
-
-.addButton:hover::before{
-
-    position: absolute;
-
-    width: inherit;
-    height: inherit;
-    left: inherit;
-    top: inherit;
-
-    content: "aa";
-
-    box-sizing: content-box !important;
-    border: 10px solid green !important;
 }
 
 .showAddButton .addButton{
@@ -169,11 +190,12 @@ function insertAddButton(element){
     if (!classes.includes("scene") && !classes.includes("section")){
         mylog ("off to find enclosing card!")
         element = findEnclosingCardElementFor(element)
-        if(!element){return}
+        if(!element || element.classList.contains("faux")){return}
         classes = [...element.classList]
     }
 
     let sizes = element.getBoundingClientRect()
+    let adjustForNotePanel = flexiContainer.getBoundingClientRect().left
     if(element.classList.contains("sceneheading") && !indexCardMode){
         sizes = element.closest(".scene").getBoundingClientRect()
     }
@@ -196,7 +218,7 @@ function insertAddButton(element){
         addButton.id = "addButton"
         addButton.classList.add("addButton")
         addButton.style.position = "absolute"
-        addButton.style.left = sizes.width + sizes.left + "px"
+        addButton.style.left = (sizes.width/2 + sizes.left - adjustForNotePanel) + "px"
         addButton.style.top = "calc(" + adjustedTop + "px + var(--indexCardHeight))"
         addButton.dataset.elementCount = element.id
 
@@ -204,9 +226,12 @@ function insertAddButton(element){
         addButton.style.top = "calc(" + adjustedTop + "px + (20px * var(--fontSizeFactor)))"
     }
     if (classes.includes("section") && (classes.includes("level1"))){
-        addButton.style.top = "calc(" + adjustedTop + "px + 20px + (18px * var(--fontSizeFactor)))"
-        addButton.style.left = sizes.width * 0.8 + sizes.left + "px"
+        // addButton.style.top = "calc(" + adjustedTop + "px + 20px + (18px * var(--fontSizeFactor)))"
+        addButton.style.top = "calc(" + adjustedTop + "px + 0px + (18px * var(--fontSizeFactor)))"
+        // addButton.style.left = (sizes.width * 0.8 + sizes.left - adjustForNotePanel) + "px"
     }
+
+    
 
 
     if(!indexCardMode){
@@ -224,9 +249,10 @@ function insertAddButton(element){
 
 function findEnclosingCardElementFor(element){
 
+    if(!element)return false
     mylog()
 
-    element = element.closest(".scene")||element.closest(".section")
+    element = element.closest(".scene, .section")
 
     return element || false
 }
@@ -236,8 +262,8 @@ function removeAddButton(){
     mylog()
 
     let elements = $$(".addButton")
-    for (let oneElement of elements){
-        oneElement.remove()
+    for (let element of elements){
+        element.remove()
     }
 
 }
@@ -270,8 +296,12 @@ function addElement(theClickedThing, whatToAdd){
             outlineElementNumber ++
         }
         
-        position = outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1
+        mylog(outlineElementNumber)
+        try{position = (outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1)}
+        catch{position = 0}
+
     }
+
         
     if(!whatToAdd){
         mylog("Got no whatToAdd. But theClickedThing.id == " + theClickedThing.id)
@@ -286,8 +316,9 @@ function addElement(theClickedThing, whatToAdd){
         mylog("position is" + position)
 
         if(outline[outlineElementNumber].typeAsString == "Section"){
-            while(outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){outlineElementNumber ++}
-            position = outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1
+            //while(outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){outlineElementNumber ++}
+            //position = outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1
+            position = outline[outlineElementNumber + 1]?.sceneStart
             
             //Hack to avoid adressing index outside of screenplay length:
             if(outlineElementNumber = outline.length)position -= 1
@@ -324,6 +355,96 @@ function addElement(theClickedThing, whatToAdd){
     // newlyCreatedElement = $("[data-elementCount = '" + (outlineElementNumber + 1) + "']")
 
     removeAddButton()
+}
+
+function addPromoteButtons(element){
+
+    if(["promoteButton", "demoteButton"].includes(element.id)) return
+    
+    sectionToChange = element.closest(".scene, .section")
+    if (!sectionToChange?.classList.contains("section") || sectionToChange?.classList.contains("level1")) {
+        removePromoteButtons()   
+        return
+    }
+
+    if($(".promoteButtons")){removePromoteButtons()}
+
+    let boxPos = sectionToChange.getBoundingClientRect()
+    let scrollPos = flexiContainer.scrollTop
+
+    if(!sectionToChange.classList.contains("level2")){
+
+        let demoteButton = document.createElement("div")
+            demoteButton.id = "promoteButton"
+            demoteButton.classList.add("promoteButtons")
+            demoteButton.style.position = "absolute"
+            demoteButton.style.left = boxPos.left - 20 + "px"
+            demoteButton.style.top = boxPos.top + scrollPos + "px"
+            demoteButton.style.opacity = "0.9"
+            demoteButton.innerHTML = "◀"
+
+            flexiContainer.appendChild(demoteButton)
+            demoteButton.addEventListener("click", function(){demoteSection(sectionToChange)})
+    }
+
+    if(!sectionToChange.classList.contains("level5")){
+
+    let promoteButton = document.createElement("div")
+        promoteButton.id = "demoteButton"
+        promoteButton.classList.add("promoteButtons")
+        promoteButton.style.position = "absolute"
+        promoteButton.style.left = boxPos.left + boxPos.width + 0 + "px"
+        promoteButton.style.top = boxPos.top + scrollPos + "px"
+        promoteButton.style.opacity = "0.9"
+        promoteButton.innerHTML = "▶"
+
+        flexiContainer.appendChild(promoteButton)
+        promoteButton.addEventListener("click", function(){promoteSection(sectionToChange)})
+    }
+
+}
+
+function removePromoteButtons(){
+
+    $id("promoteButton")?.remove()
+    $id("demoteButton")?.remove()
+
+}
+
+function demoteSection(section){
+
+    startIndex = section.dataset.line
+    if(!startIndex)return
+
+    disableUpdating()
+
+    removePromoteButtons()
+    Beat.call(`
+        Beat.replaceRange(${startIndex}, 1, "")
+    `)
+
+    enableUpdating()
+    weAreChangingColors = true
+    startSmallUpdate()
+
+}
+
+function promoteSection(section){
+
+    startIndex = section.dataset.line
+    if(!startIndex)return
+
+    disableUpdating()
+
+    removePromoteButtons()
+    Beat.call(`
+        Beat.addString("#", ${startIndex})
+    `)
+
+    enableUpdating()
+    weAreChangingColors = true
+    startSmallUpdate()
+
 }
 
 

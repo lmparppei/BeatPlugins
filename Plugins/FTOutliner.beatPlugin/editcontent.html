@@ -210,6 +210,22 @@ function editContent(ev) {
         //but turning it off AT LEAST means scrolled page will have editbox appear in wrong place
         //flexiContainer.classList.remove("positionRelative") //why?
 
+        //this sends us to the new synopsisEditor!
+        //NOTE: the code for synopsis editing still lingering below WILL produce an error
+        //because it still expects synopsis to be outline elements. 
+        if(/*indexCardMode && */(theElement.classList.contains("synopsis") || theElement.classList.contains("synopsiscontainer"))){
+
+            if(!indexCardMode){
+
+                alertThis("Editing synopsis in this view is disabled for now", "On the other hand, editing synopsis has ben vastly improved in the Index Card view.\n\nSwitch to the index card view using X and edit the card from there.")
+                return
+            }
+
+            indexCardEditor(theElement)
+            return
+
+        }
+
     mylog("before if dots")
 
     //to prevent editing dots, this is a copy of the same thing in insertaddbutton
@@ -277,9 +293,12 @@ function editContent(ev) {
     let currentOutlineCount = findOutlineCountFor(theElement)
     let theOldText = outline[currentOutlineCount].stringForDisplay
 
-    if ([...theElement.classList].includes("synopsis")){
-            while (theOldText.startsWith("=")){theOldText = theOldText.substring(1)}
-            while (theOldText.startsWith(" ")){theOldText = theOldText.substring(1)}
+    if (theElement.classList.contains("synopsis")){
+        if(theElement.dataset.synopsisNumber){
+            theOldText = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].stringForDisplay
+            //THIS IS A PERFECT TIME TO ALLOW US TO EDIT ENTIRE CARD INSTEAD!!
+        } 
+        theOldText = theOldText.replace(/^=\s*/, "")
     }
         
     if(document.getElementById('editBox')){
@@ -381,15 +400,18 @@ function editContent(ev) {
         //editBox.style.backgroundColor = elementCSS.backgroundColor
             // if ([...theElement.classList].includes("synopsis")){
             if (kindOf == "inSynopse"){
-
-                let parentWithColor = theElement.closest(".scene, .section")
-
-                // parentWithColor.classList.add("noHover")
-                // parentWithColor.firstChild.classList.add("noHover")
-                // theElement.classList.add("noHover")
+                
                 theElement.classList.remove("isSelected")
+                let col = elementCSS.backgroundColor
 
-                let col = window.getComputedStyle(parentWithColor).backgroundColor
+                mylog("col is " + col)
+                
+                if(!col || col == "rgba(0, 0, 0, 0)"){
+
+                    let parentWithColor = theElement.closest(".scene, .section")
+
+                    col = window.getComputedStyle(parentWithColor).backgroundColor
+
                     if (parentWithColor.classList.contains("section")){
                         col = window.getComputedStyle(parentWithColor).borderLeftColor
                     }
@@ -397,13 +419,14 @@ function editContent(ev) {
                         || parentWithColor.classList.contains("special")){
                         col = "var(--pageBackground)"
                         let bkgImage = window.getComputedStyle(parentWithColor).backgroundImage
-                        // editBox.style.setProperty("backgroundImage", bkgImage)
-                        editBox.style.backgroundImage == bkgImage
+                            editBox.style.backgroundImage == bkgImage
                     }
                     mylog("setting EDITBOX to color: " + col)
 
-                //hack to make transparent if no own color now that we removed darkening cover
-                if (!outline[theElement.id].color) col = "transparent"
+                    //hack to make transparent if no own color now that we removed darkening cover
+                    // if (!outline[theElement.id.replace(/:.*/, "")].synopsis[theElement.dataset.synopsisNumber].color) col = "transparent"
+                    
+                }
 
                 editBox.style.setProperty("background", col)
 
@@ -420,7 +443,7 @@ function editContent(ev) {
             }
             if (kindOf == "inSynopse"){
                 let $rgb = makeRGB(editBox.style.backgroundColor)
-                if (editBox.style.backgroundColor == "transparent"){
+                if (!$rgb || editBox.style.backgroundColor == "transparent"){
                     $rgb = makeRGB(window.getComputedStyle(theElement.closest(".synopsiscontainer")).backgroundColor)
                     if ($rgb == "rgba(0, 0, 0, 0)") $rgb = window.getComputedStyle(theElement.closest(".scene, .section"))?.backgroundColor
                 }
@@ -476,7 +499,7 @@ function exitEdit(theElement, changesWereConfirmed) {
     
     if(document.getElementById("editBox")){
 
-        let newContent = JSON.stringify(document.getElementById("editBox").innerText)
+        let newContent = JSON.stringify(document.getElementById("editBox").innerText) //freezes the value
         newContent = newContent.substr(1, newContent.length-2) //strips quotation marks
         
     
@@ -506,15 +529,29 @@ function exitEdit(theElement, changesWereConfirmed) {
 
             weAreChangingColors = true //forces update of display even if non-realtime (and with zero delay)
             currentOutlineCount = findOutlineCountFor(theElement)
-            
-            let shownLine = outline[currentOutlineCount].stringForDisplay
-            let line = outline[currentOutlineCount].line.string
-            let startPosition = outline[currentOutlineCount].line.position
-            let length = outline[currentOutlineCount].line.range.length
-            
-            //mylog(newContent)
 
-            // alertThis(shownLine + "\n\n" + line, newContent)
+            let shownLine
+            let line
+            let startPosition
+            let length
+
+            if(theElement.classList.contains("synopsis") && outline[currentOutlineCount].synopsis){
+
+                //Second place to make better synopsis editing!
+
+                shownLine = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].stringForDisplay
+                line = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].string
+                startPosition = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].position
+                length = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].range.length
+
+            }else{
+
+                shownLine = outline[currentOutlineCount].stringForDisplay.replace(/^#*\s*/, "")
+                line = outline[currentOutlineCount].line.string
+                startPosition = outline[currentOutlineCount].line.position
+                length = outline[currentOutlineCount].line.range.length
+            
+            }
             
             let resultingLine = line.replace(shownLine, newContent)
             if (shownLine == ""){
@@ -523,7 +560,7 @@ function exitEdit(theElement, changesWereConfirmed) {
 
             // alertThis("shownLine: " + shownLine, "line: " + line + "\n" + "line.replace(shownLine, newContent) : " + resultingLine)
 
-            if (outline[currentOutlineCount].typeAsString == "Heading" && !resultingLine.startsWith(".") && !resultingLine.startsWith("INT") && !resultingLine.startsWith("EXT")){
+            if (theElement.classList.contains("heading") && !resultingLine.startsWith(".") && !resultingLine.startsWith("INT") && !resultingLine.startsWith("EXT")){
                 resultingLine = "." + resultingLine
             }
 
@@ -665,13 +702,13 @@ function findOutlineCountFor(theElement){
     mylog("findOutlineCount" + theElement.classList)
 
     let elementWithOutlineCount = theElement
-    let currentOutlineCount = elementWithOutlineCount.id
+    let currentOutlineCount = elementWithOutlineCount.id.replace(/:.*/, "")
 
     mylog("half way through, we have this: " + currentOutlineCount)
 
     if (!currentOutlineCount) {
         elementWithOutlineCount = elementWithOutlineCount.parentNode        
-        currentOutlineCount = elementWithOutlineCount.id
+        currentOutlineCount = elementWithOutlineCount.id.replace(/:.*/, "")
         // Beat.call("Beat.alert('"+elementWithOutlineCount.classList + "', '" + currentOutlineCount +"')")
     }
 

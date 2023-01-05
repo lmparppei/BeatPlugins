@@ -12,6 +12,12 @@
     transition: all 0.2s !important;
 }
 
+.level1.beingDragged{
+
+    transform-origin: top center;
+
+}
+
 .indexcards .synopsis.beingDragged{
     opacity: 0.3 !important;
     transform: scale(1) !important;
@@ -35,6 +41,8 @@
     transition: all 0.2s !important; 
 
     z-index: 9999 !important;
+
+    /* outline: 300px solid rgba(120,255,0,0.4) */
 }
 
 #dropDiv::after{
@@ -45,6 +53,15 @@
     display: block;
     position: absolute;
     bottom: -20px
+
+}
+
+#dropDiv.actDrop::after{
+
+    height: 80vh;
+    width: 60px;
+    top: 0;
+    left: -30px;
 
 }
 
@@ -82,6 +99,15 @@
     pointer-events: all !important;
 }
 
+#dropDiv.actDrop{
+
+    top: -10px;
+    margin-right: 16px;
+    width: 0px !important;
+    height: 80% !important;
+
+}
+
 #dropDiv::before{
 
     position: absolute;
@@ -92,6 +118,13 @@
     border-radius: 50%;
     left: -7px;
     top: -4px;
+}
+
+#dropDiv.actDrop::before{
+
+    left: -4px;
+    top: -7px;
+
 }
 
 #dropDiv.synopsisDrag::before{
@@ -185,44 +218,55 @@ function onDragStart(e) {
     mylog("onDragStart: " + e.target.classList)
 
     //don't drag scene dots in index card mode for sections
-    if([...e.target.classList].includes('scene') 
-        && indexCardMode
-        && ![...e.target.parentNode.classList].includes('isExpanded')){
-            Beat.call("Beat.alert('Not allowed', 'Moving scene dots around in this view would be quite insecure and finicky. So no.')")
-            return
-        }
+    if(indexCardMode && e.target.classList.contains('scene') && ![...e.target.parentNode.classList].includes('isExpanded')){
+        Beat.call("Beat.alert('Not allowed', 'Moving scene dots around in this view would be quite insecure and finicky. So no.')")
+        return
+    }
 
-    //avoid dragging others than the ones you do actually drag
-    if(![...e.target.classList].includes('isSelected')){
+    //if dragging just one, avoid dragging others than the one you actually try to drag
+    if(!e.target.classList.contains('isSelected')){
         deselectAllElements()
         e.target.classList.add('isSelected')
     } 
 
-    //set first and last scene of the bunch
+    //set first and last scene of the bunch //dec 2022 WHAT FOR?
         let selectedScenes = document.querySelectorAll('.isSelected')
-        let firstElement = (selectedScenes.length > 0) ? Number(selectedScenes[0].id) : Number(e.target.id)
-        let lastElement = (selectedScenes.length > 0) ? Number(selectedScenes[selectedScenes.length-1].id) : Number(e.target.id)
+        // let firstElement = (selectedScenes.length > 0) ? Number(selectedScenes[0].id) : Number(e.target.id)
+        // let lastElement = (selectedScenes.length > 0) ? Number(selectedScenes[selectedScenes.length-1].id) : Number(e.target.id)
+        let firstElement = Number(selectedScenes[0].id)
+        let lastElement = Number(selectedScenes[selectedScenes.length-1].id)
+        if (selectedScenes[0].classList.contains("synopsis")){
+            firstElement = Number(selectedScenes[0].id.replace(/_.*/, "").replace(/^s/, ""))
+            lastElement = Number(selectedScenes[selectedScenes.length-1].id.replace(/_.*/, "").replace(/^s/, ""))
+        }
 
     //now: some logic to stop omitted scenes from moving
-        if(outline[firstElement].omitted == 1 || outline[lastElement].omitted == 1){
+        if((outline[firstElement].omitted == 1 || outline[lastElement].omitted == 1)
+            ||
+            (selectedScenes[0].classList.contains("synopsis") && outline[firstElement].synopsis &&
+                (outline[firstElement].synopsis[selectedScenes[0].dataset.synopsisNumber]?.string.includes("/*") || outline[firstElement].synopsis[selectedScenes[0].dataset.synopsisNumber]?.string.includes("*/") 
+                ||outline[firstElement].synopsis[selectedScenes[0].dataset.synopsisNumber]?.omitted)
+                )
+            ){
             e.stopPropagation()
             e.preventDefault()
             deselectAllElements ()
             onDragEnd(e)
-            Beat.call("Beat.alert('Please unhide scenes first', 'You are trying to move a block of scenes where the first or last scenes are omitted (hidden).\\n\\nDue to how Fountain handles omission marks this might be open a giant can of worms, so you need to unhide them to move them around.\\n\\nFun fact: Hidden scenes WITHIN a block is fine, as long as the first or last scenes are not.')")
+            Beat.call("Beat.alert('Lines need to be unhidden before moving', 'You are trying to move a block where the first or last lines or parts thereof are marked as hidden.\\n\\nDue to how Fountain handles omission marks this might well open a giant can of worms, so you need to unhide them to move them around.')")//\\n\\nFun fact: Hidden stuff WITHIN a block is fine, as long as the first or last scenes or lines are not.')")
             return
         }
 
     //Next up: check if we're dragging sections and adjust the selection!
     sectionLevelDrag = false
-    if (outline[firstElement].typeAsString == "Section"){
+    if (selectedScenes[0].classList.contains("section")){
         //if only one is selected:
         if (firstElement == lastElement){
+
             $id(firstElement).classList.add('isSelected')
             sectionLevelDrag = true
             let thisSectionsDepth = [...$id(firstElement).classList].join(" ")
             thisSectionsDepth = (thisSectionsDepth.match(/level(\d)/))[1]
-            // mylog(thisSectionsDepth)
+
             while (outline[lastElement + 1] && 
                 !(outline[lastElement + 1].typeAsString == "Section" && 
                 [...$id(lastElement + 1).classList].join(" ").match(/level(\d)/)[1] <= thisSectionsDepth)){
@@ -260,9 +304,11 @@ function onDragStart(e) {
 
     mylog("past checking if sectionDrag")
               
-        if (firstElement != lastElement){
+        // if (firstElement != lastElement){
+        if (selectedScenes.length > 1){
 
-            if (outline[firstElement].typeAsString == "Synopse"){
+            // if (outline[firstElement].typeAsString == "Synopse"){
+            if (selectedScenes[0].classList.contains("synopsis")){
                     e.stopPropagation()
                     e.preventDefault()
                     deselectAllElements()
@@ -440,7 +486,7 @@ function closeDropZone(timer){
     if(!timer || timer == 0){clearTimeout(dropDivCloserTimer)}
 
     dropDivCloserTimer = setTimeout(function() {
-        $id("dropDiv").remove()
+        $id("dropDiv")?.remove()
             //mylog("removal fired and executed")
         }, timer || 0)
     
@@ -506,34 +552,37 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
     mylog ("now: " + draggedOver.classList)
     mylog ("prev: " + previouslyDraggedOverElement?.classList)
 
-    //expand scene dots
-    if (draggedOver.classList.contains("scene")&&
+    //expand scene dots and return
+    if (draggedOver.classList.contains("scene") &&
         !draggedOver.closest(".section")?.classList.contains("isExpanded") &&
         indexCardMode){
             draggedOver.closest(".section")?.classList.add("isExpanded")
             return
     }
-
-    let theBehavior
-
-    mylog("past let behavior")
-
-    if (draggedOver.classList.contains("synopsiscontainer")){
-        theBehavior = "synopsiscontainer"
-    }else if (draggedOver.classList.contains("synopsis") 
-                && 
-            !draggedOver.classList.contains("beingDragged")){
-        theBehavior = "synopsis"
-    }else if (draggedOver.classList.contains("dropDiv")) {
-        return
-    }else if (draggedOver.classList.contains("section-heading")
-                &&
+    //expand section and return
+    if (draggedOver.classList.contains("section-heading") &&
              draggedOver.closest(".section").classList.contains("collapsedSection")) {
         draggedOver.closest(".section").classList.remove("collapsedSection")
         return
-    }else if (draggedOver.classList.contains("scene") || draggedOver.classList.contains("sceneheading")){
+    }
+    //when dragging synopsis in non-index mode, to show droppable area
+    if (draggedOver.classList.contains("scene") || draggedOver.classList.contains("sceneheading")){
         draggedOver.closest(".scene").classList.add("temporarilyShowSynopsisContainer")
         return
+    }
+    //if Drop-Div open and hovered, do nothing
+    if (draggedOver.classList.contains("dropDiv")) {
+        return
+    }
+
+    //set behavior
+    let theBehavior
+
+    if (draggedOver.classList.contains("synopsiscontainer")){
+        theBehavior = "synopsiscontainer"
+    }else if (draggedOver.classList.contains("synopsis")
+         && !draggedOver.classList.contains("beingDragged")){
+            theBehavior = "synopsis"
     }else{
         closeDropZone()
         return
@@ -541,25 +590,27 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
 
     if (theBehavior == "synopsiscontainer"){
 
-        mylog("behavior is container")
-
         if(draggedOver.lastChild?.classList.contains("beingDragged")){
             mylog("disallowing drop in container that ends with dragged synopsis")
             return
         }
+        
+        if($id("dropDiv")) $id("dropDiv").remove()
 
         let dropDiv = document.createElement('div')
 
-        dropDiv.id = "dropDiv"
-        dropDiv.classList.add("synopsisDrag")
-        dropDiv.innerHTML = ""
+            dropDiv.id = "dropDiv"
+            dropDiv.classList.add("synopsisDrag")
+            dropDiv.innerHTML = ""
 
-        if($id("dropDiv")){$id("dropDiv").remove()}
-
-            let closestScene = draggedOver.closest(".scene")?.id || 0
-            let closestSection = draggedOver.closest(".section")?.id || 0
-            let closestSceneOrSection = Math.max(closestScene, closestSection)
-            dropDiv.dataset.insertBeforeScene = Number(draggedOver.lastChild?.id) + 1 || closestSceneOrSection + 1
+            let closestSceneOrSection = draggedOver.closest(".scene, .section, .faux") || 0
+                dropDiv.dataset.insertBeforeScene = Number(draggedOver.lastChild?.id) + 1 || closestSceneOrSection.id + 1
+            
+                dropDiv.dataset.dropSynopsisHere = draggedOver.lastChild?.dataset.lineEnd || draggedOver.closest(".scene, .section").dataset.lineEnd
+            
+                mylog("EMPTY container, so setting dropSynopsisHere to " + dropDiv.dataset.dropSynopsisHere)
+                //For now dragging synopsis works like this: 
+                //if there is a dataset.dropSynopsisHere, synopsis will be dropped there. 
 
         closeDropZone()
         draggedOver.appendChild(dropDiv)
@@ -567,42 +618,42 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
         mylog("dropdiv appended as child to container")
     }
 
-    if(theBehavior == "synopsis"){
 
-        mylog("behavior is synopsis")
+    if(theBehavior == "synopsis"){
 
         beforeOrAfter = "afterend"
 
             let bounding = draggedOver.getBoundingClientRect()
             let y = e.clientY
                 if (y - bounding.top < (bounding.bottom - bounding.top)/2) {beforeOrAfter = "beforebegin"}
-
-        mylog("next up checking siblings")
             
             if (beforeOrAfter == "afterend" && draggedOver.nextSibling?.classList.contains("beingDragged")
                 || beforeOrAfter == "beforebegin" && draggedOver.previousSibling?.classList.contains("beingDragged"))
                 {
-                    mylog("---------------HOVERING SELF")
+                    mylog("HOVERING SELF")
                     return
                 }
 
         mylog("now lets create: " + beforeOrAfter)
         
-        let dropDiv = document.createElement('div')
-
-        dropDiv.id = "dropDiv"
-        dropDiv.classList.add("synopsisDrag")
-        dropDiv.innerHTML = ""
-
         if($id("dropDiv")){$id("dropDiv").remove()}
 
+        let dropDiv = document.createElement('div')
+
+            dropDiv.id = "dropDiv"
+            dropDiv.classList.add("synopsisDrag")
+            dropDiv.innerHTML = ""
 
         closeDropZone()
         draggedOver.insertAdjacentElement(beforeOrAfter, dropDiv)
 
         dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1
+        dropDiv.dataset.dropSynopsisHere = draggedOver.dataset.lineEnd
+        mylog("setting dropSynopsisHere to " + dropDiv.dataset.dropSynopsisHere)
         if (beforeOrAfter == "beforebegin"){
             dropDiv.dataset.insertBeforeScene = Number(draggedOver.id)
+            dropDiv.dataset.dropSynopsisHere = draggedOver.dataset.line
+            mylog("setting dropSynopsisHere to " + dropDiv.dataset.dropSynopsisHere)
         }
 
         mylog("dropdiv appended as sibling " + beforeOrAfter + " of a synopsis")
@@ -613,24 +664,17 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
 function onDragOverForSections(e, draggedOver){
 
     mylog ("onDragForSections: " + draggedOver.classList)
+    
+    //on top of already open DropDiv so goodbye
+    if (draggedOver?.classList.contains("dropDiv")) { return }
 
-    // fri 13 -- reallows level1
-    // if (!draggedOver || draggedOver.classList.contains("level1") || draggedOver.classList.contains("flexiContainer")){
+    //making target a section if it isn't already
+    if (!draggedOver?.classList.contains("section")){ draggedOver = draggedOver.closest(".section") }
+
+    //bad target, so goodbye
     if (!draggedOver || draggedOver.classList.contains("flexiContainer")){
         closeDropZone()
         return
-    }
-
-    if (draggedOver.classList.contains("dropDiv")) {
-        return
-    }else if (!draggedOver.classList.contains("section")){
-        draggedOver = draggedOver.closest(".section")
-        // fri 13 -- reallows level1
-        // if(!draggedOver || draggedOver.classList.contains("level1")){
-        if(!draggedOver){
-            closeDropZone()
-            return
-        }
     }
 
     //disallow dragging an #ACT into the #BONEYARD
@@ -644,8 +688,20 @@ function onDragOverForSections(e, draggedOver){
             let bounding = draggedOver.getBoundingClientRect()
             let y = e.clientY
                 if (y - bounding.top < (bounding.bottom - bounding.top)/2) {beforeOrAfter = "beforebegin"}
+
+    //although if dragging act, reconsider after and before (plus make draggedover an act too)
+    let actDrag = false
+        if ($id("ghost").firstChild.classList.contains("level1")){
+            
+            beforeOrAfter = "beforebegin"
+                let x = e.clientX
+                if (x - bounding.left > (bounding.right - bounding.left)/2) beforeOrAfter = "afterend"
+
+            draggedOver = draggedOver.closest(".level1")
+            actDrag = true
+        }
         
-        //don't open dropdiv if dropping next to myself
+    //don't open dropdiv if dropping next to myself
         if (beforeOrAfter == "afterend" && draggedOver.nextSibling?.classList.contains("beingDragged")
         || beforeOrAfter == "beforebegin" && draggedOver.previousSibling?.classList.contains("beingDragged")
         || draggedOver.classList.contains("beingDragged"))
@@ -653,19 +709,20 @@ function onDragOverForSections(e, draggedOver){
             mylog("hovering self so returning")
             return
         }
-    
+
     //DROP DIV CREATION!
         mylog("now lets create the DropDiv: " + beforeOrAfter)
         
+        $id("dropDiv")?.remove()
+        
         let dropDiv = document.createElement('div')
 
-        dropDiv.id = "dropDiv"    
-        dropDiv.innerHTML = ""
-
-        if($id("dropDiv")){$id("dropDiv").remove()}
+            dropDiv.id = "dropDiv"
+            dropDiv.classList.toggle("actDrop", actDrag)    
+            dropDiv.innerHTML = ""
 
         
-    //finding place to insert in outline
+    //find place to insert the dropDiv
         let insertBeforeScene = Number(draggedOver.nextSibling?.id)
 
         if (!insertBeforeScene){
@@ -681,16 +738,12 @@ function onDragOverForSections(e, draggedOver){
             }
 
     //now adjusting everything if draggedOver was level1 (fri 13)
-        if(draggedOver.classList.contains("level1")){
-            
-            // COMMENTED OUT THIS BC IT STOPPED SECTIONS FROM BEING DROPPED AFTER #ACT BEFORE ##SECTION
-            // Look out for any side effects!
-                // if (draggedOver.querySelector(".scene, .section") && !draggedOver.classList.contains("boneyard")){    
-                //     return}
-                // // so below this point only applies to empty acts or boneyard
-            
+    //but only if we are NOT dragging an entire act! (2023-01-05)
+        if(draggedOver.classList.contains("level1") && !$id("ghost").firstChild.classList.contains("level1")){
+                        
             // first correctly store drop index
-            dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1
+            //dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1 //changed 2023-01-04
+            dropDiv.dataset.insertBeforeScene = Number(draggedOver.id)
                 if (draggedOver.classList.contains("boneyard") && draggedOver.querySelector(".scene, .section")){
                     dropDiv.dataset.insertBeforeScene = outline.length + 1
                     //this only works because boneyard must ALWAYS be last act in outline
@@ -699,10 +752,11 @@ function onDragOverForSections(e, draggedOver){
             // then: this nicely positions the insertion point
             if (draggedOver.classList.contains("boneyard") && draggedOver.querySelector(".scene, .section")){
                 draggedOver = draggedOver.lastChild
+                beforeOrAfter = "afterend"
             }else{
                 draggedOver = draggedOver.querySelector(".section-heading")
+                beforeOrAfter = "afterend"
             }
-            beforeOrAfter = "afterend"
 
 
         }
@@ -934,44 +988,37 @@ function onDrop(e){
 
     if(!$id("dropDiv")) return
 
+    console.time("dropped")
+
     //End of gatekeeping
 
     mylog("moveTheScenes(" + e + ")")
     let synopsisDrag = false
-    dropTookPlace = true
+        dropTookPlace = true
     
     let selectedScenes = document.querySelectorAll('.beingDragged')
-
-    if (selectedScenes.length == 1 && selectedScenes[0].classList.contains("synopsis")){
-        synopsisDrag = true
-    }
-    mylog("synopsisDrag is " + synopsisDrag)
-
-    // let sceneText = synopsisDrag ? "SYNOPSIS" : "SCENE"
-
-    // let dropMessage = warningsAreOn ? (sceneText +
-    //     ((selectedScenes.length > 1)? "S" : "") +
-    //     " DROPPED") : ""
-
-    // document.getElementById("dropDiv").innerHTML = dropMessage
+        if (selectedScenes.length == 1 && selectedScenes[0].classList.contains("synopsis")){
+            synopsisDrag = true
+        }
 
     if(!synopsisDrag){
 
-        mylog("inside NOT a synopsisdrag!")
-
         firstScene = selectedScenes[0].id
         lastScene = selectedScenes[selectedScenes.length - 1].id
-            while(outline[Number(lastScene) + 1] && outline[Number(lastScene) + 1].typeAsString == "Synopse"){lastScene++;} //makes sure synopsis is moved with scene
+
         insertBeforeScene = $id("dropDiv").getAttribute("data-insert-before-scene") // written into dropdiv at creation: dataset.beforeScene
     
     }else{
 
-        mylog("inside else for synopsisDrag")
+        if(selectedScenes[0].dataset.synopsisNumber){
+            
+            //new model:
+            firstScene = selectedScenes[0].id
+            lastScene = firstScene
+            rangeStart = selectedScenes[0].dataset.line  //text TO BE moved
+            rangeEnd = selectedScenes[0].dataset.lineEnd //text TO BE moved
 
-        firstScene = selectedScenes[0].id
-        lastScene = firstScene
-        rangeStart = outline[firstScene].sceneStart
-        rangeEnd = rangeStart + outline[firstScene].line.string.length + 1
+        }
 
         insertBeforeScene = $id("dropDiv").getAttribute("data-insert-before-scene")
     }
@@ -979,16 +1026,36 @@ function onDrop(e){
     
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
     weAreChangingColors = true
+    let synopsisMove = $id("dropDiv").dataset.dropSynopsisHere || null
+
+    // alertThis(synopsisMove)
+    // if(synopsisMove)Beat.call("Beat.scrollTo(" + synopsisMove + ")") 
+
+    if(firstScene.includes("_")) firstScene = firstScene.replace(/_.*/, "").replace(/^s/, "")
+    if(lastScene.includes("_")) lastScene = lastScene.replace(/_.*/, "").replace(/^s/, "")
+    if(insertBeforeScene.includes("_")) insertBeforeScene = insertBeforeScene.replace(/_.*/, "").replace(/^s/, "")
     
     //new method of sending data: sending explicit range. Still sending "scenes" as a security measure though, in case used in the plugin code.
-    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + ")")
+    //even newer, since 1.977: sending explicit drop-position for synopsis 
+    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + "," + synopsisMove + ")")
     rangeStart = false
     rangeEnd = false
 }
 
 function ifYesToMove(){ //this is visually-related stuff only and does not alter any actual data 
+    
+    console.timeEnd("dropped")
 
     mylog("Now shrinking the scenes.")
+
+    flexiContainer.classList.add("wait")
+    
+    //Disallow dragging until the outline has updated!
+        let allDraggables = $$("[draggable=true]")
+        for (draggable of allDraggables) {
+            draggable.draggable = false
+            draggable.classList.add("usedToBeDraggable")
+        }
 
     let secondClone = document.createElement("div")
     secondClone.id = "clone"
@@ -1078,7 +1145,9 @@ function makeGhost(e, selectedScenes,icamefrom){
         // clone.classList.remove("isSelected")
 
         if (scene.classList.contains("synopsis") && !scene.style.background){
-            clone.style.background = "white"}
+            clone.style.background = "white"
+            clone.style.color = "black"
+        }
                 
         if (sectionLevelDrag && scene == e.target){ //selects entire sequence if dragging a section head
             ghost.appendChild(clone)
@@ -1092,18 +1161,34 @@ function makeGhost(e, selectedScenes,icamefrom){
     }
 
     mylog("setting range to move")
-    //highlight all text affected in move; also determining the correct movable range
-    rangeStart = outline[selectedScenes[0].id].sceneStart
-    mylog("setting endrange: " + selectedScenes[0].classList + selectedScenes[selectedScenes.length-1].id)
+
+    if (!ghost.firstChild?.classList.contains("synopsis")){ //determine range + highlight for SCENES/SECTIONS
+
+        //highlight all text affected in move; also determining the correct movable range
+        rangeStart = outline[selectedScenes[0].id].sceneStart
         rangeEnd = outline[selectedScenes[selectedScenes.length-1].id].sceneEnd
+
+    }else{ //do the same if SYNOPSIS
         
-        mylog("before fixing synopsis range")
-        // surely, this must have been broken until now?
         // if([...clone.classList].includes("synopsis") && !sectionLevelDrag){
-        if(ghost.firstChild.classList.contains("synopsis")){
+        // if(ghost.firstChild?.classList.contains("synopsis")){
+            
+        if(ghost.firstChild.dataset.synopsisNumber){ //new model
+            mylog("setting synopsis range, new model")
+
+            rangeStart = ghost.firstChild.dataset.line  //this should be renamed position or index...
+            rangeEnd = ghost.firstChild.dataset.lineEnd  
+
+        }else{ //old model
+
+            mylog("setting synopsis range, old model")
+
+            rangeStart = outline[selectedScenes[0].id].sceneStart
             rangeEnd = outline[selectedScenes[selectedScenes.length-1].id].sceneStart + 
-            outline[selectedScenes[selectedScenes.length-1].id].line.string.length + 1
+                outline[selectedScenes[selectedScenes.length-1].id].line.string.length + 1
         }
+
+    }
         mylog("after fixing synopsis range")
         Beat.call("Beat.scrollTo(" + rangeStart + ")") 		
         Beat.call("Beat.setSelectedRange(" + rangeStart + ", " + (rangeEnd - rangeStart) + ")")
