@@ -224,6 +224,10 @@ function hover() {
 			highlightReviewInPanel(element)
 			return
 		}
+	//markers...
+		if(element.classList.contains("marker")){
+			return
+		}
 
 	unhover()
 
@@ -237,10 +241,14 @@ function hover() {
 	currentlyHoveredElement = element // keeps it in mind for ALT-pressing
 	mylog("sending to addbutton...")
 
+		if (altIsBeingPressed){
+			addPromoteButtons(element)
+		}
+
 		try{
 			insertAddButton(element)
 		}catch(err){
-			mylog("CAUGHT an ERROR trying to ADD BUTTON" + err.name + err.message)
+			mylog("CAUGHT an ERROR trying to ADD or PROMOTE BUTTON" + err.name + err.message)
 		}
 	
 }
@@ -406,14 +414,15 @@ function completeRun(location, length){ //Called AT STARTUP and (when non-realti
 	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")
 }
 
-function updateEverything(json, location, length, pagesAsString, absoluteLength, pageBreakPositions) {
-	mylog()
+function updateEverything(json, location, length, pagesAsString, absoluteLength, pageBreakPositions, frontmatter) {
+	mylog(json)
 
 	if(pagesAsString) {pages = pagesAsString} //unique to everything
 	if(pageBreakPositions) {pageBreaks = pageBreakPositions} // same...
 
 	outline = JSON.parse(json)
 	absoluteTextLength = absoluteLength //making it global...
+	frontMatter = frontmatter
 	addSceneEnds()
 
 	if(outline.length < 1){displayEmptyScreenMessage(); return}
@@ -457,12 +466,13 @@ function updateEverything(json, location, length, pagesAsString, absoluteLength,
 	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
 }
 
-function updateOneScene(json, scene, pagesForChangedScene, location, length, absoluteLength, pageBreakForChangedScene){
+function updateOneScene(json, scene, pagesForChangedScene, location, length, absoluteLength, pageBreakForChangedScene, frontmatter){
 	mylog()
 	mylog(json.length + ", location passed is" + location)
 
 	outline = JSON.parse(json)
 	absoluteTextLength = absoluteLength //making it global...
+	frontMatter = frontmatter
 	addSceneEnds()
 	
 	pages[scene] = pagesForChangedScene // Note: scene here now means outline item
@@ -572,7 +582,7 @@ function divMaker(location, fullupdate){
 		currentItem = outline[num]
 
 		//first creating a FAUX ACT if doc does not start with a level 1 section
-			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1)) {
+			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1 || outline[num].sceneStart > frontMatter)) {
 
 				actLengths[currentAct] = 0
 				currentAct ++
@@ -583,14 +593,18 @@ function divMaker(location, fullupdate){
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level1")
 					sectionDiv.classList.add("isExpanded")
-					sectionDiv.dataset.line = currentItem.sceneStart
+					// sectionDiv.dataset.line = currentItem.sceneStart
+					sectionDiv.dataset.line = 0
+					// sectionDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
+					sectionDiv.dataset.lineEnd = Math.max(currentItem.sceneStart - 1, 0)
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = "0"
 
 				let sectionSynConDiv = document.createElement("div")
 					sectionSynConDiv.id = "synopsisFor-1"
 					sectionSynConDiv.classList.add("synopsiscontainer")
-					sectionSynConDiv.dataset.line = currentItem.sceneStart
+					// sectionSynConDiv.dataset.line = currentItem.sceneStart
+					sectionSynConDiv.dataset.line = 0
 					
 					sectionDiv.appendChild(sectionSynConDiv)
 					newFlexi.appendChild(sectionDiv)
@@ -601,6 +615,7 @@ function divMaker(location, fullupdate){
 					
 				}
 		
+		let color
 		switch(currentItem.typeAsString){
 
 			case "Section":
@@ -620,12 +635,7 @@ function divMaker(location, fullupdate){
 					actIndex[currentAct] = currentItem.sceneStart
 					currentAct ++
 
-					// //this did not help to put pagenumber in faux act, unclear why!
-						// if (currentAct == 1 && $(".faux")){				
-						// 	actlengthDiv = document.createElement("div")
-						// 	actlengthDiv.classList.add("showActLength")
-						// 	$(".faux").appendChild(actlengthDiv)
-						// }
+					
 				}
 
 				if(currentItem.sectionDepth > 1)lowerLevelNum ++
@@ -652,15 +662,21 @@ function divMaker(location, fullupdate){
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level" + currentItem.sectionDepth)
 					sectionDiv.dataset.line = currentItem.sceneStart
+					sectionDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = currentAct
 					sectionDiv.draggable = true
 
-					if(currentItem.color){
-						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
-							sectionDiv.style.borderLeftColor = currentItem.color
+					color = currentItem.color
+					if (color.includes("]") || color.includes('[') || color.split(" ").length > 1){
+						color = color.replace(/(\]|\[|\s).*/, "")
+					}
+
+					if(color){
+						if (color.match(/(#[A-F, 0-9]{6})/i)){
+							sectionDiv.style.borderLeftColor = color
 						}else{
-							sectionDiv.classList.add(currentItem.color.toLowerCase())
+							sectionDiv.classList.add(color.toLowerCase())
 						}
 					}
 
@@ -683,11 +699,11 @@ function divMaker(location, fullupdate){
 				let sectionheaderDiv = document.createElement("div")
 					sectionheaderDiv.classList.add("section-heading")
 					sectionheaderDiv.dataset.line = currentItem.sceneStart
-					if(currentItem.color){
-						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
-							sectionheaderDiv.style.backgroundColor = currentItem.color
+					if(color){
+						if (color.match(/(#[A-F, 0-9]{6})/i)){
+							sectionheaderDiv.style.backgroundColor = color
 						}else{
-							sectionheaderDiv.classList.add(currentItem.color.toLowerCase())
+							sectionheaderDiv.classList.add(color.toLowerCase())
 						}
 					}
 
@@ -707,7 +723,7 @@ function divMaker(location, fullupdate){
 					// if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
 					// if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
 					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += "#" + outline.indexOf(currentItem)}
-					sectionheaderDiv.innerHTML += currentItem.stringForDisplay
+					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "")
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
 
@@ -716,14 +732,17 @@ function divMaker(location, fullupdate){
 					sectionSynConDiv.classList.add("synopsiscontainer")
 					sectionSynConDiv.classList.add("noAnimation")
 					sectionSynConDiv.dataset.line = currentItem.sceneStart
-					if(currentItem.color){
-						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
-							sectionSynConDiv.style.backgroundColor = currentItem.color
+					
+					sectionSynConDiv.style.backgroundColor = "#bbb"
+					if(color){
+						if (color.match(/(#[A-F, 0-9]{6})/i)){
+							sectionSynConDiv.style.backgroundColor = color
 						}else{
-							sectionSynConDiv.classList.add(currentItem.color.toLowerCase())
+							sectionSynConDiv.style.backgroundColor = ""
+							sectionSynConDiv.classList.add(color.toLowerCase())
 						}
-					}else{
-						sectionSynConDiv.style.backgroundColor = "#bbb"
+					}else if(currentItem.sectionDepth == 1){
+						sectionSynConDiv.style.backgroundColor = "transparent"
 					}
 
 					if(currentItem.numberOfPages > 0){
@@ -759,6 +778,12 @@ function divMaker(location, fullupdate){
 					sectionDiv.appendChild(actlengthDiv)
 				}
 
+				if(currentItem.synopsis && currentItem.synopsis.length > 0){ //this will put synopsis into place (for sections) for version 1.977 and on
+					for (let synopsisItem of currentItem.synopsis){
+						synopsisMaker(synopsisItem)
+					}
+				}
+
 				break
 
 			case "Heading":
@@ -773,11 +798,6 @@ function divMaker(location, fullupdate){
 					lockedString =  "<a id='padlockIcon' class='padlockIcon' style='transition: none'>" + padlockIcon + "</a>"			 	
 				}
 
-				let color = currentItem.color
-					if (color.includes("]") || color.includes('[') || color.split(" ").length > 1){
-						color = ""
-					}
-
 				let sceneDiv = document.createElement("div")
 					sceneDiv.id = num.toString()
 					sceneDiv.classList.add("scene")
@@ -785,9 +805,16 @@ function divMaker(location, fullupdate){
 						sceneDiv.classList.add("isOmitted")
 					}
 					sceneDiv.dataset.line = currentItem.sceneStart
+					sceneDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
 					sceneDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sceneDiv.dataset.inAct = currentAct
 					sceneDiv.draggable = true
+
+					color = currentItem.color
+					if (color.includes("]") || color.includes('[') || color.split(" ").length > 1){
+						color = color.replace(/(\]|\[|\s).*/, "")
+					}
+
 					if(color){
 						if (color.match(/(#[A-F, 0-9]{6})/i)){
 							sceneDiv.style.backgroundColor = color
@@ -837,11 +864,11 @@ function divMaker(location, fullupdate){
 					sceneSynConDiv.classList.add("synopsiscontainer")
 					sceneSynConDiv.dataset.line = currentItem.sceneStart
 
-					if(currentItem.color){
-						if (currentItem.color.match(/(#[A-F, 0-9]{6})/i)){
-							sceneSynConDiv.style.backgroundColor = currentItem.color
+					if(color){
+						if (color.match(/(#[A-F, 0-9]{6})/i)){
+							sceneSynConDiv.style.backgroundColor = color
 						}else{
-							sceneSynConDiv.classList.add(currentItem.color.toLowerCase())
+							sceneSynConDiv.classList.add(color.toLowerCase())
 						}
 					// }else{
 					// 	sectionSynConDiv.style.backgroundColor = "#bbb"
@@ -896,26 +923,52 @@ function divMaker(location, fullupdate){
 
 				lastSection.appendChild(sceneDiv)
 
+				if(currentItem.synopsis && currentItem.synopsis.length > 0){ //this will put synopsis into place (for scenes) for version 1.977 and on
+					for (let synopsisItem of currentItem.synopsis){
+						synopsisMaker(synopsisItem)
+					}
+				}
+
 				break
 
 			case "Synopse":
+
+				synopsisMaker(currentItem) //this will put synopsis into place for versions pre 1.977
+
+				function synopsisMaker(currentItem){
 
 				let allContainers = newFlexi.querySelectorAll(".synopsiscontainer")
 				let lastContainer = allContainers[allContainers.length - 1]
 
 				let synopsisDiv = document.createElement("div")
 					synopsisDiv.id = num
-					synopsisDiv.innerHTML = currentItem.stringForDisplay
+					let synopsisNumber = false
+						if(outline[num].synopsis){ 
+							synopsisNumber = outline[num].synopsis.indexOf(currentItem)
+							synopsisDiv.dataset.synopsisNumber = synopsisNumber
+							synopsisDiv.id = "s" + num + "_" + (('000'+synopsisNumber).slice(-3)) // synopsisNumber
+						}
+					synopsisDiv.innerHTML = currentItem.stringForDisplay //|| currentItem.string.replace(/^=/, "")
 					synopsisDiv.classList.add("synopsis")
 					synopsisDiv.dataset.sceneNumber = currentItem.sceneNumber //necessary?
-					synopsisDiv.dataset.line = currentItem.sceneStart
+					synopsisDiv.dataset.line = (synopsisNumber !== false) ? outline[num].synopsis[synopsisNumber].position : currentItem.sceneStart
+					synopsisDiv.dataset.lineEnd = (synopsisNumber !== false) ? outline[num].synopsis[synopsisNumber].position + outline[num].synopsis[synopsisNumber].range.length : currentItem.sceneEnd
 					synopsisDiv.draggable = true
-					if(currentItem.color){
-						synopsisDiv.classList.add(currentItem.color.toLowerCase())
+					
+					color = currentItem.color
+					if (color.includes("]") || color.includes('[') || color.split(" ").length > 1){
+						color = color.replace(/(\]|\[|\s).*/, "")
+					}
+					if(color){
+						synopsisDiv.classList.add(color.toLowerCase())
+						synopsisDiv.dataset.color = color.toLowerCase()
+					}
+					if (currentItem.omitted || (synopsisNumber !== false && outline[num].synopsis[synopsisNumber].omitted)){
+						synopsisDiv.classList.add("isOmitted")
 					}
 
 				lastContainer.appendChild(synopsisDiv)
-
+				}
 		} 
 
 		if(currentItem.numberOfPages){alternatePageNumber += Number(currentItem.numberOfPages)}
@@ -1023,6 +1076,20 @@ function reevaluateColorContrast(){
 	}
 
 	mylog("exiting")
+
+}
+
+function blackOrWhite(rgb){
+
+	// if(!rgb.startsWith("rgb"))return null
+
+	let $rgb = rgb.replace("rgb(", "").replace(")", "").split(",")
+		
+	let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
+	let colorOut = (blackOrWhite > 128) ? "black" : "white"
+
+
+	return colorOut
 
 }
 
@@ -1493,6 +1560,7 @@ function saveCurrentState() {
 		greyonly: ($id("flexiContainer").classList.contains("greyonly")),
 		notepanel: ($id("notepanel").classList.contains("expanded")),
 		showSynopsisInScenes: ($id("flexiContainer").classList.contains("showSynopsisInScenes")),
+		showMultipleSceneLines: ($id("flexiContainer").classList.contains("dualSceneLines")),
 
 		documentName: (documentName || false),
 		documentSubName: (documentSubName || false),
@@ -1619,6 +1687,8 @@ function getDefaults(){
 	document.documentElement.setAttribute('data-theme', colorScheme)
 	Beat.log("setting color to " + colorScheme)
 	$id("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
+	
+	$id("flexiContainer").classList.toggle("dualSceneLines", documentSetting.showMultipleSceneLines)
 
 	if(areScenesProportional != 1){
 		document.getElementById("flexiContainer").classList.add("nonProportionalMode")
@@ -1727,9 +1797,8 @@ function __________LISTENING (){}
 function checkWhatKeyGotPressed(someoneJustPressed) {
 	mylog("checkWhatKeyGotPressed(" + someoneJustPressed.key + ")")
 	
-	
-	
-	if (someoneJustPressed.key == "å") {event.preventDefault(); forceRestart()}
+	if (someoneJustPressed.key == "å" && !someoneJustPressed.altKey) {event.preventDefault(); forceRestart()}
+	if (someoneJustPressed.key == "ä" && !someoneJustPressed.altKey) {event.preventDefault(); Beat.call(`Beat.custom.reloadHTML()`)}
 	// if (someoneJustPressed.key == "ä") {event.preventDefault(); 
 	
 	// 	flexiContainer.classList.toggle("cursorTest")
@@ -1804,12 +1873,14 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	if (someoneJustPressed.key == "e") {event.preventDefault(); anArrowWasClicked($(".arrowForIndexCards"), true); return}
 	if (someoneJustPressed.key == "f" && !event.metaKey) {event.preventDefault(); toggleProportional()}
 	
-	if (someoneJustPressed.key == "h") {event.preventDefault(); outdoorMode()}
+	if (someoneJustPressed.key == "h" && !event.ctrlKey) {event.preventDefault(); outdoorMode()}
+	if (someoneJustPressed.key == "h" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("horizontal")}
 	
 	// if (someoneJustPressed.key == "j") {event.preventDefault(); Beat.call("Beat.custom.alertJSON()"); return}
 
 	if (someoneJustPressed.key == "l") {event.preventDefault(); toggleShowSceneLength()}
-	if (someoneJustPressed.key == "m") {event.preventDefault(); toggleDisplayMarkers()}
+	if (someoneJustPressed.key == "m" && !event.ctrlKey) {event.preventDefault(); toggleDisplayMarkers()}
+	if (someoneJustPressed.key == "m" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("unShowMarkerText")}
 	if (someoneJustPressed.key == "n") {event.preventDefault(); toggleDisplayNotes()}
 	if (someoneJustPressed.key == "o") {event.preventDefault(); toggleOneColumnOutline()}
 
@@ -1817,11 +1888,12 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	if (someoneJustPressed.key == "p" && event.metaKey) {event.preventDefault(); togglePrintMode(); return}
 	if (someoneJustPressed.key == "p") {event.preventDefault(); toggleShowPageNumbers()}
 
-	if (someoneJustPressed.key.toLowerCase() == "q") {event.preventDefault(); makeWider(false, true, event.shiftKey)}
+	if (someoneJustPressed.key.toLowerCase() == "q" && !someoneJustPressed.metaKey) {event.preventDefault(); makeWider(false, true, event.shiftKey)}
 	
 	// if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
 	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleDisplayReviews()}
-	if (someoneJustPressed.key == "s" && !event.metaKey) {event.preventDefault(); toggleShowSceneNumbers()}
+	if (someoneJustPressed.key == "s" && someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); toggleMultipleSceneLines()}
+	if (someoneJustPressed.key == "s" && !someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); toggleShowSceneNumbers()}
 	if (someoneJustPressed.key == "t") {event.preventDefault(); toggleTrackingContainer()}
 	
 	if (someoneJustPressed.key == "w" && event.metaKey) {event.preventDefault(); Beat.call("Beat.custom.reallyQuit(true)")}
@@ -1879,6 +1951,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 
 		if(currentlyHoveredElement){
 			insertAddButton(currentlyHoveredElement)
+			addPromoteButtons(currentlyHoveredElement)
 		}
 		mylog("currently hovering: " + currentlyHoveredElement)		
 		
@@ -1893,6 +1966,7 @@ function checkWhatKeyWasReleased(someoneJustReleased){
 		document.getElementById("printButton").innerHTML = printerIcon
 		$("#flexiContainer").classList.remove("showAddButton")
 		if($id("addButton")){removeAddButton()}
+		removePromoteButtons()
 	}	
 }
 
@@ -1903,6 +1977,7 @@ function somethingWasClicked() {
 	mylog("flexiContainer now has...:" + $id("flexiContainer").classList)
 
 	if(event.target.closest(".bottomButton")){mylog("return out of clicked"); return}
+	if($id("synEditBox")) return
 
 	let theClickedThing = event.target
 	let theButton = event.button
@@ -2270,6 +2345,15 @@ function toggleIncludeSynopsis(){
 	//collectCharacters()
 
 	setAllButtons()
+
+}
+
+function toggleMultipleSceneLines(){
+
+	documentSetting.showMultipleSceneLines = !documentSetting.showMultipleSceneLines
+	flexiContainer.classList.toggle("dualSceneLines", documentSetting.showMultipleSceneLines)
+	setAllButtons()
+	saveCurrentState()
 
 }
 
@@ -2968,3 +3052,16 @@ function mylog(text, isError){
 
 </script>
 
+<!-- <style>
+	.scene::after{
+
+position: absolute;
+top: 0;
+left: 0;
+content: attr(data-line) "," attr(data-line-end);
+background-color: red;
+color: white;
+
+
+	}
+</style> -->

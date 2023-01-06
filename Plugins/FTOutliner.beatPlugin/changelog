@@ -1,3 +1,43 @@
+v 1.5 (January 5, 2023)
+=======================
+
+NEW FEATURES AND IMPROVEMENTS:
+
+* BIG CHANGE TO EDITING INDEX CARDS: 
+  - In index card mode, you can now FREELY EDIT ALL OF THE SYNOPSIS on a card -- not just one by one as before. Double click the synopsis area of the index card to enter edit mode -- and all synopses already present on it will turn into one single text where you can add new lines, merge existing ones, or edit what's there. 
+  - When you exit the index card (ESC to discard changes, CMD + ENTER to save them) the contents of the index card will be parsed into individual synopsis again, one for each new line. FToutliner will even do its best to retain the synopsis' positions in the screenplay text, if any is present in the scene/section.
+  - This means that once out of edit mode, synopsis can still be dragged-and-dropped individually between or within cards
+  - This may sound like nothing special, but if you like to use the index card mode for outlining (or if you didn't until now because it was clunky) I'm quite certain you will find this a massive improvement! I do, for sure.
+
+* SECTIONS can now be PROMOTED/DENOTED directly in the index card view. Hold ALT when hovering a section, and left/right pointing arrows will appear. Clicking them will increase or decrease its level (i.e. number of # hashtags).
+  - NOTE that in order to not mess up the structure by mistake, a ##SECTION can not be demoted to a one-hashtag #SECTION, which would turn it into its own column. For now, turning sections into #ACTS (or acts into lower-level sections) will have to be done in the document itself.
+
+* MARKERS can now be named and will display text (in proportional mode only, it won't fit elsewhere). In Beat, enter the marker as usual, then a colon and some description -- like [[marker yellow: Luke meets Yoda]] or [[marker red: not done!]] or [[maker darkgoldenrod: rewrite this scene without the necktie]]. (Any html color name works here, by the way.)
+  - The display of marker names, should you want to display markers without the text, can be toggled with CTRL + m. 
+  - Minor cosmetical fixes to markers in general.
+
+* DRAGGING ENTIRE #ACTS will now provide better visual feedback, with a vertical insertion point between (or before/after) existing acts. As a result, moving an act does not allow you to split existing acts, only to drop them in between, avoiding unpredictable results. Thanks @folkemunne for feedback.
+
+* In the Flexible and Fixed views, scene headings can now span more than one line. In Fixed, scenes will grow to accommodate the entire scene heading as needed, while Flexible will show as much as will fit given the length-based size. (You may argue that this makes the Fixed view more flexible than Flexible. I will pretend I didn't hear that.) Togglable with CTRL+S or via the Show menu.
+
+* NOTES (and markers) used to be invisible if entered BEFORE the first #ACT element. Not any more. They now get their own little mini-column to the left of everything else.
+
+* Finally, FTOutliner now conforms to Beat's new synopsis model. Which hopefully will mean nothing when using FTOutliner per se. Other than that they work again, after some time of not.
+
+
+BUG FIXES:
+
+* Fixed an instance where deleting notes from the wastebin icon could also delete one empty adjacent line too many
+* Fixed a crash when cycling notes with TAB key if document had no review entries. 
+* Fixed positioning of the Add scene/section button, which could previously be pushed off-screen when the note panel was open
+
+* Fixed an error that could occur when moving scenes to the top of the first column if it were not a named act
+* Fixed a benign but annoying error message that could occur when moving the very last scene to somewhere else in the script
+* Fixed a bunch of other errors relating to notes, markers and other stuff if put before the first named act
+* Fixed "All Notes to New Doc" command, so that in the new doc [[ and ]] are stripped out from notes (previously, notes would still be interpreted as notes in the new doc and thus not print -- making the note summary quite useless.)
+
+
+
 v 1.44 (september 24, 2022)
 ======================
 

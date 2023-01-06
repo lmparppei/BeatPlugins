@@ -814,7 +814,11 @@ function showStuffMenu(){
         <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li-->
 
         <hr>
-        
+        <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleMultipleSceneLines()">
+            <input id="buttonForSceneLines" type="checkbox">
+                <div class="switch"></div> 
+                    <label for="buttonForSceneLines">Multiple Scene Lines<span class="shortcut" style="float:right">^L</span></label>
+        </li>
         <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis()">
             <input id="buttonForSynopsis" type="checkbox">
                 <div class="switch"></div> 
@@ -1218,6 +1222,7 @@ function setAllButtons(){
     if($id("buttonForReviews")){$id("buttonForReviews").checked = (reviewsAreDisplayed == true)}
     if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
 
+    if($id("buttonForSceneLines")){$id("buttonForSceneLines").checked = ($id("flexiContainer").classList.contains("dualSceneLines"))}
     if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}
     if($id("buttonForOnlySynopsis")){$id("buttonForOnlySynopsis").checked = (flexiContainer.classList.contains("onlySynopsis"))}
     
