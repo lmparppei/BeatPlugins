@@ -1,3 +1,9 @@
+v 1.51 (January 7, 2023)
+=======================
+
+Hotfix for bug when drag-and-dropping an #ACT at the absolute end of the script to be inserted in the wrong place.
+
+
 v 1.5 (January 5, 2023)
 =======================
 

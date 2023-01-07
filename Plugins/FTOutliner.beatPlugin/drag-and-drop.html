@@ -725,12 +725,22 @@ function onDragOverForSections(e, draggedOver){
     //find place to insert the dropDiv
         let insertBeforeScene = Number(draggedOver.nextSibling?.id)
 
+        console.log(insertBeforeScene)
+
         if (!insertBeforeScene){
         insertBeforeScene = Number(draggedOver.id) + 1
-            while(outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString != "Section"){
-                insertBeforeScene ++
+            if(!actDrag){
+                while(outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString != "Section"){
+                    insertBeforeScene ++
+                }
+            }else{
+                while(outline[insertBeforeScene] && outline[insertBeforeScene].sectionDepth != 1){
+                    insertBeforeScene ++
+                }
             }
         }
+
+        console.log("-->", insertBeforeScene)
 
         dropDiv.dataset.insertBeforeScene = insertBeforeScene
             if (beforeOrAfter == "beforebegin"){
