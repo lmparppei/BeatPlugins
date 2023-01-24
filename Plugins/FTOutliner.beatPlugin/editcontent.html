@@ -11,16 +11,9 @@
     top: 0px;
     left: 0px;
     width: 100%;
-    height: inherit;
+    /* height: inherit; */
     /* background-color:inherit; */
     color: black;
-
-    /* font-size: inherit;
-    font-size: inherit;
-    font-style: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    text-align: inherit; */
 
     vertical-align: text-top;
 
@@ -31,18 +24,10 @@
 
     padding-left: 3px;
 
-    /* caret-color: #004394 !important; 
-    color: #004394 !important */
-
     z-index: 9999;
 
     overflow: auto;
-    white-space: pre-wrap  ; /*was normal*/
 
-}
-
-#flexiContainer:has(.synopsis.isBeingEdited) .synopsis:not(:hover){
-    /* opacity: 0.4; */
 }
 
 .section:has(.synopsis.isBeingEdited):hover {
@@ -57,14 +42,6 @@ html[data-outdoors='1'] .editBox:not(.inSection) {
     color: black !important;
 
 }
-
-
-/* html[data-outdoors='1'] .editBox.inSynopse {
-
-    color: black;
-    border: 1px red solid
-
-} */
 
 .editBox::-webkit-scrollbar{
     display: none;
@@ -81,26 +58,19 @@ html[data-outdoors='1'] .editBox:not(.inSection) {
 
 .inSection.editBox {
 
-    white-space: nowrap;
+    /* white-space: nowrap; */
     background: black !important;
 
     text-transform: uppercase;
-    border-radius: 4px 0 0 0 !important;
+    /* border-radius: 4px 0 0 0 !important; */
 
 }
 
-/* .sectionCards .inSection.editBox {
-
-text-transform: uppercase;
-border-radius: 4px 4px 0 0 !important;
-
-} */
-
 .inScene.editBox{
 
-    white-space: nowrap;
+    /* white-space: nowrap; */
 
-    height: calc(14px * var(--fontSizeFactor)) !important;
+    /* height: calc(14px * var(--fontSizeFactor)) !important; */
     /* margin-top: 2px !important; */
     text-transform: uppercase;
     background: black !important;
@@ -145,6 +115,15 @@ border-radius: 4px 4px 0 0 !important;
     text-transform: uppercase;
     background: var(--pageBackground) !important;
     color: white !important;
+
+}
+
+.inNote.editBox{
+
+    color: lime;
+    z-index: 9999999;
+    border: 10px solid gold;
+
 
 }
 
@@ -198,9 +177,12 @@ function editContent(ev) {
     if(ev){ev.stopImmediatePropagation()}
 
     if($(".isBeingEdited"))$(".isBeingEdited").classList.remove("isBeingEdited")
-
     
     theElement = ev.target
+        let sceneSize = false
+            if (theElement.closest(".scene")) sceneSize = window.getComputedStyle(theElement.closest(".scene")) || false
+        let sceneHeight = sceneSize?.height || false
+
     let editBoxDelay = 0
     
         initialDraggability = !(!theElement.draggable) //will freeze the value
@@ -213,11 +195,11 @@ function editContent(ev) {
         //this sends us to the new synopsisEditor!
         //NOTE: the code for synopsis editing still lingering below WILL produce an error
         //because it still expects synopsis to be outline elements. 
-        if(/*indexCardMode && */(theElement.classList.contains("synopsis") || theElement.classList.contains("synopsiscontainer"))){
+        if((theElement.classList.contains("synopsis") || theElement.classList.contains("synopsiscontainer"))){
 
-            if(!indexCardMode){
+            if(!indexCardMode && areScenesProportional != 0){
 
-                alertThis("Editing synopsis in this view is disabled for now", "On the other hand, editing synopsis has ben vastly improved in the Index Card view.\n\nSwitch to the index card view using X and edit the card from there.")
+                alertThis("Editing synopsis in this view is disabled", "By its nature, Flexible view hides content all the time which makes it unsuitable for inline editing.\n\nOn the other hand, in the FIXED and INDEX CARD views, editing synopsis is easier than ever.\n\nSwitch to one of those views by hitting F or X and edit the card from there.")
                 return
             }
 
@@ -248,23 +230,7 @@ function editContent(ev) {
         return
     }
 
-    if([...theElement.classList].includes("synopsiscontainer")){
-
-        //adding new synopsis if clickling empty area of indexcard
-
-        mylog("We clicked an empty container with: " + theElement.classList)
-        theClickedThing = theElement
-        
-        if ($id("flexiContainer").classList.contains("indexcards")
-            ||
-            $id("flexiContainer").classList.contains("showSynopsisInScenes")){
-                addElement(theClickedThing, "synopsis")
-            }
-        
-        return 
-    }
-
-    if (![...theElement.classList].includes("section-heading") && ![...theElement.classList].includes("sceneheading") && ![...theElement.classList].includes("synopsis")){
+    if (![...theElement.classList].includes("section-heading") && ![...theElement.classList].includes("sceneheading") && ![...theElement.classList].includes("notepanelNote")){ //experimental 2023-01-08
         return
     }
 
@@ -291,14 +257,11 @@ function editContent(ev) {
     theElement.classList.add("isBeingEdited")
     
     let currentOutlineCount = findOutlineCountFor(theElement)
-    let theOldText = outline[currentOutlineCount].stringForDisplay
+    let theOldText = outline[currentOutlineCount]?.stringForDisplay
 
-    if (theElement.classList.contains("synopsis")){
-        if(theElement.dataset.synopsisNumber){
-            theOldText = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].stringForDisplay
-            //THIS IS A PERFECT TIME TO ALLOW US TO EDIT ENTIRE CARD INSTEAD!!
-        } 
-        theOldText = theOldText.replace(/^=\s*/, "")
+    if(theElement.classList.contains("notepanelNote")){
+
+        theOldText = theElement.innerText
     }
         
     if(document.getElementById('editBox')){
@@ -321,25 +284,6 @@ function editContent(ev) {
     
     let a = [...theElement.classList]
         let kindOf = ""
-            if (a.includes("synopsis")){
-                kindOf = "inSynopse"
-                deselectAllElements()
-                theElement.classList.remove("isSelected")
-                    // theElement.classList.add("noHover")
-                    // theElement.parentNode.classList.add("noHover")
-                    // theElement.closest(".scene, .section")?.classList.add("noHover")
-                    // theElement.closest(".scene, .section")?.querySelector(".section-heading")?.classList.add("noHover")
-                let redraw = theElement.getBoundingClientRect()
-
-                theElement.closest(".synopsiscontainer").scrollTop = 0
-
-                //added 220704
-                if(!theElement.closest(".level1")?.classList.contains("wider") && $$(".level1").length > 2){
-			    setTimeout(makeWider(theElement),200)
-                editBoxDelay = 450
-	            }
-
-            }
             if (a.includes("sceneheading")){
                 kindOf = "inScene"
                 theElement.classList.remove("isSelected")
@@ -350,7 +294,12 @@ function editContent(ev) {
                 // theElement.parentNode.classList.add("isSelected")
                 theElement.parentNode.classList.remove("isSelected")
             }
-            if ([...theElement.parentNode.classList].includes("level1")){kindOf = "inAct"}
+            if ([...theElement.parentNode.classList].includes("level1")){
+                kindOf = "inAct"
+            }
+            if (theElement./*parentNode.*/classList.contains("notepanelNote")){
+                kindOf = "inNote"
+            }
         
     mylog("the result is" + kindOf)
 
@@ -368,88 +317,42 @@ function editContent(ev) {
             editBox.classList.add("editBox")
             editBox.classList.add(kindOf)
 
-        //copy sizes etc from 
+        //copy sizes etc from original
 
         let sizes = theElement.getBoundingClientRect()
+        
         let leftIndent = 0
-            if($id("notepanel")?.classList?.contains("expanded")){
-                leftIndent = flexiContainer.getBoundingClientRect().width / 69 * 31
-                //because css of flexiContainer is 69%
-                //hard-coded, so expect bugs in future if I change the design...
+            if($id("notepanel")?.classList?.contains("expanded") && kindOf != "inNote"){
+                leftIndent = $id("notepanel").getBoundingClientRect().width
             }
         let scrolledAmount = $id("flexiContainer").scrollTop
+        if(areScenesProportional == 1 && sceneHeight) theElement.closest(".scene").style.minHeight = sceneHeight
         
         $id("flexiContainer").appendChild(editBox)
+
             editBox.style.left = (sizes.left - leftIndent) + "px"
             editBox.style.top = sizes.top + scrolledAmount + "px"
             editBox.style.width = sizes.width + "px"
+            // editBox.style.height = sizes.height + "px"
+            editBox.style.height = "auto" //testing auto height for all editing!
+                if($(".dualSceneLines") && kindOf == "inScene") editBox.style.height = "auto"
+                if($(".dualSectionLines") && kindOf == "inSection") editBox.style.height = "auto"
 
-            if(kindOf != "inSynopse") {editBox.style.height = sizes.height + "px"}
-            
-            if(kindOf == "inSynopse") {
-                editBox.style.height = "auto"
-                if(indexCardMode != 0){
-                    editBox.style.top = (sizes.top + scrolledAmount + 1) + "px"
-                    editBox.style.left = (sizes.left + 1) + "px"
-                }
-            }
+            editBox.style.whiteSpace = "normal"
+
+            editBox.style.zIndex = 10000
+            editBox.style.display = "block"
+            editBox.style.opacity = "1"
         
         mylog("======================" + theElement.closest(".scene, .section"))
         let elementCSS = window.getComputedStyle(theElement)
-
-        //editBox.style.backgroundColor = elementCSS.backgroundColor
-            // if ([...theElement.classList].includes("synopsis")){
-            if (kindOf == "inSynopse"){
-                
-                theElement.classList.remove("isSelected")
-                let col = elementCSS.backgroundColor
-
-                mylog("col is " + col)
-                
-                if(!col || col == "rgba(0, 0, 0, 0)"){
-
-                    let parentWithColor = theElement.closest(".scene, .section")
-
-                    col = window.getComputedStyle(parentWithColor).backgroundColor
-
-                    if (parentWithColor.classList.contains("section")){
-                        col = window.getComputedStyle(parentWithColor).borderLeftColor
-                    }
-                    if (parentWithColor.classList.contains("level1")
-                        || parentWithColor.classList.contains("special")){
-                        col = "var(--pageBackground)"
-                        let bkgImage = window.getComputedStyle(parentWithColor).backgroundImage
-                            editBox.style.backgroundImage == bkgImage
-                    }
-                    mylog("setting EDITBOX to color: " + col)
-
-                    //hack to make transparent if no own color now that we removed darkening cover
-                    // if (!outline[theElement.id.replace(/:.*/, "")].synopsis[theElement.dataset.synopsisNumber].color) col = "transparent"
-                    
-                }
-
-                editBox.style.setProperty("background", col)
-
-                //parentWithColor.classList.remove("noHover")
-                mylog(window.getComputedStyle(editBox).backgroundColor + editBox.style.backgroundColor + editBox.classList)
-            }
 
         editBox.style.color = elementCSS.color
             if ([...theElement.classList].includes("sceneheading")){
                 editBox.style.color = "black"
             }
-            if ([...theElement.classList].includes("section-heading")){
+            if (theElement.classList.contains("section-heading") && !flexiContainer.classList.contains("allowLowerCaseSections")){
                 editBox.style.textTransform = "uppercase";
-            }
-            if (kindOf == "inSynopse"){
-                let $rgb = makeRGB(editBox.style.backgroundColor)
-                if (!$rgb || editBox.style.backgroundColor == "transparent"){
-                    $rgb = makeRGB(window.getComputedStyle(theElement.closest(".synopsiscontainer")).backgroundColor)
-                    if ($rgb == "rgba(0, 0, 0, 0)") $rgb = window.getComputedStyle(theElement.closest(".scene, .section"))?.backgroundColor
-                }
-                        $rgb = $rgb.replace("rgb(", "").replace(")", "").split(",")
-                    let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
-                    editBox.style.color = (blackOrWhite > 128) ? "black" : "white"
             }
 
         editBox.style.fontSize =  elementCSS.fontSize
@@ -458,7 +361,15 @@ function editContent(ev) {
         editBox.style.lineHeight =elementCSS.lineHeight
         editBox.style.textAlign = elementCSS.textAlign 
         editBox.style.padding = elementCSS.padding
-        editBox.style.borderRadius = elementCSS.borderRadius
+        editBox.style.paddingBottom = "0"
+        editBox.style.border = elementCSS.border
+        editBox.style.margin = elementCSS.margin
+        if (indexCardMode) {
+            editBox.style.borderRadius = elementCSS.borderRadius
+        }else{
+            editBox.style.borderRadius = window.getComputedStyle(theElement.closest(".scene, .section")).borderRadius
+        }
+        editBox.style.borderBottom = elementCSS.borderBottom
 
         mylog("editbox appended")
 
@@ -468,9 +379,19 @@ function editContent(ev) {
             sel.removeAllRanges();
             sel.addRange(range);
 
+        editBoxResizeObserver = new ResizeObserver(entries => {
+            for (entry of entries){
+                //let xtra = theElement.classList.contains("section-heading") ? 0 : 0
+                theElement.style.height = entry.contentRect.height + /*xtra +*/ "px"
+            }
+        })
+        editBoxResizeObserver.observe($(".editBox"))
+
         document.getElementById("editBox").focus()
         document.getElementById("editBox").addEventListener("blur", function(){
             let changed = (theOldText != editBox.innerHTML)
+            editBoxResizeObserver.disconnect()
+            theElement.style.height = ""
             event.preventDefault();
             exitEdit(theElement, changed)}) //used to be false, but I think only ESC should exit without changing
 
@@ -478,6 +399,8 @@ function editContent(ev) {
 
         
     }, editBoxDelay) //ends the timeout
+
+    console.trace()
 
 }
 
@@ -492,12 +415,17 @@ function exitEdit(theElement, changesWereConfirmed) {
     //         element.classList.remove("wider")
     //     });
 
+    editBoxResizeObserver.disconnect()
+    if(!changesWereConfirmed) theElement.style.height = ""
+    if(theElement.closest(".scene")) theElement.closest(".scene").style.minHeight = ""
 
     coverContainer.classList.remove("lessBlur")
     coverContainer.style.display = "none"
     flexiContainer.classList.add("positionRelative")
     
     if(document.getElementById("editBox")){
+
+        console.time("exitEdit")
 
         let newContent = JSON.stringify(document.getElementById("editBox").innerText) //freezes the value
         newContent = newContent.substr(1, newContent.length-2) //strips quotation marks
@@ -535,23 +463,23 @@ function exitEdit(theElement, changesWereConfirmed) {
             let startPosition
             let length
 
-            if(theElement.classList.contains("synopsis") && outline[currentOutlineCount].synopsis){
+            // if(theElement.classList.contains("synopsis") && outline[currentOutlineCount].synopsis){
 
-                //Second place to make better synopsis editing!
+            //     //Second place to make better synopsis editing!
 
-                shownLine = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].stringForDisplay
-                line = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].string
-                startPosition = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].position
-                length = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].range.length
+            //     shownLine = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].stringForDisplay
+            //     line = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].string
+            //     startPosition = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].position
+            //     length = outline[currentOutlineCount].synopsis[theElement.dataset.synopsisNumber].range.length
 
-            }else{
+            // }else{
 
                 shownLine = outline[currentOutlineCount].stringForDisplay.replace(/^#*\s*/, "")
                 line = outline[currentOutlineCount].line.string
                 startPosition = outline[currentOutlineCount].line.position
                 length = outline[currentOutlineCount].line.range.length
             
-            }
+            // }
             
             let resultingLine = line.replace(shownLine, newContent)
             if (shownLine == ""){
@@ -565,7 +493,7 @@ function exitEdit(theElement, changesWereConfirmed) {
             }
 
             //Hacky fix to eliminate orphan = after change of outline.line.string for synopsis
-            if (theElement.classList.contains("synopsis") && (resultingLine.trim() == "=" || resultingLine.trim() == "")){resultingLine = ""}
+            // if (theElement.classList.contains("synopsis") && (resultingLine.trim() == "=" || resultingLine.trim() == "")){resultingLine = ""}
 
             Beat.call(`
                 Beat.onTextChangeDisabled = true
@@ -586,15 +514,15 @@ function exitEdit(theElement, changesWereConfirmed) {
 
             // $id("printButton").innerHTML = "YUP. And the element is " + theElement.id + ", " + theElement.classList
 
-            if(!theElement)theElement = $(".isBeingEdited")
+            if(!theElement) theElement = $(".isBeingEdited")
 
             theElement.draggable = initialDraggability
-            if([...theElement.classList].includes("synopsis")){
-                theElement.style.height = "auto"
-            }
-            setTimeout(function(){
+            // if([...theElement.classList].includes("synopsis")){
+            //     theElement.style.height = "auto"
+            // }
+            //setTimeout(function(){
                 theElement.classList.remove("isBeingEdited")
-            }, 500) //this is so thatif I doubleclick another synopsis, it won't rearrange on the first click
+            //}, 500) //this is so thatif I doubleclick another synopsis, it won't rearrange on the first click
             document.getElementById("editBox").remove()
         }
 
@@ -602,6 +530,7 @@ function exitEdit(theElement, changesWereConfirmed) {
 
     }
     //recalculateHeights()
+    console.timeEnd("exitEdit")
     mylog("end of exitedit")
 }
 

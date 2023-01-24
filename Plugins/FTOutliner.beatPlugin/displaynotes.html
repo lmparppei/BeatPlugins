@@ -1354,11 +1354,10 @@ function cycleNotes(shift){
     if (notesAreDisplayed && globalNotesData) cyclables = cyclables.concat(globalNotesData)
     if (reviewsAreDisplayed && globalReviewsData) cyclables = cyclables.concat(globalReviewsData)
 
+    if (cyclables.length == 0)return
+
     if (notesAreDisplayed && reviewsAreDisplayed){
-        
-        // cyclables.sort((a,b) => (a.outlineElementNumber > b.outlineElementNumber) ? 1 : ((b.outlineElementNumber > a.outlineElementNumber) ? -1 : 0))
-        cyclables.sort((a,b) => (a.position > b.position) ? 1 : ((b.position > a.position) ? -1 : 0))
-        
+                cyclables.sort((a,b) => (a.position > b.position) ? 1 : ((b.position > a.position) ? -1 : 0))
     }
 
     //convoluted way to set "cycle" to currently open note or review

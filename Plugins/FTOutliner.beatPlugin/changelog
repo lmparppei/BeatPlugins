@@ -1,3 +1,44 @@
+v 1.53 (January 24, 2023)
+=========================
+
+1. FREEFORM SYNOPSIS EDITING is now also available in FIXED MODE:
+
+* When synopsis are set to show (toggle with Y) hovering a scene or section with no synopsis will show an option to double-click to add a first synopsis.
+* Already present synopsis can be doubleclicked and edited (along with all other synopsis of that scene/section, as one long free text)
+* Dragging and dropping is available to since before.
+This means that functionality wise, Fixed View is almost identical to the Index Card View. The difference lies in visual presentation, where the index cards have fixed sizes regardless of content, but the Fixed view will adjust to fit no more, no less, than the synopsis within them. Which is best? You be the judge. (And yes, you may once again argue this makes the Fixed View the most flexible. I once again pretend I didn't hear that.)
+
+2. An ADVANCED SETTINGS dialog has been added, available from the settings menu or using CMD + comma, with a couple of more specific but no less useful features:  
+* OPTIONALLY SHOW MULTIPLE LINES for sceneheadings and sections. This is available throug the ADVANCED SETTINGS, a new dialog 
+  - Multiple Lines works across all three views. 
+  - For all views, areas will grow to accomodate the entire text -- with the exception of SCENES in Flexible View, which will hode whatever doesn't fits inside the size of the scene.
+  - As a side effect, EDITING SCENE/SECTION HEADINGS within the outline (and in any view) will always show multiple lines during editing.
+* Option to show SECTION HEADERS AS TYPED rather than forced to all caps as was preivously the case.
+* Option to show PAGE GUIDES, showing the (approximate) position of page numbers. 
+  - These can be set to always show, or just when hovering an act
+  - Page numbers can be clicked, taking you (quasi-reliably) to the corresponding pagebreak in the script. IDEAL for those "I have a note on page 36" situations.
+
+* Option to show VERTICAL BARS for sections in the Index Card View, making hierarchical levels clearer just like in Fixed and Flexible views. Not saying you should, only that you can.
+
+3. OTHER IMPROVEMENTES:
+* Adjustments to adding new synopsis in Fixed and Index Card Views: synopsis area for scenes/sections without present synopsis is hidden/collapsed by default and will appear when hovering the scene's/section's heading. (In Index Card View, this relates ony to #ACTS, and to ##SECTIONS with the color "special"). This sounds complicated but is quite straightforward.
+* Improvements to visual feedback and ease-of-use when using the ALT key to add new elements in the outline
+* Adding a new section using a section's add buttons now adds a section of the same level
+* A bunch of cosmetical fixes and some long overdue sanitizing of the CSS, especially to the HIGH CONTRAST mode. Please report any errors if something turns out unreadable.
+
+4. BUG FIXES: 
+* Fixed an error when cycling notes using the TAB key if no notes or reviews were present in the document
+* Fixed a bug when dropping a section below an #ACT header, making the dropped section end up in the wrong place.
+* Fixed a bug when deleting a ##SECTION header that was fully or partly hidden (using /* */) could produce undexpected results
+* Fixed a bug where orphan text (i.e. text that sits directly under a ###Section, with no scene heading) could under throw an error under certain circumtances
+
+
+v 1.52 (January 9, 2023)
+=======================
+
+Hotfix to version number format that stopped the update mechanism 
+
+
 v 1.51 (January 7, 2023)
 =======================
 

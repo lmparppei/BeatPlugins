@@ -1,37 +1,12 @@
 <style>
 
-
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video {
-	margin: 0;
-	padding: 0;
-	border: 0;
-	font-size: 100%;
-	font: inherit;
-	vertical-align: baseline;
-}
-
-.red, .orange, .yellow, .green, .teal, .cyan,
-.blue, .purple, .magenta, .pink, .brown, .black, .gray {
-	color: none;
-	background: none;
-}
-
+/*
+MARK: -Root
+*/
 
 :root{
 	--fixedHeight: 14px;
-	--fontSizeFactor: 1;
+	--fontSizeFactor: 1.2;
 	--heightFactor: 1;
 
 	--baseFontSize: 12px;
@@ -43,12 +18,12 @@ time, mark, audio, video {
 	--showPageNum: none;
 	--showSceneLength: none;
 
-	--columnWidth: 100px; /*initial value*/
+	--columnWidth: 100px; /*initial value*/ /*PURGE?*/
 	
 	--putPopupHereX: 0;
 	--putPopupHereY: 0;
 
-	--indexCardHeight: 140px;
+	--indexCardHeight: 60px;
 
 	--indexReferenceForHeight: auto;
 	--pageBackground: #555;
@@ -61,6 +36,8 @@ time, mark, audio, video {
 	--wider-width: 4;
 
 	--colorTransparency: 100%;
+	
+	
 }
 
 :root, 
@@ -111,44 +88,11 @@ html[data-theme='Beat']{
 
 }
 
-html[data-outdoors='1']{
-	
-	--pageBackground: #fff; /* scrap this entire line when done with light bkg */
-	
-}
-
-html[data-outdoors='1'] .scene:not(.nonProportionalMode .scene:not(.isExpanded > .scene)){
-
-	/* box-shadow: 0 0 1px #222 !important; */
-	box-shadow: none !important; 
-	border: 1px solid #555 !important;
-}
-
-html[data-outdoors='1'] .sceneheading:not(.nonProportionalMode .sceneheading:not(.isExpanded > .sceneheading)){
-
-	margin-top: -1.5px !important;
-}
-
-
-html[data-outdoors='1'] .level1 > .section-heading,
-html[data-outdoors='1'] .section.special > .section-heading,
-html[data-outdoors='1'] #buttonRow *,
-html[data-outdoors='1'] .showActLength
-
-{
-
-	color: black !important;
-	fill: black !important;
-	opacity: 1 !important;
-
-	transition: opacity 0s !important;
-}
-
-
-
 * {
 	white-space: nowrap;
 	overscroll-behavior-y: none;
+	scroll-behavior: smooth !important;
+	box-sizing: border-box;
 }
 
 html, body {
@@ -158,15 +102,36 @@ html, body {
 
 }
 
-*{
-	scroll-behavior: smooth !important;
-}
-
 body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	background-color: var(--pageBackground) !important;
 	overflow: hidden !important;
 }
+
+
+body:has(.drag) * {
+
+	cursor: move !important
+}
+
+body:has(.wait) * {
+
+	cursor: wait !important;
+
+}
+
+.positionRelative {
+	position: relative !important;
+}
+
+.displayNone {
+	display: none !important
+}
+
+/*
+MARK: -FlexiContainer 
+*/
+______FLEXICONTAINER{}
 
 #flexiContainer{
 
@@ -185,13 +150,7 @@ body {
 	overflow-y: scroll;
 	overflow-x: hidden;
 
-	transition: width 0.4s, margin-left 0.4s;
-
-	/* z-index: -2 !important; */
-	/* so apparently I canot have z-index -2 with pos relative, or it hides under the body!
-		The question is now what I must fix that will appear below, or else why did I put -2 there at all?*/
-
-	/* border: 1px gold dotted */
+	transition: width 0.4s, margin-left 0.4s, padding-right 0.2s; /* padding used for page-numbers */
 
 }
 
@@ -199,14 +158,14 @@ body {
 
 	border: 10px solid red !important;
 
-display: flex;
+	display: flex;
 
-flex-direction: column !important;
-flex-wrap: nowrap !important;
+	flex-direction: column !important;
+	flex-wrap: nowrap !important;
 
-align-items: flex-start !important;
-height: auto !important;
-overflow: scroll !important;
+	align-items: flex-start !important;
+	height: auto !important;
+	overflow: scroll !important;
 }
 
 body:has(.horizontal){
@@ -246,66 +205,14 @@ rotate: -90deg;
 	display: none;
 }
 
-body:has(.drag) * {
-
-	cursor: move !important
-}
-
-/* #flexiContainer.wait,
-#flexiContainer.wait > *,
-#flexiContainer.wait *, */
-
-body:has(.wait) * {
-
-	cursor: wait !important;
-	/* outline: 1px solid orange */
-
-}
-
-body:has(.not-allowed) * {
-
-	/* cursor: no-drop !important */
-
-}
-
-.usedToBeDraggable{
-
-	/* background: red !important;  */
-
-}
-
-/* 	[draggable=true],
-	[draggable=true] * {
-		cursor:grab !important;
-	} */
-
-
-.positionRelative {
-	position: relative !important;
-}
-
-#-------------------------------{}
-#--------- ELEMENT STUFF--------{}
-#-------------------------------{}
-
-
-* {
-    box-sizing: border-box;
-}
-
-:root{
-	--fontSizeFactor: 1.2;
-	--indexCardHeight: 60px;
-
-	--pageBackground: #555
-}
-
-body {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-	background-color: var(--pageBackground);
-}
+/*
+MARK: -Basic Elements
+*/
+__________BASIC ELEMENTS{}
 
 .section {
+
+	--localColor: #bbb;
 
 	position: relative;
 
@@ -317,7 +224,7 @@ body {
 	font-weight: bold; 
 	line-height: calc(17px * var(--fontSizeFactor)); 
 	
-	border-left: 3px solid #bbb; 
+	border-left: 3px solid var(--localColor); 
 	border-radius: 3px 0px 0px 4px;
 	background-color: none;
 	
@@ -327,7 +234,6 @@ body {
 
 	pointer-events: none; /*testing if this breaks somethgin*/
 
-	/* transition: width 0.8s !important; */
 	transition: flex-grow 0.2s ease-out !important;
 }
 
@@ -356,17 +262,15 @@ body {
 	overflow: hidden;
 	text-overflow: ellipsis;
 
-	transition: font-size 0.1s, line-height 0.1s, height 0.1s;
+	transition: font-size 0.1s, line-height 0.1s, height 0.1s, margin 0.2s;
 }
 
 .level1 {
 	color: #ccc !important;
 	position: relative !important;
-	/* top: 20px; */
 	
 	background-image: none !important;
 	background-color: none !important;
-	/* outline: 3px solid orange !important;   */
 	border: 0px none !important; 
 
 	overflow: visible !important;
@@ -381,64 +285,20 @@ body {
 
 }
 
-/* .faux:not(:has(.scene, .section)) + .level1{
-
-	outline: red 2px solid; 
-
-
-} */
-
-.faux:has( + .level1):not(:has(.scene, .section)){
-
-flex-grow: 0 !important; 
-flex-basis: 20px !important;
-
-}
-
 .level1 > .section-heading {
+
 	background-color: var(--special) !important;
 	color: white; 
 
 	text-align: center;
-	/* line-height: calc(30px * var(--fontSizeFactor)) !important; */
-}
-
-.wider {
-
-    flex-grow: var(--wider-width) !important;
-}
-
-.widerButton,
-.widerButtonOn {
-	display: none
-}
-
-.widerButtonOn {
-	transform: scale(0.8)
-}
-
-.level1:not(.wider) > .section-heading:hover > .widerButton, 
-.level1.wider > .section-heading > .widerButtonOn {
-
-	display: unset;
-	position: absolute;
-	margin-right: 0px; 
-	margin-top: 2px;
-	right: 0px;
-
-	height: calc(12px * var(--fontSizeFactor));
-	width: 30px;
-	/* background-color: #777; */
-	border-radius: 1000px;
-	fill: white;
-
-	opacity: 0.4;
 
 }
 
-.widerButton:hover,
-.widerButtonOn:hover{
-	opacity: 1 !important;
+.faux:has( + .level1):not(:has(.scene, .section)){
+
+	flex-grow: 0 !important; 
+	flex-basis: 20px !important;
+
 }
 
 .scene, .orphanText{
@@ -462,7 +322,7 @@ flex-basis: 20px !important;
 	border-radius: 3px;	
 	
 	color: #000;
-	background-color: #ddd; 
+	background-color: var(--localColor);
     
     flex-grow: 1;
 	flex-basis: 0;
@@ -472,6 +332,14 @@ flex-basis: 20px !important;
 
 	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%); 
 	transition: height 0.1s, width 0.2s;
+
+	height: calc(var(--flexibleHeight) * var(--heightFactor));
+
+}
+
+#flexiContainer.nonProportionalMode .isExpanded > .scene{
+
+	height: calc(var(--fixedHeight) * var(--fontSizeFactor)) !important;
 
 }
 
@@ -493,43 +361,6 @@ flex-basis: 20px !important;
 	overflow: hidden;
 	text-overflow: ellipsis;
 
-	/* transition: opacity 0.1s; */
-	/* transition: opacity 0.1s; */
-	/* transition-delay: opacity 0.2s; */
-}
-
-
-#flexiContainer.nonProportionalMode:not(.indexcards).dualSceneLines .isExpanded > .scene{
-
-	height: auto !important;
-	transition: height 0.1s, width 0.2s !important;
-
-
-}
-
-#flexiContainer.dualSceneLines:not(.indexcards) .sceneheading{
-
-	line-height: calc(14px * var(--fontSizeFactor)) !important;
-	
-	height: auto !important;
-	/* max-height: calc(28px * var(--fontSizeFactor)) !important; */
-	max-height: 100% !important;
-	white-space: normal !important;
-	word-wrap:break-word;
-
-	/* border: 1px solid red; */
-	transition: max-height 0.1s, height 0.1s, width 0.2s !important;
-
-
-}
-
-/* REMOVED -- when was it good? */
-/* .sceneheading:not(.indexcards .sceneheading){
-	height: inherit;
-} */
-
-.indexcards .sceneheading {
-	transition: font-size 0.1s, line-height 0.1s, height 0.1s
 }
 
 .slugtext {
@@ -552,112 +383,29 @@ flex-basis: 20px !important;
 			transparent 3px,
 			rgba(255,255,255,0.1) 3px,
 			rgba(255,255,255,0.1) 6px)
-			/* ,
-	rgba(221, 221, 221, 1) !important */
 	;
 }
 
-#flexiContainer:not(.indexcards):not(.nonProportionalMode) .blankPage {
-
-	position: absolute !important;
-	left: 0px !important;
-	width: 100% !important;
-
-	/* border-top: 2px dotted var(--pageBackground); */
-
-	border-top: 10px transparent !important; /* prepare space for cogs */
-	background-image: linear-gradient(transparent, transparent),/*linear-gradient(orange, orange), /* general block background, always goes first, overlapping everything below it */
-					linear-gradient(to bottom right, 
-						transparent 50.5%, 
-						var(--pageBackground) 50.5%), 
-					linear-gradient(to bottom left, 
-						transparent 50.5%, 
-						var(--pageBackground) 50.5%),
-					linear-gradient(var(--pageBackground),var(--pageBackground));
-	background-repeat: repeat, repeat-x, repeat-x, repeat-x;
-	background-position: 0 0, 5px 0, 5px 0, 0 5px;
-	background-size: auto auto, 5px 5px, 5px 5px;
-	background-clip: padding-box, border-box, border-box; /* trim the edges of the overall fill */
-	
-	background-origin: padding-box, border-box, border-box, border-box, border-box; /* position the teeth relative to the upper border, and the background relative to the inner margin */
-		
-	/* opacity: 0.9; */
-
+.orphanText:hover{
+	background: 	/*repeating-linear-gradient(
+			-45deg,
+			transparent 0px,
+			transparent 3px,
+			rgba(255,255,255,0.1) 3px,
+			rgba(255,255,255,0.1) 6px)
+			,*/
+			rgba(0, 0, 0, 0.3)
+			;
+	border: 0px !important;
+	transition: border 50ms ;
 }
-
-.pageDivider {
-	display: none;
-}
-
-DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{
-
-	/* box-sizing: content-box; */
-	display: inline-block;
-	
-	position: absolute;
-	pointer-events: none !important;
-
-	/* border-top: 2px solid transparent;
-	border-left: 3px solid var(--pageBackground);
-	border-right: 3px solid var(--pageBackground);
-	border-bottom: 2px solid transparent; */
-
-	color: white;
-	border-top: 1px dotted white;
-
-	width: calc(100% + 18px);
-	left: 0px;
-	height: 0px;
-
-	opacity: 0.6;
-
-	font-size: calc(7px * var(--fontSizeFactor));
-	line-height: calc(7px * var(--fontSizeFactor));
-	text-align: right !important;
-	/* padding-right: calc(100% + 20px); */
-
-	z-index: -100;
-}
-
-/* .pageDivider::after{
-
-	position: absolute;
-	content: " ";
-	top: -4px;
-	border-bottom: 0px solid transparent;
-	border-left: 3px solid var(--pageBackground);
-	border-right: 3px solid var(--pageBackground);
-	border-bottom-left-radius : 60px;
-	border-bottom-right-radius : 60px;
-	width: calc(100% + 0px);
-
-	height: 4px;
-	left: -1px
-
-} */
-
-/* .blankPage::after{
-
-	position: absolute !important;
-	content: " ";
-
-
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-
-	background-color: var(--pageBackground);
-	opacity: 0.9;
-
-
-} */
 
 .nonProportionalMode:not(.indexcards) .orphanText:not(.showSynopsisInScenes .orphanText:has(.synopsis)){
 	display: none;
 	height: 0px;
 }
 
+.nonProportionalMode.showSynopsisInScenes .synopsiscontainer,
 .nonProportionalMode.showSynopsisInScenes .orphanText:has(.synopsis){
 	height: auto !important;
 }
@@ -671,13 +419,41 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 	overflow-y: auto !important;
 
 	pointer-events: all;
+	
 }
 
-.showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
+DISABLED.level1 > .synopsiscontainer{
+	
+	/* --localColor: rgba(0,0,0,0.2); */
+	height: auto !important;
+	/* min-height: 14px !important; */
+	
+}
+
+DISABLED.showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
 	display: block;
 	background: none !important;
 	margin: 0;
 	padding: 0;
+
+	position:relative;
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
+DISABLED.showSynopsisInScenes:not(.indexcards) .section:not(.level1) > .synopsiscontainer:has( > .synopsis)::before{
+
+	/*PURPOSE: Fixed view, allows faint background to synopsiscontainer of sections*/
+
+	content: "";
+	position: absolute;
+	top: 0px;
+	left: 2px;
+	right: 0;
+	bottom: 0;
+
+	background: var(--localColor) !important;
+	opacity: 0.2;
 
 }
 
@@ -696,24 +472,184 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 	padding-bottom: 0;
 
 	color: black;
+	background-color: var(--localSynopsisColor);
+}
+
+.synopsis {
+
+	position: relative;
+	display: block;
+
+	text-align: left;
+
+	/* opacity: 0.8; */
+
+	/* padding-top: calc(2px * var(--fontSizeFactor)); */
+	padding-left: 16px;
+	padding-right: 6px;
+	margin-left: 4px;
+	width: calc(100% - 8px);
+
+	border-radius: 3px;
+
+	-webkit-user-select: auto;
+	user-select: auto;
+	
+}
+
+.level1 > .synopsiscontainer > .synopsis,
+.level1 > .orphanText > .synopsiscontainer > .synopsis,
+#flexiContainer:not(.indexcards) .section > .synopsiscontainer > .synopsis,
+#flexiContainer:not(.indexcards) .section > .orphanText > .synopsiscontainer > .synopsis{
+
+	background-color: var(--localSynopsisColor, rgba(255,255,255,0.0));
 
 }
 
-.orphanText:hover{
-	background: 	/*repeating-linear-gradient(
-			-45deg,
-			transparent 0px,
-			transparent 3px,
-			rgba(255,255,255,0.1) 3px,
-			rgba(255,255,255,0.1) 6px)
-			,*/
-			rgba(0, 0, 0, 0.3)
-			;
-	border: 0px !important;
-	transition: border 50ms ;
+.synopsis::before {
+	position: absolute;
+	content: "•";
+	font-size: calc(22px * var(--fontSizeFactor));
+	line-height: calc(0px * var(--fontSizeFactor));
+	margin-left: -11px;
+	margin-left: -15px;
+	margin-top: calc(5.5px * var(--fontSizeFactor));
+	height: calc(4px * var(--fontSizeFactor));
+	width: calc(4px * var(--fontSizeFactor));
+	border-radius: 50%;
+	color: inherit !important;
+
 }
 
+/*synopsis on document background*/
+.section > .orphanText > .synopsiscontainer > .synopsis:not(.indexcards .section > .orphanText > .synopsiscontainer > .synopsis),
+.section > .synopsiscontainer > .synopsis:not(.indexcards .section > .synopsiscontainer > .synopsis){
+
+	--localColor: rgba(0,0,0,0.2);
+	
+	color: white;
+	
+}
+
+.synopsis.isSelected,
+.synopsis.isSelected:hover {
+
+	color: white !important;
+	background-image: linear-gradient(black 0%, black 100%) !important;
+
+}
+
+/*
+MARK: -Scrollbar Fix
+*/
+______SCROLLBAR FIX FOR ALWAYS OS SETTING {}
+
+/* .synopsiscontainer::-webkit-scrollbar{
+	
+	background-color: inherit !important;
+	width: 8px !important; 
+	height: 8px !important; 
+} 
+
+.synopsiscontainer:hover::-webkit-scrollbar-thumb{
+	
+	background-color: rgba(0, 0, 0, 0.5) !important;
+	
+	border-radius: 30px;
+
+}  */
+/* .synopsiscontainer::-webkit-scrollbar-thumb{color: black !important}  */
+
+/*.synopsiscontainer::-webkit-scrollbar {
+
+	/* -webkit-overflow-scrolling: auto !important; */
+
+    /* -webkit-appearance: none;
+    width: 0;
+    height: 0; 
+}*/
+
+/*
+MARK: -Dual Lines
+*/
+__________ DUAL LINES{}
+
+#flexiContainer:not(.indexcards) .isExpanded > .scene:has(.isBeingEdited),
+#flexiContainer.nonProportionalMode:not(.indexcards).dualSceneLines .isExpanded > .scene{
+
+	height: auto !important;
+	transition: height 0.1s, width 0.2s !important;
+
+}
+
+#flexiContainer:not(.indexcards) .section:not(.level1):has( > .isBeingEdited){
+
+	--localColor: black !important;
+	border-color: black;
+
+}
+
+.isBeingEdited.section-heading,
+.isBeingEdited.sceneheading,
+#flexiContainer.dualSectionLines .section-heading,
+#flexiContainer.dualSceneLines .sceneheading{
+
+	line-height: calc(14px * var(--fontSizeFactor)) !important;
+	
+	height: auto;
+	max-height: 100% !important;
+	white-space: normal !important;
+	word-wrap:break-word;
+
+	transition: max-height 0.1s, height 0.1s, width 0.2s !important;
+
+}
+
+/* .isBeingEdited.section-heading, */
+/* .inSection.editBox */
+/* , 
+#flexiContainer.dualSectionLines:not(.indexcards) .section-heading */
+/* {
+
+	padding-top: calc(1px * var(--fontSizeFactor));
+	padding-bottom: calc(1px * var(--fontSizeFactor));
+
+} */
+
+/*#flexiContainer.dualSectionLines*/ .isBeingEdited.section-heading{
+
+	/* margin-bottom: calc(5px * var(--fontSizeFactor)); */
+
+}
+
+.section:has( > .isBeingEdited) .showSectionPageNumber{
+
+	display: none
+}
+
+disabled.level1 > .isBeingEdited.section-heading{
+
+	padding-top: calc(2px * var(--fontSizeFactor));
+	padding-top: 2px;
+	/* margin-bottom: calc(5px * var(--fontSizeFactor)) */
+
+}
+
+#flexiContainer.allowLowerCaseSections .section-heading,
+#flexiContainer.allowLowerCaseSections .inSection.editBox{
+
+	text-transform: none !important;
+
+}
+
+/*
+MARK: -Graphic Stuff
+*/
 #---------------GRAPHIC STUFF{}
+	
+.clickThru{
+	pointer-events: none !important;
+	}
 
 .showActLength{
 	display: var(--showPageNum);
@@ -749,105 +685,215 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 	display: none;
 }
 
+/*
+MARK: -OK: Page Breaks
+*/
+__________PAGE BREAK REREPRESENTATIONS{}
 
+#flexiContainer:not(.indexcards):not(.nonProportionalMode) .blankPage {
 
-#-----FORMERLY_INDEX_CARD_STUFF{}
+	position: absolute !important;
+	left: 0px !important;
+	width: 100% !important;
 
-/* .indexcards  */
-.synopsis {
-
-	position: relative;
-
-	display: block;
-
-	opacity: 0.8;
-
-	/* padding-top: calc(2px * var(--fontSizeFactor)); */
-	padding-left: 6px;
-	padding-right: 6px;
-	margin-left: 10px;
-	width: calc(100% - 11px);
-
-	border-radius: 3px;
-
-	-webkit-user-select: auto;
-	user-select: auto;
+	border-top: 10px transparent !important; /* prepare space for cogs */
+	background-image: linear-gradient(transparent, transparent),/*linear-gradient(orange, orange), /* general block background, always goes first, overlapping everything below it */
+					linear-gradient(to bottom right, 
+						transparent 50.5%, 
+						var(--pageBackground) 50.5%), 
+					linear-gradient(to bottom left, 
+						transparent 50.5%, 
+						var(--pageBackground) 50.5%),
+					linear-gradient(var(--pageBackground),var(--pageBackground));
+	background-repeat: repeat, repeat-x, repeat-x, repeat-x;
+	background-position: 0 0, 5px 0, 5px 0, 0 5px;
+	background-size: auto auto, 5px 5px, 5px 5px;
+	background-clip: padding-box, border-box, border-box; /* trim the edges of the overall fill */
 	
+	background-origin: padding-box, border-box, border-box, border-box, border-box; /* position the teeth relative to the upper border, and the background relative to the inner margin */
+		
 }
 
-.section > .orphanText > .synopsiscontainer > .synopsis:not(.indexcards .section > .orphanText > .synopsiscontainer > .synopsis),
-.section > .synopsiscontainer > .synopsis:not(.indexcards .section > .synopsiscontainer > .synopsis){
-	/* color: white !important; */
-	color: white ;
-}
+/* #flexiContainer.showPageDividers{
 
-/* .indexcards  */
-.synopsis::before {
-	position: absolute;
-	content: "•";
-	font-size: calc(22px * var(--fontSizeFactor));
-	line-height: calc(0px * var(--fontSizeFactor));
-	margin-left: -11px;
-	margin-left: -15px;
-	margin-top: calc(5.5px * var(--fontSizeFactor));
-	height: calc(4px * var(--fontSizeFactor));
-	width: calc(4px * var(--fontSizeFactor));
-	border-radius: 50%;
-	color: inherit !important;
-	/* background-color: black; */
+	padding-right: 10px !important;
 
-}
-
-.synopsis::before::selection{
-
-	background: transparent !important;
-	border: 3px solid gold !important
-}
-
-
-
-.level1 > .synopsiscontainer{
-	
-	/* background: none; */
-	height: auto !important;
-
-	min-height: 14px !important;
-	
-}
-
-.level1 > .synopsiscontainer:hover,
-.level1 > .orphanText{
-	/* overflow: visible !important; */
-}
-
-/* .level1 > .synopsiscontainer:hover::after{
-
-	display: block;
-	width: 100%;
-	content: "double-click to add act synopsis";
-	text-align: center;
-	text-align: center;
-	font-weight: normal;
-	white-space: normal !important;
-	font-style: italic;
-	font-size: calc(10px * var(--fontSizeFactor));
-	line-height: calc(8px * var(--fontSizeFactor)) !important;
-	opacity: 0.4;
-
-	color: white !important;
-
-	height: 0px !important;
-	margin-top: 0 !important;
-	overflow: visible;
 } */
 
+#flexiContainer.showPageDividers.always:not(.indexcards, .nonProportionalMode) :is(.scene, .orphanText),
+#flexiContainer.showPageDividers:not(.always, .indexcards, .nonProportionalMode) .level1:hover :is(.scene, .orphanText){
+
+	margin-right: calc(2px + (10px * var(--fontSizeFactor))) !important;
+	transition: height 0.1s, width 0.2s, margin 0.2s;
+
+}
+
+#flexiContainer.showPageDividers:not(.indexcards, .nonProportionalMode) .level1{
+
+	/* background-color: teal; */
+	pointer-events: all !important;
+
+}
+
+#flexiContainer.showPageDividers:not(.indexcards, .nonProportionalMode) .level1:hover{
+
+	/* background-color: hotpink; */
+}
+
+.pageDivider,
+.pageDivider::after{
 
 
-#-------- collapsing non-prop {}
+	color: var(--pageDividerColor);
+	border-color: var(--pageDividerColor);
+	
+	
+	
+}
+
+.pageDivider {
+
+	transition: font-size 0.2s, width 0.2s, right 0.2s;
+	transition-delay: color 500ms, border-color 0.5s !important;
+
+	--pageDividerColor: rgba(255,255,255,0);
+
+	display: none;
+
+	position: absolute;
+	right: calc(-10px - (10px * var(--fontSizeFactor)));
+	width: calc(10px + (10px * var(--fontSizeFactor)));
+	height: auto;
+
+	/* border-top: 2px solid transparent;
+	border-left: 3px solid var(--pageBackground);
+	border-right: 3px solid var(--pageBackground);
+	border-bottom: 2px solid transparent; */
+	
+	opacity: 0.6;
+
+	font-size: calc(8px * var(--fontSizeFactor));
+	line-height: calc(8px * var(--fontSizeFactor));
+	text-align: right !important;
+	/* padding-right: calc(100% + 20px); */
+
+	z-index: 1000;
+	pointer-events: all;
+
+}
+
+#flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .pageDivider{
+
+	display: inline-block; /* to enable transitions, it is displayed but transparent until...*/
+
+}
+
+#flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
+#flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{
+
+	--pageDividerColor: rgba(255,255,255,1); /*and now we set the color to visible*/
+	
+}
+
+ .pageDivider::after{
+
+	position: absolute;
+	top: -1px;
+	right: 0;
+	
+	content: " ";
+	
+	width: calc(10px + (10px * var(--fontSizeFactor)));
+	height: 100%;
+	background-color: transparent;
+
+	border-top: 1px dotted var(--pageDividerColor);
+	/*border-top-color: inherit !important;  */
+
+	/* pointer-events: none !important; */
+
+	z-index: -1000 !important;
+
+} 
+
+.pageDivider:hover{
+	
+	opacity: 1 !important;
+	text-shadow: 0 0 1px --pageDividerColor
+	/* font-weight: bold; */
+	
+}
+
+.pageDivider:hover::after{
+
+	/* border-color: rgba(255,255,255,1) !important; */
+
+	/* background-color: rgba(0,0,0,0.8) */
+	width: inherit !important;
+
+	/* border-width: 3px !important; */
+	/*transition: width 0.2s;
+	pointer-events: none; */
+
+}
+
+.scene:has(.pageDivider:hover){
+
+	background-image: transparent !important;
+
+}
+
+/*
+MARK: -OK: Wider Acts
+*/
+__________WIDER ACTS{}
+
+.wider {
+
+    flex-grow: var(--wider-width) !important;
+
+}
+
+.widerButton,
+.widerButtonOn {
+	display: none
+}
+
+.widerButtonOn {
+	transform: scale(0.8)
+}
+
+.level1:not(.wider) > .section-heading:hover > .widerButton, 
+.level1.wider > .section-heading > .widerButtonOn {
+
+	display: unset;
+	position: absolute;
+	margin-right: 0px; 
+	margin-top: 2px;
+	right: 0px;
+
+	height: calc(12px * var(--fontSizeFactor));
+	width: 30px;
+	border-radius: 1000px;
+	fill: white;
+
+	opacity: 0.4;
+
+}
+
+.widerButton:hover,
+.widerButtonOn:hover{
+	opacity: 1 !important;
+}
+
+/*
+MARK: -Expand Collapsed (Fixed View)
+*/
+__________COLLAPSED IN FIXED VIEW{}
 
 .nonProportionalMode:not(.indexcards) .arrowForIndexCards{
+
 	display: block;
-	/* color: black !important; */
 	color: #999 !important;
 	opacity: 1 !important;
 	transform: translateY(calc(-14px * var(--fontSizeFactor)));
@@ -857,7 +903,6 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 .nonProportionalMode:not(.indexcards) .section:not(.isExpanded){
 	
 	border-radius: 3px 0 0 3px !important;
-	
 	padding-top: 0px !important;
 	padding-bottom: 0px !important;
 	
@@ -879,7 +924,6 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 .nonProportionalMode:not(.indexcards) .isExpanded > .scene > .arrowForIndexCards::before{
 
 	transform: rotate(90deg) scale(0.7) translateY(9px) !important;
-	/* left: -21px !important; */
 	top: -2px !important;
 
 }
@@ -892,86 +936,33 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 
 }
 
-/*
-@todo Change the absolute levels to relative levels (section>section)
-*/
-/*
-@todo (Fixed, but still missing level 2 -- find it and fix. (also: The idea seems to work! yay!
-*/
-
-/* .nonProportionalMode:not(.indexcards) .level3 > .scene > .arrowForIndexCards::before{ */
 .nonProportionalMode:not(.indexcards) .level1 > .section > .section > .scene > .arrowForIndexCards::before{
 	left: -23px !important
 }
-/* .nonProportionalMode:not(.indexcards) .level4 > .scene > .arrowForIndexCards::before{ */
 .nonProportionalMode:not(.indexcards) .level1 > .section > .section > .section > .scene > .arrowForIndexCards::before{
 	left: -32px !important
 }
-/* .nonProportionalMode:not(.indexcards) .level5 > .scene > .arrowForIndexCards::before{ */
 	.nonProportionalMode:not(.indexcards) .level1 > .section > .section > .section > .section > .scene > .arrowForIndexCards::before{
 	left: -41px !important
 }
-/* .nonProportionalMode:not(.indexcards) .level6 > .scene > .arrowForIndexCards::before{ */
 	.nonProportionalMode:not(.indexcards) .level1 > .section > .section > .section > .section > .section > .scene > .arrowForIndexCards::before{
 	left: -50px !important
 }
-
 
 .arrowForIndexCards:hover::before{
 	color: white !important;
 	transform: inherit, scale(1.2) !important;
 }
 
-
-
-
-/* .noOverflow{
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-	} */
-	
-.clickThru{
-	pointer-events: none !important;
-	}
-
-
+/*
+MARK: -FIX THIS PRONTO!
+*/
 	#-------------{}
 	#------OLD{}
 	#---------{}
 
-.orphanText{
-
-	border: none;
-
-	background: transparent;
-	box-shadow: none;
-
-	background: 	repeating-linear-gradient(
-			-45deg,
-			transparent 0px,
-			transparent 3px,
-			rgba(255,255,255,0.1) 3px,
-			rgba(255,255,255,0.1) 6px)
-			/* ,
-	rgba(221, 221, 221, 1) !important */
-	;
-}
-
-.orphanText:hover{
-	background: 	/*repeating-linear-gradient(
-			-45deg,
-			transparent 0px,
-			transparent 3px,
-			rgba(255,255,255,0.1) 3px,
-			rgba(255,255,255,0.1) 6px)
-			,*/
-			rgba(0, 0, 0, 0.3)
-			;
-	border: 0px !important;
-	transition: border 50ms ;
-}
 	
-	.indexcards .isOmitted > .synopsiscontainer,
+.indexcards .isOmitted > .synopsiscontainer,
 .isOmitted:not(.sceneheading):not(.synopsis) {
 	background:
 			linear-gradient(
@@ -990,7 +981,7 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 			rgba(255,255,255,0.2) 3px,
 			rgba(255,255,255,0.2) 6px)
 			/* , */
-	/* rgba(221, 221, 221, 1) */
+	/* rgba(221, 221, 221, 1) */, var(--localColor)
 	;
 	/* color: rgba(0,0,0,0.9); */
 
@@ -1049,17 +1040,6 @@ DISABLED#flexiContainer:not(.indexcards):not(.nonProportionalMode) .level1:hover
 	padding-left: 16px !important;
 	margin-left: 16px !important;
 	opacity: 70%;
-}
-
-/* .scene.isOmitted {
-
-	opacity: 0.8 !important;
-
-} */
-
-xxx:not(.nonProportionalMode) .isOmitted{
-	max-height: 0px;
-	margin: 0;
 }
 
 .omittedScenesAreHidden {
@@ -1159,10 +1139,9 @@ p >.clear{
 	opacity: 45% !important; /*was 95*/
 	border-radius: 6px;
 	/* margin-top: 2px; */
-	margin-top: calc(2px * var(--fontSizeFactor)) !important;
-
+	margin-top: calc(1px * var(--fontSizeFactor)) !important;
 	padding: 0px 4px 4px 4px;
-	/* height: 10px !important; */
+	height: 1px; /*to avoid making sectionheadings higher*/
 	pointer-events: none !important;
 	}
 
@@ -1171,175 +1150,115 @@ p >.clear{
 }
 
 	
-
-
-/* div:not(:nth-of-type(1)).level1{
-	/* background-color: rgba(255,255,255,0.1) !important; */
-	/* border-left:rgba(255, 255, 255, 0.3) 1px solid !important; */
-	/* border-radius: 0px !important;   */
-	/*margin-left: 15px !important; 
-} */
-	
-/* .level2, .level3, .level4, .level5 {
-	margin-left: 0px !important;
-	padding-left: 6px !important;
-	text-align: left;
-	color: black !important;
-	margin-top: 2px !important;
-	position: relative !important;
-
-    flex-grow: 1 !important;
-	flex-basis: 0 !important;
-    min-width: 0px !important;
-
-	border-color: #bbb !important;
-
-	/* padding-top: 0px !important; this is important. */
-	
-	
 .text-shift {
 	line-height: calc(17px * var(--fontSizeFactor)) !important;
 	position: relative !important;
 	top: calc(-2px * var(--fontSizeFactor)) !important;
-	}
+}
 
-.section.yellow:not(.level1) > .section-heading,
-.scene.yellow > .synopsiscontainer,
-.indexcards .section.yellow:not(.level1) > .synopsiscontainer,
-.indexcards .section.yellow:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--yellow), var(--colorTransparency)); 
+/*
+MARK: -OK: Colors
+*/
+________COLORS{}
+
+/*.synopsis*/ /*will get its color from --localSynopsisColor instead*/ 
+.scene,
+.scene > .synopsiscontainer,
+.section:not(.level1) > .section-heading,
+.indexcards .section:not(.level1) > .synopsiscontainer,
+.indexcards .section:not(.level1) > .orphanText > .synopsiscontainer{
+
+	background-color: var(--localColor);
+
 }
-.section.red:not(.level1) > .section-heading,
-.scene.red > .synopsiscontainer,
-.indexcards .section.red:not(.level1) > .synopsiscontainer,
-.indexcards .section.red:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--red), var(--colorTransparency));
-}
-.section.green:not(.level1) > .section-heading,
-.scene.green > .synopsiscontainer,
-.indexcards .section.green:not(.level1) > .synopsiscontainer,
-.indexcards .section.green:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--green), var(--colorTransparency));
-}
-.section.blue:not(.level1) > .section-heading,
-.scene.blue > .synopsiscontainer,
-.indexcards .section.blue:not(.level1) > .synopsiscontainer,
-.indexcards .section.blue:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--blue), var(--colorTransparency));
-}
-.section.cyan:not(.level1) > .section-heading,
-.scene.cyan > .synopsiscontainer,
-.indexcards .section.cyan:not(.level1) > .synopsiscontainer,
-.indexcards .section.cyan:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--cyan), var(--colorTransparency));
-}
-.section.teal:not(.level1) > .section-heading,
-.scene.teal > .synopsiscontainer,
-.indexcards .section.teal:not(.level1) > .synopsiscontainer,
-.indexcards .section.teal:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--teal), var(--colorTransparency));
-}
-.section.magenta:not(.level1) > .section-heading,
-.scene.magenta > .synopsiscontainer,
-.indexcards .section.magenta:not(.level1) > .synopsiscontainer,
-.indexcards .section.magenta:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--magenta), var(--colorTransparency));
-}
-.section.pink:not(.level1) > .section-heading,
-.scene.pink > .synopsiscontainer,
-.indexcards .section.pink:not(.level1) > .synopsiscontainer,
-.indexcards .section.pink:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--pink), var(--colorTransparency));
-}
-.section.orange:not(.level1) > .section-heading,
-.scene.orange > .synopsiscontainer,
-.indexcards .section.orange:not(.level1) > .synopsiscontainer,
-.indexcards .section.orange:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--orange), var(--colorTransparency));
-}
-.section.brown:not(.level1) > .section-heading,
-.scene.brown > .synopsiscontainer,
-.indexcards .section.brown:not(.level1) > .synopsiscontainer,
-.indexcards .section.brown:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--brown), var(--colorTransparency));
-}
-.section.purple:not(.level1) > .section-heading,
-.scene.purple > .synopsiscontainer,
-.indexcards .section.purple:not(.level1) > .synopsiscontainer,
-.indexcards .section.purple:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--purple), var(--colorTransparency));
-}
-.section.black:not(.level1) > .section-heading,
-.scene.black > .synopsiscontainer,
-.indexcards .section.black:not(.level1) > .synopsiscontainer,
-.indexcards .section.black:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--black), var(--colorTransparency));
-}
-.section.white:not(.level1) > .section-heading,
-.scene.white > .synopsiscontainer,
-.indexcards .section.white:not(.level1) > .synopsiscontainer,
-.indexcards .section.white:not(.level1) > .orphanText > .synopsiscontainer{
-	background-color: hsla(var(--white), var(--colorTransparency));
-}
+
 .section.special:not(.level1) > .section-heading,
 /* .indexcards .scene.special > .synopsiscontainer, */
 .indexcards .section.special:not(.level1) > .synopsiscontainer,
 .indexcards .section.special:not(.level1) > .orphanText > .synopsiscontainer{
+
 	background-color: var(--special);
 	text-align: center;
 
 	background-image: none;
 	border-bottom: none;
+
 }
 
-.section.yellow:not(.level1){
-	border-color: hsla(var(--yellow), var(--colorTransparency)) !important; 
+.section:not(.level1, .special){
+
+	border-color: var(--localColor)
+
 }
-.section.red:not(.level1){
-	border-color: hsla(var(--red), var(--colorTransparency)) !important; 
-}
-.section.green:not(.level1){
-	border-color: hsla(var(--green), var(--colorTransparency)) !important; 
-}
-.section.blue:not(.level1){
-	border-color: hsla(var(--blue), var(--colorTransparency)) !important; 
-}
-.section.cyan:not(.level1){
-	border-color: hsla(var(--cyan), var(--colorTransparency)) !important; 
-}
-.section.teal:not(.level1){
-	border-color: hsla(var(--teal), var(--colorTransparency)) !important; 
-}
-.section.magenta:not(.level1){
-	border-color: hsla(var(--magenta), var(--colorTransparency)) !important; 
-}
-.section.pink:not(.level1){
-	border-color: hsla(var(--pink), var(--colorTransparency)) !important; 
-}
-.section.orange:not(.level1){
-	border-color: hsla(var(--orange), var(--colorTransparency)) !important; 
-}
-.section.brown:not(.level1){
-	border-color: hsla(var(--brown), var(--colorTransparency)) !important; 
-	}
-.section.purple:not(.level1){
-	border-color: hsla(var(--purple), var(--colorTransparency)) !important; 
-	}
-.section.black:not(.level1){
-	border-color: hsla(var(--black), var(--colorTransparency)) !important; color: hsl(0deg, 0%, 75%) !important;
-	}
-.section.white:not(.level1){
-	border-color: hsla(var(--white), var(--colorTransparency)) !important;
-	}
+
 .section.special:not(.level1) {
+
 	background-image: none;
 	border-color: var(--special) !important; 
 	color: hsl(0deg, 0%, 75%) !important; 
-	/* width: 100% !important; */
 	text-align: center;
-	}
+
+}
 
 /*ONE TO REPLACE THEM ALL?*/
+.uncolorAllScenesBut.red .scene:not(.red), 
+.uncolorAllScenesBut.yellow .scene:not(.yellow),
+.uncolorAllScenesBut.orange .scene:not(.orange),
+.uncolorAllScenesBut.green .scene:not(.green), 
+.uncolorAllScenesBut.teal .scene:not(.teal),
+.uncolorAllScenesBut.cyan .scene:not(.cyan),
+.uncolorAllScenesBut.blue .scene:not(.blue),
+.uncolorAllScenesBut.purple .scene:not(.purple),
+.uncolorAllScenesBut.magenta .scene:not(.magenta),
+.uncolorAllScenesBut.pink .scene:not(.pink),
+.uncolorAllScenesBut.brown .scene:not(.brown),
+.uncolorAllScenesBut.gray .scene:not(.gray),
+.uncolorAllScenesBut.white .scene:not(.white),
+.uncolorAllScenesBut.black .scene:not(.black),
+
+.uncolorAllScenesBut.red .section:not(.red) > .section-heading, 
+.uncolorAllScenesBut.yellow .section:not(.yellow) > .section-heading,
+.uncolorAllScenesBut.orange .section:not(.orange) > .section-heading,
+.uncolorAllScenesBut.green .section:not(.green) > .section-heading, 
+.uncolorAllScenesBut.teal .section:not(.teal) > .section-heading,
+.uncolorAllScenesBut.cyan .section:not(.cyan) > .section-heading,
+.uncolorAllScenesBut.blue .section:not(.blue) > .section-heading,
+.uncolorAllScenesBut.purple .section:not(.purple) > .section-heading,
+.uncolorAllScenesBut.magenta .section:not(.magenta) > .section-heading,
+.uncolorAllScenesBut.pink .section:not(.pink) > .section-heading,
+.uncolorAllScenesBut.brown .section:not(.brown) > .section-heading,
+.uncolorAllScenesBut.gray .section:not(.gray) > .section-heading,
+.uncolorAllScenesBut.white .section:not(.white) > .section-heading,
+.uncolorAllScenesBut.black .section:not(.black) > .section-heading,
+
+.uncolorAllScenesBut.red .synopsiscontainer:not(.red), 
+.uncolorAllScenesBut.yellow .synopsiscontainer:not(.yellow),
+.uncolorAllScenesBut.orange .synopsiscontainer:not(.orange),
+.uncolorAllScenesBut.green .synopsiscontainer:not(.green), 
+.uncolorAllScenesBut.teal .synopsiscontainer:not(.teal),
+.uncolorAllScenesBut.cyan .synopsiscontainer:not(.cyan),
+.uncolorAllScenesBut.blue .synopsiscontainer:not(.blue),
+.uncolorAllScenesBut.purple .synopsiscontainer:not(.purple),
+.uncolorAllScenesBut.magenta .synopsiscontainer:not(.magenta),
+.uncolorAllScenesBut.pink .synopsiscontainer:not(.pink),
+.uncolorAllScenesBut.brown .synopsiscontainer:not(.brown),
+.uncolorAllScenesBut.gray .synopsiscontainer:not(.gray),
+.uncolorAllScenesBut.white .synopsiscontainer:not(.white),
+.uncolorAllScenesBut.black .synopsiscontainer:not(.black),
+
+.dimmedScene, 
+REMMED.dimmedScene > .sceneheading,
+REMMED.dimmedScene > .synopsiscontainer,
+REMMED.dimmedScene > .synopsiscontainer > .synopsis,
+
+.dimmedSection > .section-heading,
+.dimmedSection > .synopsiscontainer,
+REMMED.dimmedSection > .synopsis
+{
+
+	opacity: 0.15 !important
+
+}
 
 	.uncolorAllScenesBut.red .scene:not(.red), 
 	.uncolorAllScenesBut.yellow .scene:not(.yellow),
@@ -1371,7 +1290,7 @@ p >.clear{
 	.uncolorAllScenesBut.white .sceneheading:not(.white),
 	.uncolorAllScenesBut.black .sceneheading:not(.black),
 
-	.uncolorAllScenesBut.red .section-heading:not(.red):not(.level1 > .section-heading):not(.special), 
+	/*.uncolorAllScenesBut.red .section-heading:not(.red):not(.level1 > .section-heading):not(.special), 
 	.uncolorAllScenesBut.yellow .section-heading:not(.yellow):not(.level1 > .section-heading):not(.special),
 	.uncolorAllScenesBut.orange .section-heading:not(.orange):not(.level1 > .section-heading):not(.special),
 	.uncolorAllScenesBut.green .section-heading:not(.green):not(.level1 > .section-heading):not(.special), 
@@ -1384,7 +1303,22 @@ p >.clear{
 	.uncolorAllScenesBut.brown .section-heading:not(.brown):not(.level1 > .section-heading):not(.special),
 	.uncolorAllScenesBut.gray .section-heading:not(.gray):not(.level1 > .section-heading):not(.special),
 	.uncolorAllScenesBut.white .section-heading:not(.white):not(.level1 > .section-heading):not(.special),
-	.uncolorAllScenesBut.black .section-heading:not(.black):not(.level1 > .section-heading):not(.special),
+	.uncolorAllScenesBut.black .section-heading:not(.black):not(.level1 > .section-heading):not(.special),*/
+
+	.uncolorAllScenesBut.red .section:not(.red) /*> .section-heading*/, 
+.uncolorAllScenesBut.yellow .section:not(.yellow) /*> .section-heading*/,
+.uncolorAllScenesBut.orange .section:not(.orange) /*> .section-heading*/,
+.uncolorAllScenesBut.green .section:not(.green) /*> .section-heading*/,
+.uncolorAllScenesBut.teal .section:not(.teal) /*> .section-heading*/,
+.uncolorAllScenesBut.cyan .section:not(.cyan) /*> .section-heading*/,
+.uncolorAllScenesBut.blue .section:not(.blue) /*> .section-heading*/,
+.uncolorAllScenesBut.purple .section:not(.purple) /*> .section-heading*/,
+.uncolorAllScenesBut.magenta .section:not(.magenta) /*> .section-heading*/,
+.uncolorAllScenesBut.pink .section:not(.pink) /*> .section-heading*/,
+.uncolorAllScenesBut.brown .section:not(.brown) /*> .section-heading*/,
+.uncolorAllScenesBut.gray .section:not(.gray) /*> .section-heading*/,
+.uncolorAllScenesBut.white .section:not(.white) /*> .section-heading*/,
+.uncolorAllScenesBut.black .section:not(.black) /*> .section-heading*/,
 	
 	.uncolorAllScenesBut.red .synopsiscontainer:not(.red), 
 	.uncolorAllScenesBut.yellow .synopsiscontainer:not(.yellow),
@@ -1414,18 +1348,20 @@ p >.clear{
 	.uncolorAllScenesBut.brown .synopsiscontainer:not(.brown) > .synopsis:not(.brown),
 	.uncolorAllScenesBut.gray .synopsiscontainer:not(.gray) > .synopsis:not(.gray),
 	.uncolorAllScenesBut.white .synopsiscontainer:not(.white) > .synopsis:not(.white),
-	.uncolorAllScenesBut.black .synopsiscontainer:not(.black) > .synopsis:not(.black)
-	{
-		background-image: 
-			-webkit-linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0.1)),
-			-webkit-linear-gradient(top, var(--pageBackground), var(--pageBackground) 100%)
-		;
-		/* background-image: transparent !important;
-		background-color: transparent !important; */
+	.uncolorAllScenesBut.black .synopsiscontainer:not(.black) > .synopsis:not(.black),
 
-		border-color: rgba(0, 0, 0, 0.2) !important;
-		box-shadow: none !important;
-		color: rgba(0, 0, 0, 0.5) !important;
+	REMMED.dimmedScene,
+	REMMED.dimmedScene > .sceneheading,
+	REMMED.dimmedScene > .synopsiscontainer,
+	REMMED.dimmedScene > .synopsiscontainer > .synopsis,
+
+	.dimmedSection > .section-heading,
+	REMMED.dimmedSection > .synopsiscontainer,
+	REMMED.dimmedSection > .synopsis
+	{
+
+		--localColor: rgb(255,255,255) !important;
+
 	}
 
 	.uncolorAllScenesBut.red .section:not(.red), 
@@ -1441,99 +1377,54 @@ p >.clear{
 	.uncolorAllScenesBut.brown .section:not(.brown),
 	.uncolorAllScenesBut.gray .section:not(.gray),
 	.uncolorAllScenesBut.white .section:not(.white),
-	.uncolorAllScenesBut.black .section:not(.black){
+	.uncolorAllScenesBut.black .section:not(.black),
+	.dimmedSection
+	{
 
-		border-color: transparent !important;
+		border-color: rgba(255,255,255,0.15) !important;
 
 	}
+	
+REMOVE	.dimmedSection > .section-heading,
+REMOVE	.dimmedSection > .synopsiscontainer,
+REMOVE	.dimmedSection > .synopsis
+	{
 
-.synopsis.yellow,
-.scene.yellow{
-	background-color: hsla(var(--yellow), var(--colorTransparency)) !important;
-	}
-.synopsis.red,
-.scene.red{
-	background-color: hsla(var(--red), var(--colorTransparency)) !important;
-	}
-.synopsis.green,
-.scene.green{
-	background-color: hsla(var(--green), var(--colorTransparency)) !important;
-	}
-.synopsis.blue,
-.scene.blue{
-	background-color: hsla(var(--blue), var(--colorTransparency)) !important;
-	}
-.synopsis.cyan,
-.scene.cyan{
-	background-color: hsla(var(--cyan), var(--colorTransparency)) !important;
-	}
-.synopsis.teal,
-.scene.teal{
-	background-color: hsla(var(--teal), var(--colorTransparency)) !important;
-	}
-.synopsis.magenta,
-.scene.magenta{
-	background-color: hsla(var(--magenta), var(--colorTransparency)) !important;
-	}
-.synopsis.orange,
-.scene.orange{
-	background-color: hsla(var(--orange), var(--colorTransparency)) !important;
-	}
-.synopsis.purple,
-.scene.purple{
-	background-color: hsla(var(--purple), var(--colorTransparency)) !important;
-	}
-.synopsis.pink,
-.scene.pink{
-	background-color: hsla(var(--pink), var(--colorTransparency)) !important;
-	}
-.synopsis.brown,
-.scene.brown{
-	background-color: hsla(var(--brown), var(--colorTransparency)) !important;
-	}
-.synopsis.black,
-.scene.black{
-	background-color: hsla(var(--black), var(--colorTransparency)) !important;
-	}
-.synopsis.gray,
-.scene.gray{
-	background-color: hsla(var(--gray), var(--colorTransparency)) !important;
-	}
-.synopsis.white,
-.scene.white{
-	background-color: hsla(var(--white), var(--colorTransparency)) !important;
+		background-image: 
+			-webkit-linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0.1)),
+			-webkit-linear-gradient(top, var(--pageBackground), var(--pageBackground) 100%)
+		!important;
+		/* background-image: transparent !important;*/
+		/* background-color: transparent !important;  */
+
+		border-color: rgba(0, 0, 0, 0.2) !important;
+		box-shadow: none !important;
+		color: rgba(0, 0, 0, 0.5) !important;
+		/* border-color: transparent !important; */
+
 	}
 
-.scene.special, 
-.section.special>.synopsiscontainer, 
-.section.special>.synopsiscontainer>.synopsis/*, 
+REMOVE.scene.special, 
+REMOVE.section.special>.synopsiscontainer, 
+REMOVE.section.special>.synopsiscontainer>.synopsis/*, 
  .level1>.synopsiscontainer, */
 /* .level1>.synopsiscontainer>.synopsis  */
 {
 	background: none !important;
 	background-color: rgba(0, 0, 0, 0) !important;
 	background-image: none !important;
-	color: rgba(255, 255, 255, 0.8) !important;
+	/* color: rgba(255, 255, 255, 0.8) !important; */
 }
 
-.section.special>.synopsiscontainer, 
+/* .section.special>.synopsiscontainer, 
 .section.special>.synopsiscontainer>.synopsis {
 	text-align: left !important
-}
+} */
 
-.level1 > .synopsiscontainer .synopsis.isSelected,
-.synopsis.isSelected {
-	/* outline: 3px green solid !important; */
-	color: white !important;
-	background-image: linear-gradient(black 0%, black 100%) !important;
-}
 
-.synopsis.isSelected:hover {
-	/* outline: 3px green solid !important; */
-	color: white !important;
-	background-image: linear-gradient(black 0%, black 100%) !important;
-	opacity: 1 !important;
-}
+/*
+MARK: -"End of Types". so now what?
+*/
 
 #----------------------- {}
 #---------- END OF types {}
@@ -1662,7 +1553,27 @@ p.tooltipInfo{
 	display: none ;
 }
 
-.loggingIsOn .indicator p { /*for debugging purposes only*/
+.loggingIsOn .indicator p{
+
+	display: block !important; /*block for on*/
+	float: right !important;
+	padding: 1.5px 2px !important;
+	height: 16px;
+	width: 45px;
+	background-color: red !important;
+	margin-top: -8px !important;
+	margin-right: -1px !important;
+	text-align: right !important;
+	color: white !important;
+	font-size: 10px !important;
+	font-weight: bold !important;
+
+	clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%);
+	border-radius: 0 4px 4px 0;
+
+}
+
+nope.loggingIsOn .indicator p { /*for debugging purposes only*/
 	display: block !important; /*block for on*/
 	float: right !important;
 	padding: 0px 2px !important;
@@ -1868,17 +1779,18 @@ p.tooltipInfo{
 	
 /* --- HOVER COMES AFTER ALL COLORS --- */
 
-.scene:not(.noHover)/*:not(.hideSlugIfSmall)*/:not(.synopsiscontainer):not(.uncolorAllScenesBut .scene):not(.indexcards .scene):not(:has(.marker:hover)):hover{
+.scene:not(.noHover)/*:not(.synopsiscontainer)*/:not(.uncolorAllScenesBut .scene):not(.indexcards .scene):not(:has(.marker:hover, .synopsis:hover, .pageDivider:hover)):hover{
 	background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.60), rgba(20,20,20,0.60) 100%) !important;
 	color: white !important;
 }
 
-.scene:not(.noHover)/*:not(.hideSlugIfSmall)*/:not(.synopsiscontainer):not(.uncolorAllScenesBut .scene):hover > .sceneheading{
+.scene:not(.noHover)/*:not(.synopsiscontainer)*/:not(.uncolorAllScenesBut .scene):not(:has(.marker:hover, .synopsis:hover, .pageDivider:hover)):hover > .sceneheading{
 	/* color: inherit !important; */
 	color: white !important;
 }
 
 .indexcards .scene:not(.noHover):hover > .sceneheading{
+	color: white !important; 
 	background-color: black;
 }
 
@@ -1925,12 +1837,14 @@ p.tooltipInfo{
 		background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.80), rgba(20,20,20,0.80) 100%) !important;
 }
 	
-.section:not(.level1):not(.noHover):not(:has(:hover)):hover{
+.section:not(.level1):not(.noHover):not(:has(:hover)):hover,
+.section:not(.level1):not(.noHover):has(.section-heading:hover){
 	color: white !important;
 	border-color: rgba(40,40,40,1) !important;
 }
 
-.section:not(.level1):not(.noHover):not(:has(:hover)):hover > .section-heading{
+.section:not(.level1):not(.noHover):not(:has(:hover)):hover > .section-heading,
+.section:not(.level1):not(.noHover):has(.section-heading:hover) > .section-heading{
 	color: white !important;
 	background-color: rgba(40,40,40,1) !important;
 }
@@ -1963,10 +1877,9 @@ html[data-theme='Beat'] :not(.indexcards) .section:not(.level1):not(.noHover):ha
 	color: white !important
 }
 
-
-/* ========================================================================== */
-/* här kommer en divider. */
-
+/*
+MARK: -UI
+*/
 
 #----------------------------{}
 #----------- UI -------------{}
@@ -2373,6 +2286,10 @@ button:hover{
 	/* transition: all 0.2s !important */
 }
 
+/*
+MARK: -Inline Synopsis
+*/
+
 --------------------------------------------- {}
 -- SHOWING INLINE SYNOPSIS ------------------ {}
 --------------------------------------------- {}
@@ -2404,15 +2321,25 @@ button:hover{
 
 .showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
 	display: block	 !important;
-	max-height: 100% !important;
+	max-height: 110% !important;
 	height: auto;
 	overflow-x: hidden;
 	overflow-y: scroll;
 
 	font-size: calc(10px * var(--fontSizeFactor)) !important;
 	line-height: calc(14px * var(--fontSizeFactor)) !important;
-	padding-top: 0px !important
+	/* padding-top: 0px !important; */
+	
+	margin: 0;
+	padding: 0;
+	
+	background: none !important;
+	position:relative;
+	/* padding-top: 3px !important;
+	padding-bottom: 3px !important; */
 }
+
+
 
 .showSynopsisInScenes:not(.indexcards):not(.nonProportionalMode) .synopsiscontainer{
 
@@ -2433,8 +2360,8 @@ button:hover{
 } */
 
 
-.showSynopsisInScenes:not(.indexcards) .scene:hover .synopsis,
-.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:hover .synopsis{
+DISABLED.showSynopsisInScenes:not(.indexcards) .scene:hover .synopsis,
+DISABLED.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:hover .synopsis{
 	color: white !important
 }
 
@@ -2457,46 +2384,181 @@ button:hover{
 	max-height: calc(100% - 0px * var(--fontSizeFactor)) !important;
 }
 
+/*
+MARK: -Grey only
+*/
+
 #--------------------------------------------- {}
 #----- TURNING_OFF_COLORS -------------------- {}
 #--------------------------------------------- {}
 
 .greyonly .scene:not(.special),
 html:not(html[data-outdoors='1']) .greyonly.indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):not(.special > .synopsiscontainer):not(.dimmedScene .synopsiscontainer):not(.dimmedSection > .synopsiscontainer):not(.dimmedSection > .orphanText > .synopsiscontainer) { 
-	background-color: #ddd !important;
+	/* background-color: #ddd !important; */
+	--localColor: #ddd !important;
 }
 
-.greyonly:not(html[data-outdoors='1'] .greyonly) .section-heading:not(.level1>.section-heading):not(.special>.section-heading):not(.section-heading:hover)/*:not(.section:hover>.section-heading)*/ { 
-	background-color: #ccc !important;
+.greyonly/*:not(html[data-outdoors='1'] .greyonly)*/ .section,
+.greyonly/*:not(html[data-outdoors='1'] .greyonly)*/ .section-heading:not(.level1>.section-heading):not(.special>.section-heading):not(.section-heading:hover)/*:not(.section:hover>.section-heading)*/ { 
+	/* background-color: #ccc !important; */
+	--localColor: #ccc !important;
 }
 
-.greyonly .section:not(.level1):not(.special):not(.dimmedSection)/*:not(.section:hover)*/:not(.uncolorAllScenesBut .section) {
-	border-color: #bbb !important;
+.greyonly .synopsis{
+
+	--localSynopsisColor: black !important;
+
 }
 
-html:not([data-outdoors='1']) #flexiContainer.greyonly .synopsis{
+html:not([data-outdoors='1']) #flexiContainer.greyonly .scene .synopsis,
+html:not([data-outdoors='1']) #flexiContainer.greyonly.indexcards .section:not(.level1, .special) > .synopsiscontainer > .synopsis{
+	color: black !important;
 	background: transparent !important;
 }
 
-.debug{
+html:not([data-outdoors='1']) #flexiContainer.greyonly .section > .synopsiscontainer > .synopsis{
+	color: white !important;
+	background: transparent !important;
+}
+
+html:not([data-outdoors='1']) #flexiContainer.greyonly:not(.indexcards) .section > .synopsiscontainer > .synopsis:hover,
+html:not([data-outdoors='1']) #flexiContainer.greyonly:not(.indexcards) .section > .synopsiscontainer > .synopsis:hover::before,
+html:not([data-outdoors='1']) #flexiContainer.greyonly .scene .synopsis:hover,
+html:not([data-outdoors='1']) #flexiContainer.greyonly .scene .synopsis:hover::before{
+	color: white !important;
+	background: black !important;
+}
+
+DISABLED.debug{
 	display: none;
 }
 
-.showDebug .debug{
+DISABLED.showDebug .debug{
 	font-weight: bold;
 	display: unset !important;
 }
 
-/* Moved to notepanel.html in order to come after notepanel */
-/* .noAnimation{ 
-	transition: none !important;
-} */
+/*
+MARK: -High Contrast
+*/
 
 #---------------- HI CONTRAST --------------{}
 
+html[data-outdoors='1']{
+	
+	--pageBackground: #fff; /* scrap this entire line when done with light bkg */
+	
+}
+
+html[data-outdoors='1'] #flexiContainer:not(.indexcards) .section:not(.level1){
+
+	border-color: black;
+	border-width: 1px;
+	padding-left: 2px;
+	
+	border-top-width: 1px;
+	border-top-style: solid;
+
+	box-shadow: inset 5px 0 0 0 var(--localColor);
+
+}
+
+html[data-outdoors='1'] .section > .section-heading:not(.level1 > .section-heading){
+	
+	color: black !important;
+	background: white !important;
+	background: transparent !important;
+	border-top: 1px black solid;
+	border-left: 1px black solid;
+	border-right: 1px black solid;
+
+}
+
+html[data-outdoors='1'] :not(.indexcards) .section:not(.level1, .special) > .section-heading{
+
+	border-top: none;
+	border-left: none;
+
+}
+
+html[data-outdoors='1'] .indexcards .section:not(.level1, .special) > .section-heading,
+html[data-outdoors='1'] .indexcards .section:not(.level1, .special) > .synopsiscontainer{
+
+	border: 1px black solid !important;
+	box-shadow: 8px 0 0 0px inset var(--localColor) !important;
+
+}
+
+html[data-outdoors='1'] .indexcards .section:not(.level1, .special) > .section-heading{
+
+	padding-left: 10px !important;
+	
+}
+
+html[data-outdoors='1'] .isExpanded > .scene{
+
+	border: 1px solid black !important;
+	background-color: white;
+	box-shadow: none !important; 
+
+	box-shadow: 6px 0 0 0px inset var(--localColor) !important;
+
+}
+
+html[data-outdoors='1'] .isExpanded > .scene.isOmitted{
+
+	--hslPageBackground: 180, 0%, 50% !important;
+	background-color: var(--localColor);
+	background-color: white
+
+}
+
+html[data-outdoors='1'] .isExpanded > .scene::before{
+
+	border-color: black;
+
+}
+
+html[data-outdoors='1'] .sceneheading,
+html[data-outdoors='1'] .synopsiscontainer,
+html[data-outdoors='1'] .synopsis{
+	
+	color: black !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	
+}
+
+html[data-outdoors='1'] .sceneheading{
+
+	padding-left: 8px !important;
+
+}
+
+html[data-outdoors='1'] .sceneheading:not(.nonProportionalMode .sceneheading:not(.isExpanded > .sceneheading)){
+
+	margin-top: -1.5px !important;
+}
+
+
+html[data-outdoors='1'] .level1 > .section-heading,
+html[data-outdoors='1'] .section.special > .section-heading,
+html[data-outdoors='1'] #buttonRow *,
+html[data-outdoors='1'] .showActLength
+{
+
+	color: black !important;
+	fill: black !important;
+	opacity: 1 !important;
+
+	transition: opacity 0s !important;
+	
+}
+
 html[data-outdoors='1'] /* .greyonly */ .scene:not(.special){
-	/* background-color: #eee !important; */
+
 	font-weight: 600 !important;
+
 }
 
 html[data-outdoors='1'] #flexiContainer:not(.indexcards):not(.nonProportionalMode) .blankPage {
@@ -2569,42 +2631,32 @@ html[data-outdoors='1'] #flexiContainer:not(.indexcards):not(.nonProportionalMod
 
 }
 
-html[data-outdoors='1'] /* .greyonly */ .showSceneLength,
-html[data-outdoors='1'] /* .greyonly */ .showSceneNum{
-	/* background-color: #eee !important; */
-	/* font-weight: 900 !important; */
+html[data-outdoors='1'] .showSceneLength,
+html[data-outdoors='1'] .showSceneNum{
+	
 	opacity: 1 !important;
+
 }
 
-html[data-outdoors='1'] /*.greyonly*/ .section-heading,
-html[data-outdoors='1'] .boneyardIsClosed/*.greyonly*/ .boneyard::before,
-html[data-outdoors='1'] /*.greyonly*/ .section-heading > .showSectionPageNumber{
-	/* background-color: #eee !important;
-	font-weight: 600 !important; */
+html[data-outdoors='1'] .section-heading,
+html[data-outdoors='1'] .boneyardIsClosed .boneyard::before,
+html[data-outdoors='1'] .section-heading > .showSectionPageNumber{
+	
 	color: black !important;
 	opacity: 1 !important;
+
 }
 
 html[data-outdoors='1'] #outOfSyncDiv{
-background: 	repeating-linear-gradient(
-	-45deg,
-	transparent,
-	transparent 3px,
-	#ddd 3px,
-	#ddd 6px)
-	/* ,#555 !important */
-;
-}
 
-html[data-outdoors='1'] /*.indexcards*/ .section:not(.level1){
-
-	/* border-top: 3px solid !important; */
-	/* border-left: 3px solid black !important; */
-	border-left-width: 5px !important;
-	border-left-style: solid !important;
-	border-radius:6px !important;
-	padding-left: 3px !important;
-	
+	background: 	repeating-linear-gradient(
+		-45deg,
+		transparent,
+		transparent 3px,
+		#ddd 3px,
+		#ddd 6px)
+		/* ,#555 !important */
+	;
 }
 
 html[data-outdoors='1'] .indexcards .section:not(.level1) > .section-heading{
@@ -2613,42 +2665,44 @@ html[data-outdoors='1'] .indexcards .section:not(.level1) > .section-heading{
 
 }
 
-html[data-outdoors='1'] /*.indexcards*/ .section > .section-heading:not(.level1 > .section-heading){
-	color: black !important;
-	background: white !important;
-	border-top: 1px black solid;
-	border-left: 1px black solid;
-	border-right: 1px black solid;
-	}
-
 html[data-outdoors='1'] :not(.indexcards) .section > .section-heading:not(.level1 > .section-heading){
 
 	border-bottom: 1px black solid;
 }
 
+html[data-outdoors='1'] .section:not(.level1):not(.noHover):not(:has(:hover)):hover,
+html[data-outdoors='1'] .section:not(.level1):not(.noHover):has(.section-heading:hover){
 
-html[data-outdoors='1'] /*.indexcards*/ .section:not(:has(:hover)):hover > .section-heading:not(.level1 > .section-heading){
+	--localColor: black !important
 
-	color: white !important;
-	background: black !important;
+}
 
+html[data-outdoors='1'] .section:not(.level1):not(.noHover):not(:has(:hover)):hover > .section-heading,
+html[data-outdoors='1'] .section:not(.level1):not(.noHover):has(.section-heading:hover) > .section-heading{
+/* html[data-outdoors='1'] .section:not(:has(:hover)):hover > .section-heading:not(.level1 > .section-heading){ */
+
+	color: white !important;	
+	/* background: black !important; */
 
 }
 
 html[data-outdoors='1'] :not(.indexcards) .section.special > .section-heading{
+
 	border: none !important
+
 }
 
 
-html[data-outdoors='1'] /*.indexcards*/ .level1 .synopsis,
+html[data-outdoors='1'] .level1 .synopsis,
 html[data-outdoors='1'] .section.special > .synopsiscontainer > .synopsis
 {
 	color: black !important
-	}
+
+}
 
 
-html[data-outdoors='1'] .indexcards .isExpanded > .scene:not(.special),
-html[data-outdoors='1'] .indexcards .synopsiscontainer:not(.level1 > .synopsiscontainer):not(.level1 > .orphanText > .synopsiscontainer):not(.special > .synopsiscontainer):not(.special > .orphanText > .synopsiscontainer):not(.dimmedScene .synopsiscontainer):not(.dimmedSection > .synopsiscontainer):not(.dimmedSection > .orphanText > .synopsiscontainer):not(.scene > .synopsiscontainer) { 
+html[data-outdoors='1'] .indexcards .isExpanded > .scene:not(.special)
+{ 
 
 	border-left: 1px solid black !important;
 	border-right: 1px solid black !important;
@@ -2661,67 +2715,43 @@ html[data-outdoors='1'] .indexcards .synopsiscontainer:not(.level1 > .synopsisco
 html[data-outdoors='1'] :not(.indexcards) .synopsis{
 	background: transparent !important;
 	color: black !important;
-	/* outline: 1px red solid !important; */
 }
 
+html[data-outdoors='1'] .synopsis::before
+{
 
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.red::before{color: hsla(var(--red),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.orange::before{color: hsla(var(--orange),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.yellow::before{color: hsla(var(--yellow),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.green::before{color: hsla(var(--green),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.teal::before{color: hsla(var(--teal),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.cyan::before{color: hsla(var(--cyan),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.blue::before{color: hsla(var(--blue),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.purple::before{color: hsla(var(--purple),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.pink::before{color: hsla(var(--pink),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.magenta::before{color: hsla(var(--magenta),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.brown::before{color: hsla(var(--brown),100%) !important;}
-html[data-outdoors='1'] #flexiContainer:not(.greyonly) .synopsis.grey::before{color: hsla(var(--grey),100%) !important;}
-/* html[data-outdoors='1'] :not(.indexcards) .synopsis.red::before{color: var(--red)} */
+	color: var(--localSynopsisColor) !important;
+	/* font-size: calc(30px * var(--fontSizeFactor)) !important; */
 
+}
 
+html[data-outdoors='1'] .synopsis:hover::before
+{
+
+	color: inherit !important;
+
+}
 
 html[data-outdoors='1'] .indexcards .synopsis:hover{
+
 	color: white !important;
 	background-color: black !important;
+
 }
 
 html[data-outdoors='1'] .synopsis.isSelected {
+
 	color: white !important;
 	background-color: black !important;
 	background-image: linear-gradient(black, black);
 	background: black !important;
-}
 
-.synopsis:hover::before,
-.synopsis.isSelected::before{
-	color: black !important;
 }
 
 html[data-outdoors='1'] .indexcards .section:hover .sectionArrow {
 
 	border-color: white !important;
 	opacity: 1;
-
-}
-
-/* html[data-outdoors='1'] .scene:not(.indexcards .section:not(.isExpanded > .scene)) { */
-/* html[data-outdoors='1'] .scene:not(:not(.section.isExpanded > .scene)) { */
-/* html[data-outdoors='1'] :not(.indexcards) .scene, */
-html[data-outdoors='1'] .scene:not(.indexcards .scene),
-html[data-outdoors='1'] .indexcards .isExpanded > .scene,
-html[data-outdoors='1'] .indexcards .isExpanded > .scene > .synopsiscontainer {
-
-	/* background-color: red !important; */
-	background-image: linear-gradient(white, white) !important;
-
-	color: black !important;
-
-}
-
-html[data-outdoors='1'] .dimmedScene .synopsis{
-
-	color: #ddd !important;
 
 }
 
@@ -2738,120 +2768,73 @@ rgba(221, 221, 221, 1) !important */
 ;
 }
 
-html[data-outdoors='1'] .sceneheading {
-
-	color: black !important;
-	fill: black !important;
-	background-color: white !important;
-	mix-blend-mode: darken;
-	/* font-weight: bold; */
-}
-
-/* html[data-outdoors='1'] .indexcards .scene,
-html[data-outdoors='1'] .indexcards .sceneheading {
-
-	background: red;
-
-} */
-
-html[data-outdoors='1'] .indexcards .scene:hover > .sceneheading{
-
-	background-color: black !important;
-}
-
 html[data-outdoors='1'] .scene:hover > .sceneheading {
 
-	color: white !important;
+	color: black !important;
 	background-color: transparent !important;
+	/* background-color: var(--localColor) !important; */
 	mix-blend-mode: normal;
 	opacity: 1 !important;
 
 }
+
+html[data-outdoors='1'] .indexcards .scene:hover > .sceneheading{
+
+	background-color: black !important;
+	color: white !important
+}
+
 
 html[data-outdoors='1'] .padlockIcon, 
 html[data-outdoors='1'] .showSceneNum {
 
 	opacity: 0.6;
 	font-weight: normal;
+
+}
+
+html[data-outdoors='1'] .arrowForIndexCards::before {
+
+	color: black !important;
+
 }
 
 html[data-outdoors='1'] .indexcards .arrowForIndexCards::before {
+
 	left: -12.5px !important;
 	top: -2px !important;
+
 }
 
 html[data-outdoors='1'] .indexcards .section.isExpanded > .scene > .arrowForIndexCards::before {
+
 	left: -21px !important;
-	/* border: red 1px solid !important; */
+	
 }
 
 html[data-outdoors='1'] .arrowForIndexCards:hover::before {
 	
 	color: black !important;
+
 } 
 
-html[data-outdoors='1'] :not(.indexcards) .section:hover > .synopsiscontainer > .synopsis:not(.isSelected) {
-	color: black !important;
-}
-
-html[data-outdoors='1'] #flexiContainer/*:not(.indexcards)*/ .synopsis:hover {
+html[data-outdoors='1'] .synopsis:hover {
 	color: white !important;
 	background-color: black !important;
 }
 
-html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .section-heading{
-/* html[data-outdoors='1'] .indexcards .section.isSelected > .section-heading .synopsiscontainer { */
-
-	background: black !important;
-	color: white !important;
-	opacity: 1 !important;
-
-}
-
-html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .synopsiscontainer,
-html[data-outdoors='1'] /* .indexcards */#flexiContainer .section.isSelected > .synopsiscontainer > .synopsis{
-
-	background: transparent !important;
-	color: black !important;
-
-}
-
-
-
-html[data-outdoors='1']   .scene.isSelected,
-html[data-outdoors='1']   .scene.isSelected > .sceneheading,
-html[data-outdoors='1']   .scene.isSelected > .synopsiscontainer{
-	/* html[data-outdoors='1'] .indexcards .section.isSelected > .section-heading .synopsiscontainer { */
+html[data-outdoors='1']  .section:not(.level1).isSelected > .section-heading,
+html[data-outdoors='1']  .section:not(.level1).isSelected > .synopsiscontainer,
+html[data-outdoors='1']  .scene.isSelected,
+html[data-outdoors='1']  .scene.isSelected > .sceneheading,
+html[data-outdoors='1']  .scene.isSelected > .synopsiscontainer{
 	
 		color: white !important;
-		/* border: 30px lime !important; */
 		
 		opacity: 1 !important;
-		background-image: linear-gradient(black, black) !important;
+		/* background-image: linear-gradient(black, black) !important; */
+		background: black !important;
 	
-	}
-
-	/* .scene.isSelected{
-
-		border: 300px yellow solid !important;
-	} */
-
-html[data-outdoors='1'] #flexiContainer:not(.indexcards):not(.greyonly) .scene:not(.dimmedScene)::after,
-html[data-outdoors='1'] #flexiContainer.indexcards:not(.greyonly) .isExpanded .scene.scene:not(.dimmedScene)::after{
-
-	content: " ";
-	height: calc(100% + 2px);
-	position: absolute;
-	top: -1px;
-	left: -7px;
-
-	width: 4px;
-	border-radius: 1000px;
-	border: 0px;
-
-	background-color: inherit !important;
-
-
 }
 
 html[data-outdoors='1'] .widerButton,
@@ -2861,8 +2844,22 @@ html[data-outdoors='1'] .widerButtonOn{
 
 }
 
+html[data-outdoors='1'] .pageDivider {
 
+	--pageDividerColor: rgba(0,0,0,0) !important;
 
+}
+
+html[data-outdoors='1'] #flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
+html[data-outdoors='1'] #flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{
+
+	--pageDividerColor: rgba(0,0,0,1) !important; 
+	
+}
+
+/*
+MARK: -Boneyard
+*/
 
 #--------------------------------------------- {}
 #----- BONEYARD_STUFF ------------------------ {}
@@ -3036,6 +3033,10 @@ float: right;
 .boneyard:hover *{
 	opacity: 1 !important;
 }
+
+/*
+MARK: -Buttons
+*/
 
 #----- BUTTONS ---------------{}
 

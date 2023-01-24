@@ -161,8 +161,10 @@
     transition: all 0.5s !important;
 }
 
-.longerAnimation{
-    transition: all 0.5s !important;
+.longerAnimation,
+.longerAnimation * {
+    transition-delay: 0ms !important;
+    transition:  0.5s !important;
 }
 
 .level1.mustAnimate{
@@ -725,8 +727,6 @@ function onDragOverForSections(e, draggedOver){
     //find place to insert the dropDiv
         let insertBeforeScene = Number(draggedOver.nextSibling?.id)
 
-        console.log(insertBeforeScene)
-
         if (!insertBeforeScene){
         insertBeforeScene = Number(draggedOver.id) + 1
             if(!actDrag){
@@ -740,8 +740,6 @@ function onDragOverForSections(e, draggedOver){
             }
         }
 
-        console.log("-->", insertBeforeScene)
-
         dropDiv.dataset.insertBeforeScene = insertBeforeScene
             if (beforeOrAfter == "beforebegin"){
                 dropDiv.dataset.insertBeforeScene = Number(draggedOver.id)
@@ -750,6 +748,8 @@ function onDragOverForSections(e, draggedOver){
     //now adjusting everything if draggedOver was level1 (fri 13)
     //but only if we are NOT dragging an entire act! (2023-01-05)
         if(draggedOver.classList.contains("level1") && !$id("ghost").firstChild.classList.contains("level1")){
+
+            console.log("🥸🥸🥸")
                         
             // first correctly store drop index
             //dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1 //changed 2023-01-04
@@ -764,10 +764,11 @@ function onDragOverForSections(e, draggedOver){
                 draggedOver = draggedOver.lastChild
                 beforeOrAfter = "afterend"
             }else{
+
+                dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1
                 draggedOver = draggedOver.querySelector(".section-heading")
                 beforeOrAfter = "afterend"
             }
-
 
         }
 

@@ -24,7 +24,7 @@
 
 }
 
-.menu .name{
+:is(.menu, .modal) .name{
 
     background: #bbb;
     color: white;
@@ -52,7 +52,7 @@
     --pointer-placement: 15%;
 }
 
-.menu strong {
+:is(.menu, .modal) strong {
 
     font-weight: 700;
     padding-top: 16px !important;
@@ -60,7 +60,7 @@
 
 }
 
-.menu .shortcut{
+:is(.menu, .modal) .shortcut{
 
     float: right;
 
@@ -123,10 +123,10 @@
     text-align: left;
 }
 
-.menu ul,
-.menu label,
-.menu input,
-.menu .shortcut
+:is(.menu, .modal) ul,
+:is(.menu, .modal) label,
+:is(.menu, .modal) input,
+:is(.menu, .modal) .shortcut
 /* .menu .select */
  {
 
@@ -184,11 +184,11 @@
 }
 
 
-.menu select:focus{
+:is(.menu, .modal) select:focus{
     outline: none;
 }
 
-.menu .label{
+:is(.menu, .modal) .label{
 
     position: relative;
     display: inline;
@@ -196,11 +196,11 @@
 
 }
 
-.menu strong + .shortcut{
+:is(.menu, .modal) strong + .shortcut{
     padding-right: 6px;
 }
 
-.menu li{
+:is(.menu, .modal) li{
 
     display: block;
     white-space: nowrap;
@@ -211,7 +211,7 @@
 
 }
 
-.menu li:hover {
+:is(.menu, .modal) li:hover {
 
     background-color: #027aff;
     color: white
@@ -219,15 +219,15 @@
 }
 
 /* .menu li:has(select), */
-.menu li.hasSelect{
+:is(.menu, .modal) li.hasSelect{
     padding: 4px 6px 0px 4px !important;
     line-height: 10px !important;
     position: relative;
     background: rgba(206,206,206);
 }
 /* .menu li:has(select)::after, */
-.menu li.hasSelect::before,
-.menu li.hasSelect::after{
+:is(.menu, .modal) li.hasSelect::before,
+:is(.menu, .modal) li.hasSelect::after{
         content: " ";
     white-space: pre;
     position: absolute;
@@ -243,7 +243,7 @@
     transform: rotate(45deg) translate(0px, 6px);
 }
 
-.menu li.hasSelect::after{
+:is(.menu, .modal) li.hasSelect::after{
 
     border-left: none;
     border-top: none;
@@ -254,8 +254,8 @@
 
 }
 
-.menu li.hasSelect:hover::before,
-.menu li.hasSelect:hover::after{
+:is(.menu, .modal) li.hasSelect:hover::before,
+:is(.menu, .modal) li.hasSelect:hover::after{
     border-color: white !important;
 }
 
@@ -266,7 +266,7 @@
 
 
 
-.menu .centered{
+:is(.menu, .modal) .centered{
     /* text-align: center !important; */
     display: flex !important;
     flex-direction: row;
@@ -275,7 +275,7 @@
     /* border: 1px blue dotted;  */
 }
 
-.menu .centered > * {
+:is(.menu, .modal) .centered > * {
 
     flex-grow: 1;
     flex-basis: 0;
@@ -288,7 +288,7 @@
     text-align: center;
 } */
 
-.menu .radio{
+:is(.menu, .modal) .radio{
 
     flex-grow: 0 !important;
     flex-basis: auto !important;
@@ -309,7 +309,7 @@
 
 }
 
-.menu input:checked + .radio {
+:is(.menu, .modal) input:checked + .radio {
     background-color: black;
 }
 
@@ -329,7 +329,7 @@
 
 } */
 
-.menu input:checked + .radio::after{
+:is(.menu, .modal) input:checked + .radio::after{
 
 content: " ";
 
@@ -348,7 +348,7 @@ box-shadow: inset 0px 0px 4px white,
 
 }
 
-.menu .switch{
+:is(.menu, .modal) .switch{
 
     flex-grow: 0 !important;
     flex-basis: auto !important;
@@ -369,7 +369,7 @@ box-shadow: inset 0px 0px 4px white,
     /* line-height: 12px !important; */
 
 }
-.menu .switch::before{
+:is(.menu, .modal) .switch::before{
 
     position: absolute;
     top: -2px;
@@ -385,7 +385,7 @@ box-shadow: inset 0px 0px 4px white,
 
 }
 
-.menu input{
+:is(.menu, .modal) input{
     flex-grow: 0 !important;
     opacity: 0;
     width: 0px !important;
@@ -395,21 +395,21 @@ box-shadow: inset 0px 0px 4px white,
     /* line-height: 14px !important; */
 }
 
-.menu input:not(:checked) + .switch::before,
-.menu input:not(:checked) + label + .switch::before{
+:is(.menu, .modal) input:not(:checked) + .switch::before,
+:is(.menu, .modal) input:not(:checked) + label + .switch::before{
     
     left: -1px;
 
 }
 
-.menu input:checked + .switch::before,
-.menu input:checked + label + .switch::before{
+:is(.menu, .modal) input:checked + .switch::before,
+:is(.menu, .modal) input:checked + label + .switch::before{
 
     right: -1px;
 }
 
-.menu input:indeterminate + .switch::before,
-.menu input:indeterminate + label + .switch::before{
+:is(.menu, .modal) input:indeterminate + .switch::before,
+:is(.menu, .modal) input:indeterminate + label + .switch::before{
 
     left: 9px;
     top: 1px;
@@ -419,12 +419,12 @@ box-shadow: inset 0px 0px 4px white,
 
 }
 
-.menu input:checked + .switch,
-.menu input:checked + label + .switch{
+:is(.menu, .modal) input:checked + .switch,
+:is(.menu, .modal) input:checked + label + .switch{
     background: #333;
 }
 
-.menu hr{
+:is(.menu, .modal) hr{
     opacity: 0.5;
 }
 
@@ -490,7 +490,7 @@ overflow: hidden; */
 } */
 
 
-.menu .hint {
+:is(.menu, .modal) .hint {
 
 opacity: 0.6;
 padding-top: 6px !important;
@@ -814,11 +814,11 @@ function showStuffMenu(){
         <li onclick="zoomSizes('0')">Reset Font Size<span class="shortcut" style="float:right">&#8984;0</span></li-->
 
         <hr>
-        <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleMultipleSceneLines()">
+        <!--li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleMultipleSceneLines()">
             <input id="buttonForSceneLines" type="checkbox">
                 <div class="switch"></div> 
                     <label for="buttonForSceneLines">Multiple Scene Lines<span class="shortcut" style="float:right">^L</span></label>
-        </li>
+        </li-->
         <li ${indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis()">
             <input id="buttonForSynopsis" type="checkbox">
                 <div class="switch"></div> 
@@ -1075,9 +1075,8 @@ function settingsMenu(){
                     <label for="buttonForRealTimeUpdates">Disable Real Time<span class="shortcut" style="float:right"></span></label>
         </li>
         <p class="hint">If you experience lag while typing, you can disable real-time updating. As soon as FTOutliner is focused again, it will catch up with your changes.</p>
-
         <hr>
-        <strong>Color Settings: </strong><span class="shortcut" style="float:right">C</span><br/>
+        <strong>Color Scheme: </strong><span class="shortcut" style="float:right">C</span><br/>
             <li class="centered" onclick="toggleColorScheme()">
                 <input id="buttonForColors" type="checkbox">
                     <label for="buttonForColors" class="labelBefore">FTOutliner</label>
@@ -1089,6 +1088,11 @@ function settingsMenu(){
                 <div class="switch"></div>  
                     <label for="buttonForInverted">Invert text on dark shades<!--span class="shortcut" style="float:right">N</span--></label>
         </li>
+        <hr>
+        <!--strong>Advanced:</strong><br/-->
+        <li onclick='if(!$id("advancedSettings").open)$id("advancedSettings").showModal()'>
+            <p>Advanced Settings…
+                <span class="shortcut" style="float:right">⌘,</span></li>
         <hr>
         <strong>Help:</strong><br/>
         <li onclick="displayAboutBox()">
@@ -1222,7 +1226,6 @@ function setAllButtons(){
     if($id("buttonForReviews")){$id("buttonForReviews").checked = (reviewsAreDisplayed == true)}
     if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
 
-    if($id("buttonForSceneLines")){$id("buttonForSceneLines").checked = ($id("flexiContainer").classList.contains("dualSceneLines"))}
     if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}
     if($id("buttonForOnlySynopsis")){$id("buttonForOnlySynopsis").checked = (flexiContainer.classList.contains("onlySynopsis"))}
     
@@ -1234,6 +1237,15 @@ function setAllButtons(){
     if($id("buttonForLogging")){$id("buttonForLogging").checked = loggingIsOn}
 
     if($id("buttonForVoiceOvers")){$id("buttonForVoiceOvers").checked = !userDefault.excludeVoiceOvers}
+
+    //ADVANCED DIALOG BUTTONS. (No if needed, bc created at launch with html)
+
+    $id("buttonForDualLines").checked = documentSetting.showMultipleSceneLines
+    $id("buttonForDualSectionLines").checked = documentSetting.showMultipleSectionLines
+    $id("buttonForLowerCase").checked = documentSetting.allowLowerCaseSections
+    $id("buttonForPageDividers").checked = documentSetting.showPageDividers
+    $id("buttonForAlways").checked = documentSetting.showPageDividersAlways
+    $id("buttonForVerticals").checked = documentSetting.showVerticals
 
     saveCurrentState()
 }

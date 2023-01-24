@@ -144,6 +144,7 @@ var pinPushedIcon = /*svg*/`
     </svg>
 `
 
+var isFullScreen = false //this one will be TRUE when entering full screen (and false when exiting) and stop window size from being saved
 
 var scenesWereProportionalBeforeIndexMode = false
 var actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening if an error fires
@@ -293,4 +294,5 @@ var currentParentScroll = false
 var pageDividers = []
 
 // var alreadyRunningPainting = false
+var editBoxResizeObserver
 </script>
