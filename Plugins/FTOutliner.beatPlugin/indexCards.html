@@ -34,7 +34,9 @@ function anArrowWasClicked(theClickedThing, triggeredWithKey){
 
 	mylog()
 	if (!theClickedThing)return
+	if (!indexCardMode && areScenesProportional) return
 	//mylog("this was clicked: " + theClickedThing.classList )
+
 
 	let closestSectionAbove = theClickedThing.closest(".section")
 
@@ -427,10 +429,17 @@ function indexCardEditor(theElement){
 		synEditBox.style.backgroundImage = "none"
 		synEditBox.style.color = "black"
 		synEditBox.style.border = attributes.border
-		synEditBox.style.position = "absolute"
+			if(indexCardMode) synEditBox.style.position = "absolute"
+			if(areScenesProportional == 0) synEditBox.style.position = "relative"
 		synEditBox.style.top = 0 + "px"
 		synEditBox.style.left = 0 + "px"
-		synEditBox.style.height = measures.height + "px"
+			if(indexCardMode 
+					&& !synopsisContainer.closest(".scene, .section").classList.contains("level1")
+					&& !synopsisContainer.closest(".scene, .section").classList.contains("special")){
+				synEditBox.style.height = measures.height + "px"
+			}else{
+				synEditBox.style.height = "auto"
+			}
 		synEditBox.style.width = measures.width + "px"
 		synEditBox.style.whiteSpace = "normal"
 		synEditBox.style.overflowY = "auto"
@@ -454,6 +463,7 @@ function indexCardEditor(theElement){
 				synDiv.innerHTML = synopse.innerHTML
 				synDiv.dataset.beforeEdit = synopse.innerHTML
 				synDiv.style.color = synopse.style.color
+				synDiv.style.setProperty("--localSynopsisColor", getComputedStyle(synopse).getPropertyValue("--localSynopsisColor"))
 				synDiv.style.opacity = "1"
 
 			synEditBox.appendChild(synDiv)
@@ -474,7 +484,8 @@ function indexCardEditor(theElement){
 		}
 
 
-	synopsisContainer.appendChild(synEditBox)
+	// synopsisContainer.appendChild(synEditBox)
+	synopsisContainer.insertAdjacentElement("afterbegin", synEditBox)
 
 	let blurListener = new AbortController()
 
@@ -571,6 +582,16 @@ function addConfirmButtons(synopsisContainer, blurListener){
 
 	flexiContainer.appendChild(okButton)
 
+	editBoxResizeObserver = new ResizeObserver(entries => {
+            for (entry of entries){
+				boxPos = entry.target.getBoundingClientRect()
+				boxScroll = flexiContainer.scrollTop
+                okButton.style.top = boxPos.top + boxPos.height + boxScroll - 10 + "px"
+                cancelButton.style.top = boxPos.top + boxPos.height + boxScroll - 10 + "px"
+            }
+        })
+        editBoxResizeObserver.observe($("#synEditBox"))
+
 	okButton.addEventListener("mousedown", function(){
 		blurListener.abort();
 		event.stopImmediatePropagation()
@@ -587,6 +608,8 @@ function addConfirmButtons(synopsisContainer, blurListener){
 }
 
 function removeConfirmButtons(){
+
+	editBoxResizeObserver?.disconnect()
 
 	$id("cancelButton")?.remove()
 	$id("okButton")?.remove()
@@ -949,6 +972,177 @@ Beat.onSelectionChangeDisabled = true
 	
 }
 
+#flexiContainer:not(.indexcards) #synEditBox .synopsis{
+
+	color: white
+
+}
+
+.synopsiscontainer:has(#synEditBox) {
+
+	pointer-events: none;
+
+}
+
+.synopsiscontainer:has(#synEditBox) > .synopsis{
+
+	opacity: 0;
+	display: none;
+
+}
+
+/*new behavior for act and special with hidden synopsiscontainer 1 of 2*/
+.indexcards .level1 > .synopsiscontainer:not(:has(.synopsis)):not(:hover),
+.indexcards .special > .synopsiscontainer:not(:has(.synopsis)):not(:hover),
+.showSynopsisInScenes:not(.indexcards) .section > .synopsiscontainer:not(:has(.synopsis)):not(:hover){
+
+	border: none !important;
+
+	min-height: 0px !important;
+	height: 0px !important;
+	margin: 0px !important;
+	padding: 0px !important;
+	top: 0px !important;
+	margin-top: -2px; 
+
+}
+
+.showSynopsisInScenes:not(.indexcards) .section:not(:has( .synopsis)) > .section-heading{
+
+	margin-bottom: 0 !important;
+
+}
+
+.indexcards .section:is(.level1, .special) > #synEditBox,
+.indexcards .section:is(.level1, .special) > .synopsiscontainer:has(#synEditBox) {
+
+	/* height: 100% !important; */
+	height: auto !important;
+	max-height: 100% !important;
+	min-height: calc(14px * var(--fontSizeFactor)) !important;
+	/* border: 1px solid goldenrod;
+
+	overflow: auto; */
+
+	box-shadow: 0 0 0 3px black;
+
+}
+
+/* .showSynopsisInScenes:not(.indexcards) #synEditBox, */
+.showSynopsisInScenes:not(.indexcards) .scene .synopsiscontainer:has(#synEditBox) {
+
+	/* height: 100% !important; */
+	height: auto !important;
+	max-height: 100% !important;
+	min-height: calc(14px * var(--fontSizeFactor)) !important;
+	/* border: 1px solid goldenrod;
+
+	overflow: auto; */
+
+	border-left: 4px solid black;
+	border-right: 4px solid black;
+	border-bottom: 1px solid black;
+	box-shadow: inset 0 -3px 0 0 black;
+
+}
+
+.showSynopsisInScenes:not(.indexcards) .section > .synopsiscontainer:has(#synEditBox) {
+
+	height: auto !important;
+	max-height: 100% !important;
+	min-height: calc(14px * var(--fontSizeFactor)) !important;
+
+	box-shadow: inset 0 -4px 0 0 black, -3px 0 0 0 black, 3px 0 0 0 black, inset 1px 0 0 0 black, inset -1px 0 0 0 black !important;
+
+	/* outline: 5px solid gold */
+}
+
+.showSynopsisInScenes:not(.indexcards) .scene:has(#synEditBox) > .sceneheading{
+
+	border: 4px solid black;
+	border-bottom: 1px;
+
+	padding-top: 0px !important;
+
+	top: -10px !important;
+	opacity: 1 !important;
+	border-radius: 3px 3px 0px 0px;
+	background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3));
+
+}
+
+.indexcards .section:is(.level1, .special):has(#synEditBox) > .section-heading,
+.indexcards .section:is(.level1, .special) > #synEditBox,
+.indexcards .section:is(.level1, .special) > .synopsiscontainer:has(#synEditBox){
+
+	box-shadow: none !important;
+	color: inherit !important;
+}
+
+.showSynopsisInScenes:not(.indexcards) .section:has( > .synopsiscontainer > #synEditBox) > .section-heading{
+
+	background: black !important;
+	color: white !important;
+
+	box-shadow: 0 0 0 3px black;
+}
+
+/* .showSynopsisInScenes:not(.indexcards) .synopsiscontainer:has(#synEditBox)::before{
+
+	opacity: 1;
+
+} */
+
+/*new behavior for act and special with hidden synopsiscontainer 2 of 2*/
+.indexcards:not(:has(.editBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer,
+.indexcards:not(:has(.editBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .section:has( > .section-heading:hover) > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .scene:hover > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .synopsiscontainer:hover {
+
+	min-height: calc(14px * var(--fontSizeFactor)) !important;
+	transition: min-height 0.2s !important;
+
+}
+
+/*new behavior for act and special with hidden synopsiscontainer 2 of 2*/
+.indexcards:not(:has(.editBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer:empty::after,
+.indexcards:not(:has(.editBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .section:has( > .section-heading:hover) > .synopsiscontainer:empty::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .scene:hover > .synopsiscontainer:empty::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox)) .synopsiscontainer:empty:hover::after {
+
+	content: "double click to add synopsis";
+	text-align: center;
+	font-size: calc(8px * var(--fontSizeFactor));
+	font-weight: normal;
+	font-style: normal;
+	
+	opacity: 0.6;
+	
+	position: absolute;
+	height: calc(8px * var(--fontSizeFactor));
+	top: calc(0px * var(--fontSizeFactor));
+	width: 100%;
+
+	transition-delay: 0.5s;
+	transition-property: min-height height;
+
+}
+
+
+.indexcards .level1:not(:has( > .section-heading:hover)) > .synopsiscontainer,
+.indexcards .special:not(:has( > .section-heading:hover)) > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards) .section:not(:has( > .section-heading:hover)) > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards) .scene:not(:hover) > .synopsiscontainer {
+
+	min-height: 0;
+	/* transition-delay: min-height 0.2s; */
+	transition: min-height 0.2s !important;
+
+}
+
+
 .indexcards .scene:has(#synEditBox){
 
 	box-shadow: 0px 0px 0px 2px black/*,
@@ -956,12 +1150,6 @@ Beat.onSelectionChangeDisabled = true
 	;
 
 	z-index: 990;
-
-	/* scale: 1.05 !important;
-	translate: 0 5%;
-
-	transition: 0.2s; */
-
 
 }
 
@@ -977,6 +1165,15 @@ Beat.onSelectionChangeDisabled = true
 #flexiContainer:has(#synEditBox) .section:not(:has( > .synopsiscontainer > #synEditBox)) > .section-heading {
 
 	opacity: 0.6;
+	transition: 0.5s;
+
+}
+
+#flexiContainer:has(#synEditBox) .section:not(:has( > .synopsiscontainer > #synEditBox))::before {
+
+	opacity: 0;
+	border-width: 0;
+	transition: 0.5s 
 
 }
 
@@ -1029,7 +1226,7 @@ Beat.onSelectionChangeDisabled = true
     font-weight: bold;
     font-style: normal;
 
-    z-index: 9999;
+    /* z-index: 9999; */
     pointer-events: all !important;
 
     /* overflow:hidden; */
@@ -1040,37 +1237,104 @@ Beat.onSelectionChangeDisabled = true
 
 }
 
-.promoteButtons::after,
+.promoteButtons{
+
+	color: rgba(255,255,255,1) !important;
+	background: black !;
+	width: 30px !important;
+	border-radius: 10px;
+
+	z-index: 1 !important;
+	
+	translate: 0 -60%;
+	box-shadow: none;
+
+}
+
+.promoteButtons::before,
+.addButton:not(:hover)::before{
+	content: "";
+
+	width: 9px;
+	height: 9px;
+	background: white;
+
+	position: absolute;
+	top: calc(2.88px * 1.2);
+
+	z-index: -1 !important;
+	
+	clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 66% 33%, 0% 0%);
+	
+}
+
+.addButton:not(:hover)::before{
+
+	rotate: 135deg;
+	left: 3.5px;
+	top: 11px;
+
+	z-index: -1111 !important;
+
+
+}
+
+#promoteButton::before{
+	
+	rotate: -135deg;
+	left: calc(-4.32px * 1.0);
+	z-index: -20 !important;
+	
+}
+
+#demoteButton::before{
+	
+	rotate: 45deg;
+	right: calc(-4.32px * 1.1);
+	z-index: -20 !important;
+
+}
+
+#actioncontainer:has(.addButton:hover) #demoteButton{
+	translate: 50px -60%;
+	opacity: 0.2;
+	transition: translate 0.2s, opacity 0.2s;
+}
+#actioncontainer:has(.addButton:hover) #promoteButton{
+	translate: -50px -60%;
+	opacity: 0.2;
+	transition: translate 0.2s, opacity 0.2s;
+}
+
+/* .promoteButtons::after,
 .confirmButtons::after{
 
-/* box-sizing: border-box !important; */
+	position: absolute;
+	content: "";
+	left: 50%;
+	top: 50%;
+	width: 100%;
+	height: 100%;
 
-position: absolute;
-content: "";
-left: 50%;
-top: 50%;
-width: 100%;
-height: 100%;
+	translate: -50% -50%; 
 
-translate: -50% -50%; 
-
-border: 20px solid transparent;
-border-radius: 50%;
+	border: 20px solid transparent;
+	border-radius: 50%;
 
 }
 
 .promoteButtons:hover::after,
 .confirmButtons:hover::after{
 
-border-color: rgba(255, 255, 255, 0.1);
-transition: 0.2s;
+	border-color: rgba(255, 255, 255, 0.0);
+	transition: 0.2s;
 
-}
+} */
 
 .promoteButtons:hover{
 
-background: #ccc;
-color: black !important;
+	background: #ccc;
+	color: black !important;
 
 }
 

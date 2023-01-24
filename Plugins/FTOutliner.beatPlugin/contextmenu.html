@@ -459,6 +459,7 @@ function ifYesToDelete(){ //this is visually-related stuff only and does not alt
     mylog("YES TO DELETE: Now shrinking the scenes.")
 
     let selectedScenes = document.querySelectorAll('.dimmedScene')
+    // console.log(selectedScenes)
 
     mylog("this many: " + selectedScenes.length)
 
@@ -468,11 +469,22 @@ function ifYesToDelete(){ //this is visually-related stuff only and does not alt
 
         let redraw = scene.getBoundingClientRect()
 
-            scene.style.opacity = "1"
-            scene.style.height = "0"
-            scene.style.minHeight = "0"
-            scene.style.margin = "0"
-        }    
+        scene.style.opacity = "1"
+        scene.style.height = "0px"
+        scene.style.minHeight = "0px"
+        // scene.style.margin = "0"
+
+        let syncons = scene.querySelectorAll(".synopsis, .synopsiscontainer") || false
+
+        if (syncons.length > 0){
+            for (syncon of syncons){
+            // syncon.classlist?.add("longerAnimation")
+            syncon.style.scale = "0px 0px"
+            syncon.style.height = "0px"
+            syncon.style.minHeight = "0px"
+            }
+        }
+    }    
 }
 
 function undimAllScenes(){

@@ -16,6 +16,8 @@
 	overflow: hidden !important;
 	max-width: 90% !important;
 	white-space: nowrap;
+
+	font-size: 14px
 }
 
 .defaultButton {
@@ -29,11 +31,24 @@
 	color: white !important
 }
 
+.generalButtonStyle:focus{
+
+	outline: none;
+}
+
 
 /* #settings * , #tracking *{
  transition: 0.5s !important;
  line-height: 16px !important;
 } */
+
+.dialogBottomButtonRow {
+
+	position: absolute;
+	bottom: 40px;
+	right: 40px;	
+
+}
 
 .settingsWindow{
 	position:absolute !important; 
@@ -44,7 +59,9 @@
 	width: 650px !important; 
 	padding: 40px;
 	background-color:rgba(240,240,240,0.95); 
-	border: 0,5px black solid;
+	background-color: var(--menu-background);
+	border: 0.5px black solid;
+	border: 0.5px var(--menu-border-color) solid;
 	border-radius:12px;
 	z-index: 9998;
 	white-space: normal !important;
@@ -737,6 +754,49 @@ white-space: pre-wrap !important;
 
 }
 
+#advancedSettings.settingsWindow {
+
+	position: absolute !important;
+	padding: 20px !important;
+
+	max-height: unset !important;
+	height: auto !important;
+}
+
+#advancedSettings li {
+
+	display: relative !important;
+
+}
+
+#advancedSettings label{
+
+	/* text-indent: 50px hanging !important; */
+	display: inline-block;
+	position: relative;
+	
+	min-width: calc(100% - 50px) !important;
+	width: calc(100% - 50px) !important;
+	max-width: calc(100% - 50px) !important;
+	vertical-align: top !important;
+
+}
+
+#advancedSettings .labelBefore{
+
+	min-width: unset !important;
+	width: unset !important;
+
+}
+
+#advancedSettings .shortcut{
+
+	position: absolute;
+right: 0px !important
+
+}
+
+
 </style>
 
 <!-- here's some actual HTML that is not generated from JS. Change when I get the time. -->
@@ -891,6 +951,71 @@ white-space: pre-wrap !important;
 	</div>
 
 </div></div>
+
+<dialog id="advancedSettings" class="settingsWindow modal">
+
+	<p class="headline">Advanced Settings</p>
+	<hr>
+
+	<ul>
+		<strong><br/>Scene And Section Headers</strong><br/>
+		<li  onclick="advancedTogglers('dualSceneLines', 'buttonForDualLines')">
+			<input id="buttonForDualLines" type="checkbox">
+			<div class="switch"></div>
+					<label style="pointer-events: none" for="buttonForDualLines">Show multiple SCENE lines<span class="shortcut" style="float:right">^S</span></label>
+		</li>
+		<li  onclick="advancedTogglers('dualSectionLines', 'buttonForDualSectionLines')">
+			<input id="buttonForDualSectionLines" type="checkbox">
+			<div class="switch"></div>  
+					<label style="pointer-events: none" for="buttonForDualSectionLines">Show multiple SECTION lines<span class="shortcut" style="float:right">^T</span></label>
+		</li>
+	<!--/ul>
+	<ul>
+		<strong><br/>Section headings:</strong--><br/>
+		<li onclick="advancedTogglers('allowLowerCaseSections', 'buttonForLowerCase')">
+			<input id="buttonForLowerCase" type="checkbox">
+			<div class="switch" onclick="$id('buttonForLowerCase').click()"></div>  
+					<label style="pointer-events: none" for="buttonForLowerCase">Show SECTION capitalization as typed rather than uppercase only<span class="shortcut" style="float:right">^U</span></label>
+		</li>
+	</ul>
+	<br/>
+	<hr>
+	<ul>
+	<strong><br/>Pages</strong><br/>
+	<li  onclick="advancedTogglers('showPageDividers', 'buttonForPageDividers')">
+		<input id="buttonForPageDividers" type="checkbox">
+			<div class="switch"></div>  
+				<label style="pointer-events: none" for="buttonForPageDividers">Show page dividers (Flexible view only)<span class="shortcut" style="float:right">^P</span></label>
+	</li>
+	<li style="margin-left: 50px; overflow: hidden" class="" onclick="advancedTogglers('always', 'buttonForAlways')">
+		<input id="buttonForAlways" type="checkbox">
+			<label for="buttonForAlways" class="labelBefore">When hovering</label>
+				<div class="switch"></div>
+			<label for="buttonForAlways" class="labelAfter">All the time<span class="shortcut" style="padding-right: 110px; float:right">⌥P</span></label>
+	</li>
+	<!--li  onclick="advancedTogglers('always', 'buttonForAlways')">
+		<input id="buttonForAlways" type="checkbox">
+		<div class="switch"></div>  
+				<label style="pointer-events: none" for="buttonForAlways">at all times, not just when hovered<span class="shortcut" style="float:right">⌥P</span></label>
+	</li-->
+	</ul>
+	<br/>
+	<hr>
+	<ul>
+		<strong><br/>Index Cards View:</strong><br/>
+		<li  onclick="advancedTogglers('verticals', 'buttonForVerticals')">
+			<input id="buttonForVerticals" type="checkbox">
+			<div class="switch"></div>  
+					<label style="pointer-events: none" for="buttonForVerticals">Show vertical bars for section levels<span class="shortcut" style="float:right">^V</span></label>
+		</li>
+	</ul>
+
+	<p><br/></p>
+	<div class="dialogBottomButtonRow">
+		<button class="generalButtonStyle" onclick="for (butn of $$('#advancedSettings input')){if(butn.checked){butn.click()}}">Revert to defaults</button>
+		<button class="generalButtonStyle" onclick="$id('advancedSettings').close()">Close</button>
+	</div>
+</dialog>
 
 <script>
 
@@ -1090,15 +1215,15 @@ function displayAboutBox(){
 			<br/>
 			Questions, feedback and bug reports can be sent to <a href="mailto:ftoutliner@eviltomato.com">ftoutliner@eviltomato.com</a><br/>
 			<br/>
-			Finally, why FTOutliner? That's an awfully contrived name. Well. I pretend it's short for Flexible Time. But of course it isn't. I'm really just trying to get my initials in there. Again, we're all screenwriters. If we don't take credit, we rarely get it. <br/>
+			Finally, why FTOutliner? That's an awfully contrived name. Well. I pretend it's short for Flexible Time. But of course it isn't, really. I'm just trying to get my initials in there. Again, we're all screenwriters. If we don't take credit, we rarely get it. <br/>
 			<br/>
 			This plugin, its design, code and underlying ideas, to any degree that they can be copyrighted and claimed, should be considered © Fredrik T Olsson 2021—2022 and onwards. If you like what you see, please don't steal it. I put a lot of work into it.<br/>
 			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Also, I am providing it for free and as is, which means that while I am continuously doing my best to ensure that FTOutliner won't cause any harm to what you (or I) write, by using it you acknowledge that the usual legalese applies. Which basically means that should anything bad happen all the same, you were the one taking a chance on a free, hobbyist app, and I cannot be held responsible. So there.<br/>
 			<br/>
 			That's about it, I think! Happy writing! Let's tell some exciting stories!<br/>
 			<br/>
-			Version: 1.43<br/>
-			© Fredrik T Olsson, 2021—2022<br/>
+			Version: 1.53<br/>
+			© Fredrik T Olsson, 2021—2023<br/>
 
 	</p>
 	<br/>

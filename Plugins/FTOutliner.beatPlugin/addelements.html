@@ -1,5 +1,37 @@
 <style>
 
+.scene.hasAddButton,
+#flexiContainer:not(.indexcards) .section:not(.level1).isExpanded.hasAddButton > .section-heading,
+#flexiContainer:not(.indexcards).nonProportionalMode .section:not(.level1, .isExpanded).hasAddButton,
+#flexiContainer:not(.indexcards,.nonProportionalMode) .section:not(.level1, .isExpanded).hasAddButton > .section-heading,
+.indexcards .section:not(.collapsedSection).hasAddButton > .synopsiscontainer,
+.indexcards .section.collapsedSection.hasAddButton > .section-heading
+{
+
+    margin-bottom: 30px !important;
+
+    transition: margin 0.2s;
+    transition-delay: margin 0.2s;
+
+}
+
+.level1.hasAddButton > .section-heading{
+
+    margin-bottom: 0px !important;
+    padding-bottom: 50px !important;
+    border-radius: 4px !important;
+
+    transition: padding 0.2s;
+    transition-delay: padding 0.2s;
+
+}
+
+.level1.hasAddButton > .section-heading{
+
+    background-color: rgba(255, 255, 255, 0.2) !important;
+
+}
+
 .addButton, .addButton > p{
 
     padding: unset !important;
@@ -11,6 +43,8 @@
 }
 
 .addButton{
+
+    position: absolute;
 
     margin: 0px !important;
     padding: 0px !important;
@@ -34,35 +68,9 @@
     pointer-events: all !important;
 
     display: none;
-    /* overflow:hidden; */
-    /* clip-path: inset(0 round 50%); */
     opacity: 0.9;
 
-    transform: translate(-110%, -110%);
-    transform: translate(-50%, -90%);
-}
-
-.addButton::before{
-
-    content: "";
-    position: absolute;
-    box-sizing: content-box;
-    top: -20px;
-    left: -20px;
-    height: 100%;
-    width: 100%;
-
-    border: 20px solid transparent;
-    border-radius: 30px;
-
-    transition: 0.2s
-
-}
-
-.addButton:hover::before{
-
-    border: 20px solid rgba(255, 255, 255, 0.15);
-
+    translate: -50% -50%;
 }
 
 .addButton > p{
@@ -120,8 +128,21 @@ p.addSection{
 .addButton:hover > p.addScene,
 .addButton:hover > p.addSection{
     display: inline-block;
-    opacity: 1 !important;
     transition-delay: opacity 0.2s !important;
+
+    animation: fade-in 200ms forwards;
+}
+
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+    50%{
+        opacity: 0;
+    }
+    100%{
+        opacity: 1;
+    }
 }
 
 .addButton>p.addScene:hover,
@@ -138,9 +159,6 @@ p.addSection{
     width: 110px !important;
     border-radius: 30px !important;
 
-    transform: translate(-50%, -90%);
-
-
     transition: height 0.1s, width 0.1s !important;
 
 }
@@ -148,6 +166,14 @@ p.addSection{
 .showAddButton .addButton{
     display: unset !important;
     pointer-events: all;
+}
+
+#actioncontainer{
+
+    height: 30px;
+
+    background: transparent;
+    border-radius: 3px;
 }
 
 </style>
@@ -163,12 +189,17 @@ function insertAddButton(element){
     
     if(!element || element.id == "flexiContainer" 
     || element.id == "addButton"
+    || element.id == "actioncontainer"
+    || element.classList.contains("promoteButtons")
     || element.classList.contains("addScene")
     || element.classList.contains("addSection")
-    || element.classList.contains("arrowForIndexCards")){
+    || element.classList.contains("arrowForIndexCards")
+    || element.closest(".scene, .section").id == $id("addButton")?.dataset.elementCount)
+    {
         mylog("...but RETURNED by gatekeeper b/c not scene or section")
         return
     }
+
     if($("#addButton")){removeAddButton()}
     
     mylog("We're go for insertAddButton: " + element.classList)
@@ -193,58 +224,67 @@ function insertAddButton(element){
         if(!element || element.classList.contains("faux")){return}
         classes = [...element.classList]
     }
-
+   
     let sizes = element.getBoundingClientRect()
+        let sectionHeight
+        if (element.classList.contains("section")) sectionHeight = element.querySelector(".section-heading").getBoundingClientRect().height
+        if (element.classList.contains("scene")) sectionHeight = element.querySelector(".sceneheading").getBoundingClientRect().height
     let adjustForNotePanel = flexiContainer.getBoundingClientRect().left
+    
     if(element.classList.contains("sceneheading") && !indexCardMode){
         sizes = element.closest(".scene").getBoundingClientRect()
     }
     if(element.classList.contains("level1")){
         sizes = element.querySelector(".section-heading").getBoundingClientRect()
     }
+    
     //correction if flexicontainer is scrolled
     let adjustedTop = sizes.top + $id("flexiContainer").scrollTop
-        // correction to offset so as not to hide top-right button of collapsed section
-        if(indexCardMode){ 
-            if (element.classList.contains("collapsedSection")){
-                adjustedTop = adjustedTop + 12
+    
+    //new: actioncontainer
+
+    let actioncontainer = document.createElement("div")
+        actioncontainer.id = "actioncontainer"
+        actioncontainer.classList.add("actioncontainer")
+        actioncontainer.style.position = "absolute"
+        actioncontainer.style.left = (sizes.left - adjustForNotePanel) + "px"
+        actioncontainer.style.width = sizes.width + "px"
+        let actioncontainerTopPos = adjustedTop + sectionHeight + "px"
+            if (indexCardMode){
+                if (classes.includes("section") && (classes.includes("collapsedSection"))){ 
+                    actioncontainerTopPos = sectionHeight + adjustedTop + "px"
                 }
-            if (element.classList.contains("section") && element.classList.contains("special")){
-                adjustedTop = adjustedTop - 12
+                if (classes.includes("section") && (!classes.includes("collapsedSection"))){ 
+                    actioncontainerTopPos = "calc(" + (adjustedTop + 3) + "px + var(--indexCardHeight))"
                 }
-        }
+                if (classes.includes("level1")){ 
+                    actioncontainerTopPos = "calc(" + (sectionHeight + adjustedTop + 3) + "px)"
+                }
+                if (classes.includes("scene") && (!classes.includes("collapsedSection"))){
+                    actioncontainerTopPos = "calc(" + (adjustedTop) + "px + (0px * var(--fontSizeFactor)) + var(--indexCardHeight))"
+                }
+            }
+            if(areScenesProportional && classes.includes("scene")){
+                actioncontainerTopPos = adjustedTop + element.getBoundingClientRect().height + "px"
+            }
+        actioncontainer.style.top = actioncontainerTopPos
+
+    flexiContainer.appendChild(actioncontainer)
 
     let addButton = document.createElement("div")
         addButton.id = "addButton"
         addButton.classList.add("addButton")
         addButton.style.position = "absolute"
-        addButton.style.left = (sizes.width/2 + sizes.left - adjustForNotePanel) + "px"
-        addButton.style.top = "calc(" + adjustedTop + "px + var(--indexCardHeight))"
+        addButton.style.left = actioncontainer.getBoundingClientRect().width/2 + "px"
+        addButton.style.top = actioncontainer.getBoundingClientRect().height/2 + "px"
         addButton.dataset.elementCount = element.id
-
-    if (classes.includes("section") && (classes.includes("collapsedSection"))){
-        addButton.style.top = "calc(" + adjustedTop + "px + (20px * var(--fontSizeFactor)))"
-    }
-    if (classes.includes("section") && (classes.includes("level1"))){
-        // addButton.style.top = "calc(" + adjustedTop + "px + 20px + (18px * var(--fontSizeFactor)))"
-        addButton.style.top = "calc(" + adjustedTop + "px + 0px + (18px * var(--fontSizeFactor)))"
-        // addButton.style.left = (sizes.width * 0.8 + sizes.left - adjustForNotePanel) + "px"
-    }
-
-    
-
-
-    if(!indexCardMode){
-        addButton.style.top = "calc(" + adjustedTop + "px + 22px * var(--fontSizeFactor))"
-
-        if([...element.classList].includes("sceneheading") || element.classList.contains("scene")){
-            addButton.style.top = (adjustedTop + sizes.height + 6) + "px"
-        }
-    }
     
     addButton.innerHTML = "<p class='plus'>+</p><p id='addScene' class='addScene'>scene</p><p id='addSection' class='addSection'>section</p>"
 
-    $id("flexiContainer").appendChild(addButton)
+    $id("actioncontainer").appendChild(addButton)
+    element.classList.add("hasAddButton")
+
+    addPromoteButtons(element)
 }
 
 function findEnclosingCardElementFor(element){
@@ -261,9 +301,16 @@ function removeAddButton(){
 
     mylog()
 
+    $id("actioncontainer")?.remove()
+
     let elements = $$(".addButton")
     for (let element of elements){
         element.remove()
+    }
+
+    elements = $$(".hasAddButton")
+    for(let element of elements){
+        element.classList.remove("hasAddButton")
     }
 
 }
@@ -275,53 +322,25 @@ function addElement(theClickedThing, whatToAdd){
     let addString
     let outlineElementNumber
     let position
-    
-    if(whatToAdd == "synopsis"){
-
-        if(!indexCardMode && !$id("flexiContainer").classList.contains("showSynopsisInScenes")){
-            return
-        }
-
-        addString = "= New Synopse" //default to add synopsis, that is.
-
-        if([...theClickedThing.classList].includes("synopsiscontainer")){
-            theClickedThing = theClickedThing.closest(".scene") ||  theClickedThing.closest(".section")
-        }
-        
-        outlineElementNumber = Number(theClickedThing.id)
-        mylog("now collected number from " + theClickedThing.id)
-
-        mylog("now iterating past any already existing synopsis in this scene or section")
-        while(outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){
-            outlineElementNumber ++
-        }
-        
-        mylog(outlineElementNumber)
-        try{position = (outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1)}
-        catch{position = 0}
-
-    }
-
         
     if(!whatToAdd){
         mylog("Got no whatToAdd. But theClickedThing.id == " + theClickedThing.id)
-        addString = (theClickedThing.id == "addScene") ? "\\n.NEW SCENE" : "##NEW SECTION"
-
         
-        theClickedThing = theClickedThing.parentNode
-        outlineElementNumber = Number(theClickedThing.getAttribute("data-element-count"))
-        mylog("outlineElementNumber is" + outlineElementNumber)
+        outlineElementNumber = Number(theClickedThing.parentNode.getAttribute("data-element-count"))
         position = outline[outlineElementNumber].sceneEnd
-
-        mylog("position is" + position)
+        
+        let numberOfHashtags = outline[outlineElementNumber].line.string.match(/^(#*)/)        
+            addString = (theClickedThing.id == "addScene") ? "\\n.NEW SCENE\\n" : `${"#".repeat(Math.max(numberOfHashtags[0].length, 2 ))}NEW SECTION`
 
         if(outline[outlineElementNumber].typeAsString == "Section"){
-            //while(outline[outlineElementNumber + 1] && outline[outlineElementNumber + 1].typeAsString == "Synopse"){outlineElementNumber ++}
-            //position = outline[outlineElementNumber].sceneStart + outline[outlineElementNumber].line.string.length + 1
-            position = outline[outlineElementNumber + 1]?.sceneStart
             
-            //Hack to avoid adressing index outside of screenplay length:
-            if(outlineElementNumber = outline.length)position -= 1
+            position = outline[outlineElementNumber + 1]?.sceneStart || outline[outlineElementNumber].sceneEnd // + 1
+                //the OR case should only happen if last element in doc, so removing the +1 from above and the -1 from below
+            
+                //Hack to avoid adressing index outside of screenplay length:
+                //if(outlineElementNumber = outline.length)position -= 1
+                
+            if(!position){mylog(`ERROR: sending ${position} as position again`); throwError()}
         }
     }
 
@@ -336,13 +355,13 @@ function addElement(theClickedThing, whatToAdd){
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
 
     mylog(position)
-    Beat.call(`
+    let doThis =`
         Beat.addString("\\n${addString}\\n", ${position})
         Beat.custom.checkBlankLines(${position + 3})
-    `)
+    `
+    Beat.call(doThis)
     
     weAreChangingColors = true //forces update of display even if non-realtime (and with zero delay)
-    
     
     //This manually shifts all pagintor-created lengths, since small update does not paginate all scenes.
     //result is faster update after adding scene than if sending to full.
@@ -352,53 +371,45 @@ function addElement(theClickedThing, whatToAdd){
 
     startSmallUpdate(position)
 
-    // newlyCreatedElement = $("[data-elementCount = '" + (outlineElementNumber + 1) + "']")
-
     removeAddButton()
 }
 
 function addPromoteButtons(element){
 
-    if(["promoteButton", "demoteButton"].includes(element.id)) return
+    if(["promoteButton", "demoteButton"].includes(element.id)) return //don't remove if still hovering same element
     
+    removePromoteButtons()   
+
     sectionToChange = element.closest(".scene, .section")
-    if (!sectionToChange?.classList.contains("section") || sectionToChange?.classList.contains("level1")) {
-        removePromoteButtons()   
+    if (!sectionToChange?.classList.contains("section")) {
         return
     }
 
-    if($(".promoteButtons")){removePromoteButtons()}
-
-    let boxPos = sectionToChange.getBoundingClientRect()
-    let scrollPos = flexiContainer.scrollTop
-
-    if(!sectionToChange.classList.contains("level2")){
+    if(!sectionToChange.classList.contains("level1")){
 
         let demoteButton = document.createElement("div")
-            demoteButton.id = "promoteButton"
+            demoteButton.id = "promoteButton" //yes, because I got them confused at first
             demoteButton.classList.add("promoteButtons")
             demoteButton.style.position = "absolute"
-            demoteButton.style.left = boxPos.left - 20 + "px"
-            demoteButton.style.top = boxPos.top + scrollPos + "px"
-            demoteButton.style.opacity = "0.9"
-            demoteButton.innerHTML = "◀"
+            demoteButton.style.left =  $id("actioncontainer").getBoundingClientRect().width/2 - 45 + "px"
+            demoteButton.style.top = $id("actioncontainer").getBoundingClientRect().height/2 + "px"
+            demoteButton.innerHTML = "- #"
 
-            flexiContainer.appendChild(demoteButton)
+            $id("actioncontainer").appendChild(demoteButton)
             demoteButton.addEventListener("click", function(){demoteSection(sectionToChange)})
     }
 
-    if(!sectionToChange.classList.contains("level5")){
+    if(!sectionToChange.classList.contains("level6")){
 
     let promoteButton = document.createElement("div")
-        promoteButton.id = "demoteButton"
+        promoteButton.id = "demoteButton" //yes, because I got them confused at first
         promoteButton.classList.add("promoteButtons")
         promoteButton.style.position = "absolute"
-        promoteButton.style.left = boxPos.left + boxPos.width + 0 + "px"
-        promoteButton.style.top = boxPos.top + scrollPos + "px"
-        promoteButton.style.opacity = "0.9"
-        promoteButton.innerHTML = "▶"
+        promoteButton.style.right = $id("actioncontainer").getBoundingClientRect().width/2 - 45 + "px"
+        promoteButton.style.top =  $id("actioncontainer").getBoundingClientRect().height/2 + "px"
+        promoteButton.innerHTML = "# +"
 
-        flexiContainer.appendChild(promoteButton)
+        $id("actioncontainer").appendChild(promoteButton)
         promoteButton.addEventListener("click", function(){promoteSection(sectionToChange)})
     }
 

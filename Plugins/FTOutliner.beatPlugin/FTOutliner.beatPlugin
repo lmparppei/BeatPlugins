@@ -3,14 +3,14 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.52
+Version: 1.53
 Compatibility: 1.977
 Type: Tool
 Image: screenshot.jpg
 
 <Description>
 <style>
-a {
+a {	
 	color: #7ca1e6 !important;
 	font-weight: bold !important;
 }
@@ -23,10 +23,9 @@ a {
 	<li>Drag-and-drop to rearrange scenes or entire sequences</li>
 	<li>Track characters by highlighting scenes, or isolate scenes of certain color</li>
 	<li>Print your outline (or export to PDF)
-	<li><b>NEW!</b> Enhanced, fully editable index card view
-	<li><b>NEW!</b> Slide-over Note Panel with all notes in one list
-	<li><b>NEW!</b> Boneyard (for storing scenes outside of the script structure)
-	<li><b>NEW!</b> Easier-to-navigate menu system
+	<li>Fully editable index card view
+	<li>Slide-over Note Panel with all notes in one list
+	<li>Boneyard (for storing scenes outside of the script structure)
 	<li>and lots more...
 </ul>
 <p>For more info, questions or support visit <a href="https://github.com/ftolsson/ftoutliner/wiki" target="_default">the FTOutliner wiki</a></p>
@@ -46,6 +45,7 @@ if (!Beat.compatibleWith(1.977)){
 var backgroundAlreadyRunning = false
 var queueOneMoreFullUpdate = false
 
+var reset = Beat.assetAsString("reset.css")
 var css = Beat.assetAsString("outline.css")
 var globals = Beat.assetAsString("globals.html")
 var template = Beat.assetAsString("outline.html")
@@ -72,10 +72,11 @@ var fullUpdateInProgress = false
 var smallUpdateInProgress = false
 
 var	html = //storingDefaultsHTML +
+	reset +
 	css +
 	globals +
 	allDefaultsHTML +
-	dialogs +
+	// dialogs +
 	charactertracking +
 	displaynotes +
 	contextmenu + 
@@ -83,6 +84,7 @@ var	html = //storingDefaultsHTML +
 	indexcards_css +
 	notepanel +
 	menu +
+	dialogs + //changed
 	printing +
 	editcontent +
 	addelements +
@@ -97,7 +99,6 @@ var midTime1, midTime2, midTime3
 var endTime
 var endTimes =  []
 var dispatchTimes = []
-var lineStartTime, linesEndTime, timeSpentCalculatingLines = 0
 var paginateStartTime, paginateEndTime, timeSpentPaginatingLines = 0
 var runCounter = 0
 var runCounterText = 0
@@ -133,6 +134,7 @@ Beat.custom.reloadCode = function(){
 
 Beat.custom.reloadHTML = function(){
 
+	reset = Beat.assetAsString("reset.css")
 	css = Beat.assetAsString("outline.css")
 	globals = Beat.assetAsString("globals.html")
 	template = Beat.assetAsString("outline.html")
@@ -155,10 +157,11 @@ Beat.custom.reloadHTML = function(){
 
 
 	html = //storingDefaultsHTML +
+	reset +
 	css +
 	globals +
 	allDefaultsHTML +
-	dialogs +
+	// dialogs +
 	charactertracking +
 	displaynotes +
 	contextmenu + 
@@ -166,6 +169,7 @@ Beat.custom.reloadHTML = function(){
 	indexcards_css +
 	notepanel +
 	menu +
+	dialogs + //changed
 	printing +
 	editcontent +
 	addelements +
@@ -406,16 +410,12 @@ function paginateThis(scene, paginator) {
 
 	try{
 
-		lineStartTime = new Date ()
 		content = Beat.linesForScene(scene)	
-		linesEndTime = new Date ()
-		timeSpentCalculatingLines += (linesEndTime.getTime() - lineStartTime.getTime())
-
-		//Beat.log("number of lines in content is " + content.length)
 
 		//pageBreakFinder:
 
 			let subContent = []
+			let addExtraLine = 0
 			
 			for (contentline of content){
 				
@@ -427,6 +427,8 @@ function paginateThis(scene, paginator) {
 					//break // NO: without break, we will do this for the LAST pagebreak in a scene if several. Which seems reasonable!
 				}
 
+				if(contentline.typeAsString() == "Heading") addExtraLine = 2/58
+
 				subContent.push(contentline)
 			}
 
@@ -437,16 +439,18 @@ function paginateThis(scene, paginator) {
 		timeSpentPaginatingLines += (paginateEndTime.getTime() - paginateStartTime.getTime())
 
 		let pagesToReduceWith = 0
-		if (paginator.lastPageHeight > 0){
-		pagesToReduceWith = (paginator.numberOfPages < 1)? 0 : 1
-		}
+		// if (paginator.lastPageHeight > 0){
+		// pagesToReduceWith = (paginator.numberOfPages < 1)? 0 : 1
+		// }
+			if (paginator.lastPageHeight > 0 && paginator.numberOfPages > 0) pagesToReduceWith = 1
 		fixedPage = paginator.numberOfPages + paginator.lastPageHeight - pagesToReduceWith
 
 		// if(accumulatedLastPageHeight) fixedPage = fullPageLengthForBrokenScene
 
 		smallUpdateInProgress = false
 
-		fixedPage += hackyAbsoluteHeightOfLine / 2 //adds a line before each scene. Since removed, and since changed to HALF a line.
+		// fixedPage += hackyAbsoluteHeightOfLine / 2 //adds a line before each scene. Since removed, and since changed to HALF a line.
+		fixedPage += addExtraLine
 
 	} catch(e) {
 		Beat.dispatch_sync(function(){	
@@ -565,6 +569,11 @@ function makeStoringDefaultsDiv(){
 	documentSetting.notepanel = Beat.getDocumentSetting("notepanel") || false
 	documentSetting.showSynopsisInScenes = Beat.getDocumentSetting("showSynopsisInScenes") || false
 	documentSetting.showMultipleSceneLines = Beat.getDocumentSetting("showMultipleSceneLines") || false
+	documentSetting.showMultipleSectionLines = Beat.getDocumentSetting("showMultipleSectionLines") || false
+	documentSetting.allowLowerCaseSections = Beat.getDocumentSetting("allowLowerCaseSections") || false
+	documentSetting.showVerticals = Beat.getDocumentSetting("showVerticals") || false
+	documentSetting.showPageDividers = Beat.getDocumentSetting("showPageDividers") || false
+	documentSetting.showPageDividersAlways = Beat.getDocumentSetting("showPageDividersAlways") || false
 
 	documentSetting.documentName = Beat.getDocumentSetting("documentName") || false
 	if(documentSetting.documentName) documentSetting.documentName = JSON.stringify(documentSetting.documentName)
@@ -959,7 +968,7 @@ Beat.custom.collectNotes = function() {
 						if(line.note) {
 							
 							//third check: full-line but not starting
-							if(!line.string.startsWith("[[")) {
+							if(!line.string.trim().startsWith("[[")) {
 									try{note[entry-1].string += "<br/>" + line.string}
 									catch {
 										continue
@@ -979,8 +988,8 @@ Beat.custom.collectNotes = function() {
 			// Cycle all notes and put them in different arrays depending on type.
 			// (This opens for creating new subsets of notes depending on starting term.)
 			for (entry of note){
-				if (entry.string.startsWith("[[marker")){
-					let stringIntoColor = entry.string.toLowerCase().replace(/\[\[marker:*\s*/, "")
+				if (entry.string.trim().startsWith("[[marker")){
+					let stringIntoColor = entry.string.trim().toLowerCase().replace(/\[\[marker:*\s*/, "")
 					stringIntoColor = stringIntoColor.match(/^#+[0-9]+|[a-z]*/)
 					entry.color = stringIntoColor
 					if(entry.string.includes(":")){
@@ -988,7 +997,7 @@ Beat.custom.collectNotes = function() {
 						entry.story = stringIntoStory
 					}
 					marker.push(entry)
-				}else if(entry.string.startsWith("[[beat")){
+				}else if(entry.string.trim().startsWith("[[beat")){
 					let strippedString = entry.string.replace(/\[\[beat\s*/i, "").replace(/\]\]/,"")
 					let stringIntoStory = strippedString?.toUpperCase()
 					if(strippedString.includes(":")){
@@ -1472,36 +1481,46 @@ Beat.custom.deleteSection = function(elementsToDelete, warningsAreOn) {
 	Beat.onOutlineChangeDisabled = true
 	Beat.onSelectionChangeDisabled = true
 
-		//first: un-omit all scenes to delete + the one after.
-		this.unOmitScene(elementsToDelete, true)
+	// PREVIOSLY CHECKED FOR OMISSIONS (inherited from deleteScene() function)
+	// but since we're only removing a LINE now, let's just check that there is no /* or */ present in the line
+	// and if there is, add it back
+
+		// //first: un-omit all scenes to delete + the one after.
+		// this.unOmitScene(elementsToDelete, true)
 
 		for (let j=0; j<elementsToDelete.length; j++){
 
 			//here check for synopsis
 			let nextScene = 1
 			let endPosition = false
-			while (outline[elementsToDelete[j] + nextScene + 1] && outline[elementsToDelete[j] + nextScene].typeAsString() == "Synopse") {
-				nextScene ++
-			}
+			// while (outline[elementsToDelete[j] + nextScene + 1] && outline[elementsToDelete[j] + nextScene].typeAsString() == "Synopse") {
+			// 	nextScene ++
+			// }
 
-			//unomit next scene to avoid removing /* marker
-			let nextSceneIsOmitted = false
-			if(outline[elementsToDelete[j] + nextScene] && outline[elementsToDelete[j] + nextScene].omitted){
-				Beat.custom.unOmitScene([elementsToDelete[j] + nextScene], true)			
-				nextSceneIsOmitted = true
-			}
+			// //unomit next scene to avoid removing /* marker
+			// let nextSceneIsOmitted = false
+			// if(outline[elementsToDelete[j] + nextScene] && outline[elementsToDelete[j] + nextScene].omitted){
+			// 	Beat.custom.unOmitScene([elementsToDelete[j] + nextScene], true)			
+			// 	nextSceneIsOmitted = true
+			// }
 
 			// NOTE: i in omit-function kills i here! Changed to j
 
 			endPosition = outline[elementsToDelete[j] + nextScene] ? (outline[elementsToDelete[j] + nextScene].position) : Beat.getText().length //moved out from "check for synopsis" loop because un-omitting may change value of position
 			let theLength = Math.max((endPosition - outline[elementsToDelete[j]].position), outline[elementsToDelete[j]].length)
 			
-			Beat.replaceRange(outline[elementsToDelete[j]].position, theLength - 1, "") //the minus 1 here is to leave a CR or next scene may disappear
+			//new: check for omission marks in string:
+			restoreOmissionMark = ""
+			checkString = outline[elementsToDelete[j]].line.string
+			if(checkString.includes("*/") && !checkString.includes("/*")) restoreOmissionMark = "*/"
+			if(checkString.includes("/*") && !checkString.includes("*/")) restoreOmissionMark = "/*"
+
+			Beat.replaceRange(outline[elementsToDelete[j]].position, theLength - 1, "" + restoreOmissionMark) //the minus 1 here is to leave a CR or next scene may disappear
 		
-			if(nextSceneIsOmitted){
-				Beat.custom.omitScene(false, [elementsToDelete[j]], true) // and NOT nextScene, because one scene is now removed!
-				nextSceneIsOmitted = false
-			}
+			// if(nextSceneIsOmitted){
+			// 	Beat.custom.omitScene(false, [elementsToDelete[j]], true) // and NOT nextScene, because one scene is now removed!
+			// 	nextSceneIsOmitted = false
+			// }
 		}
 	
 		Beat.onTextChangeDisabled = false

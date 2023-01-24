@@ -50,6 +50,8 @@
 	padding-right: 10px !important;
 	padding-left: 10px !important;
 
+	--localColor: var(--pageBackground);
+
 }
 
 .indexcards .level1:nth-of-type(even):not(.boneyard){
@@ -118,7 +120,41 @@
 	border: none;
 	margin-top: 4px;
 	text-align: left;
-	
+
+}
+
+.indexcards.verticals .section:not(.level1)::before{
+
+	content: "";
+
+	position: absolute;
+	top: 0px;
+	left: -0px;
+	height: calc(100%);
+	width: 100%;
+
+	border-left: 4px solid var(--localColor);
+	border-radius: 5px !important;
+
+	z-index: -99;
+}
+
+.greyonly.indexcards .section:not(.level1)::before{
+
+	--localColor: #ccc;
+
+}
+
+html[data-outdoors='1'] .indexcards .section:not(.level1)::before{
+
+	display: none
+
+}
+
+.indexcards .section:not(.level1):has(.scene):not(.isExpanded):not(:has(.scene ~ .section))::before{
+
+	height: calc(100% - 20px);
+
 }
 
 .indexcards .section:not(.level1){
@@ -146,19 +182,19 @@
 
 .indexcards .level3 {
 
-	margin-left: 10px;
+	margin-left: 15px;
 
 }
 
 .indexcards .level4 {
 
-	margin-left: 20px;
+	margin-left: 15px;
 
 }
 
 .indexcards .level5 {
 
-margin-left: 30px;
+margin-left: 15px;
 
 }
 
@@ -172,7 +208,9 @@ margin-left: 40px;
 	
 	position: relative;
 
-	height: var(--indexCardHeight) !important;
+	/* height: var(--indexCardHeight) !important; */ /*changed to AUTO to accomodate multiple scene-heading lines*/
+	height: auto !important;
+
 	margin-top: 5px;
 	margin-left: 20px;
 	margin-right: 0px
@@ -203,6 +241,10 @@ margin-left: 40px;
 	background: rgba(0, 0, 0, 0.2);
 	border-radius: 3px 3px 0 0;
 
+}
+
+.indexcards .sceneheading {
+	transition: font-size 0.1s, line-height 0.1s, height 0.1s
 }
 
 .indexcards .scene::before {
@@ -251,7 +293,7 @@ transform: translateY(-3px);
 	background-attachment: local;
 
 	height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))); 
-	min-height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))) !important; 
+	min-height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))) /*!important*/; 
 	width: 100%;
 	overflow-x: hidden;
 	overflow-y: scroll;
@@ -261,6 +303,57 @@ transform: translateY(-3px);
 	transition:  min-height 0.2s, height 0.2s ;
 
 }
+
+.indexcards .scene{
+
+	
+
+	height: auto !important;
+
+}
+
+/* .indexcards:not(.greyonly):not(.uncolorAllScenesBut) .synopsis:not(.section.level1 > .synopsiscontainer .synopsis){ */
+/* .indexcards:not(.greyonly):not(.uncolorAllScenesBut) div:not(:has(.dimmedScene)):not(:has(.dimmedSection)):not(:is(.level1)) > .synopsiscontainer .synopsis{ */
+.indexcards:not(.greyonly, .uncolorAllScenesBut) :not(:has(.dimmedScene, .dimmedSection)) > .synopsiscontainer > .synopsis{
+
+	box-shadow: 0 0 0 1px inset var(--localColor);
+
+}
+
+/*.indexcards .dimmedSection:not(.level1) > .synopsiscontainer,
+.indexcards .dimmedSection:not(.level1) > .section-heading *,
+.indexcards .dimmedSection:not(.level1) > .section-heading
+{
+
+	border: 1px solid rgba(255,255,255,0.3) !important;
+
+	color: rgba(255,255,255,0.3) !important;
+	background: none;
+	box-shadow: none !important;
+
+}
+
+.indexcards .scene.dimmedScene{
+
+	background: none;
+	border: 1px solid rgba(255,255,255,0.3);
+	box-shadow: none;
+
+}
+
+.indexcards .scene.dimmedScene > .synopsiscontainer .synopsis,
+.indexcards .scene.dimmedScene > .synopsiscontainer,
+.indexcards .scene.dimmedScene > .sceneheading,
+.indexcards .dimmedSection > .synopsiscontainer .synopsis,
+.indexcards .dimmedSection > .synopsiscontainer .synopsis::before
+{
+
+	color: rgba(255,255,255,0.3) !important;
+	background: none;
+	border: none !important;
+	box-shadow: none !important;
+
+}*/
 
 .indexcards .level1 > .synopsiscontainer{
 
@@ -272,9 +365,9 @@ transform: translateY(-3px);
 .indexcards .section.special > .synopsiscontainer,
 .indexcards .section.special > .orphanText,
 .indexcards .section.special > .orphanText > .synopsiscontainer,
-.indexcards .collapsedSection > .synopsiscontainer,
-.indexcards .collapsedSection > .orphanText,
-.indexcards .collapsedSection > .orphanText > .synopsiscontainer {
+.indexcards .collapsedSection:not(.level1) > .synopsiscontainer,
+.indexcards .collapsedSection:not(.level1) > .orphanText,
+.indexcards .collapsedSection:not(.level1) > .orphanText > .synopsiscontainer {
 
 	min-height: 0px !important;
 
@@ -294,9 +387,9 @@ transform: translateY(-3px);
 
 }
 
-.indexcards .special:not(.collapsedSection) > .orphanText,
-.indexcards .special:not(.collapsedSection) > .orphanText > .synopsiscontainer,
-.indexcards .special:not(.collapsedSection) > .synopsiscontainer{
+.indexcards .special:not(.collapsedSection:not(.level1)) > .orphanText,
+.indexcards .special:not(.collapsedSection:not(.level1)) > .orphanText > .synopsiscontainer,
+.indexcards .special:not(.collapsedSection:not(.level1)) > .synopsiscontainer{
 
 	height: auto;
 	min-height: calc(14px * var(--fontSizeFactor)) !important;
@@ -305,7 +398,7 @@ transform: translateY(-3px);
 
 .indexcards .section:not(.level1) > .synopsiscontainer{
 
-	background-color: #bbb;
+	/* background-color: #bbb; */
 
 }
 
@@ -319,12 +412,12 @@ transform: translateY(-3px);
 #_____1.SECTIONS{}
 
 
-.indexcards .collapsedSection{
+.indexcards .collapsedSection:not(.level1){
 
 	padding: 0;
 }
 
-.indexcards .collapsedSection > .section-heading{
+.indexcards .collapsedSection:not(.level1) > .section-heading{
 
 	border-radius: 0;
 	border-bottom: none;
@@ -332,9 +425,9 @@ transform: translateY(-3px);
 
 }
 
-.indexcards .collapsedSection > .synopsiscontainer,
-.indexcards .collapsedSection > .orphanText > .synopsiscontainer,
-.indexcards .collapsedSection > .orphanText {
+.indexcards .collapsedSection:not(.level1) > .synopsiscontainer,
+.indexcards .collapsedSection:not(.level1) > .orphanText > .synopsiscontainer,
+.indexcards .collapsedSection:not(.level1) > .orphanText {
 
 	height: 0px !important;
 	min-height: 0px !important;
@@ -431,7 +524,7 @@ transform: translateY(-3px);
 
 }
 
-.indexcards .collapsedSection > .section-heading > .sectionArrow{
+.indexcards .collapsedSection:not(.level1) > .section-heading > .sectionArrow{
 
 	border-width: 3.5px 0 0 0 ; 
 	border-radius: 0;
@@ -484,13 +577,13 @@ transform: translateY(-3px);
 
 }
 
-.indexcards .level1 > .synopsiscontainer > .synopsis {
+DIABLED.indexcards .level1 > .synopsiscontainer > .synopsis {
 	
 	color: white; /* not important, because must be overridden by style attribute */
 	
 }
 
-.indexcards .level1 > .synopsiscontainer > .synopsis::before {
+DISABLED.indexcards .level1 > .synopsiscontainer > .synopsis::before {
 
 	color: white !important; /* important, because should NOT be overriden by style */
 
