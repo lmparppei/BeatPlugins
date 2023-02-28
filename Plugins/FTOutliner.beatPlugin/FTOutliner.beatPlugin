@@ -3,8 +3,8 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2022
-Version: 1.53
-Compatibility: 1.977
+Version: 1.54
+Compatibility: 1.985
 Type: Tool
 Image: screenshot.jpg
 
@@ -35,7 +35,9 @@ a {
 
 // Beat.openConsole()
 
-if (!Beat.compatibleWith(1.977)){
+Beat.setUserDefault("ftoutlinerVersion", "1.54") //also change in description above!
+
+if (!Beat.compatibleWith(1.985)){
 
 	Beat.alert("You need to update Beat to run FTOutliner",
 		"This version of FTOutliner uses new features introduced in Beat 1.977 and will not run with older versions.\n\nPlease visit Apple's AppStore to update.")
@@ -113,8 +115,16 @@ var windowTitle = "FTOutliner"
 
 var outlineJustFired
 
+var viewSubMenuItems = []
+var showSubMenuItems = []
+var notesSubMenuItems = []
+var dialogSubMenuItems = []
+
 var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
 	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), thePanelHeight) 
+
+// if(Beat.compatibleWith(1.986))	
+createMenu(htmlWindow)
 
 // fetchDocumentTitles()
 loopToFetchDocumentTitles()
@@ -124,7 +134,78 @@ setWindowTitle()
 // END OF GLOBAL VARIABLES
 // =======================
 
+function createMenu(htmlWindow){
+
+	viewSubMenuItems.push(Beat.menuItem("Flexible", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional('on')") }))
+	viewSubMenuItems.push(Beat.menuItem("Fixed", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional('off')") }))
+	viewSubMenuItems.push(Beat.menuItem("Index Cards", ["alt","ctrl", "x"], function () { htmlWindow.runJS("toggleIndexCardMode()") }))
+
+	showSubMenuItems.push(Beat.menuItem("Notes", ["alt", "ctrl", "n"], function () { htmlWindow.runJS("toggleDisplayNotes()") }))
+	showSubMenuItems.push(Beat.menuItem("Markers", ["alt", "ctrl", "m"], function () { htmlWindow.runJS("toggleDisplayMarkers()") }))
+	showSubMenuItems.push(Beat.menuItem("Reviews", ["alt", "ctrl", "r"], function () { htmlWindow.runJS("toggleDisplayReviews()") }))
+	showSubMenuItems.push(Beat.menuItem("Beats", ["alt", "ctrl", "b"], function () { htmlWindow.runJS("toggleDisplayBeats()") }))
+
+	
+	notesSubMenuItems.push(Beat.separatorMenuItem())
+	notesSubMenuItems.push(Beat.menuItem("Cycle Notes Forward", ["alt", "ctrl", "\t"], function () { htmlWindow.runJS("cycleNotes(false)") }))
+	notesSubMenuItems.push(Beat.menuItem("Cycle Notes Backward", ["alt", "ctrl", "shift", "\t"], function () { htmlWindow.runJS("cycleNotes(true)") }))
+
+	let sidePanelMenuItem = Beat.menuItem("Toggle Side Panel", ["alt", "ctrl", "§"], function () { htmlWindow.runJS("toggleNotepanel()") })
+	let highlightCharacterMenuItem = Beat.menuItem("Highlight Current Character's scenes", ["ctrl", "alt", "c"], function () { highlightCharacter(false, true) })
+	dialogSubMenuItems.push(Beat.menuItem("Show Current Character in Dialogue Panel", ["ctrl", "alt", "l"], function () { highlightCharacter(false, false, true) }))
+	dialogSubMenuItems.push(Beat.separatorMenuItem())
+	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Backward", ["ctrl", "alt", ","], function () { htmlWindow.runJS("cycleBubbles('-1')") }))
+	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Forward", ["ctrl", "alt", "."], function () { htmlWindow.runJS("cycleBubbles('1')") }))
+
+	let aboutMenuItem = Beat.menuItem("About FTOutliner", [], function () { htmlWindow.runJS("displayAboutBox()") })
+	let splitScreenMenuItem = Beat.menuItem("Arrange side-by-side with Beat", ["alt", "ctrl", "\ "], function () { htmlWindow.runJS("setSharedScreen()") })
+	let zoomInMenuItem = Beat.menuItem("Increase Font Size", ["alt", "ctrl", "+"], function () { htmlWindow.runJS("zoomSizes('+')") })
+	let zoomOutMenuItem = Beat.menuItem("Decrease Font Size", ["alt", "ctrl", "-"], function () { htmlWindow.runJS("zoomSizes('-')") })
+	let resetZoomMenuItem = Beat.menuItem("Reset Font Size", ["alt", "ctrl", "0"], function () { htmlWindow.runJS("zoomSizes('0')") })
+
+	let viewSubMenu = Beat.submenu("Views", viewSubMenuItems)
+	let showSubMenu = Beat.submenu("Show", showSubMenuItems)
+	let notesSubMenu = Beat.submenu("Notes", notesSubMenuItems)
+	let dialogSubMenu = Beat.submenu("Dialogue", dialogSubMenuItems)
+	let menuDivider1 = Beat.separatorMenuItem()
+	let menuDivider2 = Beat.separatorMenuItem()
+	let menuDivider3 = Beat.separatorMenuItem()
+	let menuDivider4 = Beat.separatorMenuItem()
+	let appMenu = Beat.menu("FTOutliner", [
+		// aboutMenuItem,
+		splitScreenMenuItem, 
+		menuDivider1,
+		zoomInMenuItem, 
+		zoomOutMenuItem,
+		resetZoomMenuItem,
+		menuDivider2,
+		viewSubMenu, 
+		showSubMenu, 
+		menuDivider3,
+		sidePanelMenuItem,
+		notesSubMenu, 
+		dialogSubMenu,
+		menuDivider4,
+		highlightCharacterMenuItem,
+	])
+
+}
+
 Beat.custom = {};
+
+Beat.custom.updateShowMenu = function(itemNumber, value){
+	updateShowMenuItem(itemNumber, value)
+}
+Beat.custom.updateViewsMenu = function(itemNumber, value){
+	updateViewsMenuItem(itemNumber, value)
+}
+
+function updateShowMenuItem(itemNumber, value){
+	showSubMenuItems[itemNumber].on = value
+}
+function updateViewsMenuItem(itemNumber, value){
+	viewSubMenuItems[itemNumber].on = value
+}
 
 Beat.custom.reloadCode = function(){
 
@@ -180,8 +261,14 @@ Beat.custom.reloadHTML = function(){
 	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), thePanelHeight) 
 }
 
+Beat.onEscape(function () {
+
+	htmlWindow.runJS("escapeWasPressed()")
+
+})
+
+
 Beat.onOutlineChange (function() { 
-	//Beat.log("FIRED: onOutlineChange")
 	
 	outlineJustFired = true
 	let jsToRun = `startFullUpdate()`	
@@ -197,12 +284,8 @@ Beat.onOutlineChange (function() {
 })
 
 Beat.custom.updateEntireOutline = function (location, length, previousOutlineLength) {
-	//Beat.log("================ Update Entire Outline. Location is: " + location)
-
-	startTime = new Date()
 
 	if (backgroundAlreadyRunning){
-		//Beat.log("          stopped because background already running! ")
 		return}
 
 	fullUpdateInProgress = true		
@@ -213,19 +296,12 @@ Beat.custom.updateEntireOutline = function (location, length, previousOutlineLen
 		`
 		htmlWindow.runJS(jsToRun)
 
-	//Beat.log("location in EntireOutline is: " + location)
-
 	if(!location){
 		location = Beat.selectedRange().location
 	}
 	
 	let outlineElements = [...Beat.outline()]
 	const paginator = Beat.paginator()
-		midTime1 = new Date()
-
-	// let json = makeJSON() //moved down
-		midTime2 = new Date()
-
 
 	Beat.dispatch(function(){
 		Beat.log("          Now entering dispatch")
@@ -236,11 +312,6 @@ Beat.custom.updateEntireOutline = function (location, length, previousOutlineLen
 		let pageBreakPositions = []
 		let pages
 		let pageBreaks
-
-		// let location = Beat.selectedRange().location
-		// if (location && Beat.currentParser.lineAtPosition(location).typeAsString() != "Synopse"){
-			
-		// 	Beat.log("          NOT typing in synopse, so paginating")
 	
 			try{
 
@@ -259,24 +330,16 @@ Beat.custom.updateEntireOutline = function (location, length, previousOutlineLen
 					htmlWindow.runJS(`mylog("There was an ERROR in the background: updateEntireOutline() ` + e + `", true)`)
 				})
 			}
-
-		// }
 		
 		Beat.dispatch_sync(function(){	
 			Beat.log("          dispatch_sync, runJS")
 
-
 			let tmp = makeJSON() 
 			let json = tmp.json
 			let frontMatter = tmp.frontMatter
-			midTime3 = new Date()
+
 			htmlWindow.runJS("updateEverything(" + json + "," + location + "," + length + "," + pages + "," + Beat.getText().length + "," + pageBreaks + "," + frontMatter + ")")
 			
-			// SPEEDOMETER!
-			endTime = new Date()
-				Beat.log( "          after paginator: " + (midTime1.getTime() - startTime.getTime()) + " ms")
-				Beat.log( "          after json: " + (midTime2.getTime() - startTime.getTime()) + " ms")
-				Beat.log( "          Total time: " + (endTime.getTime() - startTime.getTime()) + " ms")
 
 			if(queueOneMoreFullUpdate){
 				queueOneMoreFullUpdate = false
@@ -302,7 +365,6 @@ Beat.onTextChange(function (location, length) {
 	// Beat.log("FIRED: onTextChange -- location is " + location)
 
 	if(outlineJustFired){
-		// Beat.log("OnTextChange was IMMEDIATELY CANCELED"); 
 		return
 	}
 
@@ -319,7 +381,6 @@ Beat.onTextChange(function (location, length) {
 	if (!fullUpdateInProgress){
 		smallUpdateInProgress = true
 		htmlWindow.runJS("startSmallUpdate(" + location + "," + length + ", " + "1000" + ", " + JSON.stringify(Beat.currentParser?.sceneAtPosition(location)?.typeAsString()) + ")") 
-		//htmlWindow.runJS("startSmallUpdate(" + location + "," + length + ")") 
 	}
 	
 			// PLUGIN: onTextChange (THIS FUNCTION) will call...
@@ -514,6 +575,8 @@ function makeStoringDefaultsDiv(){
 
 	let userDefault = {}
 	let documentSetting = {}
+
+	userDefault.ftoutlinerVersion = Beat.getUserDefault("ftoutlinerVersion")
 
 	userDefault.isRealTimeOn = Beat.getUserDefault("realTimeUpdates") || 1
 		if(userDefault.isRealTimeOn != 0){userDefault.isRealTimeOn = 1}
@@ -1560,7 +1623,7 @@ function checkForDoubleBlankLines(position){
 	}
 }
 
-Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warningsAreOn, startPosition, endPosition, synopsisMove){
+Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warningsAreOn, startPosition, endPosition, synopsisMove, makeCopy){
 
 	const outline = [...Beat.outline()]
 
@@ -1613,7 +1676,7 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		}
 	}
 
-	htmlWindow.runJS(`ifYesToMove()`)
+	if(!makeCopy) htmlWindow.runJS(`ifYesToMove()`)
 
 	//catch-all to make end of selection not out-of-range
 	endPosition = Math.min(endPosition, Beat.getText().length)
@@ -1632,7 +1695,7 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		theTextToMove = Beat.getText().substring(startPosition, endPosition)
 
 		if (insertionPosition < startPosition) {
-			deleteTheOldText()
+			if(!makeCopy) deleteTheOldText()
 			checkForDoubleBlankLines(startPosition + 1)
 			addTheTextAtNewPosition()
 			checkForDoubleBlankLines(insertionPosition + theTextToMove.length + 4)
@@ -1641,7 +1704,7 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		if (insertionPosition > endPosition) {
 			addTheTextAtNewPosition()
 			checkForDoubleBlankLines(insertionPosition + theTextToMove.length + 4)			
-			deleteTheOldText()
+			if(!makeCopy) deleteTheOldText()
 			checkForDoubleBlankLines(startPosition + 1)
 		}
 
@@ -1691,7 +1754,7 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		let theNewOutlineNumberForFirstMovedScene
 		
 		if (insertionPosition < startPosition) {
-			deleteTheOldText()
+			if(!makeCopy) deleteTheOldText()
 			addTheTextAtNewPosition()
 
 			theNewOutlineNumberForFirstMovedScene = insertBeforeScene
@@ -1699,9 +1762,13 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 
 		if (insertionPosition > endPosition) {
 			addTheTextAtNewPosition()
-			deleteTheOldText()
+			if(!makeCopy) deleteTheOldText()
 			
-			theNewOutlineNumberForFirstMovedScene = insertBeforeScene - (lastScene - firstScene) - 1
+			if(!makeCopy){
+				theNewOutlineNumberForFirstMovedScene = insertBeforeScene - (lastScene - firstScene) - 1
+			}else{
+				theNewOutlineNumberForFirstMovedScene = insertBeforeScene //because if copy, then nothing is deleted
+			}
 		}
 
 		if (sceneBelowDroppedWasOmitted){
@@ -1720,7 +1787,7 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		"document.getElementById('outOfSyncDiv').classList.add('animate'); " +
 		"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
 		"document.getElementById('flexiContainer').classList.add('wait'); " +
-		(synopsisMove ? "startSmallUpdate(false,false,0)},1)" : "startFullUpdate()},999)") 
+		((synopsisMove ||makeCopy) ? "startSmallUpdate(false,false,0)},1)" : "startFullUpdate()},999)") 
 		//the 999 delay here is to allow animation to finish
 
 	htmlWindow.runJS(jsToRun)
@@ -2142,5 +2209,100 @@ Beat.custom.toggleFull = function(){
 	htmlWindow.toggleFullScreen()
 
 }
+
+Beat.custom.runHightlightCharacter = function(name){
+
+	//this only for relaying when sent from the dropdown list.
+	highlightCharacter(name)
+	
+}
+
+function highlightCharacter(name, onlyHighlightScenes, straightFromEditorWindow){ //if no name here, it means we came not from dropdown list but editor
+
+	let line = Beat.currentLine
+	
+	if(!name){
+
+		if(!["Character", "Dialogue", "Parenthetical"].includes(line.typeAsString())) {
+			//htmlWindow.runJS("unShowCharacterBubbles()")	
+			//return
+			name = "ALL"
+		}else{
+
+			while(line.typeAsString() != "Character" && line.position > 1){
+				pos = line.position - 1
+				line = Beat.lineAtPosition(pos)
+			}
+
+			name = (line.typeAsString() == "Character") ? line.string.replace(/\(.*\)/, "").trim() : "ALL"
+		}
+
+		if(onlyHighlightScenes){
+			
+			let jsToRun = `toggleSoloCharacter(0, "${name}")`
+			htmlWindow.runJS(jsToRun)
+			return
+		}
+
+		htmlWindow.runJS(`
+			cycleTabs($(".dialogtab"))
+			$id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf("${name}")
+		`)
+	}
+	
+
+
+	Beat.dispatch(function(){	
+
+		let outline = Beat.outline()
+		let dialogForCharacter = []
+		let collect = false
+
+		for (element of outline){
+
+			let linesForScene = Beat.linesForScene(element)
+			let dialogInScene = []
+
+			for (line of linesForScene){
+
+				let currentLine = false
+				if (line == Beat.currentLine) currentLine = true
+
+				let stringToCompare = line.string
+					if (line.typeAsString() == "Character") stringToCompare = line.string.replace(/\(.*\)/, "").trim()
+				
+				//Turn collection ON
+					if (line.typeAsString() == "Character" && (name.toUpperCase() == "ALL" || stringToCompare.toUpperCase() == name.toUpperCase())) collect = true
+				//Turn collection OFF 
+					if (!["Character", "Dialogue", "Parenthetical"].includes(line.typeAsString())) collect = false
+					if (line.typeAsString() == "Character" && (name.toUpperCase() != "ALL" && stringToCompare.toUpperCase() != name.toUpperCase())) collect = false
+
+				if (collect) dialogInScene.push({
+					"position": line.position,
+					"string": line.string, 
+					"typeAsString": line.typeAsString(),
+					"omitted": line.omitted,
+					"currentLine": currentLine,
+				})
+			}
+			dialogForCharacter.push(dialogInScene)
+		}
+
+		Beat.dispatch_sync(function(){
+			jsToRun = `
+				showCharacterBubbles(${JSON.stringify(dialogForCharacter)}, ${JSON.stringify(name.toUpperCase())})
+				`
+			if(straightFromEditorWindow) jsToRun += /*html*/`
+				setTimeout(function(){scrollNicelyIntoView($(".hasCursor"), $id("dialogpanelcontent"))}, 200)
+			`
+			htmlWindow.runJS(jsToRun)
+		})
+
+	})
+
+}
+
+
+
 
 

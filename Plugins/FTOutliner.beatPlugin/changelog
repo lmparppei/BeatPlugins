@@ -1,3 +1,42 @@
+v. 1.54 (February 28, 2023)
+===========================
+
+A GENERAL NOTE ABOUT MACOS (or rather Safari, or rather Webkit) COMPATIBILITY: 
+* Since a few updates back, FTOutliner needs at least WebKit version 613.1.17 to run properly. This means you need to have Safari 15.4 or higher installed, which is comapatible as far back as MacOs Catalina (10.15). There is now a warning on startup letting you know if your webkit version is too old, as some very odd behavior has been reported in older versions. I apologize if this means breaking compatibility with some systems.
+
+NEW FEATURES
+* The Notepanel is now the SIDEPANEL. Oh? So what? Well, so now it has two tabs, one of which is the old Notepanel, and one of which is...:
+  - The new DIALOG PANEL will let you display all dialog for ANY character (while also indicating the corresponding scene in the outline) ...
+  - ...or, alternatively, the dialog for ALL characters in one long list. 
+  - Enter text in the SEARCH field to find some term, word, name or why not (V.O.) to find all voice-overs in a script.
+* APP-WIDE shortcuts now let you access some FTOutliner menu items without focusing FTOutliner first: 
+  - Switch view, cycle notes, or browse all dialog for the current character directly as you type
+  - All FTOutliner-specific shortcuts have CTRL + ALT modifier keys
+  - This currently DOES NOT replace the in-plugin modifier-less shortcuts, but rather acts as a complement. 
+
+IMPROVEMENTS
+* Dragging and dropping now also allows COPYING -- hold down ALT while dragging and the original object will stay after dropping, creating a duplicate in the new position
+* A range of synopsis can now be selected via shift-clicking the last one in the desired range, just like with scenes
+* Two additions to the ADVANCED SETTINGS now lets you 
+  - automatically widen columns of index card currently being edited
+  - allow index cards of widened columns to be tall enough to show all text inside it
+
+MINOR IMPROVEMENTS
+* If a note starts with ? or ! for coloring purposes it will not show in the hovered/listed note
+* Notes will now show with correct italics or bold instead of asterisks when cycled and in the notepanel
+
+BUGS: 
+* Fixed a crash that could occur upon returning to FTOutliner after unfocusing it while ALT was pressed
+* Fixed a crash that could occur when double-clicking-to-edit right at the end of a synopsis
+* Added Error message instead of crash when trying to drag element of different types at once
+* Fixed a bug when using < or > caused scene headings or section names to display incorrectly
+* Fixed a bug where multiple line section headings would not show if empty or containing spaces only
+* Fixed a bug where selecting Cycle Notes from the Note Menu didn't cycles notes at all
+* Fixed a graphical glitch in Fixed Mode where synopsis in scenes did not appear even if set to do so
+* Fixed a graphical glitch in Fixed Mode where the buttons for Promote/Demote and Add Scene/Section would appear before their synopsis
+* Fixed other minor cosmetic stuff
+
+
 v 1.53 (January 24, 2023)
 =========================
 

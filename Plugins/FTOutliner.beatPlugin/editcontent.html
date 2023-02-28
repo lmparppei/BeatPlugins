@@ -188,9 +188,10 @@ function editContent(ev) {
         initialDraggability = !(!theElement.draggable) //will freeze the value
         theElement.draggable = false
 
-        //having the below line turned on means editbox does not scroll with rest of screen
-        //but turning it off AT LEAST means scrolled page will have editbox appear in wrong place
-        //flexiContainer.classList.remove("positionRelative") //why?
+        //LEGACY: I have not seen this problem for a long time.
+            //having the below line turned on means editbox does not scroll with rest of screen
+            //but turning it off AT LEAST means scrolled page will have editbox appear in wrong place
+            //flexiContainer.classList.remove("positionRelative") //why?
 
         //this sends us to the new synopsisEditor!
         //NOTE: the code for synopsis editing still lingering below WILL produce an error
@@ -203,7 +204,13 @@ function editContent(ev) {
                 return
             }
 
-            indexCardEditor(theElement)
+            if(indexCardMode && $("#buttonForAutoWiden:checked") && !theElement.closest(".level1").classList.contains("wider")) {
+                makeWider(theElement)
+                editBoxDelay = 250
+            }
+            setTimeout(function(){
+                indexCardEditor(theElement, ev)
+            }, editBoxDelay)
             return
 
         }
@@ -230,7 +237,8 @@ function editContent(ev) {
         return
     }
 
-    if (![...theElement.classList].includes("section-heading") && ![...theElement.classList].includes("sceneheading") && ![...theElement.classList].includes("notepanelNote")){ //experimental 2023-01-08
+    // if (![...theElement.classList].includes("section-heading") && ![...theElement.classList].includes("sceneheading") && ![...theElement.classList].includes("notepanelNote")){ //experimental 2023-01-08
+    if (![...theElement.classList].includes("section-heading") && ![...theElement.classList].includes("sceneheading")){ 
         return
     }
 
@@ -312,7 +320,8 @@ function editContent(ev) {
         let editBox = document.createElement("div")
             editBox.id = "editBox"
             editBox.draggable = false
-            editBox.innerHTML = theOldText
+            // editBox.innerHTML = theOldText
+            editBox.innerText = theOldText
             editBox.contentEditable = "true"
             editBox.classList.add("editBox")
             editBox.classList.add(kindOf)
@@ -330,7 +339,8 @@ function editContent(ev) {
         
         $id("flexiContainer").appendChild(editBox)
 
-            editBox.style.left = (sizes.left - leftIndent) + "px"
+            // editBox.style.left = (sizes.left - leftIndent) + "px"
+            editBox.style.left = (sizes.left - flexiContainer.getBoundingClientRect().left) + "px"
             editBox.style.top = sizes.top + scrolledAmount + "px"
             editBox.style.width = sizes.width + "px"
             // editBox.style.height = sizes.height + "px"
@@ -366,8 +376,8 @@ function editContent(ev) {
         editBox.style.margin = elementCSS.margin
         if (indexCardMode) {
             editBox.style.borderRadius = elementCSS.borderRadius
-        }else{
-            editBox.style.borderRadius = window.getComputedStyle(theElement.closest(".scene, .section")).borderRadius
+        }else if(theElement.closest(".scene, .section")){
+            editBox.style.borderRadius = window.getComputedStyle(theElement.closest(".scene, .section"))?.borderRadius
         }
         editBox.style.borderBottom = elementCSS.borderBottom
 

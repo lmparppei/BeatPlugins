@@ -13,12 +13,10 @@
 .noteContainer {
     position: relative !important;
     float: right !important;
-    /* border: 1px red dotted;   */
     height: 1px !important; 
     margin-bottom: -1px !important;
     width: auto !important;
     pointer-events: none;
-    /* background-color: rgba(255,0,0,0.4) !important; */
     z-index: 9996 !important;
     overflow: visible;
 
@@ -36,7 +34,6 @@
     /* see outline.css*/
 }
 
-/* .markersAreDisplayed .noteContainer{ */
 .scene:has(.review) .noteContainer{
     right: 10px !important
 }
@@ -46,7 +43,6 @@
 }
 
 .marker {
-    /* background-color: transparent; */
     background: grey;
     position: absolute;
     right: -2px;
@@ -61,8 +57,6 @@
     padding-right: 4px;
 
     z-index: 998;
-
-    /* opacity: 0.8; */
 
     color: white;
     font-weight: bold;
@@ -151,7 +145,7 @@
 
 #flexiContainer.indexcards .section>.marker,
 #flexiContainer.nonProportionalMode .section>.marker {
-    /* top: -2px !important; */
+
     z-index: 9999 !important;
 }
 
@@ -172,35 +166,8 @@
     right: 50px !important;
 }
 
-/* #flexiContainer.indexcards .marker::after,
-#flexiContainer.nonProportionalMode .marker::after {
-
-width: 15px;
-height: 13px;
-left: -7.5px;
-top: -6.5px;
-
-}
-
-#flexiContainer.indexcards .marker::before,
-#flexiContainer.nonProportionalMode .marker::before {
-    position: absolute;
-    top: -6px;
-    left: -7px;
-    width: 14px;
-    height: 11px;
-    content: " ";
-
-    border-top: 0.5px solid white;
-    border-right: 1px solid #333;
-    border-bottom: 0.5px solid black; 
-    opacity: 0.4;
-} */
-
 .marker:hover {
-    /* transform: translateX(-3px) scaleX(1.3);
-    transition: 0.05s;  */
-    /* filter: grayscale(1) invert(1) contrast(2) */
+
     background-image: linear-gradient(rgba(0,0,0,0.6) 0%,rgba(0,0,0,0.6) 100%);
     opacity: 1;
     color: white !important;
@@ -211,7 +178,6 @@ top: -6.5px;
 #flexiContainer.indexcards .marker .markertext,
 #flexiContainer.nonProportionalMode .marker .markertext {
 
-    /* display:none; */
     width: 0px;
     opacity: 0;
     text-overflow: clip;
@@ -246,7 +212,6 @@ top: -6.5px;
     opacity: 1;
     box-shadow: 1px 1px 6px rgba(0,0,0,0.7);
 
-    /* transition: all 0.2s; */
     pointer-events: all !important;
 }
 
@@ -268,8 +233,6 @@ top: -6.5px;
     margin-top: -2px;
     padding: 1px 4px !important;
     border-width: 2px;
-
-    /* transition: all 0.3s !important; */
 
 }
 
@@ -342,18 +305,8 @@ top: -6.5px;
     padding: 0 !important;
     margin: 0 0px 0px 2px !important;
     background-color: var(--note-bottom);
-    
-    /* background:  */
-    /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
-    /* conic-gradient(from 0deg at 13px 9px, var(--note-border), var(--note-border) 135deg, transparent 135deg),
-    conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, var(--note-border) 225deg),
-    linear-gradient(to bottom right, var(--note-bottom), var(--note-bottom) 16px, transparent 16px) */
-    /* ; */
 
     border: 1px solid rgba(0,0,0,0.75);
-
-    /* border-left: 1px solid var(--note-border) !important; 
-    border-top: 1px solid var(--note-border) !important;  */
     height: 15px !important;
     width: 15px !important;
     color: rgba(0,0,0,0);
@@ -366,11 +319,7 @@ top: -6.5px;
     overflow: hidden;
 
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4.1px), calc(100% - 4.1px) 100%, 0 100%);
-    /* transform: rotate(-3deg);  */
     overflow: hidden;
-
-    /* border-radius: 0 0 6.5px 0;
-    box-shadow: 1.5px 1.5px 2.5px rgba(0,0,0,0.25); */
 
 }
 
@@ -385,7 +334,6 @@ top: -6.5px;
     background: linear-gradient(to bottom right, transparent 0%, transparent 1.5px, rgba(0,0,0,0.7) 1.5px, rgba(0,0,0,0.7) 99%, transparent 100%);
     left: 9px;
     top: 9px;
-    /* z-index: 11111 */
 
 }
 
@@ -396,48 +344,18 @@ top: -6.5px;
     padding-right: 10px !important;
 }
 
-/* .note:first-of-type {
-    margin-left: 60px !important;
-} */
-
 .selectedNote {
     
-	/* background-image: -webkit-linear-gradient(top, var(--note-border), var(--note-border)) !important;  */
     background-image: 
 
     linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.7) 100%);
-    /* linear-gradient(to bottom right, transparent 16px, var(--note-border) 16px, var(--note-border) 17px, transparent 17px), */
-    /* conic-gradient(from 0deg at 13px 9px, black, black 135deg, transparent 135deg),
-    conic-gradient(from 270deg at 9px 13px, transparent, transparent 225deg, black 225deg),
-    linear-gradient(to bottom right, var(--note-border), var(--note-border) 16px, transparent 16px)
-    ; */
-    border-color: black !important; /* var(--note-bottom) !important; */
+    border-color: black !important; 
 }
-
-/* .note:before {
-  content: "";
-  position: absolute;
-  bottom: 0px !important;
-  right: 0px !important;
-  width: 3px !important;
-  height: 3px !important;
-  border-width: 1px 0 0 1px;
-  border-style: solid;
-  border-color: var(--note-border);
-  background-image: linear-gradient(to top left,var(--note-border) , var(--note-border) 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%); 
-} */
-
-/* .note::after, .noteContainer::after, .sceneHeading::before, .sceneHeading>p::before, .sceneHeading>.showSceneNum::before{
-    clear: both;
-    display: block;
-
-} */
 
 .selectedNote:before {
   border-color: black !important; /* var(--note-border) !important; */
   background: linear-gradient(to bottom right, transparent, transparent 1.5px, black 1.5px, black 2.5px, transparent 2.5px);
 
-  /* background-image: linear-gradient(to top left,black , black 2.5px,rgba(0,0,0,0) 2.5px, rgba(0,0,0,0) 100%) !important;  */
 }
 
 #expandedNote{
@@ -451,7 +369,6 @@ top: -6.5px;
 
     position: absolute;
 
-    /* height: auto; */
     min-height: 50px;
     
     background-color: rgb(255,255,128);
@@ -462,7 +379,6 @@ top: -6.5px;
     white-space: normal;
     padding: 0px 8px 8px 8px !important;
 
-    /* background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, var(--note-border-light) 16px, var(--note-border-light) 17px) !important; */
     background-image: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16px, rgba(0,0,0,0.2) 16px, rgba(0,0,0,0.2) 17px) !important;
 
     box-shadow: 2px 2px 10px rgba(0,0,0,0.6);
@@ -507,7 +423,6 @@ top: -6.5px;
     padding: 5px 9px 0px 9px;
     margin: 0px -9px 2px -9px; 
     line-height: 12px !important;
-    /* background-color: hsl(60, 50%, 50%); */
     background-color: rgba(0,0,0,0.2);
     color:  rgba(0,0,0,0.75);
     display: block;
@@ -519,13 +434,24 @@ top: -6.5px;
     text-overflow: ellipsis;
 }
 
+#expandedNote strong{
+
+    font-weight: bold;
+
+
+}
+#expandedNote em,
+#expandedNote i{
+
+    font-style: italic !important;
+
+}
 
 .trashNote {
     height: 12px !important;
     width: 12px !important;
     line-height: 12px !important;
     float: right !important;
-    /* border: 1px red solid !important;  */
     overflow: visible !important;
     margin-top: -3px !important;
     pointer-events: all;
@@ -533,7 +459,6 @@ top: -6.5px;
 }
 
 #trashbutton{
-    /* fill: var(--note-border); */
     fill:  rgba(0,0,0,0.75);
     pointer-events: none;
     opacity: 0.6 !important;
@@ -541,30 +466,11 @@ top: -6.5px;
 }
 #trashNote:hover > #trashbutton{
     fill: rgb(192,0,0) !important;
-    /* stroke: black !important;
-    stroke-width: 5px !important;  */
     opacity: 1 !important;
     
     overflow: visible !important;
     transition: all 0s !important;
 }
-
-/* #trashNote:hover,
-.trashNote:hover,
-#trahsNote.trashNote:hover{
-
-    height: 16px !important;
-    width: 16px !important;
-    border: 2px solid red !important;
-    background-color: red !important;
-    border-radius: 50% !important;
-    transition: all 0s !important;
-
-    transform: translate(2px, -2px);
-
-} */
-
-
 
 </style>
 
@@ -600,6 +506,10 @@ let notesDivEnd = "</div>"
 
 function collectNotes(wherefrom){
     mylog(" from " + JSON.stringify(collectNotes.caller.name))
+
+    if (!notesAreDisplayed && !markersAreDisplayed && !beatsAreDisplayed && !$("#notepanel.expanded .selectedtab.notetab"))return
+
+
     Beat.call("Beat.custom.collectNotes()")
 }
 
@@ -654,7 +564,7 @@ function createDocFromReviews(reviewsData){
 
         }
 
-        mylog("DONE°°°")
+        mylog("DONE")
     }
 
 
@@ -676,8 +586,6 @@ function displayReviews(reviewsData){
     for (existingReview of existingReviews){
         existingReview.remove()
     }
-
-    // alertThis(JSON.stringify(globalReviewsData))
 
     for (review of reviewsData){
 
@@ -741,9 +649,10 @@ function displayNotes(notesData, markerData, beatData){
     
     if(markersAreDisplayed){displayMarkers()}
     if(beatsAreDisplayed){displayBeats()}
+    
     if($id("notepanel")?.classList.contains("expanded") && notesData.length > 0){updateNotepanel()}
 
-    if(!notesAreDisplayed)return
+    if(!notesAreDisplayed || !notesData) return //2023.01.25 -- will this help @folkemunne's crash?
 
     let existingNotes = document.querySelectorAll(".note, .noteContainer")
     if(existingNotes){
@@ -752,31 +661,15 @@ function displayNotes(notesData, markerData, beatData){
         }
     }
 
-    //Deleted parsing markers because already served in markerData
-    // markers = [] //resetting markers every time we re-calculate notes, since markers are just notes
+    mylog("Now about to enter loop")
 
     for (i=0; i<notesData.length; i++){
-
-    //     let tmpString = notesData[i].string.toLowerCase()
-    //     if(tmpString.startsWith("[[marker")){
-    //         let thisMarker = {}
-    //             thisMarker.outlineElementNumber = notesData[i].outlineElementNumber
-    //             thisMarker.position = notesData[i].position
-    //             // thisMarker.color = notesData[i].string.replace(/(\[|\]|marker\s*)/g, "")
-    //             thisMarker.color = tmpString.replace("[[marker ", "").replace("]]", "")
-    //             markers.push(thisMarker)
-    //         continue
-    //     }
-
-        if(!notesAreDisplayed){continue} //because markers are piggybacking on the notes function
 
         if(!outline[notesData[i].outlineElementNumber]){
             mylog("i is now " + i + "but number of outline elements is: " + outline.length)
             //THIS IS A BUGGY SITUATION THAT SHOULD NOT OCCUR, yet does at times.
-            //previously also displayed this:
-            //Beat.call("Beat.alert('trying to reference a scene that does not exist!', '"+notesData[i].outlineElementNumber+"')"); break
         }
-        mylog("now putting in place note #" + i + "; ")// + outline[notesData[i].outlineElementNumber].string)
+        mylog("Now putting in place note #" + i + "; ")
 
         let element = $id(notesData[i].outlineElementNumber) || $(".faux")
         if(!element)return
@@ -800,13 +693,10 @@ function displayNotes(notesData, markerData, beatData){
         while(i > 0 && notesData[i - howFarBackWasPreviousNonMarker].string?.toLowerCase().startsWith("[[marker")){howFarBackWasPreviousNonMarker ++}
 
         if (i == 0 || i > 0 && notesData[i - howFarBackWasPreviousNonMarker].outlineElementNumber != notesData[i].outlineElementNumber) {
-        //if (i == notesData.length - 1 || i < notesData.length - 1 && notesData[i+1].outlineElementNumber != notesData[i].outlineElementNumber) {
 
             element.innerHTML += "<div id='" + currentContainer + "' class='noteContainer clickThru'>" + "</div>"
 
-
-
-            $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")// was "0px"
+            $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
 
             if ([...element.classList].includes("hideSlugIfSmall") && areScenesProportional == 1) {
                 $id(currentContainer).style.top = ((-14 * currentZoomLevel) + "px")
@@ -824,18 +714,15 @@ function displayNotes(notesData, markerData, beatData){
                 parentSize = element.querySelector(".orphanText").getBoundingClientRect()
                 $id(currentContainer).style.top = ((-1 * parentSize.height + 1) + "px")
                 $id(currentContainer).style.maxHeight = (parentSize.height + 14 * currentZoomLevel) + "px"
-                // document.getElementById(currentContainer).style.border = "4px lime dotted"
-                // alertThis("found one")
             }
 
         }
-
         
         let percentageBasedPosition = 0
         if(!element.classList.contains("faux")){
             percentageBasedPosition = Math.max(((notesData[i].position - outline[notesData[i].outlineElementNumber]?.sceneStart) / outline[notesData[i].outlineElementNumber]?.sceneLength) * (parentSize.height - (15 * currentZoomLevel) - 0),0) // the minus 0 used to be -12, now taking full height into use.
         }
-mylog("bad yet?")
+
         if (element.id.includes("outline") && element.querySelector(".orphanText")) {
             let skip = 1
             while(outline[notesData[i].outlineElementNumber + skip]?.typeAsString == "Synopse"){
@@ -844,22 +731,26 @@ mylog("bad yet?")
             percentageBasedPosition = (notesData[i].position - outline[notesData[i].outlineElementNumber]?.sceneStart)/(outline[notesData[i].outlineElementNumber + skip]?.sceneStart - outline[notesData[i].outlineElementNumber]?.sceneStart) * (parentSize.height - (15 * currentZoomLevel) - 0)
         }
 
-        mylog("hanging in?")
-
         notesDivStart += "<div class='note collapsed' " 
         notesDivStart += "data-line='" + notesData[i].position + "' " 
         notesDivStart += "data-noteNumber='" + i + "' "
         notesDivStart += "id='noteNumber" + i + "' "
         notesDivStart += "onmouseenter='expandNote()' " 
         notesDivStart += "onmouseleave='collapseNote()'"
-        if (areScenesProportional == 1 && !(element.id.includes("outline") && !element.querySelector(".orphanText")))  {
+        if (areScenesProportional == 1 && !(element.id.includes("outline") && !element.querySelector(".orphanText"))) {
             notesDivStart += "style='top: " + percentageBasedPosition + "px' " 
         }
         notesDivStart += ">"
 
         notesDivEnd += "</div>"
 
-        $id(currentContainer).innerHTML += notesDivStart + thisNote + notesDivEnd
+            thisNote = thisNote.replace(/\/\*(.*)\*\//g, "<span class='omitted'>$1</span>")
+            thisNote = thisNote.replace(/\*\*\*(.*)\*\*\*/g, "<strong><em>$1</em></strong>")
+            thisNote = thisNote.replace(/\*\*(.*)\*\*/g, "<strong>$1</strong>")
+            thisNote = thisNote.replace(/\*(.*)\*/g, "<em>$1</em>")
+            thisNote = thisNote.replace(/\_(.*)\_/g, "<u>$1</u>")
+
+        $id(currentContainer).innerHTML += notesDivStart + thisNote.replace(/^\?*\!*/g, "") + notesDivEnd
         if (thisNote.startsWith("!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "red"}
         if (thisNote.startsWith("!!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "magenta"}
         if (thisNote.startsWith("!!!")){$("[data-noteNumber = '" + i + "']").style.backgroundColor = "#8000FF"}
@@ -873,50 +764,48 @@ mylog("bad yet?")
 
 function createDocFromNotes(){
 
-if(!globalNotesData)collectNotes()
+    if(!globalNotesData)collectNotes()
 
-let newDocumentContents = ">Below is a summary of all NOTES in the script<\n\n"
-    newDocumentContents += ">**" + (documentName?.toUpperCase() || "UNTITLED") +"**<\n"
-let note = 0
+    let newDocumentContents = ">Below is a summary of all NOTES in the script<\n\n"
+        newDocumentContents += ">**" + (documentName?.toUpperCase() || "UNTITLED") +"**<\n"
+    let note = 0
 
-for (element of outline){
+    for (element of outline){
 
-    mylog("in da loop!:" + element.line.string)
-
-    if(note >= globalNotesData.length) break
-
-    if (outline.indexOf(element) == globalNotesData[note].outlineElementNumber){
-
-        let nearestHeading = element
-        let nearestHeadingNumber = outline.indexOf(nearestHeading)
-            while(nearestHeading.typeAsString != "Heading" && nearestHeading.typeAsString != "Section" && nearestHeadingNumber > 0){nearestHeading = outline[nearestHeadingNumber - 1]}
-
-        newDocumentContents += `\n**-----------------------------------------------------------**\n`
-        newDocumentContents += `\n${nearestHeading.line.string} ${(nearestHeading.sceneNumber ? ("#" + nearestHeading.sceneNumber + "#") : "")}\n\n`
-    }
-
-    while (outline[globalNotesData[note].outlineElementNumber] == element){
-
-        mylog("in da while" + globalNotesData[note].string)
-
-        // newDocumentContents += "*re: " + entireScreenplay.substr(globalNotesData[note].range[0], globalNotesData[note].range[1]).trim().replaceAll("\n", "*\n*") + "*\n\n"
-        newDocumentContents += `${globalNotesData[note].string.replace("[[", "").replace("]]", "").replace("<br/>", "\n").replace(/^!+|^\?+/, "").trim()}\n`
-        
-        note++
+        mylog("in da loop!:" + element.line.string)
 
         if(note >= globalNotesData.length) break
 
-        if(globalNotesData[note].outlineElementNumber == globalNotesData[note - 1].outlineElementNumber){
-            newDocumentContents += `\n>------------------------------<\n\n`
+        if (outline.indexOf(element) == globalNotesData[note].outlineElementNumber){
+
+            let nearestHeading = element
+            let nearestHeadingNumber = outline.indexOf(nearestHeading)
+                while(nearestHeading.typeAsString != "Heading" && nearestHeading.typeAsString != "Section" && nearestHeadingNumber > 0){nearestHeading = outline[nearestHeadingNumber - 1]}
+
+            newDocumentContents += `\n**-----------------------------------------------------------**\n`
+            newDocumentContents += `\n${nearestHeading.line.string} ${(nearestHeading.sceneNumber ? ("#" + nearestHeading.sceneNumber + "#") : "")}\n\n`
         }
 
+        while (outline[globalNotesData[note].outlineElementNumber] == element){
+
+            mylog("in da while" + globalNotesData[note].string)
+
+            newDocumentContents += `${globalNotesData[note].string.replace("[[", "").replace("]]", "").replace("<br/>", "\n").replace(/^!+|^\?+/, "").trim()}\n`
+            
+            note++
+
+            if(note >= globalNotesData.length) break
+
+            if(globalNotesData[note].outlineElementNumber == globalNotesData[note - 1].outlineElementNumber){
+                newDocumentContents += `\n>------------------------------<\n\n`
+            }
+
+        }
+
+        mylog("DONE")
     }
 
-    mylog("DONE°°°")
-}
-
-
-Beat.call("Beat.newDocument(`" + newDocumentContents + "`)")
+    Beat.call("Beat.newDocument(`" + newDocumentContents + "`)")
 
 }
 
@@ -924,11 +813,10 @@ function displayMarkers(){
 
     if (globalMarkerData.length < 1){return}
 
-    let currentMarkers = $$(".marker")
-        for (currentMarker of currentMarkers){currentMarker.remove()}
-
     mylog()
 
+    let currentMarkers = $$(".marker")
+        for (currentMarker of currentMarkers){currentMarker.remove()}
 
     for (let im = 0; im < globalMarkerData.length; im++){
 
@@ -936,37 +824,20 @@ function displayMarkers(){
         if(!element)return
 
         theMarkerToAddAsCode = "<div id = 'marker" + im + 
-                    //"' data-content = '" + globalMarkerData[im].story + //this is to make :after border equally wide as parent
                     "' class = 'marker' data-line = '" + globalMarkerData[im].position + 
                     "'><div class='markertext'>" + (globalMarkerData[im].story || "") + "</div></div>" 
-                    // "'><div class='markertext'>" + (globalMarkerData[im].position || "") + "</div></div>" 
         element.innerHTML += theMarkerToAddAsCode
-        
-
-        // theMarkerToAdd = document.createElement("div")
-        // theMarkerToAdd.id = "marker" + i
-        // theMarkerToAdd.classList.add("marker")
-        // theMarkerToAdd.dataset.line = markers[i].position
-
-        //theMarkerToAdd.onmouseover = function(){element.parentNode.classList.add("noHover")}
-        //theMarkerToAdd.onmouseout = function(){element.parentNode.classList.remove("noHover")}
 
         theMarkerToAdd = $id("marker" +  im)
 
         if (globalMarkerData[im].color && globalMarkerData[im].color != ""){
-            // theMarkerToAdd.style.borderRightColor = globalMarkerData[im].color
-            // theMarkerToAdd.style.borderTopColor = globalMarkerData[im].color
-            // theMarkerToAdd.style.borderBottomColor = globalMarkerData[im].color
             theMarkerToAdd.style.backgroundColor = globalMarkerData[im].color
         }
 
         let markerColor = window.getComputedStyle(theMarkerToAdd).backgroundColor //will be rgb
-        theMarkerToAdd.style.color = blackOrWhite(markerColor) || "red"
+            theMarkerToAdd.style.color = blackOrWhite(markerColor) || "red"
         
-        // let markerVerticalPosition = -2
         let markerVerticalPosition = 1 // default position only affects Section, that has no orphan.
-
-        mylog("ASfasfasdf")
 
         if((outline[globalMarkerData[im].outlineElementNumber]?.typeAsString != "Section"
             ||
@@ -979,30 +850,26 @@ function displayMarkers(){
                 element = element.querySelector(".orphanText")
             }
 
-            markerVerticalPosition = percentageIntoScene * (Number(element.getBoundingClientRect().height) - 12) //-14 is to fit entire marker inside
-            
+            markerVerticalPosition = percentageIntoScene * (Number(element.getBoundingClientRect().height) - 12) 
         }
         
         theMarkerToAdd.style.top = markerVerticalPosition + "px"
-        
-        //element.appendChild(theMarkerToAdd)
-        
     }
     
-    mylog("done in display marker territory")// at " + displayEnd + "(took " + (displayEnd-displayStart) + " ms)")
+    mylog("done in display marker territory")
 }
 
 function displayBeats(){
    
     if (globalBeatData.length < 1){return}
 
+    mylog()
+
     let currentBeats = $$(".beat")
         for (currentBeat of currentBeats){currentBeat.remove()}
     let currentPaths = $$(".svgForBeats")
         for (currentPath of currentPaths){currentPath.remove()}
     let widthOfColumns = $(".section").getBoundingClientRect().width || $(".sceneheading").getBoundingClientRect().width
-
-    mylog()
 
     //first lets make one SVG "canvas" the size of the flexiContainer
         let canvasSize = $id("flexiContainer").getBoundingClientRect()
@@ -1012,7 +879,6 @@ function displayBeats(){
         $id("theCanvas").style.top = canvasSize.top + "px"
         $id("theCanvas").style.width = canvasSize.width + "px"
         $id("theCanvas").style.height = canvasSize.height + "px"
-        //$id("theCanvas").style.background = "rgba(255,255,255,0.1)"
 
         mylog("there is now an SVG canvas")
 
@@ -1029,7 +895,6 @@ function displayBeats(){
 
         theBeatToAdd.style.background = storyColors[globalBeatData[im].storyline - 1]
         theBeatToAdd.style.left = (5 + (globalBeatData[im].storyline - 1) * 15) + "%"
-        //theBeatToAdd.style.opacity = "0"
     
         let beatVerticalPosition = -2
 
@@ -1076,12 +941,7 @@ function displayBeats(){
             let midY = start.top + (end.top - start.top)/2 + theHeight/2
             
             let xCorrector = widthOfColumns/2
-            //if (start.left == end.left){xCorrector = 0}
             let yCorrector = 50 //widthOfColumns 
-            //if (start.left != end.left){yCorrector = widthOfColumns}
-            
-            // yCorrector = 200
-
             
             let currentStoryline = globalBeatData[im].storyline
             let thePathID = "path" + im
@@ -1095,7 +955,6 @@ function displayBeats(){
             ` ' fill = "none"/>`
 
             $id("theCanvas").innerHTML += thePathToAdd
-   
         }
 
         //now actually make a duplicate of the last beat, and put it on top!
@@ -1111,8 +970,7 @@ function displayBeats(){
             $("#flexiContainer").appendChild(copyOf)
         
     }
-
-mylog("exiting")
+    mylog("exiting")
 }
 
 function beatIsHovered(element){
@@ -1125,7 +983,6 @@ function beatIsHovered(element){
         $id("theCanvas").style.left = flexiSize.left
 
     let theHoveredStoryline = element.getAttribute("data-storyline")
-    //element.id.replace("beat", "").replace("(copy)", "")
     aBeatIsHovered = true
 
     let allpaths = $$(".allpaths")
@@ -1179,11 +1036,11 @@ function expandNote(tabWasPressed){
         }
     }
 
-    if ([...event.target.classList].includes("note") && ($id('trashNote'))) { //allow hover others when in tab-cycling
+    if (event && [...event?.target?.classList].includes("note") && ($id('trashNote'))) { //allow hover others when in tab-cycling
         return
     }
 
-    if ([...event.target.classList].includes("note") && (!tabWasPressed)) { //SELECTED BY HOVERING
+    if (event && [...event?.target?.classList].includes("note") && (!tabWasPressed)) { //SELECTED BY HOVERING
         collapseNote()
         theNote = event.target
         selectedNote = theNote.getAttribute("data-noteNumber")
@@ -1216,20 +1073,20 @@ function expandNote(tabWasPressed){
     theNote.classList.add('selectedNote')
 
     let theNoteString = theNote.innerHTML
-    let expandedClassList = "expandedNote" //only to be able to blink in its color
+    let expandedClassList = ["expandedNote"] //only to be able to blink in its color
     let position = theNote.getBoundingClientRect()
     let sizeOfFlexi = $id("flexiContainer").getBoundingClientRect()
     
     if (position.top == 0 && position.left == 0) { 
         position = theNote.closest(".section").getBoundingClientRect()
-        expandedClassList += "omittedNote "}
+        expandedClassList.push("omittedNote")
+    }
     let y = parseInt(JSON.stringify(position.top - sizeOfFlexi.top))
     let x = parseInt(JSON.stringify(position.left - sizeOfFlexi.left))
     // let y = position.top
     // let x = position.left
     let yOrigo = document.getElementById('flexiContainer').scrollTop
 
-    // let theFirstOutlineItemWidth = $id("0").getBoundingClientRect()
     let theFirstOutlineItemWidth = $(".section:not(.faux), .scene")?.getBoundingClientRect()
 
     let expandedWidth = Math.min(theFirstOutlineItemWidth.width, window.innerWidth/2)
@@ -1240,21 +1097,18 @@ function expandNote(tabWasPressed){
         sceneText = a? ('in section ' + theNote.closest(".section")?.querySelector(".section-heading")?.innerHTML) : "before first section"
     }
 
-    let trashDiv = ""
-    if (tabWasPressed) {trashDiv = "<div id='trashNote' class='trashNote'>" + trashIcon + "</div>"}
+    let trashDiv = tabWasPressed ? "<div id='trashNote' class='trashNote'>" + trashIcon + "</div>" : ""
 
-    $id('flexiContainer').innerHTML += 
-        "<div id='expandedNote' class='" + expandedClassList + "'>" +
-        "<b class='clickThru padRight'>" +
-        trashDiv +
-        "Note " + sceneText + " </b>" +
-        "<text class='clickThru' id='expandedNoteText'>" + theNoteString + "</text></div>"
-
-    let theExpandedNote = document.getElementById('expandedNote')
-    let currentIndex = theNote.getAttribute("data-line")
-    mylog(currentIndex)
-    theExpandedNote.setAttribute("data-line", currentIndex)
-    theExpandedNote.style.width = expandedWidth + "px"        
+    let theExpandedNote = document.createElement("div")
+        theExpandedNote.id = "expandedNote"
+        expandedClassList.forEach(cl => {theExpandedNote.classList.add(cl)})
+        theExpandedNote.innerHTML = "<b class='clickThru padRight'>" +
+                trashDiv +
+                "Note " + sceneText + " </b>" +
+                "<text class='clickThru' id='expandedNoteText'>" + theNoteString + "</text>"
+        theExpandedNote.dataset.line = theNote.dataset.line
+        theExpandedNote.style.width = expandedWidth + "px"
+    flexiContainer.appendChild(theExpandedNote)        
 
     let sizeOfExpandedNote = theExpandedNote.getBoundingClientRect()
 
@@ -1269,24 +1123,26 @@ function expandNote(tabWasPressed){
     theExpandedNote.style.left = xPos + "px"
 
     //added to fix color if ! or ? in text:
-        if (theNoteString.startsWith("!"))  {theExpandedNote.style.backgroundColor = "#FF8888"}//"red"}
-        if (theNoteString.startsWith("!!")) {theExpandedNote.style.backgroundColor = "#FF88FF"}//"magenta"}
-        if (theNoteString.startsWith("!!!")){theExpandedNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
-        if (theNoteString.startsWith("?"))  {theExpandedNote.style.backgroundColor = "#88FF88"}//"lime"}
+    
+        if (theNote.style.backgroundColor == ("red"))  {theExpandedNote.style.backgroundColor = "#FF8888"}//"red"}
+        if (theNote.style.backgroundColor == ("magenta")) {theExpandedNote.style.backgroundColor = "#FF88FF"}//"magenta"}
+        if (theNote.style.backgroundColor == ("#8000FF")){theExpandedNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
+        if (theNote.style.backgroundColor == ("rgb(128, 0, 255)")){theExpandedNote.style.backgroundColor = "#9088FF"}//"#8000FF"}
+        if (theNote.style.backgroundColor == ("lime"))  {theExpandedNote.style.backgroundColor = "#88FF88"}//"lime"}
 
 }
 
 function collapseNote(){
 
-    mylog(event.type)
+    mylog(event?.type)
 
-        //remove .isSelected from notePanel, to show hovred note in panel if open
+        //remove .isSelected from notePanel, to show hovered note in panel if open
         if($("#notepanel")){
             $id("notepanelNote" + selectedNote)?.classList.remove("isSelected")
             $id("notepanelNote" + selectedNote)?.firstChild.classList.remove("isSelected")
         }
 
-    if (event.type == "mouseleave" && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
+    if (event && event.type == "mouseleave" && (document.getElementById('trashNote'))) { //allow hover others when in tab-cycling
         return
     }
 
@@ -1315,10 +1171,9 @@ function expandReview(theClickedThing){
     expandedReview = $id("review"+reviewNumber)
     mylog(expandedReview)
     expandedReview.classList.add("expandedReview")
-    // setTimeout(() => {
-        expandedReview.innerHTML = "<div class='reviewHeadline'>REVIEW #" + reviewNumber + "</div>"
-        expandedReview.innerHTML += globalReviewsData[reviewNumber].string
-    // }, 0.05);
+
+    expandedReview.innerHTML = "<div class='reviewHeadline'>REVIEW #" + reviewNumber + "</div>"
+    expandedReview.innerHTML += globalReviewsData[reviewNumber].string
 
     $id("notepanelReview" + reviewNumber)?.classList.add("isSelected")
 
@@ -1333,7 +1188,6 @@ function collapseReviews(){
     }
     
     $(".notepanelReview.isSelected")?.classList.remove("isSelected")
-
 }
 
 function cycleNotes(shift){
@@ -1344,11 +1198,6 @@ function cycleNotes(shift){
         toggleDisplayNotes()
         return
     }
-
-    
-
-    // if(!globalNotesData)collectNotes()
-    // if(!globalReviewsData)collectReviews()
 
     let cyclables = []
     if (notesAreDisplayed && globalNotesData) cyclables = cyclables.concat(globalNotesData)
@@ -1368,15 +1217,6 @@ function cycleNotes(shift){
         if($(".expandedReview")){
             cycle = cyclables.indexOf(globalReviewsData[$(".expandedReview").id.replace("review", "")])
         }
-
-    // alertThis(JSON.stringify(cyclables))
-
-    
-    // //IF a hovered note is open, tab solidifies that note (=trashnote on) instead of opening next
-    // if (document.getElementById('expandedNote') && !document.getElementById('trashNote')){
-    //     selectedNote = shift ? (selectedNote + 1) : (selectedNote - 1)
-    // }
-    
     
     if ($id('expandedNote')){
         collapseNote()
@@ -1386,15 +1226,11 @@ function cycleNotes(shift){
     }
     
     if (!shift){
-        //selectedNote ++
         cycle ++
     } else {
-        //selectedNote --
         cycle --
     }
     
-    // if (selectedNote > document.querySelectorAll(".note").length-1) {selectedNote = 0}
-    // if (selectedNote < 0) {selectedNote = document.querySelectorAll(".note").length-1}
     if (cycle > cyclables.length-1) {cycle = 0}
     if (cycle < 0) {cycle = cyclables.length-1}
 
@@ -1439,13 +1275,7 @@ function AlternateWayToCalculateCurve(){
 function collectRevisionIndices(){
 
     if (!documentSetting.showRevisions)return
-
-mylog("======")
-mylog("======")
-mylog("======")
-mylog("======")
-mylog("======")
-mylog("======")
+    mylog()
 
     Beat.call(`Beat.custom.collectRevisionsInPlugin()`)
 
@@ -1453,8 +1283,7 @@ mylog("======")
 
 function paintRevisions(changedAsJSON, reviewAsJSON){
 
-    // //if (alreadyRunningPainting)return
-    // alreadyRunningPainting = true
+    mylog()
 
     let changedObject = JSON.parse(changedAsJSON)
     let reviewObject = JSON.parse(reviewAsJSON)
@@ -1477,12 +1306,10 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         let outlineNumber
 
         for (let i = 0; i < outline.length - 1; i++) {
-            // mylog(outline[i].sceneStart)
             outlineNumber = -1000
             if (outline[i]?.sceneStart > changeStart) {
                     outlineNumber = i - 1
                     while(outline[outlineNumber]?.typeAsString == "Synopse"){outlineNumber --}
-                    // mylog("found: " + outlineNumber)
                 break}
         }
 
@@ -1505,20 +1332,14 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
             revisionDiv.style.top = changeStartPercent + "%"
             revisionDiv.style.height = changeEndPercent + "%"
 
-            // revisionDiv.style.backgroundColor = changeColor
             revisionDiv.classList.add("revision")
             revisionDiv.classList.add(changeColor)
-            // revisionDiv.style.width = "120%"
-            // revisionDiv.style.left = "-10%"
             revisionDiv.dataset.line = changeStart
             revisionDiv.dataset.length = changeLength
 
             if($id(outlineNumber))$id(outlineNumber).appendChild(revisionDiv)
     
     }
-
-    // alreadyRunningPainting = false
-
 }
 
 
@@ -1527,9 +1348,7 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
 <style>
     
     .revision{
-        
-        /* opacity: 40%; */
-        
+                
         border-width: .5px;
         border-style: solid;
         border-radius: 2px;
@@ -1562,22 +1381,6 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         opacity: 1;
     }
 
-    thisIsTurnedOff.revision::before{
-        content: "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *";
-
-        position: absolute;
-        top: 1px !important;
-        right: 2px !important;
-        width: calc(0.04px * var(--heightFactor)) !important;
-        height: calc(100% - 1px) !important;
-        
-        overflow: hidden !important;
-        font-size: calc(0.08px * var(--heightFactor));
-        line-height: calc(0.08px * var(--heightFactor));
-
-        /* outline: 1px solid lime */
-    }
-
     .review{
 
         height: 12px;
@@ -1602,7 +1405,6 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
 
     .review.expandedReview{
 
-        /* overflow: hidden; */
         white-space: pre-wrap !important;
         word-wrap: break-word;
 
@@ -1612,7 +1414,7 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         width: auto !important;
         max-width: 80% !important;
         min-width: 50% !important;
-        padding: 18px 12px 40px 12px; /*was 8 for top*/
+        padding: 18px 12px 40px 12px; 
 
         font-size: 11px;
         line-height: 14px;
@@ -1623,10 +1425,7 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         border-radius: 10px;
         border-color: #7f723a;
 
-        /* transition: 0.05s; */
-
         z-index: 9999;
-
         box-shadow: 3px 3px 12px rgba(0,0,0,0.4);
 
         translate: 0 -6px;
@@ -1674,9 +1473,7 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         border-bottom: 4px transparent solid;
         border-left: 8px solid #ffe575;
 
-        /* border-color: lime !important; */
-
-        top: 16px; /*was 10*/
+        top: 16px;
         left: unset;
         right: -6.44px !important;
 
@@ -1706,9 +1503,7 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
         border-bottom: 5px transparent solid;
         border-left: 8px solid #7f723a;
 
-        /* border-color: lime !important; */
-
-        top: 15px; /*was 9*/
+        top: 15px; 
         left: unset;
         right: -8px !important;
 

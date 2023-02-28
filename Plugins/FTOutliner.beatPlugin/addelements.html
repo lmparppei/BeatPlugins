@@ -1,34 +1,31 @@
 <style>
 
 .scene.hasAddButton,
-#flexiContainer:not(.indexcards) .section:not(.level1).isExpanded.hasAddButton > .section-heading,
+#flexiContainer:not(.indexcards) .section:not(.level1, :has(>.synopsiscontainer .synopsis))/*.isExpanded*/.hasAddButton > .section-heading,
+#flexiContainer:not(.indexcards) .section:not(.level1).isExpanded.hasAddButton:has(>.synopsiscontainer > .synopsis) > .synopsiscontainer,
+#flexiContainer:not(.indexcards) .section.isExpanded.hasAddButton:has(>.synopsiscontainer > .synopsis) > .synopsiscontainer,
 #flexiContainer:not(.indexcards).nonProportionalMode .section:not(.level1, .isExpanded).hasAddButton,
 #flexiContainer:not(.indexcards,.nonProportionalMode) .section:not(.level1, .isExpanded).hasAddButton > .section-heading,
-.indexcards .section:not(.collapsedSection).hasAddButton > .synopsiscontainer,
+.indexcards .section:not(.level1, .collapsedSection).hasAddButton > .synopsiscontainer,
 .indexcards .section.collapsedSection.hasAddButton > .section-heading
 {
 
     margin-bottom: 30px !important;
 
-    transition: margin 0.2s;
-    transition-delay: margin 0.2s;
+    transition: margin 0.2s !important;
+    transition-delay: margin 0.2s !important;
 
 }
 
-.level1.hasAddButton > .section-heading{
+.section:is(.level1, .special:not(.collapsedSection)).hasAddButton:has(>.synopsiscontainer > .synopsis) > .synopsiscontainer,
+.section:is(.level1, .special:not(.collapsedSection)).hasAddButton:has(>.synopsiscontainer:empty) > .section-heading{
 
     margin-bottom: 0px !important;
     padding-bottom: 50px !important;
     border-radius: 4px !important;
 
-    transition: padding 0.2s;
-    transition-delay: padding 0.2s;
-
-}
-
-.level1.hasAddButton > .section-heading{
-
-    background-color: rgba(255, 255, 255, 0.2) !important;
+    transition: padding 0.2s !important;
+    transition-delay: padding 0.2s !important;
 
 }
 
@@ -71,6 +68,7 @@
     opacity: 0.9;
 
     translate: -50% -50%;
+
 }
 
 .addButton > p{
@@ -147,8 +145,10 @@ p.addSection{
 
 .addButton>p.addScene:hover,
 .addButton>p.addSection:hover{
+
     background: #ccc;
     color: black !important;
+
 }
 
 .addButton:hover{
@@ -174,6 +174,7 @@ p.addSection{
 
     background: transparent;
     border-radius: 3px;
+    
 }
 
 </style>
@@ -194,6 +195,7 @@ function insertAddButton(element){
     || element.classList.contains("addScene")
     || element.classList.contains("addSection")
     || element.classList.contains("arrowForIndexCards")
+    || !element.closest(".scene, .section") //experimental
     || element.closest(".scene, .section").id == $id("addButton")?.dataset.elementCount)
     {
         mylog("...but RETURNED by gatekeeper b/c not scene or section")
@@ -257,15 +259,23 @@ function insertAddButton(element){
                 if (classes.includes("section") && (!classes.includes("collapsedSection"))){ 
                     actioncontainerTopPos = "calc(" + (adjustedTop + 3) + "px + var(--indexCardHeight))"
                 }
-                if (classes.includes("level1")){ 
+                if (classes.includes("level1") || classes.includes("special")){ 
                     actioncontainerTopPos = "calc(" + (sectionHeight + adjustedTop + 3) + "px)"
+                }
+                if ((classes.includes("level1")  || classes.includes("special")) && element.querySelector(":scope > .synopsiscontainer > .synopsis")){ 
+                    actioncontainerTopPos = "calc(" + (sectionHeight + adjustedTop + element.querySelector(":scope > .synopsiscontainer").getBoundingClientRect().height + 3) + "px)"
                 }
                 if (classes.includes("scene") && (!classes.includes("collapsedSection"))){
                     actioncontainerTopPos = "calc(" + (adjustedTop) + "px + (0px * var(--fontSizeFactor)) + var(--indexCardHeight))"
                 }
             }
-            if(areScenesProportional && classes.includes("scene")){
-                actioncontainerTopPos = adjustedTop + element.getBoundingClientRect().height + "px"
+            if(!indexCardMode){
+                if(classes.includes("scene")){
+                   actioncontainerTopPos = adjustedTop + element.getBoundingClientRect().height + "px"
+                }
+                if(classes.includes("section") && element.querySelector(":scope > .synopsiscontainer > .synopsis")){
+                    actioncontainerTopPos = adjustedTop + sectionHeight + element.querySelector(":scope > .synopsiscontainer").getBoundingClientRect().height + "px"
+                }
             }
         actioncontainer.style.top = actioncontainerTopPos
 

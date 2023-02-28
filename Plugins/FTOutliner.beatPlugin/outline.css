@@ -4,6 +4,33 @@
 MARK: -Root
 */
 
+@font-face
+{
+	font-family: 'Courier Prime';
+	font-weight: normal;
+	src: ("Courier Prime.ttf");
+}
+
+@font-face
+{
+	font-family: 'Courier Prime';
+	font-weight: bold;
+	src: url("Courier Prime Bold.ttf");
+}
+@font-face
+{
+	font-family: 'Courier Prime';
+	font-style: italic;
+	src: url("Courier Prime Italic.ttf");
+}
+@font-face
+{
+	font-family: 'Courier Prime';
+	font-weight: bold;
+	font-style: italic;
+	src: url("Courier Prime Bold Italic.ttf");
+}
+
 :root{
 	--fixedHeight: 14px;
 	--fontSizeFactor: 1.2;
@@ -32,10 +59,15 @@ MARK: -Root
 	--menu-background: rgb(240, 240, 240); /*was 232*/
 	--menu-border-color: #c1c1c1;
 	--menu-color: rgb(233,233,233);
+	--menu-hover-color: #027aff;
 
 	--wider-width: 4;
 
 	--colorTransparency: 100%;
+
+	--inkOnPaper: 0, 0%, 0%;
+	--paperBehindInk: 0, 0%, 100%;
+
 	
 	
 }
@@ -150,7 +182,9 @@ ______FLEXICONTAINER{}
 	overflow-y: scroll;
 	overflow-x: hidden;
 
-	transition: width 0.4s, margin-left 0.4s, padding-right 0.2s; /* padding used for page-numbers */
+	transition: width 0.4s, margin-left 0.4s, padding-right 0.2s, height 0.2s; /* padding used for page-numbers */
+
+	--flexiScroll: 0px;
 
 }
 
@@ -595,7 +629,6 @@ __________ DUAL LINES{}
 #flexiContainer.dualSceneLines .sceneheading{
 
 	line-height: calc(14px * var(--fontSizeFactor)) !important;
-	
 	height: auto;
 	max-height: 100% !important;
 	white-space: normal !important;
@@ -605,34 +638,19 @@ __________ DUAL LINES{}
 
 }
 
-/* .isBeingEdited.section-heading, */
-/* .inSection.editBox */
-/* , 
-#flexiContainer.dualSectionLines:not(.indexcards) .section-heading */
-/* {
+#flexiContainer.dualSectionLines .section-heading,
+.isBeingEdited.section-heading{
 
-	padding-top: calc(1px * var(--fontSizeFactor));
-	padding-bottom: calc(1px * var(--fontSizeFactor));
-
-} */
-
-/*#flexiContainer.dualSectionLines*/ .isBeingEdited.section-heading{
-
-	/* margin-bottom: calc(5px * var(--fontSizeFactor)); */
+	min-height: calc(17px * var(--fontSizeFactor)) !important;
+	padding-top: 2px;
+	padding-bottom: 1px;
 
 }
+
 
 .section:has( > .isBeingEdited) .showSectionPageNumber{
 
 	display: none
-}
-
-disabled.level1 > .isBeingEdited.section-heading{
-
-	padding-top: calc(2px * var(--fontSizeFactor));
-	padding-top: 2px;
-	/* margin-bottom: calc(5px * var(--fontSizeFactor)) */
-
 }
 
 #flexiContainer.allowLowerCaseSections .section-heading,
@@ -1131,7 +1149,7 @@ p >.clear{
 	/* background-color: #fff; */
 	/* FIX: currently cannot have background because it won't be shut off by hideslugifsmall class */
 	
-	position: relative !important;
+	/* position: relative !important; */
 	float: right !important;
 	text-align: right !important;
 	right: 0px !important;
@@ -1246,14 +1264,13 @@ ________COLORS{}
 .uncolorAllScenesBut.white .synopsiscontainer:not(.white),
 .uncolorAllScenesBut.black .synopsiscontainer:not(.black),
 
-.dimmedScene, 
-REMMED.dimmedScene > .sceneheading,
-REMMED.dimmedScene > .synopsiscontainer,
-REMMED.dimmedScene > .synopsiscontainer > .synopsis,
+.scene.dimmedScene, 
 
 .dimmedSection > .section-heading,
 .dimmedSection > .synopsiscontainer,
-REMMED.dimmedSection > .synopsis
+
+.section.dimmedScene > .section-heading,
+.section.dimmedScene > .orphanText > .displayNumberOf
 {
 
 	opacity: 0.15 !important
@@ -1403,24 +1420,6 @@ REMOVE	.dimmedSection > .synopsis
 		/* border-color: transparent !important; */
 
 	}
-
-REMOVE.scene.special, 
-REMOVE.section.special>.synopsiscontainer, 
-REMOVE.section.special>.synopsiscontainer>.synopsis/*, 
- .level1>.synopsiscontainer, */
-/* .level1>.synopsiscontainer>.synopsis  */
-{
-	background: none !important;
-	background-color: rgba(0, 0, 0, 0) !important;
-	background-image: none !important;
-	/* color: rgba(255, 255, 255, 0.8) !important; */
-}
-
-/* .section.special>.synopsiscontainer, 
-.section.special>.synopsiscontainer>.synopsis {
-	text-align: left !important
-} */
-
 
 /*
 MARK: -"End of Types". so now what?
@@ -1884,33 +1883,6 @@ MARK: -UI
 #----------------------------{}
 #----------- UI -------------{}
 #----------------------------{}
-	
-/*#debug{
-	position:absolute;  
-	bottom: 10px; 
-	left:10px; 
-	width: 95% !important; 
-    height: 200px !important;
-	padding: 10px;
-	margin: 6px auto;
-	background-color:rgba(255,255,255,0.8); 
-	border: 3px black solid;
-	border-radius:6px;
-	z-index: 9999;
-	white-space: normal !important;
-    overflow: scroll !important;
-
-	/* flex-grow: 1 !important;
-	flex-basis: 0 !important;
-    min-width: 0 !important; 
-
-	display: flex; 
-	flex-direction: column-reverse;
-	}
-
-#debug, #debug * {
-	white-space: normal;
-}*/
 
 #buttonRow{
 	position: absolute;
@@ -2295,11 +2267,11 @@ MARK: -Inline Synopsis
 --------------------------------------------- {}
 
 .showSynopsisInScenes:not(.indexcards) .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
-	:not(.nonProportionalMode section:not(.isExpanded) > .scene >.synopsiscontainer){
+	:not(.nonProportionalMode .section:not(.isExpanded) > .scene >.synopsiscontainer){
 	display: block;
 }
 
-.nonProportionalMode.showSynopsisInScenes:not(.sceneCards):not(.sectionCards) .isExpanded > .scene {
+#flexiContainer.nonProportionalMode.showSynopsisInScenes:not(.indexCards) .isExpanded > .scene {
 	min-height: calc(14px * var(--fontSizeFactor)) !important;
 	height: auto !important;
 }
@@ -2321,10 +2293,10 @@ MARK: -Inline Synopsis
 
 .showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
 	display: block	 !important;
-	max-height: 110% !important;
+	/* max-height: 110% !important; */
 	height: auto;
-	overflow-x: hidden;
-	overflow-y: scroll;
+	/* overflow-x: hidden;
+	overflow-y: scroll; */
 
 	font-size: calc(10px * var(--fontSizeFactor)) !important;
 	line-height: calc(14px * var(--fontSizeFactor)) !important;
@@ -2427,15 +2399,6 @@ html:not([data-outdoors='1']) #flexiContainer.greyonly .scene .synopsis:hover,
 html:not([data-outdoors='1']) #flexiContainer.greyonly .scene .synopsis:hover::before{
 	color: white !important;
 	background: black !important;
-}
-
-DISABLED.debug{
-	display: none;
-}
-
-DISABLED.showDebug .debug{
-	font-weight: bold;
-	display: unset !important;
 }
 
 /*

@@ -6,24 +6,8 @@
     white-space: normal;
 }
 
-#tracking.settingsWindow{
-
-
-
-}
-
 #tracking *:focus{
     outline: none !important;
-}
-
-REMMED.dimmedScene{
-
-    /* background-image: -webkit-linear-gradient(top, rgba(85,85,85,0.9) ,rgba(85,85,85,0.9) 100%) !important; */
-    background-image: -webkit-linear-gradient(top, var(--pageBackground) ,var(--pageBackground) 100%) !important;
-    color: rgba(0,0,0,0.2) !important;
-    fill: rgba(0,0,0,0.2) !important;
-    transition: 0s !important;
-
 }
 
 html[data-outdoors='1'] #flexiContainer .dimmedScene,
@@ -32,121 +16,12 @@ html[data-outdoors='1'] #flexiContainer.indexcards .dimmedScene > .sceneheading 
     border-color: #ddd !important;
     border-style: dotted !important;
 
-    /* background: #eee !important; */
-    
-    /* border-color: transparent !important; */
 }
 
 html[data-outdoors='1'] #flexiContainer .dimmedScene > .sceneheading{
 
     color: #ddd !important;
-}
 
-/*outdoorsy steeings continue at bottom bc of specificity*/
-
-/* html[data-theme='Beat'] .dimmedScene{
-    background-image: -webkit-linear-gradient(top, rgba(34,34,34,0.9) ,rgba(34,34,34,0.9) 100%) !important;
-
-} */
-
-REMMED.dimmedScene > .sceneheading{
-
-    color: rgba(0,0,0,0.3) !important;
-    fill: rgba(0,0,0,0.2) !important;
-    transition: 0s !important;
-}
-
-REMMED.dimmedScene > .padlockIcon {
-
-    color: rgba(0,0,0,0.2) !important;
-    fill: rgba(0,0,0,0.2) !important;
-    transition: 0s !important;
-}
-
-REMMED.uncolorAllScenesBut.red .padlockIcon:not(.sceneheading.red .padlockIcon),
-REMMED.uncolorAllScenesBut.orange .padlockIcon:not(.sceneheading.orange .padlockIcon),
-REMMED.uncolorAllScenesBut.yellow .padlockIcon:not(.sceneheading.yellow .padlockIcon),
-REMMED.uncolorAllScenesBut.green .padlockIcon:not(.sceneheading.green .padlockIcon),
-REMMED.uncolorAllScenesBut.teal .padlockIcon:not(.sceneheading.teal .padlockIcon),
-REMMED.uncolorAllScenesBut.cyan .padlockIcon:not(.sceneheading.cyan .padlockIcon),
-REMMED.uncolorAllScenesBut.blue .padlockIcon:not(.sceneheading.blue .padlockIcon),
-REMMED.uncolorAllScenesBut.purple .padlockIcon:not(.sceneheading.purple .padlockIcon),
-REMMED.uncolorAllScenesBut.magenta .padlockIcon:not(.sceneheading.magenta .padlockIcon),
-REMMED.uncolorAllScenesBut.pink .padlockIcon:not(.sceneheading.pink .padlockIcon),
-REMMED.uncolorAllScenesBut.brown .padlockIcon:not(.sceneheading.brown .padlockIcon),
-REMMED.uncolorAllScenesBut.black .padlockIcon:not(.sceneheading.black .padlockIcon),
-REMMED.uncolorAllScenesBut.gray .padlockIcon:not(.sceneheading.gray .padlockIcon),
-REMMED.uncolorAllScenesBut.white .padlockIcon:not(.sceneheading.white .padlockIcon),
-REMMED.dimmedScene.white .padlockIcon:not(.sceneheading.white .padlockIcon)
-{
-	color: rgba(0,0,0,0.2) !important;
-    fill: rgba(0,0,0,0.2) !important;
-}
-
-REMMED.dimmedScene:hover, .dimmedScene:hover > p {
-    color: rgba(255,255,255,0.4) !important;
-}
-
-REMMED.section:not(.level1).dimmedSection:not(.indexCards .dimmedSection)
-/* ,  */
-/* .uncolorAllScenesBut .section:not(.level1):not(.indexCards .section) */
-{
-    
-    border-color:rgba(0, 0, 0, 0) !important;
-    background-image: -webkit-linear-gradient(top, transparent, transparent 100%) !important;
-    color:rgba(255, 255, 255, 0.10) !important;
-    /* border: 1px solid lime !important; */
-}
-
-REMMED.dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
-REMMED/* .uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading), */
-REMMED.dimmedSection > .synopsiscontainer,
-REMMED.dimmedSection > .orphanText > .synopsiscontainer,
-REMMED.dimmedSection > .synopsiscontainer > .synopsis,
-REMMED.dimmedSection > .orphanText > .synopsiscontainer > .synopsis,
-REMMED/* .uncolorAllScenesBut .synopsiscontainer, */
-REMMED/* .uncolorAllScenesBut .orphanText > .synopsiscontainer, */
-REMMED
-REMMED.greyonly .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
-REMMED.greyonly.uncolorAllScenesBut .section-heading:not(#flexiContainer.indexCards .section-heading),
-REMMED.greyonly .dimmedSection > .synopsiscontainer,
-REMMED.greyonly .dimmedSection > .orphanText > .synopsiscontainer,
-REMMED.greyonly .dimmedSection > .synopsiscontainer > .synopsis,
-REMMED.greyonly .dimmedSection > .orphanText > .synopsiscontainer > .synopsis,
-REMMED.greyonly.uncolorAllScenesBut .synopsiscontainer,
-REMMED.greyonly.uncolorAllScenesBut .orphanText > .synopsiscontainer
-REMMED
-REMMED.greyonly .dimmedScene > .synopsiscontainer,
-REMMED.greyonly .dimmedScene > .orphanText > .synopsiscontainer,
-REMMED.greyonly .dimmedScene > .synopsiscontainer > .synopsis,
-REMMED.greyonly .dimmedScene > .orphanText > .synopsiscontainer > .synopsis,
-REMMED.greyonly.uncolorAllScenesBut .synopsiscontainer,
-REMMED.greyonly.uncolorAllScenesBut .orphanText > .synopsiscontainer
-{
-    background: rgba(0,0,0,0) !important;
-    color:rgba(255, 255, 255, 0.10) !important;
-}
-
-/* .uncolorAllScenesBut.red .section.red > .section-heading,
-.uncolorAllScenesBut.orange .section.orange > .section-heading,
-.uncolorAllScenesBut.yellow .section.yellow > .section-heading,
-.uncolorAllScenesBut.green .section.green > .section-heading,
-.uncolorAllScenesBut.teal .section.teal > .section-heading,
-.uncolorAllScenesBut.cyan .section.cyan > .section-heading,
-.uncolorAllScenesBut.blue .section.blue > .section-heading,
-.uncolorAllScenesBut.purple .section.purple > .section-heading,
-.uncolorAllScenesBut.magenta .section.magenta > .section-heading,
-.uncolorAllScenesBut.pink .section.pink > .section-heading,
-.uncolorAllScenesBut.brown .section.brown > .section-heading,
-.uncolorAllScenesBut.black .section.black > .section-heading,
-.uncolorAllScenesBut.gray .section.gray > .section-heading,
-.uncolorAllScenesBut.white .section.white > .section-heading {
-    color: black !important;
-} */
-
-.uncolorAllScenesBut .section:hover{ /* since this doesn't do :not(.level1) this one obviously doesn't work */
-    /* border-left-color: red !important; rgba(255, 255, 255, 0.4) !important; */
-    /* border-left-color: rgba(0, 0, 0, 0) !important; */
 }
 
 #characterButton:is(.red, .orange, .yellow, .green, .teal, .cyan, .blue, .purple, .magenta, .pink, .brown, .grey, .black, .white) {
@@ -214,7 +89,6 @@ REMMED.greyonly.uncolorAllScenesBut .orphanText > .synopsiscontainer
 
 .buttonIsActive {
     opacity: 100% !important;
-    /* transform: scale(0.8) !important; */
 }
 
 svg {
@@ -229,7 +103,6 @@ svg {
 }
 
 #indexCardButton.buttonIsActive svg {
-    /* transform: scale(0.8) translateY(1.5px) !important; */
     transform: scale(1) translate(0px, 0px) !important;
 }
 
@@ -254,10 +127,7 @@ svg {
     line-height: 10px;
     text-transform: uppercase;
     transform: translateY(calc(-100% - 23px)) translateX(calc(-50% + 16px));
-    /*transform: translateX(-50%);*/
     width: 60px !important;
-    /* border: red 1px solid; */
-    /*border-right: red 1px solid; */
     overflow: hidden;
     text-overflow: ellipsis;
     pointer-events: none; /* Or else the icon blocks itself from being clicked. Very weird. */
@@ -286,12 +156,8 @@ svg {
     width: 50% ;
 }
 
-#selectlistparent select{
-
-}
-
 select, select * {
-
+    
     height: 100% !important;
     width: 100% !important;
     border-radius: 6px !important;
@@ -310,10 +176,11 @@ select, select * {
     
 }
 
-/* select::-webkit-scrollbar,
-select *::-webkit-scrollbar {
-    background: unset;
-}  */
+#tracking select {
+
+    min-height: 500px;
+
+}
 
 option {
     line-height: 20px !important;
@@ -347,7 +214,6 @@ ul {
 }
 
 li {
-    /* padding: auto !important; */
     margin-top: 6px !important;
     display: list-item;
     list-style-position: outside !important;
@@ -368,22 +234,13 @@ li {
     padding-bottom: 0px !important;
     padding-top: 1px !important;
     line-height: 16px !important;
-    /* background-color: white; */
 }
 
-/* #colorDropdown{
-    width: 50% !important;
-    display: inline;
-    background-color: white !important;
-    appearance: none !important;
-    margin-top: -3px !important;
-} */
-
-html[data-outdoors='1'] #flexiContainer .section.dimmedSection{
+/* html[data-outdoors='1'] #flexiContainer .section.dimmedSection{
 
     color: purple
     
-}
+} */
 
 html[data-outdoors='1'] .dimmedSection > .section-heading:not(#flexiContainer.indexCards .section-heading),
 html[data-outdoors='1'] #flexiContainer .dimmedSection > .section-heading {
@@ -392,7 +249,6 @@ html[data-outdoors='1'] #flexiContainer .dimmedSection > .section-heading {
     opacity: 1;
     border: 1px dotted #ddd !important;
     
-    /* outline: 1px solid lime !important */
 }
 
 </style>
@@ -422,9 +278,10 @@ html[data-outdoors='1'] #flexiContainer .dimmedSection > .section-heading {
 
 <script>
 
-var iCameFromToggleCharacter = -1
+var iCameFromToggleCharacter = false
 var iCameFromMenu = false
 var scenesWithCharacters = []
+var searchBoxDelay
 
 function collectCharacters() {
     mylog()
@@ -452,13 +309,18 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
             }
         }
 
-        document.getElementById("characterMenuList").innerHTML = "" 
+        $id("characterMenuList").innerHTML = "" 
+        $id("allDialogFor").innerHTML = "<option class='menuitem' value='ALL'>ALL</option>" 
 
         for (item of allCharacters){
             itemNumber ++
-            document.getElementById("characterMenuList").innerHTML += 
+            $id("characterMenuList").innerHTML += 
                 "<option class='menuitem' value='" + item + "'>" + 
                 (itemNumber<10 ? "(" + itemNumber + ")  " : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") +
+                item +
+                "</option>"
+            $id("allDialogFor").innerHTML +=
+                "<option class='menuitem' value='" + item + "'>" + 
                 item +
                 "</option>"
         }
@@ -477,16 +339,29 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
 
     }
     mylog("testing check for allCharacters.length, which is now " + allCharacters.length)
-        // if (iCameFromToggleCharacter != -1){ //previous version, without check --> memory leak?
-    if (iCameFromToggleCharacter != -1 && allCharacters.length > 0){
-        toggleSoloCharacter(iCameFromToggleCharacter)
+
+    if (iCameFromToggleCharacter && allCharacters.length > 0){
+        toggleSoloCharacter(iCameFromToggleCharacter[0], iCameFromToggleCharacter[1])
     }
     if (iCameFromMenu){
         iCameFromMenu = false
         trackingMenu()
     }
+    if ($id("notepanel").classList.contains("expanded") && $(".selectedtab").classList.contains("dialogtab")){
+        //if dialogpanel is open, then 
+        //1. check what name is selected
+        //2. off to plugin to collect dialog
+        name = $(".dialogtab").dataset.currentCharacter || "ALL"
+        // alertThis([...$id("allDialogFor").options].map(option => option.value))
+        // alertThis(([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(name), name)
+        $id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(name)
 
-    document.getElementById("characterMenuList").focus()
+        Beat.call("Beat.custom.runHightlightCharacter('" + name + "')")
+    }
+
+    if(trackingContainerVisibility == 1){
+        document.getElementById("characterMenuList").focus()
+    }
 
     mylog("end of collect")
 }
@@ -583,19 +458,30 @@ function deselectAllCharacters() {
     updateFilter()
 }
 
-function toggleSoloCharacter(theKey) {
+function toggleSoloCharacter(theKey, actualName) {
     mylog()
     mylog("theKey is " + theKey + "")
 
-    theKey --
-
     if (!characterMenuList || characterMenuList.length == 0) {
 
-        iCameFromToggleCharacter = theKey + 1
-        mylog("is this the loop?")
+        iCameFromToggleCharacter = [theKey, actualName]
+        
         collectCharacters()
         return
     }
+
+    if(actualName){
+
+        for (theKey = 0; theKey < characterMenuList.length; theKey ++) {
+            
+            if (actualName.toUpperCase() == characterMenuList.options[theKey].value.toUpperCase()){
+                theKey ++ //because soon to be reduced by one in the old code
+                break
+            }
+        }
+    }
+
+    theKey -- //shifts one down to zero-based array, but shortcuts starting with 1
 
     if (event && (event.shiftKey || event.metaKey)){
         let a = characterMenuList.options[theKey].selected == false;
@@ -609,7 +495,7 @@ function toggleSoloCharacter(theKey) {
             characterMenuList.selectedIndex = -1; 
         }
     }
-    iCameFromToggleCharacter = -1
+    iCameFromToggleCharacter = false
 
     mylog("exiting, just before sending to updateFilter()")
 
@@ -673,7 +559,6 @@ function muteColors(theClickedThing, shift){
     if (!foundOne && theClickedThing.classList.contains("synopsis")){
         
         theClickedThing = theClickedThing.closest(".scene, .section")
-        // alertThis(theClickedThing.classList)
         muteColors(theClickedThing, true)
     }
     
@@ -681,5 +566,989 @@ function muteColors(theClickedThing, shift){
 
 }
 
+function _____________(){}
+
+function unShowCharacterBubbles(){
+
+    $$(".sceneChunk").forEach( chunk => { chunk.remove() }) 
+    $$(".connectorcontainer").forEach( connector => { connector.remove() })
+    $$(".displayNumberOf").forEach( numberof => { numberof.remove() })
+
+    deselectAllCharacters()
+
+    $$(".scene .orphan").forEach(element => {
+        element.removeEventListener("mouseenter", function(){
+            selectSceneChunk($id("dialogIn" + element.id)?.closest(".sceneChunk"))
+            scrollNicelyIntoView($id("dialogIn" + element.id), $id("dialogpanelcontent"))
+        })
+    })
+
+}
+
+function selectSceneChunk(sceneChunk){
+
+    if(!sceneChunk) return
+
+    $$(".selectedSceneChunk").forEach(sceneChunk => {sceneChunk.classList.remove("selectedSceneChunk")})
+    sceneChunk.classList.add("selectedSceneChunk")
+
+}
+
+
+function cycleBubbles(direction){ //send here: -1 or +1
+
+    if(!$("#notepanel.expanded .dialogtab.selectedtab")){cycleTabs($(".dialogtab"))}
+
+    let allChunks = Array.from($$(".dialogChunk"))
+    if(!allChunks || allChunks.length == 0) {
+        initiateCharacterBubbles()
+        return
+    }
+    
+    let selectedNumber = allChunks.indexOf($(".dialogChunk.selectedDialog"))
+    if(selectedNumber < 0) return //no, make it current?
+    
+    selectedNumber += Number(direction)
+    
+    if (selectedNumber > allChunks.length - 1) selectedNumber = 0
+    if (selectedNumber < 0) selectedNumber = allChunks.length - 1
+
+    selectThisDialog(allChunks[selectedNumber].id)
+
+}
+
+function selectThisDialog(dlgId){
+
+    let currentChunk = $(".hoveredSceneChunk")
+
+    $$(".selectedDialog")?.forEach(element => {element.classList.remove("selectedDialog")})
+    $$(".isHovered")?.forEach(element => {element.classList.remove("isHovered")})
+    $$(".hoveredSceneChunk")?.forEach(chunk =>{chunk.classList.remove("hoveredSceneChunk")})
+
+    $id(dlgId)?.classList.add("selectedDialog")
+    $id(dlgId)?.closest(".sceneChunk").classList.add("isHovered")
+    $id(dlgId)?.closest(".sceneChunk").classList.add("hoveredSceneChunk")
+    
+    $id($id(dlgId)?.closest(".sceneChunk").dataset.parentId)?.classList.add("isHovered")
+
+    if($(".hoveredSceneChunk") != currentChunk) {
+        createOrUpdateConnectorFor($(".hoveredSceneChunk"))
+    }
+
+    scrollNicelyIntoView($id(dlgId) || $(".hasCursor"), $id("dialogpanelcontent"))
+
+}
+
+function initiateCharacterBubbles(name){
+
+    console.time("bubbles")
+
+    if($id("characterMenuList").options.length == 0){
+        collectCharacters()
+        //Note to self:
+        //  this sends us to collectCharacters(), which immediately send us to
+        //  Beat.custom.addCharacterClasses()
+        //  which collects all characters and sends us back to makeCharacterMenu()
+        //  inside which we now populate the DialogPanel menu as well.
+
+    }else{
+
+        // More notes to self: 
+        // The two lines below are now only executed if the list is already poopulated!
+        // if it is empty, they are instead run from wihtin makeCharacterMenu, due to asynchronicity
+             name = $id("allDialogFor").selectedOptions[0]?.innerText.toUpperCase() || "ALL"
+             Beat.call("Beat.custom.runHightlightCharacter('" + name + "')")
+    }
+
+
+}
+
+function updateDialogPanel(){
+
+    if (!($id("notepanel").classList.contains("expanded") && $(".selectedtab").classList.contains("dialogtab"))){ return }
+
+    $(".dialogtab").dataset.currentCharacter = $id("allDialogFor").selectedOptions[0]?.innerText.toUpperCase()
+    collectCharacters()
+
+}
+
+function showCharacterBubbles(scenesWithDialog, characterName, redraw){
+
+    mylog()
+    $id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(characterName)
+    
+    let scrolledAmountBeforeRedraw = $id("dialogpanelcontent").scrollTop
+    let allChunks = $$(".sceneChunk")
+    
+    if(allChunks.length > 0){  
+        //when chunks already present, clean up before doing anything else:
+            unShowCharacterBubbles()
+    }
+    
+    for (let scene of scenesWithDialog){
+
+        let theId = scenesWithDialog.indexOf(scene)
+        let orphanId
+            if($id(theId).classList.contains("section")){
+                // console.log("found an orphan:" , $id(theId).querySelector(".orphanText")?.id)
+                orphanId = $id(theId).querySelector(".orphanText")?.id
+            }
+
+        if (scene.length == 0) continue
+
+        let chunk = document.createElement("div")
+            chunk.id = "dialogIn" + theId
+            chunk.orphanId = orphanId
+            chunk.dataset.parentId = theId
+            chunk.style.color = $id(theId).querySelector(".sceneheading").style.color
+            chunk.dataset.charactername = characterName
+                chunk.onmouseenter = function(){
+                    $id(chunk.dataset.parentId).classList.add('isHovered')
+                    createOrUpdateConnectorFor(chunk) 
+                }
+                chunk.onmouseleave = function(){
+                    $id(chunk.dataset.parentId).classList.remove('isHovered')
+                    $$(".connector").forEach(connector => {connector.remove()})
+                }
+            chunk.classList.add("sceneChunk")
+            chunk.style.width = "100%"
+            if (outline[theId].omitted) chunk.classList.add("omitted")
+
+            let chunkHTML = `<p class="chunkHeading"><span style="opacity: 0.4;">${(outline[theId].sceneNumber || "")} </span>&nbsp;${outline[theId].stringForDisplay}</p>`
+            let thisIsTheCurrentChunk = false
+            let dlgNumber
+
+            for (line of scene){
+
+                if(line.typeAsString == "Character" && chunk.children) chunkHTML += "</div>"
+                if(line.typeAsString == "Character") {
+                    dlgNumber = line.position
+                    chunkHTML += `<div class='dialogChunk' id='dialog${dlgNumber}'
+                    onclick = selectThisDialog('dialog${dlgNumber}')>`
+                }
+                
+                if(line.currentLine) thisIsTheCurrentChunk = "dialog" + dlgNumber
+
+                let omittedString = ""
+                    if(line.omitted) omittedString = " omitted"
+
+                chunkHTML += `<p class="${line.typeAsString.toLowerCase()} ${omittedString}" data-line="${line.position}" data-length="${line.string.length}">${line.string}</p>`
+
+                chunkHTML = chunkHTML.replace(/\/\*(.*)\*\//g, "<span class='omitted'>$1</span>")
+                chunkHTML = chunkHTML.replace(/\*\*\*(.*)\*\*\*/g, "<b><i>$1</i></b>")
+                chunkHTML = chunkHTML.replace(/\*\*(.*)\*\*/g, "<b>$1</b>")
+                chunkHTML = chunkHTML.replace(/\*(.*)\*/g, "<i>$1</i>")
+                chunkHTML = chunkHTML.replace(/\_(.*)\_/g, "<u>$1</u>")
+
+            }
+
+        chunkHTML += `</div>` //finalizes the last chunk-in-chunk div
+
+        //add all dialogChunks to the sceneChunk:
+
+        chunk.innerHTML += chunkHTML
+        chunk.dataset.startPos = chunk.firstChild.data-line
+        chunk.dataset.endPos = chunk.lastChild.data-line + chunk.lastChild.innerText.length
+
+        //and the sceneChunk to the sidepanel:
+            
+            $id("dialogpanelcontent").appendChild(chunk)
+                if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("selectedDialog")
+                if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("hasCursor")
+
+                chunkSizes = chunk.getBoundingClientRect()
+
+        //add number of dialogs to corresponding scene
+
+            let displayNumberOf = document.createElement("div")
+                displayNumberOf.id = "displayNumberOf" + theId //chunk.id
+                displayNumberOf.dataset.parentId = theId
+                displayNumberOf.classList.add("displayNumberOf")
+                displayNumberOf.classList.add("dontDim")
+                displayNumberOf.style.position = "absolute"
+                displayNumberOf.style.top = "50%"
+                displayNumberOf.style.left = "50%"
+                
+                displayNumberOf.textContent = chunk.querySelectorAll(".dialogChunk").length //+ " LINE" + (chunk.querySelectorAll(".dialogChunk").length > 1 ? "S" : "")
+
+                displayNumberOf.onmouseenter = function(){
+                    $id("dialogIn" + theId).classList.add("hoveredSceneChunk") 
+                }
+                displayNumberOf.onmouseleave = function(){
+                    $id("dialogIn" + theId).classList.remove("hoveredSceneChunk") 
+                }
+                displayNumberOf.onclick = function(){
+                    selectSceneChunk(chunk)
+                    scrollNicelyIntoView(chunk.querySelector(".dialogChunk") || chunk, $id("dialogpanelcontent"))
+                }
+
+            $id(orphanId || theId).appendChild(displayNumberOf)
+
+        //must set color after "displaynumberof", or else getcomputedstyle delivers blank    
+            chunk.style.setProperty("--localColor", window.getComputedStyle($id(theId)).backgroundColor)
+            chunk.style.backgroundColor = "var(--localColor)"
+
+
+        //set listeners to the chunks of the scene
+
+            $$(".dialogChunk").forEach(element => {
+
+                element.onclick = function(){
+                    $$(".hasCursor").forEach(otherElement => {otherElement.classList.remove("hasCursor")});
+                    $$(".selectedDialog").forEach(otherElement => {otherElement.classList.remove("selectedDialog")});
+                    element.classList.add("hasCursor")
+                    element.classList.add("selectedDialog")
+                }
+            })
+    }
+
+    $id("dialogpanelcontent").scrollTo({
+        top: scrolledAmountBeforeRedraw,
+        left: 0,
+        behavior: 'instant'
+        });
+
+    $id("dialogpanelcontent").onscroll = function(){ updateDialogPanelOnScroll() }
+    if($id("dialogsearch").value) onlyShowMatchingDialogs()
+
+    console.timeEnd("bubbles")
+
+}
+
+function updateDialogPanelOnScroll(){
+
+    let hoveredChunk = $(".sceneChunk.hoveredSceneChunk, .sceneChunk:hover")
+
+    let elementSizes = hoveredChunk?.querySelector(".chunkHeading").getBoundingClientRect()
+        if(elementSizes && $id("connector")){
+            let chunkCorner = Math.min(Math.max((elementSizes.top + elementSizes.height/2), $id("dialogpanelcontent").getBoundingClientRect().top), $id("dialogpanelcontent").getBoundingClientRect().bottom)
+
+            $id("connector")?.style.setProperty("--chunkCorner", chunkCorner + "px")
+            $id("connector")?.style.setProperty("--containerHeight", ($id("connectorcontainer").getBoundingClientRect().height) + "px")
+        }
+
+        if((elementSizes?.top < 0 || elementSizes?.top > $id("dialogpanelcontent").getBoundingClientRect().height) && $id("connector")) $id("connector").remove()
+
+    $$(".chunkHeading").forEach(head =>{ head.classList.toggle("isStuck", head.offsetTop > 0) })
+
+}
+
+function createOrUpdateConnectorFor(element){
+
+    let delay = ($id(element.closest(".sceneChunk").dataset.parentId).classList.contains("isOmitted")) ? 250 : 0
+
+    setTimeout(() => {
+
+        if(!$(".connectorcontainer")){
+
+            let connectorcontainer = document.createElement("div")
+                connectorcontainer.id = "connectorcontainer"
+                connectorcontainer.classList.add("connectorcontainer")
+                connectorcontainer.style.position = "absolute"
+                connectorcontainer.style.top = "0px"
+                connectorcontainer.style.left = "0px"
+                connectorcontainer.style.right = "0px"
+                connectorcontainer.style.bottom = "0px"
+                connectorcontainer.style.pointerEvents = "none"
+                connectorcontainer.style.zIndex = "99999"
+            document.body.appendChild(connectorcontainer)
+        }
+
+        let connector = $id("connector") || document.createElement("div")
+            
+            // let elementSizes = element.getBoundingClientRect()
+            let elementSizes = element.querySelector(".chunkHeading").getBoundingClientRect()
+            let connectedScene = $id(element.closest(".sceneChunk").dataset.parentId)
+                if (connectedScene.classList.contains("section")) connectedScene = connectedScene.querySelector(".section-heading")
+            let connectedSceneSizes = /*connectedScene.querySelector(".sceneheading")?.getBoundingClientRect() ||*/ connectedScene.getBoundingClientRect()
+            let nextSceneSizes = {top: 0}
+            let nextVisibleScene
+                if (window.getComputedStyle(connectedScene).display == "none"){
+                    nextVisibleScene = connectedScene
+                    while ($id(Number(nextVisibleScene.id) + 1) && window.getComputedStyle(nextVisibleScene).display == "none") {
+                        // console.log("looping: ", nextVisibleScene)
+                        nextVisibleScene = $id(Number(nextVisibleScene.id) + 1)
+                    }
+                    nextSceneSizes = nextVisibleScene?.getBoundingClientRect()
+                }
+                connectedScene.classList.add("isHovered")
+
+                connector.id = "connector"
+                connector.classList.add("connector")
+                connector.dataset.parentId = element.closest(".sceneChunk").dataset.parentId
+                
+                connector.style.position = "absolute"
+                connector.style.left = (elementSizes.right) + 3 + "px" //was 18
+                connector.style.width = ((connectedSceneSizes.left || nextSceneSizes.left) - flexiContainer.getBoundingClientRect().left + 14) + "px"
+                connector.style.setProperty("--maxHeightOfDot", Math.max(Math.min(connectedSceneSizes.height - 2, 8), 0.1) + "px")
+
+                // let chunkCorner = (elementSizes.top + elementSizes.height/2)
+                let chunkCorner = Math.min(Math.max((elementSizes.top + elementSizes.height/2), $id("dialogpanelcontent").getBoundingClientRect().top), $id("dialogpanelcontent").getBoundingClientRect().bottom)
+                
+                connector.style.setProperty("--chunkCorner", chunkCorner + "px")
+                connector.style.setProperty("--sceneCorner", ((connectedSceneSizes.top + connectedSceneSizes.height/2) || nextSceneSizes.top) + 0 + "px")
+                connector.style.setProperty("--containerHeight", (connectorcontainer.getBoundingClientRect().height) + "px")
+                connector.style.setProperty("--localColor", connectedScene.style.getPropertyValue("--localColor") || window.getComputedStyle(connectedScene).backgroundColor)
+                
+                connector.setAttribute("viewBox", "-100 -100 1100 1100")
+
+                connector.innerHTML = `<svg height="100%" width="100%" viewBox="0 0 1000 1000" preserveAspectRatio="none" vector-effect="non-scaling-stroke">
+                    <g>
+                        <!--circle class="bottomdot" cx="0" cy="0" r="8px" vector-effect="non-scaling-stroke" /-->
+                        <path class="bottomstroke" stroke-dasharray="1,4" stroke-linecap="round" d="M0,0 C900,0 100,1000 1000,1000" vector-effect="non-scaling-stroke"/>
+                        <path class="topstroke" stroke-dasharray="1,4" stroke-linecap="round" d="M0,0 C900,0 100,1000 1000,1000" vector-effect="non-scaling-stroke"/>
+                    </g></svg>`
+
+                if(!$id("connector")) connectorcontainer.appendChild(connector)
+
+    }, delay)
+
+}
+
+function searchboxlisten(){
+
+    mylog(event)
+
+    let keypress = event.key
+
+    if(keypress == "Escape"){
+        event.preventDefault()
+        event.stopPropagation()
+        clearSearchBox()
+    }
+
+}
+
+function clearSearchBox(){
+
+    $id("dialogsearch").value = ""
+    $id("allDialogFor").focus()
+    onlyShowMatchingDialogs(true)
+}
+
+function onlyShowMatchingDialogs(nodelay){
+
+    let delay = nodelay ? 0 : 500
+
+    if(searchBoxDelay)clearTimeout(searchBoxDelay)
+    searchBoxDelay = setTimeout(() => {
+
+        let searchstring = $id("dialogsearch").value
+
+        $$("#dialogpanelcontent :is(.sceneChunk, .dialogChunk)").forEach(dialog => {
+            dialog.classList.toggle("displayNone", !dialog.innerText.toLowerCase().includes(searchstring.toLowerCase())) 
+            $id(dialog.closest(".sceneChunk").dataset.parentId).classList.toggle("dimmedScene", dialog.closest(".sceneChunk").classList.contains("displayNone"))
+        })
+
+        $$("#dialogpanelcontent :is(.dialogChunk:not(.displayNone)) p").forEach(dialog => {
+            
+            dialog.innerHTML = dialog.innerHTML.replace(/\<span class\=\"searchFound\"\>(.*?)\<\/span\>/g, "$1")
+
+                if(searchstring.length > 0) {
+
+                    const text = dialog.textContent;
+                    const regex = new RegExp(`(${searchstring})`, 'gi');
+                    const matches = text.match(regex) || [];
+
+                    if (matches.length) {
+                        const newHTML = text.replace(regex, `<span class="searchFound">$1</span>`);
+                        dialog.innerHTML = newHTML;
+                    }
+                }
+
+        })
+
+        let provokeRedraw = $id("dialogpanelcontent").getBoundingClientRect()
+            
+    }, delay);
+
+}
+
 </script>
+
+<style>
+
+    .searchFound{
+
+        background: yellow;
+        border: 0px solid yellow;
+        border-top-width: 3px;
+        border-bottom-width: 1px;
+        box-shadow: 0px 0px 0px 1px hsl(60, 100%, 40%);
+
+        white-space: inherit;
+        z-index: -99;
+
+    }
+
+    .displayNone{
+
+        display: none !important;
+
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .section:not(.dontDim, .level1, .special) > .section-heading{     */
+    body:has(.displayNumberOf) .section:not(:has(.orphanText > .dontDim), .level1, .special) > .section-heading{    
+        /* background: hsl(var(--paperBehindInk), 0.05) !important; */
+        background: hsl(0, 0%, 100%, 0.05) !important;
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .section:not(.dontDim) > .section-heading{ */
+        body:has(.displayNumberOf) .section:not(:has(.orphanText > .dontDim)) > .section-heading{
+        color: transparent !important; /*hsl(var(--paperBehindInk), 0.05) !important;*/
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .dimmedSection,
+    body:has(#notepanel.expanded .dialogtab.selectedtab) .section{ */
+    body:has(.displayNumberOf) .dimmedSection,
+    body:has(.displayNumberOf) .section{
+
+        /* border-color: hsl(var(--paperBehindInk), 0.05) !important; */
+        border-color: hsl(0, 0%, 100%, 0.05) !important;
+        color: transparent !important;
+
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .scene:has(.dontDim){ */
+        body:has(.displayNumberOf) .scene:has(.dontDim){
+
+        outline: 2px transparent solid
+        /*THIS IS THE WEIRDEST HACK: without this, the :has(:not(.dontDim)) on next line will affect stuff WITH .dontDim too */
+
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .scene:not(:has(.dontDim)),
+    body:has(#notepanel.expanded .dialogtab.selectedtab) .scene:not(:has(.dontDim)) > .sceneheading,
+    body:has(#notepanel.expanded .dialogtab.selectedtab) .scene.dimmedScene,
+    body:has(#notepanel.expanded .dialogtab.selectedtab) .scene.dimmedScene > .sceneheading,
+    body:has(#notepanel.expanded .dialogtab.selectedtab) .dimmedSection > .section-heading{ */
+    body:has(.displayNumberOf) .scene:not(:has(.dontDim)),
+    body:has(.displayNumberOf) .scene:not(:has(.dontDim)) > .sceneheading,
+    body:has(.displayNumberOf) .scene.dimmedScene,
+    body:has(.displayNumberOf) .scene.dimmedScene > .sceneheading,
+    body:has(.displayNumberOf) .dimmedSection > .section-heading{
+
+        /* --localColor: hsl(var(--paperBehindInk)) !important; */
+        --localColor: hsl(var(0, 0%, 100%)) !important;
+        
+        border: 1px solid transparent !important;
+        color: transparent !important;
+        opacity: 0.05 !important;
+
+        box-shadow: none !important;
+
+    }
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .scene.isHovered{ */
+    body:has(.displayNumberOf) .section:is(.isSelected, .isHovered) > .section-heading,
+    body:has(.displayNumberOf) .scene:is(.isSelected, .isHovered){
+        
+        
+        /* border: 1px solid hsl(var(--inkOnPaper)); */
+        box-shadow: /*inset 0 calc(12px * var(--fontSizeFactor)) 0 2px hsl(var(--inkOnPaper)),*/
+        /* inset 0 0 0 2px hsl(var(--inkOnPaper)); */
+        inset 0 0 0 2px hsl(0, 0%, 0%);
+        /* background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.60), rgba(20,20,20,0.60) 100%) !important; */
+        /* color: white; */
+        
+    }
+    
+    body:has(.displayNumberOf):not(:has(.nonProportionalMode, .indexcards)) .scene.isOmitted{
+    
+        display: block !important;
+
+        opacity: 0 !important;
+        height: 0px !important;
+        margin-top: 0px !important;
+
+        transition: 200ms !important;
+    }
+
+    body:has(.displayNumberOf):not(:has(.nonProportionalMode, .indexcards)) .scene.isOmitted:is(.isSelected, .isHovered){
+        
+        opacity: 1 !important;
+        margin-top: 1px !important;
+        height: calc(14px * var(--fontSizeFactor)) !important;
+
+    }
+    /* body:has(.displayNumberOf):has(.scene.isHovered) .scene:not(.isHovered){
+
+        opacity: 0.7
+
+    } */
+
+    /* body:has(#notepanel.expanded .dialogtab.selectedtab) .scene.isHovered > .sceneheading{ */
+    body:has(.displayNumberOf) .scene.isHovered > .sceneheading{
+
+        /* color: white !important;
+        background: hsl(var(--inkOnPaper)); */
+
+    }
+    
+    .sceneChunk{
+
+        font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    
+        background: var(--menu-background);
+        /* border: 1px solid hsla(var(--inkOnPaper), 0.4); */
+        border: 1px solid hsla(0, 0%, 0%, 0.4);
+        border-radius: 3px;
+
+        padding: 4px;
+        margin-bottom: 1px;
+        
+        z-index: 9996; 
+
+        position: relative !important;
+        display: block;
+        opacity: 1 !important;
+        visibility: visible !important;
+
+        left: 0px !important;
+        width: auto !important;
+
+    }
+
+    .sceneChunk.omitted{
+
+        background-image:
+			repeating-linear-gradient(
+			-45deg,
+			/* hsl(var(--paperBehindInk),0.4) 0px, */
+			hsl(0, 0%, 100%,0.4) 0px,
+			/* hsl(var(--paperBehindInk),0.4) 3px,  */
+			hsl(0, 0%, 100%,0.4) 3px, 
+			/* rgba(0,0,0,.3) 0px,
+			rgba(0,0,0,.3) 3px,  */
+			transparent 3px,
+			transparent 6px
+            )
+            /* , linear-gradient(hsl(var(--paperBehindInk), .4), hsl(var(--paperBehindInk), .4)) */
+            , linear-gradient(hsl(0, 0%, 100%, .4), hsl(0, 0%, 100%, .4))
+            , linear-gradient(var(--localColor), var(--localColor))
+            !important;
+
+    }
+
+    .sceneChunk > .chunkHeading {
+
+
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: calc(11px * var(--fontSizeFactor)) !important;
+        font-weight: bold;
+
+        max-height: calc(18px * var(--fontSizeFactor));
+        overflow: hidden !important;
+        text-overflow: ellipsis;
+
+        white-space: nowrap !important;
+        word-wrap: none;
+
+        width: calc(100% + 8px);
+
+        margin-left: -4px;
+        margin-top: -4px;
+        padding: 3px 8px 1px 8px;
+        margin-bottom: -1px;
+
+        /*}*/
+
+        position: sticky;
+        top: 0;
+        background: var(--localColor);
+        /* background: linear-gradient(to bottom, var(--localColor) calc(100% - 5px), transparent 100%); */
+        
+    }
+    
+    .sceneChunk > .chunkHeading.isStuck{
+        
+        box-shadow: 0 2px 8px #333;
+
+    }
+
+    #dialogpanelcontent .sceneChunk:hover,
+    #dialogpanelcontent .hoveredSceneChunk{
+
+        /* box-shadow: 0 0 0 2px inset hsla(var(--inkOnPaper), 1); */
+        box-shadow: 0 0 0 2px inset hsla(0, 0%, 0%, 1);
+        /* border-color: hsl(var(--inkOnPaper)) */
+        border-color: hsl(0, 0%, 0%)
+        /* background-image: -webkit-linear-gradient(top, hsla(var(--inkOnPaper), 1), hsla(var(--inkOnPaper), 1) 100%) !important; */
+    }
+
+    #dialogpanelcontent .sceneChunk:hover > .chunkHeading,
+    #dialogpanelcontent .hoveredSceneChunk > .chunkHeading{
+
+        /* background-image: -webkit-linear-gradient(top, hsla(var(--inkOnPaper), 1), hsla(var(--inkOnPaper), 1) 100%) !important; */
+        background-image: -webkit-linear-gradient(top, hsla(0, 0%, 0%, 1), hsla(0, 0%, 0%, 1) 100%) !important;
+        /* color: hsl(var(--paperBehindInk)); */
+        color: hsl(0, 0%, 100%);
+
+    }
+
+    #dialogpanelcontent .selectedSceneChunk{
+
+        /* box-shadow: 0 0 0 3px inset hsl(var(--inkOnPaper)); */
+        box-shadow: 0 0 0 3px inset hsl(0, 0%, 100%);
+
+    }
+
+    #dialogpanelcontent .selectedSceneChunk > .chunkHeading{
+
+        /* background-image: -webkit-linear-gradient(top, hsl(var(--inkOnPaper)), hsl(var(--inkOnPaper)) 100%) !important; */
+        background-image: -webkit-linear-gradient(top, hsl(0, 0%, 0%), hsl(0, 0%, 0%) 100%) !important;
+        color: hsl(0, 0%, 100%);
+
+    }
+
+    .displayNumberOf {
+
+        position: absolute;
+        height: 18px;
+        width: auto;
+        min-width: 28px;
+        padding: 0px 4px 2.5px 4px;
+        
+        opacity: 0.8;
+        
+        background: hsl(var(--inkOnPaper));
+        border: 2px solid hsl(var(--paperBehindInk));
+        border-radius: 15px;
+        
+        color: hsl(var(--paperBehindInk));
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-weight: bold;
+        font-size: 9px;
+        line-height: 14px;
+        text-align: center;
+
+        z-index: 9997;
+
+        translate: -50% calc(-50% - 16px);
+        overflow: visible;
+    }
+
+    .displayNumberOf::before,
+    .displayNumberOf::after{
+
+        content: "";
+        position: absolute;
+        bottom: 0px;
+        left: 30%;
+        width: 0px;
+        height: 0px;
+        border: 3px solid transparent;
+        border-top-color: hsl(var(--inkOnPaper));
+        border-left-color: hsl(var(--inkOnPaper));
+
+        translate: 0 5.5px;
+        rotate: 5deg;
+        
+        z-index: 10000;
+    }
+
+    .displayNumberOf::after{
+
+        border-width: 4px;
+        border-top-color: hsl(var(--paperBehindInk));
+        border-left-color: hsl(var(--paperBehindInk));
+        translate: -2px 9.5px;
+
+        z-index: -9998
+
+    }
+
+    .scene:is(:hover, .isSelected) > .displayNumberOf{
+
+        scale: 1.2;
+        opacity: 1;
+
+    }
+
+    .parentIndicator{
+        
+        display: none;
+    
+    }
+
+    .connector{
+
+        z-index: 9997;
+        overflow: visible !important;
+        min-height: 0 !important;
+
+        top: min(var(--sceneCorner), var(--chunkCorner));
+        height: abs(calc(var(--sceneCorner) - var(--chunkCorner)));
+
+        outline: 5px solid transparent; 
+
+        transform: scaleY(sign(var(--sceneCorner) - calc(var(--chunkCorner))));
+        transform-origin: center center;
+
+        /* transition: 0.1s; */
+
+        pointer-events: none !important;
+        /* filter: drop-shadow(-3px -1px 3px rgba(0,0,0,0.3)) */
+
+
+    }
+
+    .connector svg {
+
+        display: block;
+
+        overflow: visible !important;
+        stroke-width: 2px;
+        /* stroke: hsl(var(--inkOnPaper)); */
+        stroke: hsl(0, 0%, 0%);
+
+        fill: none;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        top: inherit !important;
+        bottom:inherit !important;
+        min-height: 0 !important;
+
+
+        height: 100%;
+
+        z-index: -999;
+
+        clip-path: polygon(0% -10%, 0% -10%, 0% 110%, 0 110%);
+        animation: offset 0.2s linear forwards;
+
+    } 
+
+    @keyframes offset {
+      to { clip-path: polygon(0% -10px, 100% -10px, 100% calc(100% + 10px), 0 calc(100% + 10px)); }
+    }
+    @keyframes offset-half {
+      to { clip-path: polygon(0% -10px, 75% -10px, 75% calc(100% + 10px), 0 calc(100% + 10px)); }
+    }
+
+    .connector::before, 
+    .connector::after{
+
+        content: "";
+        position: absolute;
+        
+        background: var(--localColor);
+        /* border: 2px solid hsl(var(--inkOnPaper)); */
+        border: 2px solid hsl(0, 0%, 0%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+
+        z-index: -99 !important;
+        
+    }
+
+    .connector::before{
+
+        top: -6px;
+        left: -10px;
+
+    }
+
+    .connector::after{
+
+        /* bottom: -6px; */
+        /* bottom: calc(-6px); */
+        bottom: calc(var(--maxHeightOfDot) / -2 - 2px);
+        right: -10px;
+        max-height: var(--maxHeightOfDot);
+
+        clip-path: polygon(75% -10%, 75% -10%, 75% 110%, 75% 110%);
+        animation: offset-half 0.1s linear forwards;
+        animation-delay: 0.1s;
+
+
+    }
+
+    svg .bottomstroke{
+        stroke-width: 4px;
+    }
+    svg .topstroke{
+        stroke: var(--localColor);
+    }
+
+    /* .sceneChunk:hover,
+    .sceneChunk:has(.selectedDialog){
+
+        transition: scale 0.2s;
+
+    }
+
+    #dialogpanelcontent:has(.sceneChunk:hover) .sceneChunk:not(:hover, .selectedDialog){
+
+        opacity: 0.8 !important
+
+    } */
+
+    #flexiContainer:has(.sceneChunk:hover) .sceneChunk:not(:hover){
+
+    }
+
+    /* .sceneChunk .chunkHeading{
+
+
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: calc(11px * var(--fontSizeFactor)) !important;
+        font-weight: bold;
+
+        max-height: calc(18px * var(--fontSizeFactor));
+        overflow: hidden !important;
+        text-overflow: ellipsis;
+
+        white-space: nowrap !important;
+        word-wrap: none;
+
+        width: calc(100% + 8px);
+
+        margin-left: -4px;
+        margin-top: -4px;
+        padding: 3px 8px 2px 8px;
+        margin-bottom: -2px;
+
+    } */
+
+    .dialogChunk {
+
+        /* background: linear-gradient(hsla(var(--paperBehindInk), 0.60), hsla(var(--paperBehindInk), 0.60)), var(--localColor); */
+        background: linear-gradient(hsla(0, 0%, 100%, 0.60), hsla(0, 0%, 100%, 0.60)), var(--localColor);
+        /* border: 1px solid hsla(var(--inkOnPaper), 0.3); */
+        border: 1px solid hsla(0, 0%, 0%, 0.3);
+        /* color: hsl(var(--inkOnPaper)); */
+        color: hsl(0, 0%, 0%);
+        border-radius: 3px;
+        width: 100%;
+        
+        padding: calc(5px * var(--fontSizeFactor));
+        padding-top: calc(7px * var(--fontSizeFactor));
+        padding-bottom: calc(4px * var(--fontSizeFactor));
+
+        z-index: 2 !important
+
+    }
+
+    .dialogChunk:not(:first-child){
+        
+        margin-top: 3px !important; 
+
+    }
+
+    .dialogChunk:hover,
+    .dialogChunk.selectedDialog{
+        background-color: inherit;
+        /* background-image: linear-gradient(hsla(var(--paperBehindInk), 1), hsla(var(--paperBehindInk), 1)) ; */
+        background-image: linear-gradient(hsla(0, 0%, 100%, 1), hsla(0, 0%, 100%, 1)) ;
+        /* color: hsl(var(--inkOnPaper)) !important; */
+        color: hsl(0, 0, 0%) !important;
+
+        transition: scale 0.2s;
+
+        z-index: 9999 !important;
+
+    }
+
+    .dialogChunk.hasCursor{
+
+        box-shadow: 0px 0px 0px 2px red ;
+
+    }
+
+    .sceneChunk p{
+
+        font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+        color: inherit;
+
+        white-space: normal !important;
+        word-wrap: break-word;
+
+    }
+
+    #dialogpanelcontent .dialogChunk p{
+
+        font-size: calc(10px * var(--fontSizeFactor)) !important;
+
+    }
+
+    .dialogChunk p.character{
+
+        padding-left: 9ch !important;
+
+    }
+
+    body:not(:has(#allDialogFor option:checked[value="ALL"])) .dialogChunk p.character{
+
+        display: none;
+        outline: 3px solid orange
+
+    }
+
+    .dialogChunk p.parenthetical{
+        
+        padding-left: 6ch !important;
+
+    }
+
+    .dialogChunk i{
+
+        font-style: italic;
+
+    }
+
+    .dialogChunk b{
+
+        font-weight: bold;
+
+    }
+
+    .dialogChunk:has(:not(.omitted)) :is(p, span).omitted,
+    .dialogChunk:not(:has(:not(.omitted)))
+    {
+
+        text-decoration: line-through;
+        white-space: normal;
+        word-wrap: break-word;
+
+        z-index: -1 !important;
+
+        /* color: hsla(var(--inkOnPaper), 0.5); */
+        color: hsla(0, 0%, 0%, 0.5);
+
+        background-image:
+			repeating-linear-gradient(
+			-45deg,
+			/* hsl(var(--paperBehindInk),0.4) 0px,
+			hsl(var(--paperBehindInk),0.4) 3px,  */
+			hsl(0, 0%, 100%, 0.4) 0px,
+			hsl(0, 0%, 100%, 0.4) 3px, 
+			/* rgba(0,0,0,.3) 0px,
+			rgba(0,0,0,.3) 3px,  */
+			transparent 3px,
+			transparent 6px
+            )
+            /* , linear-gradient(hsl(var(--paperBehindInk), .4), hsl(var(--paperBehindInk), .4))
+            , linear-gradient(var(--localColor), var(--localColor)) */
+            , linear-gradient(hsl(0, 0%, 100%, .4), hsl(0, 0%, 100%, .4))
+            , linear-gradient(var(--localColor), var(--localColor))
+            !important;
+            
+        background-color:inherit
+
+    }
+
+    .scene.isEnlarged{
+
+        transform-origin: center top;
+        scale: 1.1 !important;
+
+        transition: all 0.2s !important;
+
+    }
+    
+</style>
 

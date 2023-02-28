@@ -108,6 +108,14 @@ var fixedIcon = /*svg*/`
     </svg>
 `
 
+var searchIcon = /*svg*/`
+    <svg width="100%" height="100%" viewBox="0 0 857 857" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+        <g transform="matrix(1,0,0,1,-614.519,-1315.75)">
+            <path d="M1195.49,1930.88L1128.67,1864.06C1006.62,1968.58 822.092,1962.71 706.107,1846.72C584.349,1724.96 583.938,1527.67 705.19,1406.42C826.443,1285.16 1023.74,1285.58 1145.49,1407.33C1261.48,1523.32 1267.35,1707.85 1162.84,1829.89L1229.65,1896.71L1245.15,1881.22L1471.26,2107.33L1406.1,2172.48L1179.99,1946.38L1195.49,1930.88ZM1099.18,1800.4C1194.47,1705.11 1194.14,1550.06 1098.46,1454.37C1002.77,1358.68 847.716,1358.36 752.425,1453.65C657.133,1548.94 657.456,1703.99 753.145,1799.68C848.834,1895.37 1003.88,1895.69 1099.18,1800.4Z"/>
+        </g>
+    </svg>
+`
+
 var newIndexCardIcon = /*svg*/`
     <svg width="100%" height="100%" viewBox="0 0 605 450" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
         <g transform="matrix(1,0,0,1,-3542.37,-3020.76)">
@@ -217,7 +225,6 @@ var userDefault = {}
 
 //# HEADER
 
-var debugContainerVisibility=0;
 var settingsContainerVisibility = 0;
 var trackingContainerVisibility = 0;
 var helpContainerVisibility = 0;
@@ -232,7 +239,6 @@ var indexCardMode = false;
 var currentZoomLevel;
 var colorScheme
 
-var debugContainer = document.getElementById('debug');
 var settingsContainer = document.getElementById('settings');
 var trackingContainer = document.getElementById('tracking');
 var helpContainer = document.getElementById('helpWindow');
@@ -295,4 +301,5 @@ var pageDividers = []
 
 // var alreadyRunningPainting = false
 var editBoxResizeObserver
+
 </script>
