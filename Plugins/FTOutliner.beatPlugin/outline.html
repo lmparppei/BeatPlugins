@@ -2,24 +2,48 @@
 <!--      THIS IS ALL THE HARD-CODED HTML WE GET:       -->
 <!-- ================================================== -->
 
-
-<div id="debug" class="debugWindow" style="display: none"></div>
 <div id="flexiContainer" class=""></div> 
 <div id="cover" class="blurWindow" style="display: none" onclick="closeNewMenu(); toggleTrackingContainer(true); storeAndClosePrintbox(false)"></div>
 
 <div id="buttonRow">
-<div id="helpButton" class="bottomButton" onclick="mylog('clicked settingsButton'); toggleNewMenu('settingsMenu')"></div>
-<div id="printButton" class="bottomButton" onclick="mylog('clicked exportButton'); toggleNewMenu('exportMenu')"></div>
-<!-- <div id="indexCardSizeButton" class="bottomButton"><div id="indexCardPlus" class="roundButton">&#x25B2;</div><div id="indexCardMinus" class="roundButton">&#x25BC;</div></div> -->
-<div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
-<div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
-<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
-<div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
-<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
-<!--div id="speedReport" class="bottomButton" onclick="toggleHelpContainer()">&#8984;</div-->
-<!-- <div id="speedometer"></div> -->
+	<div id="helpButton" class="bottomButton" onclick="mylog('clicked settingsButton'); toggleNewMenu('settingsMenu')"></div>
+	<div id="printButton" class="bottomButton" onclick="mylog('clicked exportButton'); toggleNewMenu('exportMenu')"></div>
+	<div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
+	<div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
+	<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
+	<div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
+	<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
 </div>
-<div id="notepanel" class=""></div>
+
+<div id="notepanel" class="">
+	<div id="tabsRow">
+		<div class="tab notetab selectedtab" onclick="cycleTabs(event.target)">Notes
+		</div>
+		<div class="tab dialogtab" onclick="cycleTabs(event.target)">Dialogue
+		</div>
+		<!--div class="tab othertab" onclick="cycleTabs()">Other
+		</div-->
+		<div class="closetab" onclick="toggleNotepanel()">×
+		</div>
+	</div>
+	<div id="notepanelbuttons">
+	</div>
+	<div id="dialogpanelbuttons">
+		<div class="hasSelect dropDownSpan">
+			<select id="allDialogFor" class="colorDropdown" onchange="initiateCharacterBubbles()">
+				<option>None</option>
+			</select>
+		</div>
+		<div id="dialogSearchIcon" class="dialogSearchIcon"></div>
+		<input id="dialogsearch" class="dialogsearch" type="text" spellcheck="false" placeholder="search for..." oninput="onlyShowMatchingDialogs()" onfocus="toggleCaptureKeypresses(false)" onblur="toggleCaptureKeypresses(true)" onkeydown="searchboxlisten(event)">
+		<div id="clearSearchButton" onclick="clearSearchBox()">×</div>
+	</div>
+	<div id="notepanelcontent">
+	</div>
+	<div id="dialogpanelcontent">
+	</div>
+	<div id="drag-bar" onmousedown="resizeNotepanel()"></div>
+</div>
 
 <!-- ================================================== -->
 <!--      HERE ENDS THE HTML PART, JAVASCRIPT BELOW     -->
@@ -27,9 +51,8 @@
 
 <script>
 
-//@note all the buttons are here
+//MARK: - all the buttons are here
 
-// $id("flexiContainer").ondblclick = function(event){
 document.addEventListener("dblclick", function(event){
 	event.preventDefault()
 	event.stopPropagation()
@@ -43,6 +66,7 @@ $id("flexiContainer").ondragenter = function(event){onDragEnter(event)}
 $id("flexiContainer").ondragleave = function(event){onDragLeave(event)}
 $id("flexiContainer").ondragover = function(event){onDragOver(event)}
 $id("flexiContainer").ondrop = function(event){onDrop(event)}
+$id("flexiContainer").onscroll = function(){flexiContainer.style.setProperty("--flexiScroll", flexiContainer.scrollTop) + "px"}
 $id("flexiContainer").classList.add("positionRelative")
 
 document.getElementById("indexCardButton").innerHTML = outlineIcon
@@ -52,15 +76,16 @@ document.getElementById("helpButton").innerHTML = gearIcon
 document.getElementById("printButton").innerHTML = printerIcon
 document.getElementById("notesButton").innerHTML = noteIcon
 document.getElementById("zoomButton").innerHTML = zoomIcon
+document.getElementById("dialogSearchIcon").innerHTML = searchIcon
 
+if(!document.createElement('dialog').showModal){
+	alertThis("Please update your Safari browser", "Beat plugins use WebKit to run, and FTOutliner uses features that were introduced with Webkit version 613.1.17 (which corresponds to Safari 15.4). \\n\\nPlease update your Safari to at least that version, or you may experience unexpected behavior from FTOutliner.")
+}
 
 // GLOBAL UI VARIABLES
 
-//# HEADER
-
 let smallTypeTimer //= null; //setting initial timer to avoid errors	
 let fullTypeTimer //= null;
-var debugContainerVisibility=0;
 var settingsContainerVisibility = 0;
 var trackingContainerVisibility = 0;
 var helpContainerVisibility = 0;
@@ -73,7 +98,6 @@ var oneColumnOutline;
 var indexCardMode = false;
 var currentZoomLevel;
 
-var debugContainer = document.getElementById('debug');
 var settingsContainer = document.getElementById('settings');
 var trackingContainer = document.getElementById('tracking');
 var helpContainer = document.getElementById('helpWindow');
@@ -119,22 +143,7 @@ var firstLineThatIsNoSynopsis = 0
 var selectedNote = -1
 var previouslyHovered
 
-var limitWindowWidth = function(){
-
-	// if (window.innerWidth < 380){
-	// 	Beat.call("Beat.custom.limitWidth()")
-	// 	return
-	// }
-
-	someoneResizedTheWindow()
-}
-
 var someoneResizedTheWindow = debounce(function() {
-
-	// if (window.innerWidth < 380){
-	// 	Beat.call("Beat.custom.limitWidth()")
-	// 	return
-	// }
 
 	theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
 	theRoot.style.setProperty('--theDocumentHeight', window.innerHeight)
@@ -143,7 +152,6 @@ var someoneResizedTheWindow = debounce(function() {
 	if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
 }, 150);
 
-
 //	EVENTLISTENER ON LOAD: FETCH DATA FROM PLUGIN, THEN BUILD THE COMPLETE OUTLINE:
 
 window.addEventListener('load', function () {
@@ -151,43 +159,44 @@ window.addEventListener('load', function () {
 	completeRun()
 	mylog("now to get defaults")
 	getDefaults() 
-	
-	//Beat.call("Beat.custom.setFrame("+ theWindowsPositionX + " ," + theWindowsPositionY + "," + theDocumentsWidth + "," + theDocumentsHeight + ")")
-
 })
-
-// var slugSizeObserver = new ResizeObserver(entries => {
-// 	hideSlugFor(entries);
-// })
-
 
 //	EVENTLISTENERS FOR keypresses and such
 function setAllEventlisteners(){
 
 	window.onerror = function(message, source, lineno, colno, error) {
-		// mylog("===== ERROR =====", false, true)
 		mylog("===== ERROR =====", true)
 		}
 
-	document.addEventListener("keydown", checkWhatKeyGotPressed);
-	document.addEventListener("keyup", checkWhatKeyWasReleased);
+	toggleCaptureKeypresses(true)
+
 	document.addEventListener("mouseup", function(){somethingWasClicked()});
-	// window.addEventListener("resize", limitWindowWidth);
-	window.onresize = limitWindowWidth;
-	window.addEventListener("focus", function () {
-		if(isRealTimeOn == 1){return}
-		document.getElementById('outOfSyncDiv').style.display = "none";
-		// document.getElementById('flexiContainer').classList.remove("wait")
-		completeRun()//should provide loc and len here!	
+	window.onresize = someoneResizedTheWindow()
+	window.addEventListener("focus", function () {	
+			if(isRealTimeOn == 1) return
+			document.getElementById('outOfSyncDiv').style.display = "none";
+			completeRun()//should provide loc and len here!	
 		});
 	window.addEventListener("blur", function () {
-		deselectAllElements()
-		closeContextMenu()
-		saveCurrentState()
-		if (document.querySelector(".sceneTitlePopup")){document.querySelector(".sceneTitlePopup").remove()}
+			deselectAllElements()
+			closeContextMenu()
+			saveCurrentState()
+			releaseALT()
+			if (document.querySelector(".sceneTitlePopup")){document.querySelector(".sceneTitlePopup").remove()}
 		});	
 	document.addEventListener("mouseover", hover)
 	document.addEventListener("mouseleave", unhover) //was moouseout
+}
+
+function toggleCaptureKeypresses(on){
+
+	if(on){
+		document.addEventListener("keydown", checkWhatKeyGotPressed);
+		document.addEventListener("keyup", checkWhatKeyWasReleased);
+	}else{
+		document.removeEventListener("keydown", checkWhatKeyGotPressed);
+		document.removeEventListener("keyup", checkWhatKeyWasReleased);
+	}
 }
 
 function hover() {
@@ -442,19 +451,18 @@ function updateEverything(json, location, length, pagesAsString, absoluteLength,
 			Beat.call("Beat.custom.reevaluateCharactersForScene(" + i + "," + (i == outline.length-1) + ")") //will send false except last time
 		}
 	}
-	if (notesAreDisplayed || markersAreDisplayed || beatsAreDisplayed || $id("notepanel")){
-		collectNotes("updateEverything")
-	}
+		
+	collectNotes("updateEverything")
 	if (reviewsAreDisplayed){collectReviews()}
-
 	collectRevisionIndices()
+	updateDialogPanel()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
 	document.getElementById('flexiContainer').classList.remove("wait")
 
-	recalculateHeights("from UpdateEverything") // but this is also called from YouAreHere so why twice?
+	// recalculateHeights("from UpdateEverything") // but this is also called from YouAreHere so why twice?
 												// now put back to see if it removes blinkage
 												
 	//recallCardState() //same thing: Since we always make a small run, let this happen from there only?
@@ -464,7 +472,6 @@ function updateEverything(json, location, length, pagesAsString, absoluteLength,
 		exitEdit()
 	}
 	weAreChangingColors = false
-
 
 	mylog("end of chain (full)")
 	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
@@ -493,13 +500,11 @@ function updateOneScene(json, scene, pagesForChangedScene, location, length, abs
 		updateFilter() //again: unnecessary for functionality, but just to eliminate blinkage.	
 		Beat.call("Beat.custom.reevaluateCharactersForScene(" + scene + "," + "true" + ")")
 	}
-	if (notesAreDisplayed || markersAreDisplayed || beatsAreDisplayed || $id("notepanel")){
-		collectNotes("updateOneScene")
-	}
 
+	collectNotes("updateOneScene") 
 	if (reviewsAreDisplayed){collectReviews()}
-
 	collectRevisionIndices()
+	updateDialogPanel()
 
 	//the following clears the UPDATE animation (should only be visible on slower machines)
 	document.getElementById('outOfSyncDiv').style.display = 'none'
@@ -663,6 +668,7 @@ function divMaker(location, fullupdate){
 			
 				let sectionDiv = document.createElement("div")
 					sectionDiv.id = num.toString()
+					sectionDiv.dataset.myId = num.toString()
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level" + currentItem.sectionDepth)
 					sectionDiv.dataset.line = currentItem.sceneStart
@@ -682,7 +688,7 @@ function divMaker(location, fullupdate){
 							sectionDiv.style.setProperty("--localColor", color)
 						}else{
 							sectionDiv.classList.add(color.toLowerCase())
-							let localColor = getComputedStyle(document.documentElement).getPropertyValue(`--${color.toLowerCase()}`)
+							// let localColor = getComputedStyle(document.documentElement).getPropertyValue(`--${color.toLowerCase()}`)
 							sectionDiv.style.setProperty("--localColor", `hsl(var(--${color.toLowerCase()}))`)
 						}
 					}
@@ -730,7 +736,7 @@ function divMaker(location, fullupdate){
 					// if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
 					// if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
 					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += "#" + outline.indexOf(currentItem)}
-					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "")
+					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "").replace(/</g, "&lt;")
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
 
@@ -757,6 +763,7 @@ function divMaker(location, fullupdate){
 						let orphanDiv = document.createElement("div")
 							orphanDiv.classList.add("orphanText")
 							orphanDiv.id = "orphanInside" + num
+							orphanDiv.dataset.myId = "orphanInside" + num
 							orphanDiv.dataset.line = (currentItem.sceneStart)
 							orphanDiv.dataset.lengthOfScene = currentItem.numberOfPages	
 
@@ -810,6 +817,7 @@ function divMaker(location, fullupdate){
 
 				let sceneDiv = document.createElement("div")
 					sceneDiv.id = num.toString()
+					sceneDiv.dataset.myId = num.toString()
 					sceneDiv.classList.add("scene")
 					if (currentItem.omitted == 1){
 						sceneDiv.classList.add("isOmitted")
@@ -892,7 +900,7 @@ function divMaker(location, fullupdate){
 					if(loggingIsOn){sceneheadingDiv.innerHTML += "#" + outline.indexOf(currentItem)}
 				//if(pageBreaks[num]) sceneheadingDiv.innerHTML += pageBreaks[num] + " ... "
 				// sceneheadingDiv.innerHTML += "pg. " + currentItem.startsOnPage + " -- "
-				sceneheadingDiv.innerHTML += currentItem.stringForDisplay.toUpperCase() + "</span>"
+				sceneheadingDiv.innerHTML += currentItem.stringForDisplay.toUpperCase().replace(/</g, "&lt;") + "</span>"
 				sceneDiv.appendChild(sceneheadingDiv)
 				sceneDiv.appendChild(sceneSynConDiv)
 
@@ -928,11 +936,9 @@ function divMaker(location, fullupdate){
 							divider.id = "divider" + num + "-" + p
 							divider.classList.add("pageDivider")
 							divider.innerHTML = Math.trunc(currentItem.startsOnPage + 1 + p - reduceFirstScene)
-							// divider.dataset.line = currentItem.line.position
 							divider.dataset.line = approxBreakPos
 
 							divider.style.top = 100 * pageDividers[num][p]/currentItem.numberOfPages + "%"
-							// divider.style.height = 100 / currentItem.numberOfPages + "%"
 
 						whereToAdd.appendChild(divider)
 
@@ -966,7 +972,7 @@ function divMaker(location, fullupdate){
 							synopsisDiv.dataset.synopsisNumber = synopsisNumber
 							synopsisDiv.id = "s" + num + "_" + (('000'+synopsisNumber).slice(-3)) // synopsisNumber
 						}
-					synopsisDiv.innerHTML = currentItem.stringForDisplay //|| currentItem.string.replace(/^=/, "")
+					synopsisDiv.innerText = currentItem.stringForDisplay 
 					synopsisDiv.classList.add("synopsis")
 					synopsisDiv.dataset.sceneNumber = currentItem.sceneNumber //necessary?
 					synopsisDiv.dataset.line = (synopsisNumber !== false) ? outline[num].synopsis[synopsisNumber].position : currentItem.sceneStart
@@ -979,11 +985,9 @@ function divMaker(location, fullupdate){
 						}
 						if(color){
 							if (color.match(/(#[A-F, 0-9]{6})/i)){
-								// synposisDiv.style.backgroundColor = color
 								synopsisDiv.style.setProperty("--localSynopsisColor", color)
 							}else{
 								synopsisDiv.classList.add(color.toLowerCase())
-								// synopsisDiv.dataset.color = color.toLowerCase()
 								synopsisDiv.style.setProperty("--localSynopsisColor", `hsl(var(--${color.toLowerCase()}))`)
 							}
 						}
@@ -996,7 +1000,6 @@ function divMaker(location, fullupdate){
 		} 
 
 		if(currentItem.numberOfPages){alternatePageNumber += Number(currentItem.numberOfPages)}
-		// if(currentItem.typeAsString == "Heading"){alternatePageNumber += 2/58}
 
 	}
 
@@ -1005,16 +1008,33 @@ function divMaker(location, fullupdate){
 		for (i = 0; i < allActs.length - 1; i++){
 				allActs[i].classList.remove("boneyard")
 			}		
+
+	// //save all speechbubbles
+	// currentBubbles = ($$(".displayNumberOf"))
 	
+	//add a temporary copy of notes etc to avoid blinkage bc showing nothing until updating to current truth
+	if(flexiContainer.querySelectorAll(".faux, .section, .scene, .orphanText")?.length == newFlexi.querySelectorAll(".faux, .section, .scene, .orphanText")?.length){
+		$$(".noteContainer, .marker, .review, .beat, .displayNumberOf").forEach(thingToPutBack => {
+				let parentId = thingToPutBack.parentNode.dataset.myId || thingToPutBack.parentNode.id
+				let placeToPut = newFlexi.querySelector(`[data-my-id = "${parentId}"]`) || newFlexi
+					placeToPut.appendChild(thingToPutBack)
+		})
+	}
+	
+	//THE BIG ONE: REPLACE OLD OUTLINE WITH THE NEW
 	$id("flexiContainer").innerHTML = newFlexi.innerHTML
+
+	// //insert bubbles 
+	// currentBubbles.forEach(bubble => {
+	// 	console.log(bubble.dataset.parentId)
+	// 	$id(bubble.dataset.parentId)?.appendChild(bubble)
+	// })
 		
 	//re-enabled this because why not?
 	if(indexCardMode || areScenesProportional != 1){
 		recallCardState()
 	}
 
-	//actLengths.push(alternatePageNumber) // adding the last page number after the fact // previously made an alt number but why?
-	//actLengths.push(currentItem.startsOnPage + currentItem.sceneLength) // adding the last page number after the fact
 	actLengths.push(Math.floor(currentItem.startsOnPage + currentItem.numberOfPages)) // adding the last page number after the fact
 	actIndex.push(currentItem.sceneEnd)  // index for last page number
 	
@@ -1024,15 +1044,9 @@ function divMaker(location, fullupdate){
 		allActPages[i].dataset.line = actIndex[i+1]
 	}
 
-	let endTime = new Date()
-
-	//$id("printButton").innerHTML = (endTime - startTime)
-
 	recalculateHeights()
 	reevaluateColorContrast()
 
-		//NEW: Let's try to map out any revision marks!
-		// if(documentSetting.showRevisions)collectRevisionIndices()
 }
 
 function __________OUTLINE_GRAPHICS(){}
@@ -1268,7 +1282,7 @@ function recalculateHeights(wherefrom){
 				if (a = "auto"){theIndicatorPosition = "calc(11px * var(--fontSizeFactor))"}
 			theIndicator.style.top = theIndicatorPosition
 		}
-		
+
 		putOntoScreen()
 		return	
 	}
@@ -1500,17 +1514,26 @@ function youAreHere(location, length, positionChangeOnly){
 		let weReOnPage = placeToPutIndicator.querySelectorAll(".pageDivider")
 		//while (!weReOnPage && whichSceneAreWeIn > -1) weReOnPage = 
 		
-		let theIndicatorHTML = "<div " + 
-		"id='youAreHere' " +
-		"class='indicator' " +
-		"data-percentageIntoScene='" + percentageIntoScene + "' " +
-		"data-outlineElementCount='" + whichSceneAreWeIn + "' " +
-		"data-theSceneNumber = '" + whichSceneNumberAreWeIn + "' " + 
-		">"+"<p>"+ location + //" (" + outline[whichSceneAreWeIn].typeAsString + ")" + 
-		"</p></div>"
+		// let theIndicatorHTML = "<div " + 
+		// "id='youAreHere' " +
+		// "class='indicator' " +
+		// "data-percentageIntoScene='" + percentageIntoScene + "' " +
+		// "data-outlineElementCount='" + whichSceneAreWeIn + "' " +
+		// "data-theSceneNumber = '" + whichSceneNumberAreWeIn + "' " + 
+		// ">"+"<p>"+ location + //" (" + outline[whichSceneAreWeIn].typeAsString + ")" + 
+		// "</p></div>"
+
+		let theIndicatorDiv = document.createElement("div")
+			theIndicatorDiv.id = "youAreHere"
+			theIndicatorDiv.classList.add("indicator")
+			theIndicatorDiv.setAttribute("data-percentageIntoScene", percentageIntoScene)
+			theIndicatorDiv.setAttribute("data-outlineElementCount", whichSceneAreWeIn)
+			theIndicatorDiv.setAttribute("data-theSceneNumber", whichSceneNumberAreWeIn)
+			theIndicatorDiv.innerHTML = "<p>"+ location + /*" (" + outline[whichSceneAreWeIn].typeAsString + ")" + */ "</p>"
 		
 		if(placeToPutIndicator){
-			placeToPutIndicator.innerHTML += theIndicatorHTML
+			// placeToPutIndicator.innerHTML += theIndicatorHTML
+			placeToPutIndicator.appendChild(theIndicatorDiv)
 		}
 
 	mylog("End of indicator placement")
@@ -1599,6 +1622,7 @@ function saveCurrentState() {
 	mylog("documentSettings done")
 
 	userDefault = {
+		ftoutlinerVersion: userDefault.ftoutlinerVersion,
 		realTimeUpdates: isRealTimeOn,
 		warningsAreOn: warningsAreOn,
 		colorScheme: colorScheme,
@@ -1825,12 +1849,16 @@ function __________LISTENING (){}
 
 function checkWhatKeyGotPressed(someoneJustPressed) {
 	mylog("checkWhatKeyGotPressed(" + someoneJustPressed.key + ")")
+
+	//if (event.ctrlKey && event.altKey) return //because all ctrl + alt shortcuts will go through Beat instead
 	
-	//if (someoneJustPressed.key == " " && !someoneJustPressed.altKey) {event.preventDefault(); setSharedScreen()}
+	//if (someoneJustPressed.key == " " && event.ctrlKey && event.altKey && event.metaKey) {event.preventDefault(); setSharedScreen()}
 	//if (someoneJustPressed.key == "j") {event.preventDefault(); toggleFullScreen()}
-	
-	//if (someoneJustPressed.key == "å" && !someoneJustPressed.altKey) {event.preventDefault(); forceRestart()}
-	if (someoneJustPressed.key == "ä" && !someoneJustPressed.altKey) {event.preventDefault(); Beat.call(`Beat.custom.reloadHTML()`)}
+
+	//DEVELOPMENT SHORTCUTS: 
+		//if (someoneJustPressed.key == "å" && !someoneJustPressed.altKey) {event.preventDefault(); forceRestart()}
+		if (someoneJustPressed.key == "ä" && event.metaKey && event.altKey && event.ctrlKey) {event.preventDefault(); Beat.call(`Beat.custom.reloadHTML()`)}
+		//if (someoneJustPressed.key == "!" && !someoneJustPressed.altKey) {event.preventDefault(); throwError()}
 	
 
 
@@ -1839,25 +1867,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 		event.preventDefault()
 		if(errorHasFired){return}
 
-		if ($id("advancedSettings")) $id("advancedSettings").close()
-		if ($id("menu")){closeNewMenu(); return false}
-		if (helpContainerVisibility == 1) {toggleHelpContainer(); return false}
-		if (settingsContainerVisibility == 1) {toggleSettingsContainer(); return false}
-		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
-		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
-		if ($id('textContainer')){toggleTrackingContainer(true); return false}
-		if (contextMenuIsOpen) {closeContextMenu(); return false}
-		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
-		if ($('.expandedReview')) {collapseReviews(); return false}
-		if ($id('expandedNote')) {collapseNote(); return false}
-		if (aBeatIsHovered) {unhoverAllBeats(); return false}
-		if (beatsAreDisplayed) {toggleDisplayBeats(); return false}
-		if ($id("notepanel").classList.contains("expanded")){toggleNotepanel(); return false}
-		if ($id("flexiContainer").classList.contains("uncolorAllScenesBut")){muteColors(); return false}
-		if (characterMenuList?.selectedIndex != -1) {deselectAllCharacters(); return false}
-		if (notesAreDisplayed) {toggleDisplayNotes(); return false}
+		escapeWasPressed()
 
-		//Beat.call("Beat.custom.reallyQuit()")
 		return
 	}
 
@@ -1897,6 +1908,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 			reevaluateColorContrast()
 		}
 		setAllButtons()
+		updateDialogPanel()
 		return
 	}
 	if (someoneJustPressed.key == "c") {event.preventDefault(); toggleColorScheme()}
@@ -1953,9 +1965,8 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	
 	if (someoneJustPressed.key == "F1") {event.preventDefault(); cycleMenus(event.shiftKey)}
 	if (someoneJustPressed.key == "?") {event.preventDefault(); toggleHelpContainer()}
-	if (someoneJustPressed.key == "§") {event.preventDefault(); 
-		toggleNotepanel();
-		return}
+	if (someoneJustPressed.key == "§" && event.ctrlKey) {event.preventDefault(); cycleTabs(); return }
+	if (someoneJustPressed.key == "§" && !event.ctrlKey) { event.preventDefault(); toggleNotepanel(); return }
 
 	if (someoneJustPressed.key == "Backspace" && event.metaKey) {event.preventDefault(); deleteScene()}
 
@@ -1988,6 +1999,7 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 	// 5. MODIFIERS
 		
 	if (someoneJustPressed.key == "Alt") {
+		mylog("inside ALT")
 		altIsBeingPressed = true
 		$("#flexiContainer").classList.add("showAddButton")
 
@@ -1999,17 +2011,46 @@ function checkWhatKeyGotPressed(someoneJustPressed) {
 		
 	} 
 }
+
+function escapeWasPressed(){
+
+	console.log("secape")
+
+		if ($id("advancedSettings".open)) {$id("advancedSettings").close(); return}
+		if ($id("menu")){closeNewMenu(); return false}
+		// if ($id("dialogpanelcontent") && $id("notepanel").classList.contains("expanded")) {unShowCharacterBubbles(); toggleNotepanel(); return}
+		if (helpContainerVisibility == 1) {toggleHelpContainer(); return false}
+		if (settingsContainerVisibility == 1) {toggleSettingsContainer(); return false}
+		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
+		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
+		if ($id('textContainer')){toggleTrackingContainer(true); return false}
+		if (contextMenuIsOpen) {closeContextMenu(); return false}
+		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
+		if ($('.expandedReview')) {collapseReviews(); return false}
+		if ($id('expandedNote')) {collapseNote(); return false}
+		if (aBeatIsHovered) {unhoverAllBeats(); return false}
+		if (beatsAreDisplayed) {toggleDisplayBeats(); return false}
+		if ($id("notepanel").classList.contains("expanded")){toggleNotepanel(); return false}
+		if ($id("flexiContainer").classList.contains("uncolorAllScenesBut")){muteColors(); return false}
+		if (characterMenuList?.selectedIndex != -1) {deselectAllCharacters(); return false}
+		if (notesAreDisplayed) {toggleDisplayNotes(); return false}
+	
+}
 	
 function checkWhatKeyWasReleased(someoneJustReleased){
 	mylog()
-	if (someoneJustReleased.key == "Alt") {
-		altIsBeingPressed = false
-		previouslyHovered = false
-		document.getElementById("printButton").innerHTML = printerIcon
-		$("#flexiContainer").classList.remove("showAddButton")
-		if($id("addButton")){removeAddButton()}
-		removePromoteButtons()
-	}	
+	if (someoneJustReleased.key == "Alt") releaseALT()	
+}
+
+function releaseALT(){
+
+	altIsBeingPressed = false
+	previouslyHovered = false
+	document.getElementById("printButton").innerHTML = printerIcon
+	$("#flexiContainer").classList.remove("showAddButton")
+	if($id("addButton")){removeAddButton()}
+	removePromoteButtons()
+
 }
 
 function somethingWasClicked() {
@@ -2018,7 +2059,7 @@ function somethingWasClicked() {
 	mylog("somethingWasClicked: " + event.target.classList + event.target.id + event.target)
 	mylog("flexiContainer now has...:" + $id("flexiContainer").classList)
 
-	if(event.target.closest(".bottomButton")){mylog("return out of clicked"); return}
+	if(event.target.closest(".bottomButton") || event.target.classList.contains("displayNumberOf")){mylog("return out of clicked"); return}
 	if($id("synEditBox")) return
 
 	let theClickedThing = event.target
@@ -2107,8 +2148,8 @@ function somethingWasClicked() {
 				toggleTrackingContainer(true)
 			// }
 			return
-		case "flexiContainer":
-			if($(".wider"))makeWider($(".wider"))
+		// case "flexiContainer":
+		// 	if($(".wider"))makeWider($(".wider"))
 	}
 
 	//ADDED TO FIX WHAT CONSIDERS CLICKED when in Index Card Mode
@@ -2121,11 +2162,6 @@ function somethingWasClicked() {
 				theClickedThing = theClickedThing.parentNode
 			}
 		}
-		// if (indexCardMode == 2 && [...theClickedThing.classList].includes("thisIsASynopsis")){
-		// 	while(theClickedThing.parentNode && ![...theClickedThing.classList].includes("section")){
-		// 		theClickedThing = theClickedThing.parentNode
-		// 	}
-		// }	
 
 		//Yes: This is needed
 		if (indexCardMode && [...theClickedThing.classList].includes("section")){
@@ -2134,7 +2170,9 @@ function somethingWasClicked() {
 			}
 		}
 	
-	collapseNote()
+	 if(theClickedThing.id != "cycleNoteForwardMenuItem" && theClickedThing.id != "cycleNoteBackwardMenuItem"){
+		collapseNote()
+	}
 	
 	if (rightClick || contextMenuIsOpen) {
 			x = event.clientX
@@ -2169,6 +2207,36 @@ function somethingWasClicked() {
 			theClickedThing.classList.add('isSelected')
 			return
 			}
+		}
+
+		if (a.includes("synopsis")){
+
+			let allSynopsis = Array.from($$(".synopsis"))
+			let justSelectedSynopsis = allSynopsis.indexOf(theClickedThing)
+			let firstSynopsis = allSynopsis.indexOf(alreadySelectedElements[0])
+			let lastSynopsis = allSynopsis.indexOf(alreadySelectedElements[alreadySelectedElements.length - 1])
+			
+			console.log(justSelectedSynopsis, firstSynopsis, lastSynopsis)
+
+			if (justSelectedSynopsis < firstSynopsis){
+				for (let selectThis = justSelectedSynopsis; selectThis < firstSynopsis; selectThis++ ){
+					allSynopsis[selectThis]?.classList.add("isSelected")
+				}
+			}
+			if (justSelectedSynopsis > lastSynopsis){
+				for (let selectThis = lastSynopsis; selectThis < justSelectedSynopsis + 1; selectThis++ ){
+					allSynopsis[selectThis]?.classList.add("isSelected")
+				}
+			}
+			if (firstSynopsis < justSelectedSynopsis && justSelectedSynopsis < lastSynopsis){
+				let selectThis = justSelectedSynopsis
+				do {
+					console.log(selectThis, allSynopsis[selectThis - 1].classList, allSynopsis[selectThis - 1].classList.contains("isSelected"))
+					allSynopsis[selectThis]?.classList.add("isSelected")
+					selectThis --
+				} while(!allSynopsis[selectThis]?.classList.contains("isSelected"))
+			}
+			return
 		}
 
 		let closestPredecessor = -1
@@ -2257,27 +2325,12 @@ function makeWider(theClickedThing, cycledWithKey, shift){
 			})
 			return
 		}
-	
-		// let allActs = $$(".level1")
-		// if(!theClickedThing?.classList.contains("editBox")){
-		// 	allActs.forEach(element => {
-		// 		element.classList.remove("wider")
-		// 	})
-		// }
-		// let theSelection = $$(".isSelected")
 
 		if (theClickedThing) {
 			$(".wider")?.classList.remove("wider")
 			theClickedThing.closest(".level1").classList.add("wider")
 			return
 		}
-		// if(indexCardMode && theSelection.length == 1 && (
-		// 	theSelection[0].classList.contains("section") ||
-		// 	theSelection[0].classList.contains("synopsis") ||
-		// 	theSelection[0].classList.contains("scene")
-		// )){
-		// 	theSelection[0].closest(".level1").classList.add("wider")
-		// }
 
 		if (!cycledWithKey) return
 
@@ -2453,17 +2506,6 @@ function toggleOneColumnOutline() {
 	if(markersAreDisplayed){toggleDisplayMarkers(); toggleDisplayMarkers()}
 	if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
 	if(reviewsAreDisplayed){toggleDisplayReviews(); toggleDisplayReviews()}
-}
-	
-function toggleDebugContainer() { 
-	mylog("toggleDebugContainer")
-	debugContainerVisibility=1-debugContainerVisibility;
-	if (debugContainerVisibility == 1) {
-		debugContainer.style.display = "block";
-		debugContainer.innerHTML = logArray.join("<br/>")
-	}else {
-		debugContainer.style.display = "none";
-	}
 }
 
 function toggleIndexCardMode(firstrun){
@@ -2728,6 +2770,7 @@ function toggleColorScheme() {
 	setAllButtons()
 	saveCurrentState()
 	reevaluateColorContrast()
+	updateDialogPanel()
 }
 
 function outdoorMode(){
@@ -2737,7 +2780,8 @@ function outdoorMode(){
 	outdoor = 1 - outdoor
 	document.documentElement.setAttribute('data-outdoors', outdoor)
 	setAllButtons()
-
+	updateDialogPanel()
+	reevaluateColorContrast()
 
 }
 	
@@ -2986,6 +3030,8 @@ function zoomSizes(key){
 			newZoomLevel = 1
 	}
 
+	if(!newZoomLevel) return //this can happen if we press a legal shortcut but with an extra modifier key. 
+
 	theRoot.style.setProperty('--fontSizeFactor', newZoomLevel)
 	currentZoomLevel = newZoomLevel
 
@@ -3027,23 +3073,24 @@ function isThisOffScreen(element){
 	)
 }
 
-function scrollNicelyIntoView(element){
+function scrollNicelyIntoView(element, whichContainer){
 
 	mylog("scrollNicely")
 
-	if(weAreCurrentlyEditingText){return}
-
-	//OLD JS METHOD
-		// location.hash = "#" + element.id
-		// return
+	if(weAreCurrentlyEditingText) return
+	if(!element) return
 
 	//Webkit 15.4
-		// element.scrollIntoView(smooth, center)
+		// element.scrollIntoView("smooth", "center")
 		// return
 
+	if(!whichContainer) whichContainer = flexiContainer
+
 		let elementRect = element.getBoundingClientRect()
-		let frameRect = document.getElementById("flexiContainer").getBoundingClientRect()
-		let currentScroll = document.getElementById("flexiContainer").scrollTop
+		// let frameRect = document.getElementById("flexiContainer").getBoundingClientRect()
+		let frameRect = whichContainer.getBoundingClientRect()
+		// let currentScroll = document.getElementById("flexiContainer").scrollTop
+		let currentScroll = whichContainer.scrollTop
 		let currentBottom = frameRect.height + currentScroll
 
 		
@@ -3057,7 +3104,9 @@ function scrollNicelyIntoView(element){
 		if (targetPos > currentScroll){
 			function stepUp() {
 				newPos = newPos + diff
-				document.getElementById("flexiContainer").scrollTo(0, newPos)
+				// document.getElementById("flexiContainer").scrollTo(0, newPos)
+				whichContainer.scrollTo(0, newPos)
+				if (whichContainer == $id("dialogpanelcontent")) updateDialogPanelOnScroll()
 
 				if (newPos < targetPos) {
 					mylog("animating UP")
@@ -3070,7 +3119,9 @@ function scrollNicelyIntoView(element){
 		if (targetPos < currentScroll){
 			function stepDown() {
 				newPos = newPos + diff
-				document.getElementById("flexiContainer").scrollTo(0, newPos)
+				// document.getElementById("flexiContainer").scrollTo(0, newPos)
+				whichContainer.scrollTo(0, newPos)
+				if (whichContainer == $id("dialogpanelcontent")) updateDialogPanelOnScroll()
 
 				if (newPos > targetPos) {
 					mylog("animating DOWN")
@@ -3080,6 +3131,7 @@ function scrollNicelyIntoView(element){
 			window.requestAnimationFrame(stepDown)
 		}
 	
+	if (whichContainer == $id("dialogpanelcontent")) setTimeout(function(){updateDialogPanelOnScroll()},0)
 	mylog("scrollNicely is now done")
 }
 
@@ -3122,7 +3174,17 @@ function mylog(text, isError){
 		Beat.log("*******************************")
 		Beat.log("* ========== ERROR ========== *")
 		Beat.log("*******************************")
-		Beat.log(" ")
+
+		logArray.push(" ")
+		logArray.push("flexiContainerclassList:")
+		logArray.push(flexiContainer.classList)
+		logArray.push("-------------------------")
+		for (var property in documentSetting) {
+  			logArray.push(property + ": " + documentSetting[property])
+		}
+		for (var property in userDefault) {
+  			logArray.push(property + ": " + userDefault[property])
+		}
 		displayErrorMessage(logArray)
 
 }

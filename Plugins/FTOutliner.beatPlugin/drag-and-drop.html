@@ -204,6 +204,7 @@ function onDragStart(e) {
 
     e.stopPropagation()
     collapseNote()
+    removeAddButton()
 
     Beat.call("Beat.onTextChangeDisabled = true")
     Beat.call("Beat.onOutlineChangeDisabled = true")
@@ -230,6 +231,16 @@ function onDragStart(e) {
         deselectAllElements()
         e.target.classList.add('isSelected')
     } 
+
+    //check so that all selected items are of the same kind!
+    let draggedObjectTypes = [] 
+    $$(".isSelected").forEach(element => {draggedObjectTypes.push(Array.from(element.classList).filter(cl => ["section", "scene", "synopsis"].includes(cl)))})
+    if(!draggedObjectTypes.every(val => val === draggedObjectTypes[0])){
+        alertThis("Can not move different element types at once.")
+        return
+    }
+
+
 
     //set first and last scene of the bunch //dec 2022 WHAT FOR?
         let selectedScenes = document.querySelectorAll('.isSelected')
@@ -379,6 +390,7 @@ function onDragEnd(e, cancelButton){
 	
     mylog("onDragEnd")
 
+    altIsBeingPressed = false //to avoid reappearing buttons after copy-drag
     $id("flexiContainer").classList.remove("drag")
     flexiContainer.classList.remove("not-allowed")
     Beat.call(`
@@ -1048,7 +1060,9 @@ function onDrop(e){
     
     //new method of sending data: sending explicit range. Still sending "scenes" as a security measure though, in case used in the plugin code.
     //even newer, since 1.977: sending explicit drop-position for synopsis 
-    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + "," + synopsisMove + ")")
+    //also sending makeCopy, which leaves the original in place!
+    let makeCopy = altIsBeingPressed
+    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + "," + synopsisMove + "," + makeCopy +")")
     rangeStart = false
     rangeEnd = false
 }
@@ -1229,15 +1243,6 @@ function receiveText(allText, startIndex, endIndex){
 
     entireScreenplay = allText
     let selectedScreenplay = allText.substr(startIndex, endIndex-startIndex)
-    //globalEndTime = new Date()
-    // Beat.log("Sending the entire raw screenplay takes..." + (globalEndTime - globalStartTime) +" ms")
-
-    // Beat.log("this is the string")
-    // Beat.log(selectedScreenplay)
-    // Beat.log(selectedScreenplay.match(/\n/g))
-
-    //if (debugContainerVisibility != 1){toggleDebugContainer()}
-    //debugContainer.innerHTML = allText.substring(rangeStart, rangeEnd).replace("\n","<br/>")
 
 }
 

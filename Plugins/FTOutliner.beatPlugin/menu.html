@@ -138,7 +138,8 @@
 
 }
 
-.colorDropdown {
+.colorDropdown, 
+#allDialogFor {
 
         -webkit-appearance: none !important;
         appearance: none !important; 
@@ -168,11 +169,27 @@
 
       }
 
-.colorDropdown:hover{
+#allDialogFor{
+
+    /* width: auto !important; */
+    font-weight: bold !important;
+    font-size: 12px !important;
+
+    text-overflow: ellipsis;
+    padding: 0px 20px 0px 8px !important;
+}
+
+#allDialogFor:focus{
+    outline: none !important;
+}
+
+.colorDropdown:hover,
+#allDialogFor:hover{
     color: white
 }
 
-.colorDropdown option{
+.colorDropdown option,
+#allDialogFor option{
     font-size: 14px !important;
     line-height: 26px !important; 
 
@@ -181,11 +198,26 @@
     
         font-family: inherit !important;
         font-weight: inherit !important;
-}
+    }
 
+    #allDialogFor option{
 
+        font-weight: bold !important;
+
+    }
+    
+
+#dialogpanelbuttons .hasSelect,
 :is(.menu, .modal) select:focus{
     outline: none;
+    font-weight: normal;
+    
+}
+
+#dialogpanelbuttons .hasSelect{
+    
+    overflow: hidden !important;
+
 }
 
 :is(.menu, .modal) .label{
@@ -225,10 +257,47 @@
     position: relative;
     background: rgba(206,206,206);
 }
+
+#dialogpanelbuttons .hasSelect{
+
+    position: absolute;
+
+    padding: 0px !important;
+    margin-top: 1px !important;
+    height: 17px !important;
+    width: auto !important;
+    max-width: 45% !important;
+    
+    font-size: 10px;
+    top: 0px; 
+    left: 0px;
+    line-height: 1px !important;
+    font-weight: bold;
+    background: rgba(206,206,206);
+    border-radius: 4px;
+
+}
+
+#allDialogFor:focus{
+
+    font-weight: normal !important;
+
+}
+
+#allDialogFor:checked,
+#allDialogFor:focus:checked{
+
+    font-weight: bold !important;
+
+}
+
 /* .menu li:has(select)::after, */
+#dialogpanelbuttons .hasSelect::before,
+#dialogpanelbuttons .hasSelect::after,
 :is(.menu, .modal) li.hasSelect::before,
 :is(.menu, .modal) li.hasSelect::after{
-        content: " ";
+    content: " ";
+
     white-space: pre;
     position: absolute;
     right: 8px;
@@ -241,8 +310,11 @@
     width: 4px !important;
     height: 4px !important;
     transform: rotate(45deg) translate(0px, 6px);
+
+    pointer-events: none;
 }
 
+#dialogpanelbuttons .hasSelect::after,
 :is(.menu, .modal) li.hasSelect::after{
 
     border-left: none;
@@ -254,9 +326,29 @@
 
 }
 
+#dialogpanelbuttons .hasSelect::before,
+#dialogpanelbuttons .hasSelect::after{
+
+    scale: 0.8;
+    translate: 0 -2px;
+
+}
+
+#dialogpanelbuttons .hasSelect:not(:has(.menuitem))::before,
+#dialogpanelbuttons .hasSelect:not(:has(.menuitem))::after{
+
+    display: none;
+
+}
+
+
+#dialogpanelbuttons .hasSelect:hover::before,
+#dialogpanelbuttons .hasSelect:hover::after,
 :is(.menu, .modal) li.hasSelect:hover::before,
 :is(.menu, .modal) li.hasSelect:hover::after{
+    
     border-color: white !important;
+
 }
 
 
@@ -514,6 +606,9 @@ pointer-events: none;
         --menu-background: rgb(40,40,40);
         --menu-border-color: rgb(81,81,81);
         --menu-color: rgb(233,233,233);
+
+        --inkOnPaper: 0, 0%, 100%;
+	    --paperBehindInk: 0, 0%, 0%;
 
     }
 
@@ -844,11 +939,14 @@ function showStuffMenu(){
                 <div class="switch"></div> 
                     <label for="buttonForGreyOnly">All Colors to Grey<span class="shortcut" style="float:right">^C</span></label>
         </li>
-        <!--hr class="willFold">
-       
-        <li class="hint">
-            Hint: Actual page number in document may be one or two pages higher than shown in the outline.
-        </li-->
+        <hr>
+        <strong>Side Panel: </strong><span class="shortcut" style="float:right">§</span><br/>
+        <li class="centered" onclick="toggleNotepanel()">
+            <input id="buttonForNotePanel" type="checkbox">
+                <label for="buttonForNotePanel" class="labelBefore">Closed</label>
+                    <div class="switch"></div>
+                <label for="buttonForNotePanel" class="labelAfter">Open</label>
+        </li>
     </ul>
 `
 
@@ -887,16 +985,8 @@ innerMenu.innerHTML = /*html*/`
                 <label for="buttonForBeats">Beats<span class="shortcut" style="float:right">B</span></label>
     </li>
     <hr>
-    <li onclick="cycleNotes()">Open Next Note<span class="shortcut" style="float:right">&#8677;</span></li>
-    <li onclick="cycleNotes(true)">Open Previous Note<span class="shortcut" style="float:right">&#8679;&#8677;</span></li>
-    <hr>
-        <strong>Note Panel: </strong><span class="shortcut" style="float:right">§</span><br/>
-        <li class="centered" onclick="toggleNotepanel()">
-            <input id="buttonForNotePanel" type="checkbox">
-                <label for="buttonForNotePanel" class="labelBefore">Closed</label>
-                    <div class="switch"></div>
-                <label for="buttonForNotePanel" class="labelAfter">Open</label>
-        </li>
+    <li id='cycleNoteForwardMenuItem' onclick="$id('expandedNote')?.focus(); cycleNotes()">Cycle Notes Forward<span class="shortcut" style="float:right">&#8677;</span></li>
+    <li id='cycleNoteBackwardMenuItem' onclick="$id('expandedNote')?.focus(); cycleNotes(true)">Cycle Notes Backward<span class="shortcut" style="float:right">&#8679;&#8677;</span></li>
     <hr>
         <li onclick='createDocFromNotes(); closeNewMenu()'>
                 <p>All Notes to New Doc
@@ -1205,8 +1295,11 @@ function setAllButtons(){
     setButtonForExpandedSections()
 
     if($id("buttonForIndexCards")){$id("buttonForIndexCards").checked = indexCardMode}
+        Beat.call("Beat.custom.updateViewsMenu('2'," + (indexCardMode) + ")")
     if($id("buttonForFlexible")){$id("buttonForFlexible").checked = ((areScenesProportional == 1) && !indexCardMode)}
+        Beat.call("Beat.custom.updateViewsMenu('0'," + ((areScenesProportional == 1) && !indexCardMode) + ")")
     if($id("buttonForFixed")){$id("buttonForFixed").checked = ((areScenesProportional == 0) && !indexCardMode)}
+        Beat.call("Beat.custom.updateViewsMenu('1'," + ((areScenesProportional == 0) && !indexCardMode) + ")")
 
     if($id("buttonForOneColumn")){$id("buttonForOneColumn").checked = !(oneColumnOutline == 1)}
     if($id("buttonForBoneyard")){$id("buttonForBoneyard").checked = !(flexiContainer.classList.contains("boneyardIsClosed"))}
@@ -1221,9 +1314,13 @@ function setAllButtons(){
     if($id("buttonForRealTimeUpdates")){$id("buttonForRealTimeUpdates").checked = (isRealTimeOn == 0)}
 
     if($id("buttonForNotes")){$id("buttonForNotes").checked = (notesAreDisplayed == true)}
+        Beat.call("Beat.custom.updateShowMenu('0'," + (notesAreDisplayed) + ")")
     if($id("buttonForMarkers")){$id("buttonForMarkers").checked = (markersAreDisplayed == true)}
+    Beat.call("Beat.custom.updateShowMenu('1'," + (markersAreDisplayed) + ")")
     if($id("buttonForBeats")){$id("buttonForBeats").checked = (beatsAreDisplayed == true)}
+        Beat.call("Beat.custom.updateShowMenu('3'," + (beatsAreDisplayed) + ")")
     if($id("buttonForReviews")){$id("buttonForReviews").checked = (reviewsAreDisplayed == true)}
+        Beat.call("Beat.custom.updateShowMenu('2'," + (reviewsAreDisplayed) + ")")
     if($id("buttonForNotePanel")){$id("buttonForNotePanel").checked = ($id("flexiContainer").classList.contains("notepanelIsExpanded"))}
 
     if($id("buttonForSynopsis")){$id("buttonForSynopsis").checked = ($id("flexiContainer").classList.contains("showSynopsisInScenes"))}

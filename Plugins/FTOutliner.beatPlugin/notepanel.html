@@ -24,12 +24,13 @@
 	border: none !important;
     
 	border-radius: 0px 6px 6px 0px;
-    background-color: rgba(128,146,164,0.5); /* #999; */
+    /*background-color: rgba(128,146,164,0.5); /* #999; */
     background-color: rgba(255,255,255,0.3); /* #999; */
 	
 
     z-index: 99999;
     overflow-y: auto;
+    overflow-x: hidden;
 
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -39,6 +40,250 @@
 	
 }
 
+#notepanelcontent, 
+#dialogpanelcontent{
+
+    display: none;
+
+    /* outline: 1px solid orange; */
+
+    position: absolute;
+    height: calc(100% - 46px);
+    width: calc(100% - 5px);
+    top: 46px;
+    left: 5px;
+
+    padding: 0 11px 0 0 !important;
+
+    overflow-y: scroll;
+    overflow-x: hidden;
+
+    background: transparent !important;
+}
+
+#notepanel:has(.notetab.selectedtab) #notepanelcontent, 
+#notepanel:has(.dialogtab.selectedtab) #dialogpanelcontent {
+
+    display: unset;
+
+}
+
+#notepanel #tabsRow{
+
+    font-size: 11px !important;
+    line-height: 17px !important;
+
+    position: absolute;
+    top: 0px;
+    left: 0px;
+
+    width: inherit;
+
+    overflow: hidden;
+
+}
+
+#notepanel .tab{
+
+    font-weight: bold;
+    font-size: 11px !important;
+    line-height: 17px !important;
+    text-transform: uppercase;
+    /* color: hsla(var(--paperBehindInk),0.7); */
+    color: hsla(0, 0%, 100%, 0.7);
+
+    position: relative;
+
+    height: 18px;
+    width: auto;
+    display: inline-block;
+
+    /* border: 1px solid black; */
+    border-bottom: none;
+    border-radius: 2px 10px 0 0;
+
+    padding: 0px 8px;
+    margin: 0 !important;
+
+    /* box-shadow: inset -2px 2px 2px rgba(255,255,255,0.2); */
+    box-shadow: 2px -2px 2px rgba(0,0,0,0.3);
+
+}
+
+#notepanel .tab.selectedtab{
+
+    /* color: hsla(var(--paperBehindInk), 1); */
+    color: hsla(0, 0%, 100%, 1);
+    box-shadow: 0px -2px 2px 2px rgba(0,0,0,0.3);
+
+
+}
+
+#notepanel .tab:has(+ .selectedtab){
+
+    box-shadow: none;
+
+}
+
+/* #notepanel .tab:not(:has(+ .tab))::after{ */
+#notepanel .tab.selectedtab::after,
+#notepanel .tab.selectedtab::before{
+
+    content: "";
+    position: absolute;
+
+    width: 1000px;
+    height: inherit;
+    bottom: 0px;
+
+    box-shadow: inset -2px -1px 2px rgba(0, 0, 0, 0.3),
+                inset -40px -5px 5px rgba(0, 0, 0, 0.2);
+    /* ,
+                inset 0 0 20px rgba(0,0,0,0.3) */
+                ;
+    pointer-events: none;
+
+}
+
+#notepanel .tab.selectedtab::after{
+
+    margin-left: 8px;
+
+}
+#notepanel .tab.selectedtab::before{
+
+    translate: calc(-100% - 8px) 0;
+    box-shadow: inset 2px -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 0 20px rgba(0,0,0,0.3);
+
+}
+
+#notepanel .tab:hover{
+
+    color: hsla(var(--paperBehindInk), 1);
+
+}
+
+#notepanel .closetab {
+
+    font-weight: bold;
+    font-size: 16px;
+    float: right;
+    padding-top: 0px;
+    padding-right: 3px;
+
+    color: hsla(var(--paperBehindInk),0.7);
+
+}
+
+#notepanel .closetab:hover {
+
+    color: hsla(var(--paperBehindInk), 1);
+
+}
+
+#notepanel #notepanelbuttons,
+#notepanel #dialogpanelbuttons{
+
+    display: none;
+
+    position: absolute;
+    width: calc(100% - 10px);
+    top: 22px;
+    left: 5px;
+
+    /* outline: 1px solid hotpink */
+
+}
+
+#notepanel:has(.notetab.selectedtab) #notepanelbuttons,
+#notepanel:has(.dialogtab.selectedtab) #dialogpanelbuttons{
+
+    display: unset;
+
+}
+
+#dialogpanelbuttons #dialogsearch{
+
+    float: right;
+    width: 48%;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    margin-right: 6px;
+    height: 18px;
+
+    padding-left: 18px;
+
+    outline: none !important;
+    border: 0.5px solid #555 !important;
+    border-radius: 3px;
+
+    overflow: visible;
+
+}
+
+#dialogpanelbuttons #dialogsearch::placeholder{
+
+    color: #555;
+    font-style: italic;
+
+}
+
+#dialogpanelbuttons #dialogsearch:focus::placeholder{
+
+    color: transparent;
+
+}
+
+#dialogpanelbuttons #dialogSearchIcon{
+
+    position: absolute;
+    text-align: left;
+    width: 12px;
+    top: 4px;
+    right: calc(48% - 10px);
+    fill: #555;
+}
+
+#dialogpanelbuttons #dialogsearch:placeholder-shown{
+
+    background: #aaa !important;
+    box-shadow: inset 0px 0px 0px 0px #555;
+
+}
+
+#dialogpanelbuttons #dialogsearch + #clearSearchButton{
+
+content: "x";
+text-align: center;
+font-weight: bold;
+font-size: 12.5px;
+line-height: 12px;
+background: #aaa;
+color: white;
+width: 14px;
+height: 14px;
+border-radius: 50%;
+
+position: absolute;
+top: 3px;
+right: 8px;
+
+}
+
+#dialogpanelbuttons #dialogsearch + #clearSearchButton:hover{
+
+    background: #333;
+
+}
+
+
+#dialogpanelbuttons #dialogsearch:placeholder-shown + #clearSearchButton{
+
+    display: none;
+
+}
+
 #notepanel.expanded{
     /* transform: translateX(100%); */
     left: 0 !important;
@@ -46,13 +291,14 @@
 
 #notepanel.expanded #drag-bar{
 
-    position: fixed;
+    /* position: fixed; */
+    position: absolute;
 
     width: 10px;
-    height: 100%;
+    height: calc(100% - 20px);
     /* right: 0px; */
     left: calc(var(--note-panel-width) - 10px);
-    top: 0px;
+    bottom: 0px;
 
     /* margin-top: auto;
     margin-bottom: auto; */
@@ -66,9 +312,40 @@
 
 }
 
-#notepanel ::-webkit-scrollbar{
+#notepanel.expanded #drag-bar::before{
 
-    z-index: 99;
+    content: ". . . . .";
+    font-weight: bold;
+
+    rotate: 90deg;
+    translate: 3px 0;
+    transform-origin: right center;
+
+
+    position: absolute;
+    top: 50%;
+    right: 4px;
+
+    color: hsla(var(--paperBehindInk),0.5);
+    text-shadow: 0.5px -0.5px 1px rgba(0,0,0,1);
+
+}
+
+#notepanel.expanded #drag-bar:hover::before{
+
+    color: hsla(var(--paperBehindInk),1);
+
+    transition: color 0.5s;
+
+
+}
+
+#notepanelcontent ::-webkit-scrollbar:vertical,
+#dialogpanelcontent ::-webkit-scrollbar:vertical{
+
+    z-index: 9999;
+
+
 
 }
 
@@ -92,8 +369,8 @@ body.notepanelIsBeingResized > * {
 }
 
 #flexiContainer.notepanelIsExpanded{
-    width: calc(99% - var(--note-panel-width));
-    margin-left: calc(1% + var(--note-panel-width))!important;
+    width: calc(100% - 10px - var(--note-panel-width));
+    margin-left: calc(10px + var(--note-panel-width))!important;
     transition: width 0.6s, margin-left 0.6s !important;
 }
 
@@ -129,25 +406,32 @@ body.notepanelIsBeingResized > * {
 
     padding: 4px 4px 1px 4px;
     margin-bottom: 3px;
-    margin-left: -2px;
+    /* margin-left: -2px; */
 
     white-space: normal !important;
-    /* border-radius: 4px !important;
-    border: 1px solid var(--note-border) !important;
-    background: var(--note-bottom) !important; */
 
-    /* background-color: rgb(255,255,128); */
     background-image: repeating-linear-gradient(180deg, transparent 0px, transparent calc(12px * var(--fontSizeFactor)), rgba(0,0,0,0.1) calc(12px * var(--fontSizeFactor)), rgba(0,0,0,0.1) calc(13px * var(--fontSizeFactor)));
     background-color: rgb(255,255,128);
     color: rgba(0, 0, 0, 0.75);
     border:1px solid rgba(0, 0, 0, 0.6 );
     border-radius: 4px !important;
 
-    /* max-height: 80px; */
     overflow: hidden;
     text-overflow: ellipsis !important;
 
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+
+}
+
+.notepanelNote strong{
+
+    font-weight: bold;
+
+}
+
+.notepanelNote em{
+
+    font-style: italic;
 
 }
 
@@ -166,10 +450,10 @@ body.notepanelIsBeingResized > * {
 
 .noteButtons{
 
-    /* position: fixed !important; */
+    position: sticky !important;
     width: 100%;
     height: auto;
-    top: 0px;
+    top: 18px;
     left: 0px;
 
     margin-bottom: 2px;
@@ -211,7 +495,7 @@ body.notepanelIsBeingResized > * {
 
     position: absolute;
     right: 10px;
-    top: 7px;
+    top: 3px;
 
     height: 12px;
         width: 18px;
@@ -367,39 +651,60 @@ body.notepanelIsBeingResized > * {
 </style>
 <script>
 
+function cycleTabs(clickedElement){
+
+    if(!$("#notepanel.expanded")) { 
+        toggleNotepanel()
+        if(!clickedElement) return 
+    }
+    
+    if(clickedElement?.classList.contains("selectedtab")) return
+    clickedTab = clickedElement || ($("#notepanel.expanded .selectedtab + .tab") || $("#notepanel .tab")) //|| event.target
+
+    $$(".selectedtab").forEach(tab => {tab.classList.remove("selectedtab")})
+    clickedTab.classList.add("selectedtab")
+
+    if($(".selectedtab").classList.contains("dialogtab")) {
+        initiateCharacterBubbles()
+    }else{
+        unShowCharacterBubbles()
+        reevaluateColorContrast()
+    }
+
+    console.trace()
+    console.log(document.activeElement)
+    console.log("🐱🐱")
+
+}
+
 function createNotepanel() {
 
-    mylog("createNotepanel")
-    // if($id("notepanel")){mylog("there is already one"); return}
-    if([...$id("notepanel").classList].includes("expanded")){mylog("there is already one"); return}
-    mylog("past the if includes expanded")
-
-    //let notepanel = document.createElement("div")
-    //notepanel.id = "notepanel"
+    mylog()
+    if($id("notepanel").classList.contains("expanded")) return
 
     $id("flexiContainer").classList.add("notepanelIsExpanded")
-    let justToProvokeRedraw = $id("flexiContainer").getBoundingClientRect()
-
-    //$id("flexiContainer").parentNode.insertBefore(notepanel, $id("flexiContainer"))
-    justToProvokeRedraw = $id("notepanel").getBoundingClientRect()
+        let justToProvokeRedraw = $id("flexiContainer").getBoundingClientRect()
+            justToProvokeRedraw = $id("notepanel").getBoundingClientRect()
     
-    //setTimeout(function(){
-        updateNotepanel()
-        //},250)
+    updateNotepanel()
 
     $id("notepanel").classList.add("expanded") //again, will animate if only added here.
 
     if(!$(".noteButtons")){
-        $id("notepanel").innerHTML = /*html*/`<div class='noteButtons'>
+        $id("notepanelbuttons").innerHTML = /*html*/`<div class='noteButtons'>
                 <input type='checkbox' ${documentSetting.noteButtonGreen ? `checked` : ``} id='noteButtonGreen' class='noteButton'>
                 <input type='checkbox' ${documentSetting.noteButtonYellow ? `checked` : ``} id='noteButtonYellow' class='noteButton'>
                 <input type='checkbox' ${documentSetting.noteButtonRed ? `checked` : ``} id='noteButtonRed' class='noteButton'>
                 <input type='checkbox' ${documentSetting.noteButtonMagenta ? `checked` : ``} id='noteButtonMagenta' class='noteButton'>
                 <input type='checkbox' ${documentSetting.noteButtonPurple ? `checked` : ``} id='noteButtonPurple' class='noteButton'>
                 <div id="notepanelReviewIcon"><input type='checkbox' ${documentSetting.noteButtonReview ? `checked` : ``} id='noteButtonReview' class='noteButton'></div>
-            </div>
-            <div id="drag-bar" onmousedown="resizeNotepanel()"></div>`
-            + $id("notepanel").innerHTML
+            </div>`
+    }
+
+    if($(".dialogtab.selectedtab")){
+        setTimeout(function(){
+            initiateCharacterBubbles()
+        }, 300)
     }
 
     setAllButtons()
@@ -453,21 +758,24 @@ function updateNotepanel(){
     
     mylog ("globalNotesData: " + globalNotesData?.length)
     mylog ("globalReviewsData: " + globalReviewsData?.length)
-    
-    let currentNotes = $$(".notepanelNote")
-    if (currentNotes.length > 0){
-        for (let note of currentNotes){
-            note.remove()
-        }
-    }
-    let currentReviews = $$(".notepanelReview")
-    if (currentReviews.length > 0){
-        for (let review of currentReviews){
-            review.remove()
-        }
-    }
 
-    if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0))return
+    $$(".notepanelNote").forEach(note => {note.remove()})
+    $$(".notepanelReview").forEach(note => {note.remove()})
+    
+    // let currentNotes = $$(".notepanelNote")
+    // if (currentNotes.length > 0){
+    //     for (let note of currentNotes){
+    //         note.remove()
+    //     }
+    // }
+    // let currentReviews = $$(".notepanelReview")
+    // if (currentReviews.length > 0){
+    //     for (let review of currentReviews){
+    //         review.remove()
+    //     }
+    // }
+
+    if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0)) return
     
     if(globalNotesData?.length > 0){
         mylog("looping notes in panel")
@@ -481,10 +789,18 @@ function updateNotepanel(){
                 thisNote.id = "notepanelNote" + i
                 thisNote.classList.add("notepanelNote")
                 thisNote.dataset.line = globalNotesData[i].position
+
+                let thisNoteText = globalNotesData[i].string
+                    thisNoteText = thisNoteText.replace(/\/\*(.*)\*\//g, "<span class='omitted'>$1</span>")
+                    thisNoteText = thisNoteText.replace(/\*\*\*(.*)\*\*\*/g, "<strong><em>$1</em></strong>")
+                    thisNoteText = thisNoteText.replace(/\*\*(.*)\*\*/g, "<strong>$1</strong>")
+                    thisNoteText = thisNoteText.replace(/\*(.*)\*/g, "<em>$1</em>")
+                    thisNoteText = thisNoteText.replace(/\_(.*)\_/g, "<u>$1</u>")
+
                 thisNote.innerHTML = 
-                    // `<p class="notepanelHeadline">`+ outline[globalNotesData[i].outlineElementNumber]?.typeAsString +`: ` + outline[globalNotesData[i].outlineElementNumber].sceneNumber + `</p>`+
-                    `<p class="notepanelHeadline">`+ elementType + `</p>`+
-                    globalNotesData[i].string.replace(/(\[|\])/g, "")
+                    `<p class="notepanelHeadline">${elementType}</p>${thisNoteText.replace(/(^\[*\?*\!*)|(\])/g, "")}`
+                    // `<p class="notepanelHeadline">`+ elementType + `</p>`+
+                    // globalNotesData[i].string.replace(/(\[|\])/g, "")
 
             let colCode = globalNotesData[i].string.replace(/(\[|\])/g, "")
             if (/^!{1}(?!!)/.test(colCode)){thisNote.style.backgroundColor = "#FF8888"; thisNote.classList.add("redNote")}//"red"}
@@ -493,7 +809,8 @@ function updateNotepanel(){
             if (colCode.startsWith("?")){thisNote.style.backgroundColor = "#88FF88"; thisNote.classList.add("greenNote")}//"lime"}
             if (!colCode.startsWith("?") && !colCode.startsWith("!")) thisNote.classList.add("yellowNote")
 
-            $id("notepanel").appendChild(thisNote)
+            // $id("notepanel").appendChild(thisNote)
+            $id("notepanelcontent").appendChild(thisNote)
         }
     }
 
@@ -522,7 +839,8 @@ function updateNotepanel(){
 
                 while(whereToInsert?.nextSibling && whereToInsert?.nextSibling?.classList.contains("notepanelReview")) whereToInsert = whereToInsert.nextSibling
                 if(whereToInsert)whereToInsert.insertAdjacentElement("afterend", thisReview)
-                if(!whereToInsert)$id("notepanel").appendChild(thisReview)
+                // if(!whereToInsert)$id("notepanel").appendChild(thisReview)
+                if(!whereToInsert)$id("notepanelcontent").appendChild(thisReview)
 
         }
     }
@@ -542,17 +860,14 @@ function toggleNotepanel() {
     $id("flexiContainer").classList.remove("notepanelIsExpanded")
     $id("notepanel").classList.remove("expanded")
     
-    let currentNotes = $$(".notepanelNote")
-        if (currentNotes.length > 0){
-            for (let note of currentNotes){
-                note.remove()
-            }
-        }
-    
-    // setTimeout(function(){
-    //     $id("notepanel").remove()
-    // }, 200)
+            
+    $$(".notepanelNote").forEach(note => {note.remove()})
+    $$(".displayNumberOf").forEach(bubble => {bubble.remove()})
+    $$(".connector").forEach(connector => {connector.remove()})
+
+    clearSearchBox()
     setAllButtons()
+    reevaluateColorContrast()
 }
 
 function panelNoteIsHovered(element){

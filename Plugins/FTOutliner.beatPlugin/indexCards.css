@@ -6,13 +6,6 @@
 	display: none !important; 
 }
 
-.indexcards .synopsiscontainer{
-	/* transition-delay: height 0.1s !important; */
-	/* transition: height 0.2s ease-in-out !important; */ 
-		/*remmed out above bc another .indexcards .synopsiscontainer below at line 872 */
-	/* border: 1px dotted lime */
-}
-
 .indexcards .special > .synopsiscontainer{
 	transition: none !important;
 }
@@ -78,23 +71,6 @@
 	min-height: 120%;
 	
 }
-
-/* .indexcards .level1:nth-of-type(even)::before{
-
-	content: " ";
-	background: linear-gradient(yellow, red, green);
-	position: absolute;
-	
-	top: 0px;
-	left: -5px;
-	opacity: 1;
-	width: 100%;
-	height: inherit;
-
-	z-index: -2;
-
-
-} */
 
 .indexcards.oneColumnOutline .level1:nth-of-type(even){
 	height: auto !important;
@@ -301,6 +277,14 @@ transform: translateY(-3px);
 	pointer-events: all;
 
 	transition:  min-height 0.2s, height 0.2s ;
+
+}
+
+.indexcards.widenedColumnsGetAutoHeight .wider .synopsiscontainer{
+
+	height: auto !important;
+	min-height: calc(var(--indexCardHeight) - calc(14px * var(--fontSizeFactor))) !important; 
+
 
 }
 
