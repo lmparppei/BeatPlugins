@@ -30,13 +30,28 @@ let index = 0
 let template = Beat.assetAsString("ui.html")
 let names = []
 
+// Generate a random color
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
+// Assign character colors
+let characterColors = {};
+
 // First get all characters who have dialogue
 for (const line of Beat.lines()) {
-    if (line.typeAsString() == "Character") {
-        //let name = stripSuffix(line.string).trim()
-        let name = line.characterName().trim();
-        if (!names.includes(name)) names.push(name)
+  if (line.typeAsString() === 'Character') {
+    let name = line.characterName().trim();
+    if (!names.includes(name)) {
+      names.push(name);
+      characterColors[name] = getRandomColor(); // Assign a random color to the character
     }
+  }
 }
 
 for (const scene of Beat.scenes()) {
@@ -96,23 +111,26 @@ html += "</tr>"
 
 // Draw the table
 for (const [key, value] of Object.entries(scenesForCharacter)) {
+  let rowClass = '';
+  if (index % 2 == 1) rowClass = 'odd';
 
-    let rowClass = ''
-    if (index % 2 == 1) rowClass = "odd"
+  let h = "<tr class='" + rowClass + "'><td class='name'>" + key + '</td>';
 
-    let h = "<tr class='" + rowClass + "'><td class='name'>" + key + "</td>"
+  for (let i = 0; i < scenes; i++) {
+    let className = '';
+    if (i > 0 && i % separators == 0) className += ' separator';
 
-    for (let i=0; i < scenes; i++) {
-        let className = '';
-        if (i > 0 && i % separators == 0) className += ' separator';
-
-        if (value.includes(i)) h += "<td class='appearance present " + className + "' style='" + style + "'><div class='line blue'></div></td>"
-        else h += "<td class='appearance " + className + "' style='" + style + "'>&nbsp;</td>"
+    if (value.includes(i)) {
+      const characterColor = characterColors[key]; // Retrieve the character's assigned color
+      h += "<td class='appearance present " + className + "' style='background-color: " + characterColor + ";" + style + "'></td>";
+    } else {
+      h += "<td class='appearance " + className + "' style='" + style + "'></td>";
     }
-    h += "</tr>\n"
+  }
+  h += '</tr>\n';
 
-    html += h
-    index++;
+  html += h;
+  index++;
 }
 
 html += '</table>'
