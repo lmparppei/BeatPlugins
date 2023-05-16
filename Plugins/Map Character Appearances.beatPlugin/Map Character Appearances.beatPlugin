@@ -3,7 +3,7 @@
 Map Character Appearances
 Copyright: Lauri-Matti Parppei, parts Anthony James Huben
 Description: A visual timeline of character appearances
-Version: 1.2
+Version: 1.3
 Image: Map_Character_Appearance.jpg
 
 */
@@ -44,8 +44,6 @@ let index = 0
 
 let template = Beat.assetAsString("ui.html")
 let names = []
-
-Beat.openConsole()
 
 // Generate a random color
 function getRandomColor() {

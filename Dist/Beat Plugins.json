@@ -8,7 +8,7 @@
 		"Gather Scenes by Heading.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei", "description": "Creates a new document with scenes containing a given text in heading", "image": "", "html": "" },
 		"Gather Scenes by Storyline.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei", "description": "Creates a new document with scenes containing the given storyline", "image": "", "html": "" },
 		"List Locations.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei", "description": "Quick and dirty list of shooting locations", "image": "", "html": "" },
-		"Map Character Appearances.beatPlugin": { "version": "1.2", "copyright": "Lauri-Matti Parppei, parts Anthony James Huben", "description": "A visual timeline of character appearances", "image": "Map_Character_Appearance.jpg", "html": "" },
+		"Map Character Appearances.beatPlugin": { "version": "1.3", "copyright": "Lauri-Matti Parppei, parts Anthony James Huben", "description": "A visual timeline of character appearances", "image": "Map_Character_Appearance.jpg", "html": "" },
 		"Merge Screenplays.beatPlugin": { "version": "1.0", "copyright": "Lauri-Matti Parppei 2021", "description": "Quickly merge multiple screenplays together", "image": "", "html": "" },
 		"Rename Character.beatPlugin": { "version": "1.0", "copyright": "© Lauri-Matti Parppei", "description": "Replace occurences of a character in the screenplay", "image": "Rename_Character.png", "html": "" },
 		"Shuffle Scenes.beatPlugin": { "version": "1.0", "copyright": "2021 Lauri-Matti Parppei", "description": "Randomize the order of your scenes and create a new, twisted version of your story.", "image": "", "html": "" }}
