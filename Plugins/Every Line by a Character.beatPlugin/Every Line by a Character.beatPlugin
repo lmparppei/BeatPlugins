@@ -3,7 +3,7 @@
 Every Line by a Character
 Description: Creates a new document with every line of dialogue said by the selected character
 Copyright: © Lauri-Matti Parppei
-Version: 1.0
+Version: 1.1
 
 */
 
@@ -22,8 +22,11 @@ for (const line of Beat.lines()) {
 characters.sort();
 
 // Display prompt to select the character
-const characterName = Beat.dropdownPrompt("Gather Character Dialogue", "Select a character to create a new document:", characters);
+const characterName = Beat.dropdownPrompt("Gather Character Dialogue", "Select a character to create a new document:", characters)
+Beat.log(" --> " + characterName)
 if (characterName == "" || characterName == null) return;
+
+
 
 // Iterate through the document
 for (const line of Beat.lines()) {
@@ -35,11 +38,13 @@ for (const line of Beat.lines()) {
 		dialogue = false
 		text += "\n\n"
 	}
-
 	if (dialogue) {
 		text += line.string + "\n"
 	}
 }
+
+text = text.replaceAll("\n\n\n", "\n\n")
+text = text.replaceAll("\n\n\n", "\n\n")
 
 // Create the new document
 Beat.newDocument(text)
