@@ -1,9 +1,9 @@
 /*
 
 Name: Cherry-Pick Scenes
-Version: 1.7
+Version: 1.8
 
-Copyright: Lauri-Matti Parppei 2021
+Copyright: Lauri-Matti Parppei 2021-2023
 Description: Create a new document with selected scenes
 Image: Cherry_Pick_Scenes.jpg
 
@@ -18,7 +18,7 @@ let i = 0;
 for (let scene of Beat.scenes()) {
 	if (!scene.omited) {
 		scenes.push({
-			name: scene.line.cleanedString(),
+			name: scene.line.stripFormatting(),
 			sceneNumber: scene.sceneNumber,
 			index: i
 		});
@@ -30,7 +30,9 @@ let data = JSON.stringify(scenes)
 
 ui = ui.replace("##DATA##", data);
 
+Beat.makeResident()
 Beat.htmlPanel(ui, 600,500, function(data) {
+	Beat.log("!!!")
 	let text = ""
 	const scenes = Beat.scenes()
 	const script = Beat.getText()

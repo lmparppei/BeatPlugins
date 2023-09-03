@@ -67,6 +67,7 @@ for (let location in locations) {
 html += "<script>function saveCSV() { Beat.data = { saveCSV: 'yes' }; sendBeatData() }</script>"
 html += "</html>"
 
+Beat.makeResident()
 Beat.htmlPanel(html, 800, 600, function (data) {
 	if (!data || !data.data) {
 		Beat.end()
