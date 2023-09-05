@@ -41,7 +41,8 @@
 }
 
 #notepanelcontent, 
-#dialogpanelcontent{
+#dialogpanelcontent,
+#scenespanelcontent {
 
     display: none;
 
@@ -62,7 +63,8 @@
 }
 
 #notepanel:has(.notetab.selectedtab) #notepanelcontent, 
-#notepanel:has(.dialogtab.selectedtab) #dialogpanelcontent {
+#notepanel:has(.dialogtab.selectedtab) #dialogpanelcontent,
+#notepanel:has(.scenestab.selectedtab) #scenespanelcontent {
 
     display: unset;
 
@@ -243,6 +245,7 @@
     top: 4px;
     right: calc(48% - 10px);
     fill: #555;
+    line-height: 0px;
 }
 
 #dialogpanelbuttons #dialogsearch:placeholder-shown{
@@ -258,7 +261,7 @@ content: "x";
 text-align: center;
 font-weight: bold;
 font-size: 12.5px;
-line-height: 12px;
+line-height: 13px;
 background: #aaa;
 color: white;
 width: 14px;
@@ -267,7 +270,7 @@ border-radius: 50%;
 
 position: absolute;
 top: 3px;
-right: 8px;
+right: 8.5px;
 
 }
 
@@ -396,11 +399,14 @@ body.notepanelIsBeingResized > * {
     padding-bottom: 1px !important;
 
     white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
 
 }
 
 .notepanelNote{
+
+    position: relative;
 
     font-family: 'Courier Prime', 'Courier New', Courier, monospace;
 
@@ -441,6 +447,14 @@ body.notepanelIsBeingResized > * {
     box-shadow: 0 0 0 0.5px black;
 }
 
+.notepanelNote.isSelected > .notepanelHeadline,
+.notepanelNote:hover > .notepanelHeadline{
+
+    padding-right: calc(3px + 12px * var(--fontSizeFactor)) !important;
+
+}
+
+.notepanelNote.isSelected > .notepanelHeadline,
 .notepanelHeadline.isSelected,
 .notepanelNote:hover > .notepanelHeadline{
     background-color: black;
@@ -495,27 +509,31 @@ body.notepanelIsBeingResized > * {
 
     position: absolute;
     right: 10px;
-    top: 3px;
+    top: 2px;
 
     height: 12px;
-        width: 18px;
-        background-color: hsl(49, 40%, 73%);
-        border: 1px solid hsl(49, 37%, 16%);
-        border-radius: 4px;
-        color: rgba(0, 0, 0, 0);
+    width: 18px !important;
+        
+    background-color: hsl(49, 40%, 73%);
+    border: 1px solid hsl(49, 37%, 26%);
+    border-radius: 4px;
+    color: rgba(0, 0, 0, 0);
 
         /* right: -12px;  */
 
         /* scale: 90%; */
         /* filter: grayscale(1); */
-        /* font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        /* font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;*/
         font-size: 8px;
         font-weight: bold;
-        line-height: 10px; */
+        line-height: 10px;
+        padding-left: 4px;
+
 }
 
 #notepanelReviewIcon:has(:checked){
     background-color: #ffe575;
+    color: hsl(49, 37%, 26%);
 }
 
 #notepanelReviewIcon .noteButton{
@@ -556,9 +574,9 @@ body.notepanelIsBeingResized > * {
 
     border: 4.44px solid transparent;
     border-top: 0px solid transparent;
-    border-left: 4.44px solid hsl(49, 37%, 16%);
+    border-left: 4.44px solid hsl(49, 37%, 26%);
 
-    z-index: -1
+    z-index: -1;
 
 }
 
@@ -575,8 +593,6 @@ body.notepanelIsBeingResized > * {
 #notepanel:has(#noteButtonMagenta:not(:checked)) .magentaNote   {display: none;}
 #notepanel:has(#noteButtonPurple:not(:checked)) .purpleNote     {display: none;}
 #notepanel:has(#noteButtonReview:not(:checked)) .notepanelReview{display: none;}
-
-/* body:not(:has(.review)) #notepanelReviewIcon {display: none} */
 
 .notepanelReview{
 
@@ -640,14 +656,6 @@ body.notepanelIsBeingResized > * {
 
 }
 
-/* #notepanel:has(.noteButton:not(#noteButtonReview):checked) > .notepanelReview{
-
-    margin-left: 15px;
-    transition: margin 0.2;
-
-} */
-
-
 </style>
 <script>
 
@@ -670,44 +678,66 @@ function cycleTabs(clickedElement){
         unShowCharacterBubbles()
         reevaluateColorContrast()
     }
-
-    console.trace()
-    console.log(document.activeElement)
-    console.log("🐱🐱")
+    if( $(".selectedtab").classList.contains("scenestab") ) { updateScenePanel() } 
 
 }
 
-function createNotepanel() {
+function notePanelColorButtons(){
 
-    mylog()
-    if($id("notepanel").classList.contains("expanded")) return
+    if(!$(".noteButtons")) $id("notepanelbuttons").innerHTML = /*html*/`<div class='noteButtons'></div>`
 
-    $id("flexiContainer").classList.add("notepanelIsExpanded")
-        let justToProvokeRedraw = $id("flexiContainer").getBoundingClientRect()
-            justToProvokeRedraw = $id("notepanel").getBoundingClientRect()
-    
-    updateNotepanel()
+    let notesInPanel = $$(".notepanelNote")
+    let colorsInNotes = [...new Set([...notesInPanel].map(element => element.dataset.color))]
 
-    $id("notepanel").classList.add("expanded") //again, will animate if only added here.
+    for (colbtn of colorsInNotes){
 
-    if(!$(".noteButtons")){
-        $id("notepanelbuttons").innerHTML = /*html*/`<div class='noteButtons'>
-                <input type='checkbox' ${documentSetting.noteButtonGreen ? `checked` : ``} id='noteButtonGreen' class='noteButton'>
-                <input type='checkbox' ${documentSetting.noteButtonYellow ? `checked` : ``} id='noteButtonYellow' class='noteButton'>
-                <input type='checkbox' ${documentSetting.noteButtonRed ? `checked` : ``} id='noteButtonRed' class='noteButton'>
-                <input type='checkbox' ${documentSetting.noteButtonMagenta ? `checked` : ``} id='noteButtonMagenta' class='noteButton'>
-                <input type='checkbox' ${documentSetting.noteButtonPurple ? `checked` : ``} id='noteButtonPurple' class='noteButton'>
-                <div id="notepanelReviewIcon"><input type='checkbox' ${documentSetting.noteButtonReview ? `checked` : ``} id='noteButtonReview' class='noteButton'></div>
-            </div>`
+        if(!$(`.noteButton[data-color="${colbtn}"]`)){
+
+            let btn = document.createElement("input")
+                btn.type = "checkbox"
+                btn.label = colbtn
+                btn.classList.add("noteButton")
+                btn.id = colbtn
+                btn.dataset.color = colbtn
+                btn.checked = true
+                btn.onclick = function(){
+                        $$(`.notepanelNote[data-color = "${btn.dataset.color}"]`).forEach(note => note.classList.toggle("displayNone", !btn.checked))
+                    }
+                btn.style.display = "inline-block"
+                btn.style.backgroundColor = $(`.notepanelNote[data-color="${colbtn}"]`).style.backgroundColor
+
+                $(".noteButtons").appendChild(btn)
+
+        }    
     }
 
-    if($(".dialogtab.selectedtab")){
-        setTimeout(function(){
-            initiateCharacterBubbles()
-        }, 300)
-    }
+    $$(".noteButton").forEach(notebtn => {
+        if(!$(`.notepanelNote[data-color="${notebtn.dataset.color}"]`)) notebtn.remove()
+        })
 
-    setAllButtons()
+    if ($(".notepanelReview")){
+
+        let btndiv = document.createElement("div")
+            btndiv.id = "notepanelReviewIcon"
+            btndiv.innerText = "✓"
+            
+        let btn = document.createElement("input")
+            btn.type = "checkbox"
+            btn.classList.add("noteButton")
+            btn.id = "reviewBtn"
+            btn.checked = true
+            
+        btndiv.onclick = function(){
+                btn.click()
+            }                
+        btn.onclick = function(){
+                $$(`.notepanelReview`).forEach(review => review.classList.toggle("displayNone", !btn.checked))
+            }
+
+        btndiv.appendChild(btn)        
+        $(".noteButtons").appendChild(btndiv)        
+
+    }
 }
 
 function resizeNotepanel(){
@@ -717,8 +747,6 @@ function resizeNotepanel(){
     document.body.classList.add("notepanelIsBeingResized")
     flexiContainer.classList.add("noAnimation")
     let redraw = flexiContainer.getBoundingClientRect()
-
-    mylog(JSON.stringify(flexiContainer.classList))
 
     document.addEventListener("mouseup", finalizeResizingNotepanel)
     document.addEventListener("mousemove", resizing)
@@ -746,75 +774,66 @@ function finalizeResizingNotepanel(){
     document.body.classList.remove("notepanelIsBeingResized")
     flexiContainer.classList.remove("noAnimation")
 
+    saveCurrentState()
+
 }
 
 function updateNotepanel(){
 
     mylog("updateNotepanel, which has... " + $id("notepanel").classList || "nothing")
-    
-    //if(!$id("notepanel").classList.contains("expanded")){mylog("...so aborting"); return}
-    if(!globalNotesData || globalNotesData.length == 0){collectNotes()}
-    if(!globalReviewsData || globalReviewsData.length == 0){collectReviews()}
-    
-    mylog ("globalNotesData: " + globalNotesData?.length)
-    mylog ("globalReviewsData: " + globalReviewsData?.length)
+
+    let allNotes = globalAllNotes.flat()
 
     $$(".notepanelNote").forEach(note => {note.remove()})
     $$(".notepanelReview").forEach(note => {note.remove()})
-    
-    // let currentNotes = $$(".notepanelNote")
-    // if (currentNotes.length > 0){
-    //     for (let note of currentNotes){
-    //         note.remove()
-    //     }
-    // }
-    // let currentReviews = $$(".notepanelReview")
-    // if (currentReviews.length > 0){
-    //     for (let review of currentReviews){
-    //         review.remove()
-    //     }
-    // }
 
-    if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0)) return
+    //if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0)) return
     
-    if(globalNotesData?.length > 0){
+    // if(globalNotesData?.length > 0){
         mylog("looping notes in panel")
-        for(let i = 0; i < globalNotesData.length; i++){
+        for(let i = 0; i < allNotes.length; i++){
 
-            let elementType = outline[globalNotesData[i].outlineElementNumber]?.typeAsString
-                if (elementType == "Heading"){elementType = "Note in scene " + outline[globalNotesData[i].outlineElementNumber]?.sceneNumber}
-                if (elementType == "Section"){elementType = `Note in ` + outline[globalNotesData[i].outlineElementNumber]?.stringForDisplay?.toUpperCase() + ``}
+            let elementType = outline[allNotes[i].outlineElementNumber]?.typeAsString
+                if (elementType == "Heading"){elementType = "Note in scene " + outline[allNotes[i].outlineElementNumber]?.sceneNumber}
+                if (elementType == "Section"){elementType = `Note in ` + outline[allNotes[i].outlineElementNumber]?.stringForDisplay?.toUpperCase() + ``}
 
             let thisNote = document.createElement("div")
                 thisNote.id = "notepanelNote" + i
                 thisNote.classList.add("notepanelNote")
-                thisNote.dataset.line = globalNotesData[i].position
+                thisNote.dataset.line = allNotes[i].range.location
+                thisNote.dataset.length = allNotes[i].range.length
+                thisNote.dataset.inline = allNotes[i].inline
 
-                let thisNoteText = globalNotesData[i].string
-                    thisNoteText = thisNoteText.replace(/\/\*(.*)\*\//g, "<span class='omitted'>$1</span>")
-                    thisNoteText = thisNoteText.replace(/\*\*\*(.*)\*\*\*/g, "<strong><em>$1</em></strong>")
-                    thisNoteText = thisNoteText.replace(/\*\*(.*)\*\*/g, "<strong>$1</strong>")
-                    thisNoteText = thisNoteText.replace(/\*(.*)\*/g, "<em>$1</em>")
-                    thisNoteText = thisNoteText.replace(/\_(.*)\_/g, "<u>$1</u>")
+                let thisNoteText = allNotes[i].formattedContent
 
-                thisNote.innerHTML = 
-                    `<p class="notepanelHeadline">${elementType}</p>${thisNoteText.replace(/(^\[*\?*\!*)|(\])/g, "")}`
-                    // `<p class="notepanelHeadline">`+ elementType + `</p>`+
-                    // globalNotesData[i].string.replace(/(\[|\])/g, "")
+                thisNote.innerHTML = `<div id="placeholder${i}" class="placeholder">${i}</div>
+                        <p class="notepanelHeadline">${allNotes[i].headline}</p>${thisNoteText}`
 
-            let colCode = globalNotesData[i].string.replace(/(\[|\])/g, "")
-            if (/^!{1}(?!!)/.test(colCode)){thisNote.style.backgroundColor = "#FF8888"; thisNote.classList.add("redNote")}//"red"}
-            if (/^!{2}(?!!)/.test(colCode)){thisNote.style.backgroundColor = "#FF88FF"; thisNote.classList.add("magentaNote")}//"magenta"}
-            if (/^!{3}/.test(colCode)){thisNote.style.backgroundColor = "#9088FF"; thisNote.classList.add("purpleNote")}//"#8000FF"}
-            if (colCode.startsWith("?")){thisNote.style.backgroundColor = "#88FF88"; thisNote.classList.add("greenNote")}//"lime"}
-            if (!colCode.startsWith("?") && !colCode.startsWith("!")) thisNote.classList.add("yellowNote")
+            let dummydiv = document.createElement("div")
+                dummydiv.style.backgroundColor = allNotes[i].color
+                document.body.appendChild(dummydiv)
+            let colCode = window.getComputedStyle(dummydiv).backgroundColor || "#FFFF00"
+                if (colCode == "rgba(0, 0, 0, 0)") colCode = "rgb(255,255,0)" //"#FFFF00"
 
-            // $id("notepanel").appendChild(thisNote)
+                thisNote.style.backgroundColor = lightenColor(colCode, 50)
+                thisNote.dataset.color = colCode 
+                dummydiv.remove()
+
+                if($(`.noteButton[data-color="${colCode}"]`) && !$(`.noteButton[data-color="${colCode}"]`).checked) thisNote.classList.add("displayNone")
+
             $id("notepanelcontent").appendChild(thisNote)
-        }
-    }
 
-    mylog("notesdone")
+            let trashDiv = document.createElement("div")
+                trashDiv.id = "trashNote" + i
+                trashDiv.classList.add("trashNote")
+                trashDiv.innerHTML = trashIcon
+                trashDiv.onclick = () => {deleteNote()}
+            $(".placeholder").replaceWith(trashDiv)
+            $$(".placeholder").forEach(placeholder => placeholder.remove())
+        }
+
+    let currentNote = Array.from($$(".notepanelNote")).find(note => {note.dataset.line <= currentCaretPosition && (note.dataset.line + note.dataset.length) >= currentCaretPosition}) || false
+        if(currentNote && isThisOffScreen(currentNote)) scrollNicelyIntoView(currentNote, $id("notePanel"))
 
     if(globalReviewsData?.length > 0){
         mylog("looping reviews in panel")
@@ -824,6 +843,7 @@ function updateNotepanel(){
                 thisReview.id = "notepanelReview" + i
                 thisReview.classList.add("notepanelReview")
                 thisReview.dataset.line = globalReviewsData[i].range[0]
+                thisReview.dataset.length = globalReviewsData[i].range[1]
                 thisReview.innerHTML = "<div class='reviewHeadline'>REVIEW #" + i + "</div>"
 
                 thisReview.innerHTML += globalReviewsData[i].string
@@ -845,6 +865,8 @@ function updateNotepanel(){
         }
     }
 
+    notePanelColorButtons()
+
     mylog("end of update notepanel")
 }
 
@@ -852,20 +874,17 @@ function toggleNotepanel() {
 
     mylog("toggleNotepanel")
 
-    if(![...$id("notepanel").classList].includes("expanded")){
-        createNotepanel()
-        return
+    $id("notepanel").classList.toggle("expanded")
+    $id("flexiContainer").classList.toggle("notepanelIsExpanded", $id("notepanel").classList.contains("expanded"))
+
+    collectNotes()
+
+    if(!$id("notepanel").classList.contains("expanded")){
+        unShowCharacterBubbles()   
     }
 
-    $id("flexiContainer").classList.remove("notepanelIsExpanded")
-    $id("notepanel").classList.remove("expanded")
-    
-            
-    $$(".notepanelNote").forEach(note => {note.remove()})
-    $$(".displayNumberOf").forEach(bubble => {bubble.remove()})
-    $$(".connector").forEach(connector => {connector.remove()})
-
     clearSearchBox()
+    saveCurrentState()
     setAllButtons()
     reevaluateColorContrast()
 }
@@ -902,15 +921,6 @@ function panelNoteIsUnhovered(element){
     for (let note of allNotes){
         note.classList.remove("selectedNote")
     }
-
-    //mylog("UNHOVERING, namely this: " + element.classList)
-
-    // let noteId = element.id
-    // noteId =  noteId.substring(13)
-
-    // let noteToHover = $id("noteNumber" + noteId)
-    // noteToHover.classList.remove("selectedNote")
-    // noteToHover.classList.add("locateMe")
 }
 
 </script>

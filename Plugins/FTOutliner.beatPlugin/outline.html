@@ -2,12 +2,15 @@
 <!--      THIS IS ALL THE HARD-CODED HTML WE GET:       -->
 <!-- ================================================== -->
 
-<div id="flexiContainer" class=""></div> 
+<div id="flexiContainer" class="flexiContainer"></div> 
 <div id="cover" class="blurWindow" style="display: none" onclick="closeNewMenu(); toggleTrackingContainer(true); storeAndClosePrintbox(false)"></div>
+<!-- <pre id="dumpDiv" style="padding: 10px; bottom: 10px; left: 10px; border-radius: 5px; pointer-events: none; position: absolute; white-space: pre-wrap; background-color: rgba(255,255,255,0.7); font-size: 9px"></pre> -->
 
 <div id="buttonRow">
 	<div id="helpButton" class="bottomButton" onclick="mylog('clicked settingsButton'); toggleNewMenu('settingsMenu')"></div>
 	<div id="printButton" class="bottomButton" onclick="mylog('clicked exportButton'); toggleNewMenu('exportMenu')"></div>
+	<div id="infoField"></div>
+	<div id="saturationSlider"><input type="range" min="0" max="100" value="50" class="slider" step="10" style="direction: rtl;" id="saturationRange" oninput="changeSaturation()"></div>
 	<div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
 	<div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
 	<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
@@ -21,7 +24,7 @@
 		</div>
 		<div class="tab dialogtab" onclick="cycleTabs(event.target)">Dialogue
 		</div>
-		<!--div class="tab othertab" onclick="cycleTabs()">Other
+		<!--div class="tab scenestab" onclick="cycleTabs(event.target)">Scenes
 		</div-->
 		<div class="closetab" onclick="toggleNotepanel()">×
 		</div>
@@ -30,7 +33,8 @@
 	</div>
 	<div id="dialogpanelbuttons">
 		<div class="hasSelect dropDownSpan">
-			<select id="allDialogFor" class="colorDropdown" onchange="initiateCharacterBubbles()">
+			<!-- <select id="allDialogFor" class="colorDropdown" onchange="initiateCharacterBubbles()"> -->
+			<select id="allDialogFor" class="colorDropdown" onchange="showCharacterBubbles()">
 				<option>None</option>
 			</select>
 		</div>
@@ -41,6 +45,8 @@
 	<div id="notepanelcontent">
 	</div>
 	<div id="dialogpanelcontent">
+	</div>
+	<div id="scenespanelcontent">
 	</div>
 	<div id="drag-bar" onmousedown="resizeNotepanel()"></div>
 </div>
@@ -60,6 +66,14 @@ document.addEventListener("dblclick", function(event){
 	editContent(event)
 })
 
+$id("flexiContainer").addEventListener("contextmenu", function(event){
+	if(event.metaKey && event.altKey) return // so as not to get contextmenu when ctrl+alt+cmd is pressed
+	event.preventDefault()
+	event.stopPropagation()
+	mylog(event)			
+	displayContextMenu(event)
+})
+
 $id("flexiContainer").ondragstart = function(event){onDragStart(event)}
 $id("flexiContainer").ondragend = function(event){onDragEnd(event)}
 $id("flexiContainer").ondragenter = function(event){onDragEnter(event)}
@@ -77,6 +91,7 @@ document.getElementById("printButton").innerHTML = printerIcon
 document.getElementById("notesButton").innerHTML = noteIcon
 document.getElementById("zoomButton").innerHTML = zoomIcon
 document.getElementById("dialogSearchIcon").innerHTML = searchIcon
+document.getElementById("saturationSlider").innerHTML += paletteIcon
 
 if(!document.createElement('dialog').showModal){
 	alertThis("Please update your Safari browser", "Beat plugins use WebKit to run, and FTOutliner uses features that were introduced with Webkit version 613.1.17 (which corresponds to Safari 15.4). \\n\\nPlease update your Safari to at least that version, or you may experience unexpected behavior from FTOutliner.")
@@ -84,81 +99,73 @@ if(!document.createElement('dialog').showModal){
 
 // GLOBAL UI VARIABLES
 
-let smallTypeTimer //= null; //setting initial timer to avoid errors	
-let fullTypeTimer //= null;
-var settingsContainerVisibility = 0;
-var trackingContainerVisibility = 0;
-var helpContainerVisibility = 0;
-var notesAreDisplayed = false;
-var markersAreDisplayed = false;
-var synopsisAreDisplayed = false;
-var beatsAreDisplayed = false;
-var scenesAreHidden = false;
-var oneColumnOutline;
-var indexCardMode = false;
-var currentZoomLevel;
+	let smallTypeTimer //= null; //setting initial timer to avoid errors	
+	let fullTypeTimer //= null;
+	var settingsContainerVisibility = 0;
+	var trackingContainerVisibility = 0;
+	var helpContainerVisibility = 0;
+	var notesAreDisplayed = false;
+	var markersAreDisplayed = false;
+	var synopsisAreDisplayed = false;
+	var beatsAreDisplayed = false;
+	var scenesAreHidden = false;
+	var currentZoomLevel;
 
-var settingsContainer = document.getElementById('settings');
-var trackingContainer = document.getElementById('tracking');
-var helpContainer = document.getElementById('helpWindow');
-var coverContainer = document.getElementById('cover');
-var theRoot = document.querySelector(':root');
-var colorScheme
-var blockOrNone = ['block', 'none'];
-var flexOrInLineBlock = ['flex', 'inline-block']
+	var settingsContainer = document.getElementById('settings');
+	var trackingContainer = document.getElementById('tracking');
+	var helpContainer = document.getElementById('helpWindow');
+	var coverContainer = document.getElementById('cover');
+	var theRoot = document.querySelector(':root');
+	var blockOrNone = ['block', 'none'];
 
-var classListArray = []
+	var classListArray = []
 
-var contextMenuIsOpen = false
-var weAreChangingColors = false
+	var contextMenuIsOpen = false
 
-var logArray=[]
+	var logArray=[]
 
 // GLOBAL DEFAULT VARIABLES
 
-var areScenesProportional, whatAreSceneLengths, whatAreSceneNumbers, whatArePageNumbers, isRealTimeOn
-var warningsAreOn
-var theDocumentsWidth, theDocumentsHeight, theWindowsPositionX, theWindowsPositionY
-	
+	var showSceneLengths, showSceneNumbers, showPageNumbers, realTimeIsOn
 
 // GLOBAL DOCUMENT-RELATED VARIABLES
 
-var outline, pages
-var heightFactor = 10 //initial value if all else fails
+	var outline, pages
+	var heightFactor = 10 //initial value if all else fails
 
-var currentSectionDepth;
-var previousSectionDepth;
-var lastIndexOfScene;
-var currentLine;
+	var currentSectionDepth;
+	var previousSectionDepth;
+	var lastIndexOfScene;
+	var currentLine;
 
-var lengthOfScene = [];
-var lengthOfSceneInEights = [];
-var outlineElementNumber
-var actNumber, endElement
-var location, length 
+	var lengthOfScene = [];
+	var lengthOfSceneInEights = [];
+	var outlineElementNumber
+	var actNumber, endElement
+	var location, length 
 
-var omittedNumber
+	var omittedNumber
 
-var firstLineThatIsNoSynopsis = 0
-var selectedNote = -1
-var previouslyHovered
+	var firstLineThatIsNoSynopsis = 0
+	var selectedNote = -1
+	var previouslyHovered
 
-var someoneResizedTheWindow = debounce(function() {
+	var someoneResizedTheWindow = debounce(function() {
 
-	theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
-	theRoot.style.setProperty('--theDocumentHeight', window.innerHeight)
-	saveCurrentState()
-	recalculateHeights("from someoneResizedTheWindow")
-	if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
-}, 150);
+		theRoot.style.setProperty('--theDocumentWidth', window.innerWidth)
+		theRoot.style.setProperty('--theDocumentHeight', window.innerHeight)
+		saveCurrentState()
+		recalculateHeights("from someoneResizedTheWindow")
+		if(beatsAreDisplayed){toggleDisplayBeats(); toggleDisplayBeats()}
+	}, 150);
 
 //	EVENTLISTENER ON LOAD: FETCH DATA FROM PLUGIN, THEN BUILD THE COMPLETE OUTLINE:
 
 window.addEventListener('load', function () {
+	flexiContainer.classList.add("focused") //in order to correctly switch focus between main app and plugin right from the start
 	setAllEventlisteners()
-	completeRun()
-	mylog("now to get defaults")
-	getDefaults() 
+	getSettings()
+	firstRun()
 })
 
 //	EVENTLISTENERS FOR keypresses and such
@@ -170,15 +177,18 @@ function setAllEventlisteners(){
 
 	toggleCaptureKeypresses(true)
 
-	document.addEventListener("mouseup", function(){somethingWasClicked()});
-	window.onresize = someoneResizedTheWindow()
-	window.addEventListener("focus", function () {	
-			if(isRealTimeOn == 1) return
+	document.addEventListener("mouseup", somethingWasClicked)
+	window.addEventListener("resize", someoneResizedTheWindow)
+	window.addEventListener("focus", function () {
+			flexiContainer.classList.add("focused")	
+			if(userDefault.realTimeIsOn == 1) return
 			document.getElementById('outOfSyncDiv').style.display = "none";
-			completeRun()//should provide loc and len here!	
+			firstRun()//should provide loc and len here!	
 		});
 	window.addEventListener("blur", function () {
+			flexiContainer.classList.remove("focused")	
 			deselectAllElements()
+			collapseNote()
 			closeContextMenu()
 			saveCurrentState()
 			releaseALT()
@@ -191,11 +201,13 @@ function setAllEventlisteners(){
 function toggleCaptureKeypresses(on){
 
 	if(on){
-		document.addEventListener("keydown", checkWhatKeyGotPressed);
-		document.addEventListener("keyup", checkWhatKeyWasReleased);
+		// document.addEventListener("keydown", checkWhatKeyGotPressed)
+		document.addEventListener("keydown", keypress)
+		document.addEventListener("keyup", checkWhatKeyWasReleased)
 	}else{
-		document.removeEventListener("keydown", checkWhatKeyGotPressed);
-		document.removeEventListener("keyup", checkWhatKeyWasReleased);
+		// document.removeEventListener("keydown", checkWhatKeyGotPressed)
+		document.removeEventListener("keydown", keypress)
+		document.removeEventListener("keyup", checkWhatKeyWasReleased)
 	}
 }
 
@@ -240,24 +252,12 @@ function hover() {
 	unhover()
 
 	//Popping up scene name for small scenes
-		if (element.closest(".scene")?.classList.contains("hideSlugIfSmall") && !altIsBeingPressed){
+		if (element.closest(".scene")?.classList.contains("sluglineIsHidden") && !altIsBeingPressed){
 			hiddenSlugPopup(element)
 		}
 
 	
-	//on hover, we always go to insert addButton and make the gatekeeping there.
 	currentlyHoveredElement = element // keeps it in mind for ALT-pressing
-	mylog("sending to addbutton...")
-
-		// if (altIsBeingPressed){
-			
-		// }
-
-		try{
-			insertAddButton(element)
-		}catch(err){
-			mylog("CAUGHT an ERROR trying to ADD or PROMOTE BUTTON" + err.name + err.message)
-		}
 	
 }
 
@@ -266,8 +266,11 @@ function hiddenSlugPopup(element) {
 	previouslyHovered = JSON.stringify(element.closest(".scene")?.id)
 	currentlyHoveredElement = false
 
-	let x = parseInt(JSON.stringify(event.clientX))
-	let y = parseInt(JSON.stringify(element.closest(".scene").getBoundingClientRect().top))
+	// let x = parseInt(JSON.stringify(event.clientX))
+	// let y = parseInt(JSON.stringify(event.clientY))
+	let x = (event.clientX)
+	let y = (event.clientY)
+	// let y = parseInt(JSON.stringify(element.closest(".scene").getBoundingClientRect().top))
 	let width = parseInt(JSON.stringify(element.closest(".scene").getBoundingClientRect().width)) + 20
 	let color = window.getComputedStyle(element.closest(".scene")).getPropertyValue('background-color')
 
@@ -281,7 +284,8 @@ function hiddenSlugPopup(element) {
 		hiddenSceneTitlePopupDiv.classList.add("clickThru")
 		hiddenSceneTitlePopupDiv.classList.add("sceneTitlePopup")
 		hiddenSceneTitlePopupDiv.style.left = (x + 10) + "px"
-		hiddenSceneTitlePopupDiv.style.top = (y - 22) + "px"
+		// hiddenSceneTitlePopupDiv.style.top = (y - 22) + "px"
+		hiddenSceneTitlePopupDiv.style.top = (y + 10) + "px"
 		hiddenSceneTitlePopupDiv.style.maxWidth = width + "px"
 		hiddenSceneTitlePopupDiv.style.backgroundColor = color
 		
@@ -291,7 +295,11 @@ function hiddenSlugPopup(element) {
 	let elementToGivePopup = $id('hiddenSceneTitlePopup')
 	popupTimer = setTimeout(function(){
 		elementToGivePopup.classList.add('revealPopup')
-		},1200
+			setTimeout(function(){
+				elementToGivePopup.classList.remove('revealPopup')
+				// elementToGivePopup.remove()
+			}, 3000)
+		},400
 	)
 }
 
@@ -309,6 +317,10 @@ function unhover(){
 	if(relatedElement && (relatedElement.classList.contains("review"))){
 		highlightReviewInPanel()
 	}
+
+	if(relatedElement && (relatedElement.classList.contains("beat"))){
+		unhoverAllBeats()
+	}
 	
 	previouslyHovered = false
 	
@@ -321,217 +333,59 @@ function unhover(){
 // MARK: - ========== UPDATING THE TIMELINE ==========
 
 function __________TIMELINE (){}
-		
-function startFullUpdate(delayTime) { //not getting loc and len from outlinechange anyway so removed now!
+
+var typeTimer
+
+function firstRun(location, length){ 
 	
-	// mylog("FULL CALLED! Location: "  + location + ", length: " + length, true, true)
-	mylog("FULL CALLED! Location: "  + location + ", length: " + length)
-	actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
-
-	//document.getElementById('outOfSyncDiv').classList.add('animate');
-	$id('outOfSyncDiv').style.display = 'block'
-	flexiContainer.classList.add("wait")
-	
-	if (isRealTimeOn == 0 && weAreChangingColors == false){
-		document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
-		document.getElementById("outOfSyncDiv").style.animation = "none";
-		//document.getElementById("outOfSyncDiv").style.display = "block";
-
-		if(document.getElementById("youAreHere")){document.getElementById("youAreHere").remove()}
-
-		return
-	}
-
-		document.getElementById('outOfSyncMessage').innerHTML = "";
-		
-		clearTimeout(fullTypeTimer)
-		fullTypeTimer = false
-
-		let timeToWait = weAreChangingColors ? 0 : 1000
-		let callback = function(){
-			mylog("--------------------- full update fires NOW ---------------------------")
-			rememberCardState()
-			// $("#speedometer").classList.toggle("locateme")
-			// Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + "," + (outline.length||'false') + ")")	
-			Beat.call("Beat.custom.updateEntireOutline(false, false," + (outline.length||'false') + ")")	
-			
-		}
-		fullTypeTimer = setTimeout(
-			callback, delayTime || timeToWait // 1000 
-			)
-			
-	// 	document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
-	// 	document.getElementById("outOfSyncDiv").style.animation = "none";
-	// 	document.getElementById("outOfSyncDiv").style.display = "block";
-
-	// 	if(document.getElementById("youAreHere")){document.getElementById("youAreHere").remove()}
-}
-
-function updateCaller(){
-	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + "," + (outline.length||'false') + ")")	
-}
-
-function startSmallUpdate(location, length, delayTime, elementType) {
-
-	mylog('SMALL CALLED! and fullTypeTimer is ' + fullTypeTimer)
-
-	//it may be that this never ever fires, but hey. 
-	if(fullTypeTimer > 0){
-		mylog("we're already queueing a full one, so trying to abort")
-		return
-	}
-
-	if(elementType && elementType != "Heading"){
-		mylog(" ")
-		mylog("BUT! Now sending SMALL ==> FULL because seems like we're writing in orphan text")
-		mylog(" ")
-
-		startFullUpdate()
-		return
-	}
-		
-	if(outline.length < 1){
-		displayEmptyScreenMessage()
-		return}
-
-	if (isRealTimeOn == 1 || weAreChangingColors == true){	
-
-		clearTimeout(smallTypeTimer);
-
-		let timeToWait = weAreChangingColors ? 0 : 1000
-
-		let callback = function(){
-				rememberCardState()
-				Beat.call("Beat.custom.updateOnlyOneScene(" + location + "," + length + ")")
-				}
-		smallTypeTimer = setTimeout(
-			callback, delayTime || timeToWait
-			); 		
-		}
-	else
-		{
-		document.getElementById('outOfSyncMessage').innerHTML = "Outline out of sync. Click anywhere to refresh.";
-		document.getElementById("outOfSyncDiv").style.animation = "none";
-		document.getElementById("outOfSyncDiv").style.display = "block";
-
-		if(document.getElementById("youAreHere")){document.getElementById("youAreHere").remove()}
-		}
-}
-
-function completeRun(location, length){ //Called AT STARTUP and (when non-realtime) AT FOCUS
+	//Called AT STARTUP (and, if non-realtime, WHEN FOCUSED)
 	mylog()
-	
+
 	weAreCurrentlyEditingText = false
-	weAreChangingColors = true //testing if this speeds up first draw!
+	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ", true)")
 
-	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")
 }
 
-function updateEverything(json, location, length, pagesAsString, absoluteLength, pageBreakPositions, frontmatter) {
-	mylog(json)
+function updateEntireOutline(json, location, length, absoluteLength, linesAsJson) {
 
-	if(pagesAsString) {pages = pagesAsString} //unique to everything
-	if(pageBreakPositions) {pageBreaks = pageBreakPositions} // same...
-
-	outline = JSON.parse(json)
-	absoluteTextLength = absoluteLength //making it global...
-	frontMatter = frontmatter
-	addSceneEnds()
-
-	if(outline.length < 1){displayEmptyScreenMessage(); return}
-
-	recalculatePages()
-	divMaker(location, true)
-	mylog("back after divmaker")
-	
-	if (characterMenuList.selectedIndex != -1){
-
-		updateFilter("") //this call is unnecessary for functionality, but works to eliminate blinkage.
-		for (i=0; i<outline.length; i++) { //loop in "everything", single line in other
-			Beat.call("Beat.custom.reevaluateCharactersForScene(" + i + "," + (i == outline.length-1) + ")") //will send false except last time
-		}
-	}
-		
-	collectNotes("updateEverything")
-	if (reviewsAreDisplayed){collectReviews()}
-	collectRevisionIndices()
-	updateDialogPanel()
-
-	//the following clears the UPDATE animation (should only be visible on slower machines)
-	document.getElementById('outOfSyncDiv').style.display = 'none'
-	document.getElementById('outOfSyncDiv').classList.remove('animate')
-	document.getElementById('flexiContainer').classList.remove("wait")
-
-	// recalculateHeights("from UpdateEverything") // but this is also called from YouAreHere so why twice?
-												// now put back to see if it removes blinkage
-												
-	//recallCardState() //same thing: Since we always make a small run, let this happen from there only?
-	youAreHere(location, length) 
-
-	if(weAreCurrentlyEditingText){ //} = false // this is if update takes place when live editing outline text
-		exitEdit()
-	}
-	weAreChangingColors = false
-
-	mylog("end of chain (full)")
-	//NOTE: here ends the chain of functions based on needFullUpdate, now returning home
-}
-
-function updateOneScene(json, scene, pagesForChangedScene, location, length, absoluteLength, pageBreakForChangedScene, frontmatter){
 	mylog()
-	mylog(json.length + ", location passed is" + location)
-
-	outline = JSON.parse(json)
-	absoluteTextLength = absoluteLength //making it global...
-	frontMatter = frontmatter
-	addSceneEnds()
+	$$(".contextMenu").forEach(menu => menu.remove())
+	toggleWaitState(true) // probably already turned on elsewhere, but for good measure
 	
-	pages[scene] = pagesForChangedScene // Note: scene here now means outline item
-	pageBreaks[scene] = pageBreakForChangedScene
+	// making data global:
+		outline = json 
+		lines = linesAsJson
+		absoluteTextLength = absoluteLength
 	
 	if(outline.length < 1){displayEmptyScreenMessage(); return}
 	
-	recalculatePages()
-	divMaker(location, false)
-	mylog("back after divmaker (single)")
+	//Pre-building the outline
+		addSceneEnds()
+		findPageDividers()
+
+	//Building the outline!
+		divMaker() 
 		
-	if (characterMenuList.selectedIndex != -1){
-	
-		updateFilter() //again: unnecessary for functionality, but just to eliminate blinkage.	
-		Beat.call("Beat.custom.reevaluateCharactersForScene(" + scene + "," + "true" + ")")
-	}
+	//Post-building the outline: Add data to existing, already painted divs
+		if (characterMenuList.selectedIndex != -1){
+			collectCharacters()
+			updateFilter()
+		}
+		collectNotes("updateEntireOutline")
+		collectReviews()
+		collectRevisionIndices()
+		updateDialogPanel()
+		updateScenePanel()
+		updateSelectionInfo()
 
-	collectNotes("updateOneScene") 
-	if (reviewsAreDisplayed){collectReviews()}
-	collectRevisionIndices()
-	updateDialogPanel()
+		youAreHere(location, length) 
+		toggleWaitState(false)	
 
-	//the following clears the UPDATE animation (should only be visible on slower machines)
-	document.getElementById('outOfSyncDiv').style.display = 'none'
-	document.getElementById('outOfSyncDiv').classList.remove('animate')
-	document.getElementById('flexiContainer').classList.remove("wait")
+		if(weAreCurrentlyEditingText){ // this is if update takes place when live editing outline text -- can this happen??
+			exitEdit()
+		}
 
-	fullTypeTimer = false //only in small update?
-
-	//recalculateHeights("from updateOneSceen")  // but this is ALSO called from youAreHere!
-	
-	mylog("before recall in Small -- " + cardStateForScenes)
-	recallCardState() //this was the enabled one
-	youAreHere(location, length) 
-	
-	if(weAreCurrentlyEditingText){ //} = false // this is if update takes place when live editing outline text
-		exitEdit()
-	}
-
-	weAreChangingColors = false
-    Beat.call(`
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-	`)
-		
-	//NOTE: here ends the chain of functions based on needSmallUpdate, now returning home
-	mylog("end of chain (one scene)")
+	mylog("End of creating outline, now returning to idle")
 }
 
 function addSceneEnds(){
@@ -546,13 +400,16 @@ function addSceneEnds(){
 		return level 
 	}
 
-	//Insert SceneEnd value, which ends not at next arbitrary outline element, but one which is the same or higher! 2022-01-11
+	//Insert SceneEnd value, which ends not at next arbitrary outline element, but one which is the same or higher! 
 	for (let i = 0; i < outline.length; i++){
 
 		let nextSameLevelObject = i + 1
 
-		while ((nextSameLevelObject < outline.length) && (hierarchy({...outline[nextSameLevelObject]}) > hierarchy({...outline[i]}))){
-			//if(!outline[nextSameLevelObject + 1]){break}
+		while ((nextSameLevelObject < outline.length) 
+				&& 
+				(hierarchy({...outline[nextSameLevelObject]}) > hierarchy({...outline[i]})
+				||
+				outline[nextSameLevelObject].omitted)){
 			nextSameLevelObject++
 		}
 		
@@ -563,15 +420,17 @@ function addSceneEnds(){
 }
 
 
-function divMaker(location, fullupdate){
+function divMaker(){
 
 	mylog()
-	mylog("AT START OF DIVMAKER, we have this location: " + location)
 
 	let startTime = new Date()
 
 	let start = 0
 	let end = outline.length
+		// let's try to avoid crashes due to empty outline!
+		// this will probably not work, I'm suspecting new outlines can now be pushed from the plugin asynchronosly?
+			if (!outline || outline.length < 1) return 
 
 	let newFlexi = document.createElement("div")
 	let currentAct = 0
@@ -581,17 +440,12 @@ function divMaker(location, fullupdate){
 
 	let lowerLevelNum = -1
 
-	//Make scencards expanded or collapsed as before
-		if(outlineBeforeUpdate && outline.length != outlineBeforeUpdate.length){
-			makeCardStateEqual()
-		}
-
 	for (num = start; num < end; num ++) {
 
 		currentItem = outline[num]
 
 		//first creating a FAUX ACT if doc does not start with a level 1 section
-			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1 || outline[num].sceneStart > frontMatter)) {
+			if (num == 0 && (outline[num].typeAsString != "Section" || outline[num].sectionDepth > 1 /*|| outline[num].sceneStart > frontMatter*/)) {
 
 				actLengths[currentAct] = 0
 				currentAct ++
@@ -602,17 +456,16 @@ function divMaker(location, fullupdate){
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level1")
 					sectionDiv.classList.add("isExpanded")
-					// sectionDiv.dataset.line = currentItem.sceneStart
+
 					sectionDiv.dataset.line = 0
-					// sectionDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
 					sectionDiv.dataset.lineEnd = Math.max(currentItem.sceneStart - 1, 0)
+
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = "0"
 
 				let sectionSynConDiv = document.createElement("div")
 					sectionSynConDiv.id = "synopsisFor-1"
 					sectionSynConDiv.classList.add("synopsiscontainer")
-					// sectionSynConDiv.dataset.line = currentItem.sceneStart
 					sectionSynConDiv.dataset.line = 0
 					
 					sectionDiv.appendChild(sectionSynConDiv)
@@ -632,19 +485,11 @@ function divMaker(location, fullupdate){
 				let parentSection = newFlexi
 
 				if(currentItem.sectionDepth == 1){
-					// actLengths[currentAct] = alternatePageNumber
 					actLengths[currentAct] = currentItem.startsOnPage
-
-						let checkback = 1 // check for preceding line break, looking past synopsis/hidden scenes
-						while(outline[num - checkback] && (outline[num - checkback].typeAsString == "Synopse" || outline[num - checkback].omitted)){
-							checkback ++
-						}
-						if (pageBreaks[num - checkback]) actLengths[currentAct] = currentItem.startsOnPage - 1 //correct page number if forced page break
 
 					actIndex[currentAct] = currentItem.sceneStart
 					currentAct ++
-
-					
+			
 				}
 
 				if(currentItem.sectionDepth > 1)lowerLevelNum ++
@@ -659,12 +504,11 @@ function divMaker(location, fullupdate){
 						break
 					}
 				}
-				//below: when there is no initial act, put corresponding stuff inside faux act
-				if(parentSection == newFlexi && outline[num].sectionDepth > 1){
-					parentSection = newFlexi.querySelector(".faux")
-				}
 
-				
+				//below: when there is no initial act, put corresponding stuff inside faux act
+					if(parentSection == newFlexi && outline[num].sectionDepth > 1){
+						parentSection = newFlexi.querySelector(".faux")
+					}		
 			
 				let sectionDiv = document.createElement("div")
 					sectionDiv.id = num.toString()
@@ -675,6 +519,7 @@ function divMaker(location, fullupdate){
 					sectionDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = currentAct
+					sectionDiv.dataset.uuid = currentItem.uuid
 					sectionDiv.draggable = true
 
 					color = currentItem.color
@@ -684,11 +529,9 @@ function divMaker(location, fullupdate){
 
 					if(color){
 						if (color.match(/(#[A-F, 0-9]{6})/i)){
-							// sectionDiv.style.borderLeftColor = color
 							sectionDiv.style.setProperty("--localColor", color)
 						}else{
 							sectionDiv.classList.add(color.toLowerCase())
-							// let localColor = getComputedStyle(document.documentElement).getPropertyValue(`--${color.toLowerCase()}`)
 							sectionDiv.style.setProperty("--localColor", `hsl(var(--${color.toLowerCase()}))`)
 						}
 					}
@@ -697,7 +540,6 @@ function divMaker(location, fullupdate){
 						&&
 						currentItem.sectionDepth == 1){
 						sectionDiv.classList.add("boneyard")
-						//should check that level = 1
 					}
 
 					if(outlineBeforeUpdate && outline.length == outlineBeforeUpdate.length){
@@ -712,30 +554,30 @@ function divMaker(location, fullupdate){
 				let sectionheaderDiv = document.createElement("div")
 					sectionheaderDiv.classList.add("section-heading")
 					sectionheaderDiv.dataset.line = currentItem.sceneStart
-					// if(color){
-					// 	if (color.match(/(#[A-F, 0-9]{6})/i)){
-					// 		sectionheaderDiv.style.backgroundColor = color
-					// 	}else{
-					// 		sectionheaderDiv.classList.add(color.toLowerCase())
-					// 	}
-					// }
 
-					if(currentItem.sectionDepth > 1){
+					if(currentItem.sectionDepth > 0){
 						let sectionarrowDiv = document.createElement("div")
 							sectionarrowDiv.classList.add("sectionArrow")
 							sectionheaderDiv.appendChild(sectionarrowDiv) 
+
+					let infoDiv = document.createElement("div")
+						infoDiv.classList.add("sectionInfoDiv")
+						sectionheaderDiv.appendChild(infoDiv)
 					
 					let pagenumberDiv = document.createElement("div")
 						pagenumberDiv.classList.add("showSectionPageNumber")
-						//pagenumberDiv.innerHTML = "Pg " + Math.max(Math.ceil(alternatePageNumber), 1) + "."
 						pagenumberDiv.innerHTML = "Pg " + Math.max(Math.floor(currentItem.startsOnPage), 1) + "."
 
-					sectionheaderDiv.appendChild(pagenumberDiv)
+					let sectionLengthDiv = document.createElement("div")
+						sectionLengthDiv.classList.add("sectionLengths")
+						sectionLengthDiv.innerHTML = "(--)"
+
+					infoDiv.appendChild(pagenumberDiv)
+					// pagenumberDiv.appendChild(sectionLengthDiv)
+					infoDiv.appendChild(sectionLengthDiv)
 					}
 
-					// if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
-					// if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += (cardStateForSections[lowerLevelNum]? "" : "open, ") + "" + (cardStateForScenes[lowerLevelNum]? "show" : "") + " -- "}
-					if(loggingIsOn && currentItem.sectionDepth > 1){sectionheaderDiv.innerHTML += "#" + outline.indexOf(currentItem)}
+					if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.uuid + " -- "}
 					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "").replace(/</g, "&lt;")
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
@@ -746,15 +588,7 @@ function divMaker(location, fullupdate){
 					sectionSynConDiv.classList.add("noAnimation")
 					sectionSynConDiv.dataset.line = currentItem.sceneStart
 					
-					//sectionSynConDiv.style.backgroundColor = "#bbb"
-					if(color){
-						// if (color.match(/(#[A-F, 0-9]{6})/i)){
-						// 	sectionSynConDiv.style.backgroundColor = color
-						// }else{
-						// 	sectionSynConDiv.style.backgroundColor = ""
-						// 	sectionSynConDiv.classList.add(color.toLowerCase())
-						// }
-					}else if(currentItem.sectionDepth == 1){
+					if(currentItem.sectionDepth == 1){
 						sectionSynConDiv.style.backgroundColor = "transparent"
 					}
 
@@ -766,13 +600,7 @@ function divMaker(location, fullupdate){
 							orphanDiv.dataset.myId = "orphanInside" + num
 							orphanDiv.dataset.line = (currentItem.sceneStart)
 							orphanDiv.dataset.lengthOfScene = currentItem.numberOfPages	
-
-						//FINALLY, this *SHOULD* remove size-related blinkage?
-						//if (areScenesProportional == 1){
-						orphanDiv.style.height = `calc(${currentItem.numberOfPages}px * var(--heightFactor))`
-						//}
 						
-						if(pageBreaks && pageBreaks[num]) addPageBreak(orphanDiv)
 						if(pageDividers[num]) insertDividersIn(orphanDiv)
 						
 						sectionDiv.appendChild(sectionheaderDiv)
@@ -784,8 +612,6 @@ function divMaker(location, fullupdate){
 						sectionDiv.appendChild(sectionheaderDiv)
 						sectionDiv.appendChild(sectionSynConDiv)
 					}
-
-				// if(pageDividers[num]) {insertDividersIn(sectionDiv)} //adding page line for section too
 
 				parentSection.appendChild(sectionDiv)
 
@@ -822,6 +648,7 @@ function divMaker(location, fullupdate){
 					if (currentItem.omitted == 1){
 						sceneDiv.classList.add("isOmitted")
 					}
+					sceneDiv.dataset.uuid = currentItem.uuid
 					sceneDiv.dataset.line = currentItem.sceneStart
 					sceneDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
 					sceneDiv.dataset.lengthOfScene = currentItem.numberOfPages
@@ -843,10 +670,6 @@ function divMaker(location, fullupdate){
 							sceneDiv.style.setProperty("--localColor", `hsl(var(--${color.toLowerCase()}))`)
 						}
 					}
-					//FINALLY, this *SHOULD* remove size-related blinkage?
-					if (areScenesProportional == 1){
-						sceneDiv.style.height = `calc(${currentItem.numberOfPages}px * var(--heightFactor))`
-					}
 
 					let ii = 1
 					while(outline[num-ii] && outline[num - ii].typeAsString == "Synopse"){ii++}
@@ -858,8 +681,8 @@ function divMaker(location, fullupdate){
 
 				let sceneheadingDiv = document.createElement("div")
 					sceneheadingDiv.classList.add("sceneheading")
-					if ($id(num) && $id(num).classList.contains("hideSlugIfSmall")){
-						sceneDiv.classList.add("hideSlugIfSmall")
+					if ($id(num) && $id(num).classList.contains("sluglineIsHidden")){
+						sceneDiv.classList.add("sluglineIsHidden")
 					}
 					sceneheadingDiv.dataset.line = currentItem.sceneStart
 					if(color){
@@ -874,9 +697,6 @@ function divMaker(location, fullupdate){
 				let pageCountSpan = document.createElement("SPAN")
 					pageCountSpan.innerHTML = numberIntoEights(currentItem.numberOfPages)
 					pageCountSpan.classList.add("showSceneLength")
-						if(pageBreaks && pageBreaks[num]){
-							pageCountSpan.innerHTML = numberIntoEights(pageBreaks[num]) //shows ACTUAL length, without blankness
-						}
 
 					sceneheadingDiv.appendChild(pageCountSpan)
 
@@ -885,57 +705,55 @@ function divMaker(location, fullupdate){
 					sceneSynConDiv.classList.add("synopsiscontainer")
 					sceneSynConDiv.dataset.line = currentItem.sceneStart
 
-					// if(color){
-					// 	if (color.match(/(#[A-F, 0-9]{6})/i)){
-					// 		sceneSynConDiv.style.backgroundColor = color
-					// 	}else{
-					// 		sceneSynConDiv.classList.add(color.toLowerCase())
-					// 	}
-					// // }else{
-					// // 	sectionSynConDiv.style.backgroundColor = "#bbb"
-					// }
-
 				sceneheadingDiv.innerHTML += "<span class='slugtext'>"
 					// if(loggingIsOn){sceneheadingDiv.innerHTML += currentItem.sceneStart + ", " + currentItem.sceneEnd + " -- "}
 					if(loggingIsOn){sceneheadingDiv.innerHTML += "#" + outline.indexOf(currentItem)}
-				//if(pageBreaks[num]) sceneheadingDiv.innerHTML += pageBreaks[num] + " ... "
-				// sceneheadingDiv.innerHTML += "pg. " + currentItem.startsOnPage + " -- "
 				sceneheadingDiv.innerHTML += currentItem.stringForDisplay.toUpperCase().replace(/</g, "&lt;") + "</span>"
 				sceneDiv.appendChild(sceneheadingDiv)
 				sceneDiv.appendChild(sceneSynConDiv)
 
-			if(pageBreaks && pageBreaks[num])addPageBreak(sceneDiv)
+			if(currentItem.breakLines.length > 0) { addPageBreak(sceneDiv) }
 
 				function addPageBreak(whereToAdd){
 
-					blankDiv = document.createElement("div")
-					blankDiv.id = "blankPageFor" + num
-					blankDiv.classList.add("blankPage")
-					
-					blankDiv.style.top = 100 * pageBreaks[num]/currentItem.numberOfPages + "%"
-					blankDiv.style.height =  100.5 - (100 * pageBreaks[num]/currentItem.numberOfPages) + "%"
-						let nextActualScene = 1
+					for (breakLine of currentItem.breakLines){
+
+					let blankDiv = document.createElement("div")
+						blankDiv.id = "blankPageFor" + num + "_" + currentItem.breakLines.indexOf(breakLine)
+						blankDiv.classList.add("blankPage")
+
+					let distanceToPageBreak = 100 * (breakLine.startPageIncFraction - currentItem.startsOnPage - currentItem.positionOnPage) / (currentItem.numberOfPages)
+						blankDiv.style.top = distanceToPageBreak + "%"
+
+					let nextPageBeginsAt = (breakLine.fullpage + 1) - (currentItem.startsOnPage + currentItem.positionOnPage)
+					let nextPageIsThisFarIn = 100 * nextPageBeginsAt / currentItem.numberOfPages
+					let distanceToNextPageTop = nextPageIsThisFarIn - distanceToPageBreak
+
+						blankDiv.style.height =  distanceToNextPageTop + "%"
+
+					let nextActualScene = 1
 						while(outline[num + nextActualScene] && outline[num + nextActualScene].typeAsString == "Synopse"){nextActualScene ++}
-					blankDiv.dataset.line = outline[num + nextActualScene]?.sceneStart - 4
+					blankDiv.dataset.line = breakLine.pageBreakIndex 
 					blankDiv.dataset.length = outline[num + nextActualScene]?.sceneStart - 1
 
 					whereToAdd.appendChild(blankDiv)
 
+					}
 				}
 
 			if(pageDividers[num]) {insertDividersIn(sceneDiv)}
 
 				function insertDividersIn(whereToAdd){
 
-					for (let p = 0; p < pageDividers[num].length - (pageBreaks[num] ? 1 : 0); p++){
+					for (let p = 0; p < pageDividers[num].length; p++){
 
-						let reduceFirstScene = newFlexi.querySelector(".scene, .orphan") ? 0 : 1 //or else first pg number is 2...
+						let reduceWhenFromTop = currentItem.positionOnPage == 0 ? 1 : 0 //or else scene starts one number too high
 						let approxBreakPos = currentItem.sceneStart + ((currentItem.sceneEnd - currentItem.sceneStart) * pageDividers[num][p]/currentItem.numberOfPages) 
 
 						let divider = document.createElement("div")
 							divider.id = "divider" + num + "-" + p
 							divider.classList.add("pageDivider")
-							divider.innerHTML = Math.trunc(currentItem.startsOnPage + 1 + p - reduceFirstScene)
+							divider.innerHTML = Math.trunc(currentItem.startsOnPage + 1 + p - reduceWhenFromTop)
 							divider.dataset.line = approxBreakPos
 
 							divider.style.top = 100 * pageDividers[num][p]/currentItem.numberOfPages + "%"
@@ -957,7 +775,9 @@ function divMaker(location, fullupdate){
 
 			case "Synopse":
 
-				synopsisMaker(currentItem) //this will put synopsis into place for versions pre 1.977
+				synopsisMaker(currentItem) 
+				// This switch will put synopsis in place for Beat versions pre 1.977, which may or may not be too old to run FTOutliner anyway. 
+				// For later versions, the following synopsisMaker function will be called from inside scene and section makers
 
 				function synopsisMaker(currentItem){
 
@@ -972,15 +792,23 @@ function divMaker(location, fullupdate){
 							synopsisDiv.dataset.synopsisNumber = synopsisNumber
 							synopsisDiv.id = "s" + num + "_" + (('000'+synopsisNumber).slice(-3)) // synopsisNumber
 						}
+					synopsisDiv.dataset.uuid = currentItem.uuid
 					synopsisDiv.innerText = currentItem.stringForDisplay 
 					synopsisDiv.classList.add("synopsis")
 					synopsisDiv.dataset.sceneNumber = currentItem.sceneNumber //necessary?
 					synopsisDiv.dataset.line = (synopsisNumber !== false) ? outline[num].synopsis[synopsisNumber].position : currentItem.sceneStart
 					synopsisDiv.dataset.lineEnd = (synopsisNumber !== false) ? outline[num].synopsis[synopsisNumber].position + outline[num].synopsis[synopsisNumber].range.length : currentItem.sceneEnd
 					synopsisDiv.draggable = true
+
+					//Trying to catch Beat bug with left-over synopsis:
+						//thisLine = lines.filter(line => line.uuid == currentItem.uuid)[0]
+						// if (!thisLine || thisLine.typeAsString != "Synopse") return 
+							//next two lines are for bug tracking purposes, if the previous line is turned off:
+								// if (!thisLine) synopsisDiv.style.outline = "2px solid hotpink"
+								// if (thisLine && thisLine.typeAsString != "Synopse") synopsisDiv.style.outline = "2px solid cyan"
 					
 					color = currentItem.color
-						if (color.includes("]") || color.includes('[') || color.split(" ").length > 1){
+						if (color?.includes("]") || color?.includes('[') || color?.split(" ").length > 1){
 							color = color.replace(/(\]|\[|\s).*/, "")
 						}
 						if(color){
@@ -1008,99 +836,191 @@ function divMaker(location, fullupdate){
 		for (i = 0; i < allActs.length - 1; i++){
 				allActs[i].classList.remove("boneyard")
 			}		
+	
+	//add a temporary copy of notes etc to avoid blinkage
+		if(flexiContainer.querySelectorAll(".faux, .section, .scene, .orphanText")?.length == newFlexi.querySelectorAll(".faux, .section, .scene, .orphanText")?.length){
+			$$(".noteContainer, .marker, .review, .beat, .displayNumberOf").forEach(thingToPutBack => {
+					let parentId = thingToPutBack.parentNode.dataset.myId || thingToPutBack.parentNode.id
+					let placeToPut = newFlexi.querySelector(`[data-my-id = "${parentId}"]`) || newFlexi
+						placeToPut.appendChild(thingToPutBack.cloneNode(true))
+			})
+		}
 
-	// //save all speechbubbles
-	// currentBubbles = ($$(".displayNumberOf"))
+	//in case of dialog filtering going on, transfer what scenes are dimmed to avoid blinkage
+		if($id("dialogsearch")?.value) {
+			$$(".scene").forEach(scene => {
+				let myId = scene.dataset.myId
+				let newScene = newFlexi.querySelector(`[data-my-id = "${myId}"]`)
+			
+				if(newScene){ 
+					if(scene.classList.contains("dimmedScene")) newScene.classList.add("dimmedScene")
+				}
+			})
+		}
+
+	//transfer any selections made in the outgoing outline to the new
+		let selections = $$(".isSelected")
+		for (let selection of selections){
+			let uuid = selection.dataset.uuid
+			let newSelection = newFlexi.querySelector(`[data-uuid = "${uuid}"]`)
+			if(newSelection){
+				newSelection.classList.add("isSelected")
+			}
+		}
+
+	// recalling cardstates by UUID: 
+	// 1. If outline already drawn, use existing values, 
+	// 2. if not, use saved settings,
+	// 3. if not in saved settings either, then default to all expanded, 
+	let newSections = newFlexi.querySelectorAll(".section")
+		for (let section of newSections){
+			let uuid = section.dataset.uuid
+			let oldSection = flexiContainer.querySelector(`[data-uuid = "${uuid}"]`)
+			if(oldSection){
+				["isExpanded", "collapsedSection", "wider"].forEach(className => {
+					section.classList.toggle(className, oldSection.classList.contains(className))
+				})
+			}else{ //this should only happen on first draw
+				savedValue = cardState.find(card => card.uuid == uuid) || {isExpanded: true, collapsedSection: false, wider: false};
+				["isExpanded", "collapsedSection"].forEach(className => { //removed ".wider" bc no reason to widen anything on first draw
+					section.classList.toggle(className, savedValue[className])
+				})				
+			}
+		}
+
+	newFlexi.querySelectorAll(".scene").forEach(
+		scene => colorByPercentageInstead(scene)
+	)
 	
-	//add a temporary copy of notes etc to avoid blinkage bc showing nothing until updating to current truth
-	if(flexiContainer.querySelectorAll(".faux, .section, .scene, .orphanText")?.length == newFlexi.querySelectorAll(".faux, .section, .scene, .orphanText")?.length){
-		$$(".noteContainer, .marker, .review, .beat, .displayNumberOf").forEach(thingToPutBack => {
-				let parentId = thingToPutBack.parentNode.dataset.myId || thingToPutBack.parentNode.id
-				let placeToPut = newFlexi.querySelector(`[data-my-id = "${parentId}"]`) || newFlexi
-					placeToPut.appendChild(thingToPutBack)
-		})
-	}
-	
+	//=============================================
 	//THE BIG ONE: REPLACE OLD OUTLINE WITH THE NEW
+	//=============================================
+	let classesBefore = JSON.stringify(Array.from(flexiContainer.classList))
 	$id("flexiContainer").innerHTML = newFlexi.innerHTML
+	let classesAfter = JSON.stringify(Array.from(flexiContainer.classList))
 
-	// //insert bubbles 
-	// currentBubbles.forEach(bubble => {
-	// 	console.log(bubble.dataset.parentId)
-	// 	$id(bubble.dataset.parentId)?.appendChild(bubble)
-	// })
-		
-	//re-enabled this because why not?
-	if(indexCardMode || areScenesProportional != 1){
-		recallCardState()
-	}
+	//post-adding fixes:
 
-	actLengths.push(Math.floor(currentItem.startsOnPage + currentItem.numberOfPages)) // adding the last page number after the fact
+	actLengths.push(Array.from($$(".pageDivider")).at(-1)?.innerText) // takes the number from the last visible divider and adds to actLengths
 	actIndex.push(currentItem.sceneEnd)  // index for last page number
 	
 	let allActPages = $$(".showActLength")
 	for (let i = 0; i < allActPages.length; i++){
-		allActPages[i].innerHTML = "Pg " + Math.trunc(actLengths[i + 1]) + "."
+
+		let thisactlength = Array.from(allActPages[i]?.parentElement?.querySelectorAll(".pageDivider"))?.at(-1)?.innerText
+							||
+							allActPages[i-1]?.dataset.pageNumber // when no new line breaks in this act
+							||
+							1 // when no new line breaks anywhere
+
+		allActPages[i].innerHTML = `Pg ${thisactlength}.`
 		allActPages[i].dataset.line = actIndex[i+1]
+		allActPages[i].dataset.pageNumber = thisactlength	
 	}
+
+	mylog("after act lengths")
 
 	recalculateHeights()
 	reevaluateColorContrast()
+	updateAllSectionPageCounts()
 
 }
 
+function updateAllSectionPageCounts(){
+
+	let accumulatedPages = 0
+	let allSections = Array.from($$(".section"))
+
+	$$(".section").forEach(section =>{
+
+		accumulatedPages = 0
+
+		section.querySelectorAll(".scene, .orphanText").forEach(element => {
+			accumulatedPages += Number(element.dataset.lengthOfScene) || 0
+		})
+
+		if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
+	})
+
+	//after the loop, add last accumulation to last section:
+	if (allSections.at(-1).querySelector(".sectionLengths")) {
+		allSections.at(-1).querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
+	}
+
+}
+
+
 function __________OUTLINE_GRAPHICS(){}
 
-function reevaluateColorContrast(){
-
+function colorByPercentageInstead(element){
 	mylog()
 
-	if(!invertTextOnDark) return
+	if(!documentSetting.colorByPercentage) return
 
+	//let percentage = 100 * (scene.dataset.line - 1) / absoluteTextLength
+
+	let scene = outline.find(scene => scene.uuid == element.dataset.uuid)
+	let percentageNote = scene?.notes?.find(note => note.content.includes("%"))
+
+	let color = "white"
+
+	if (percentageNote){
+
+		let percentage = Number(percentageNote.content.match(/(\d+)%/)?.[1]) * 1.2 //because 120° is green on the color wheel 
+
+		color = `hsl(${percentage}, 100%, 50%)`
+	}
+
+	element.style.setProperty("--localColor", color)
+
+}
+
+function reevaluateColorContrast(){
+	mylog()
+
+	if(!userDefault.invertTextOnDark) {
+		$$(".scene, .sceneheading, .section, .section-heading, .synopsis" ).forEach(item => item.style.color = "")	
+		return
+	}
+
+	let hoveredObjects = $$(".scene:hover, .section:hover")
+		hoveredObjects.forEach(obj => {obj.classList.add("noHover")})
+	let selectedObjects = Array.from($$(".isSelected"))
+		selectedObjects.forEach(obj => {obj.classList.remove(".isSelected")})
 	let redraw = $id("flexiContainer").getBoundingClientRect() // trigger redraw to paint all elements correctly first
 
-	allItems = $$(".sceneheading")
-
-	mylog("1")
+	allItems = $$(".sceneheading, .synopsis")
 	
 	for (let item of allItems){
-		let styles = window.getComputedStyle(item.parentNode)
+		let styles = window.getComputedStyle(item.closest(".synopsis, .scene, .flexiContainer"))
 		let $rgb = makeRGB(styles.backgroundColor)
 		$rgb = $rgb.replace("rgb(", "").replace(")", "").split(",")
-		// if ($rgb.length != 3) {continue}
 		let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
 		item.style.color = (blackOrWhite > 128) ? "black" : "white"
 		item.style.fill = (blackOrWhite > 128) ? "black" : "white"
 	}
 	
 	allItems = $$(".section-heading:not(.level1 > .section-heading)")
-	
-	mylog("2")
-	
+		
 	for (let item of allItems){
 		let styles = window.getComputedStyle(item)
 		let $rgb = makeRGB(styles.backgroundColor)
 		$rgb = $rgb.replace("rgb(", "").replace(")", "").split(",")
-		// if ($rgb.length != 3) {continue}
 		let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
 		item.style.color = (blackOrWhite > 128) ? "black" : "white"
 	}
 	
 	allItems = $$(".synopsis")
-	
-	mylog("3")
-	
+		
 	for (let item of allItems){
 		let styles = window.getComputedStyle(item)
 		let $rgb
 		if(styles.backgroundColor && styles.backgroundColor != "rgba(0, 0, 0, 0)"){
 			$rgb = makeRGB(styles.backgroundColor)
 		}else{
-			// let parentItem = item.closest(".synopsiscontainer")
-			// if (!parentItem){parentItem = item.closest(".scene")}
 			let parentItem = item.closest(".scene")
-			if (!parentItem && indexCardMode){parentItem = item.closest(".section")?.querySelector(".section-heading")}
-			if (!parentItem && !indexCardMode){parentItem = item.closest(".level1")}
+			if (!parentItem && documentSetting.indexCardMode){parentItem = item.closest(".section")?.querySelector(".section-heading")}
+			if (!parentItem && !documentSetting.indexCardMode){parentItem = item.closest(".level1")}
 			if (!parentItem)return
 			styles = window.getComputedStyle(parentItem)
 			$rgb = makeRGB(styles.backgroundColor)
@@ -1110,16 +1030,15 @@ function reevaluateColorContrast(){
 			let blackOrWhite = $rgb[0] * 0.299 + $rgb[1] * 0.587 + $rgb[2] * 0.114;
 			item.style.color = (blackOrWhite > 128) ? "black" : "white"
 
-			// item.innerHTML = styles.backgroundColor + ((blackOrWhite > 128) ? "black" : "white") + item.innerHTML
 	}
 
+	hoveredObjects.forEach(obj => {obj.classList.remove("noHover")})
+	selectedObjects.forEach(obj => {obj.classList.add(".isSelected")})
 	mylog("exiting")
 
 }
 
 function blackOrWhite(rgb){
-
-	// if(!rgb.startsWith("rgb"))return null
 
 	let $rgb = rgb.replace("rgb(", "").replace(")", "").split(",")
 		
@@ -1135,7 +1054,7 @@ function makeRGB(color){
 
 	if (color == "" || color.substring(0,1) != "#") {return color}
 
-    // This is simples because we know that every values is two 
+    // This is simple because we know that every values is two 
     // hexadecimal digits.
     	rgbColors[0]=color.substring(1, 3)  // redValue
     	rgbColors[1]=color.substring(3, 5)  // greenValue
@@ -1152,73 +1071,47 @@ function makeRGB(color){
 
 }
 
-function recalculatePages(){
+function findPageDividers() {
 
 	mylog()
-	
-	let startsOnPage = 1
-	let elementNumber = 0
-	let firstObjectWithDivider = true
 
+	if(!outline || outline.length == 0) return
+
+	let scenesOnly = outline.filter(scene => {if(scene.typeAsString == "Heading") return scene})
 		pageDividers = []
 
-	for (line in outline){
-		let currentLine = outline[line]
+	for (let i = 0; i < outline.length; i++) {
 
-			//redesigned condition that only omitted scenes do not get added to page count (and synopse for good mesaure)
-			//if((currentLine.typeAsString != "Heading" && currentLine.typeAsString != "Synopse") || currentLine.omitted == true){
-			if((currentLine.typeAsString == "Synopse") || currentLine.omitted == true || currentLine.titlePage){
-				outline[elementNumber].startsOnPage = startsOnPage
-				outline[elementNumber].numberOfPages = 0 
-				elementNumber ++
-			 	continue
+		const scene = outline[i]
+		const previousScene = outline[i - 1] || null
+		const nextScene = scenesOnly[scenesOnly.indexOf(outline[i]) + 1] || null
+		// const nextScene = outline[i + 1] || null
+
+		let absolutePos = scene.startsOnPage + scene.positionOnPage
+
+		// Make sure omitted scenes do not get added to page count
+			if (scene.omitted == true) {
+				outline[i].numberOfPages = 0.0
+				continue
 			}
-	
-		outline[elementNumber].startsOnPage = startsOnPage 
-		outline[elementNumber].numberOfPages = pages[elementNumber]
-
-				//temporarily adding this here instead of after
-					//subsequently moved this into .beatPlugin code instead
-				//let extraLineForHeadings = (currentLine.typeAsString == "Heading" && !pageBreaks[elementNumber]) ? 2/58 : 0
-				//	startsOnPage += extraLineForHeadings
-
-				if(pageBreaks && pageBreaks[elementNumber]) {
-
-					let whereThisSceneEnds = Math.ceil(startsOnPage + pageBreaks[elementNumber])
-					let thisScenesLength = whereThisSceneEnds - startsOnPage
-					
-					outline[elementNumber].numberOfPages = thisScenesLength // in order to hit a full page
-					
-				}
-
-				//let's try to add page dividers
-				if (pages[elementNumber] > 0 &&
-					(Math.trunc(startsOnPage + outline[elementNumber].numberOfPages) >= Math.trunc(startsOnPage) ||
-					outline[elementNumber].startsOnPage > Math.ceil(outline[elementNumber - 1]?.startsOnPage + outline[elementNumber - 1]?.numberOfPages)  ||
-					firstObjectWithDivider)
-					){
-							
-					//this adds the PG1 line to the first object with a length:
-					let numberOfDividers = Math.trunc(startsOnPage + outline[elementNumber].numberOfPages) - Math.trunc(startsOnPage)
-						if (firstObjectWithDivider){ numberOfDividers ++ }
-						pageDividers[elementNumber] = []
-
-					for (let i = 0; i < numberOfDividers; i++){
-
-						let lengthToDivider = Math.ceil(startsOnPage) - startsOnPage + i
-						pageDividers[elementNumber].push(lengthToDivider)
-
-					}
-					firstObjectWithDivider = false
-				}
-
-				//This is now put BEFORE the divider-adder, so moved away from here
-				//let extraLineForHeadings = (currentLine.typeAsString == "Heading" && !pageBreaks[elementNumber]) ? 2/58 : 0
 		
-		//In prep for next round -- this is where next scene will start.
-		startsOnPage += outline[elementNumber].numberOfPages // + extraLineForHeadings
+		// Finally add all dividers: 
+			let numberOfDividers = ((nextScene?.startsOnPage - scene.startsOnPage 
+									- (nextScene?.positionOnPage == 0 ? 1 : 0 ) // remove divider that should belong to next scene
+									|| Math.floor(scene.positionOnPage + scene.numberOfPages)) // accounts for final scene of script which has no next
+									+ (scene.positionOnPage == 0 ? 1 : 0)) 		// add divider if scene starts at top of page
 
-		elementNumber ++
+			if (numberOfDividers > 0){
+			
+				pageDividers[i] = []
+
+				for (let j = 0; j < numberOfDividers; j++) {
+
+					let lengthToDivider = Math.ceil(absolutePos) - absolutePos + j
+					pageDividers[i].push(lengthToDivider)
+
+				}	
+			}
 	}
 }
 
@@ -1243,13 +1136,13 @@ function recalculateHeights(wherefrom){
 
 	let allScenes = $$(".scene, .orphanText")
 	let allSections = $$(".section")
-	let allActs = $$(".level1")
+	let allActs = $$(".level1:not(.boneyard)")
 	
 	if ((allScenes.length == 0 && allSections.length == 0) || !outline || outline.length == 0){
 		mylog("returns from recalculateHeights because no scenes and no sections")
 		return} 
 
-	if (indexCardMode) {
+	if (documentSetting.indexCardMode) {
 		mylog("indexCardMode was discovered so fine.")
 		let referenceForWidth = allSections[0]
 		let referenceForHeight = 0
@@ -1264,7 +1157,7 @@ function recalculateHeights(wherefrom){
 		if(theIndicator){theIndicator.style.top = "calc(16px * var(--fontSizeFactor))"}
 
 		//then set height of act lanes
-		if (oneColumnOutline == 0){
+		if (!documentSetting.oneColumnOutline){
 			for (act of allActs){
 				referenceForHeight = Math.max(referenceForHeight, Number(act.getBoundingClientRect().bottom) - Number(act.getBoundingClientRect().top))
 				}
@@ -1274,7 +1167,7 @@ function recalculateHeights(wherefrom){
 		return
 	}
 
-	if(areScenesProportional != 1){ //would be better if this were a class instead! 
+	if(!documentSetting.scenesAreProportional){ //would be better if this were a class instead! 
 				
 		if(theIndicator){
 			let a = getComputedStyle(theRoot).getPropertyValue('--fixedHeight')
@@ -1311,10 +1204,7 @@ function recalculateHeights(wherefrom){
 			for (scn of scenesInAct){
 
 				sceneHeightForAct += Number(scn.dataset.lengthOfScene)
-				
-				// the following will produce undexpected results after a while -- bug in webkit?
-				// scn.style.height = "calc(" + scn.dataset.lengthOfScene + "px * var(--heightFactor)" //scn.dataset.lengthOfScene
-				
+								
 				scn.style.minHeight = ""
 				scn.style.setProperty("--flexibleHeight", scn.dataset.lengthOfScene + "px")
 
@@ -1331,7 +1221,7 @@ function recalculateHeights(wherefrom){
 	
 	let windowHeight = $id('flexiContainer').getBoundingClientRect().height
 
-	let spaceToBreatheAndForPageNumbers = 80
+	let spaceToBreatheAndForPageNumbers = 40 //was 80 before removing margins
 	let newSpaceToDistribute = windowHeight - spaceToBreatheAndForPageNumbers
 
 		unDistributableHeight = windowHeight - newSpaceToDistribute //only used for exporting
@@ -1340,8 +1230,10 @@ function recalculateHeights(wherefrom){
 	let sectionsHaveMoreSpace = (newSpaceToDistribute - (theMostSections) - newSceneHeights[whichActHasMostSections]) / newSceneHeights[whichActHasMostSections]
 	
 	let heightFactor =  Math.min(scenesHaveMoreSpace, sectionsHaveMoreSpace)
-		paperHeightFactor = 72 * (29.7 / 2.54) * heightFactor / (windowHeight - 200) //was-160, and before that -120 
+		paperHeightFactor = 72 * (29.7 / 2.54) * heightFactor / (windowHeight - 260) //was-160, and before that -120 
 		theRoot.style.setProperty('--heightFactor', heightFactor);
+		theRoot.style.setProperty('--paperHeightFactor', paperHeightFactor);
+	
 		mylog("HeightFactor, NEW VALUE: " + heightFactor + "")
 		
 		setTimeout(hideSlugFor, 150)
@@ -1368,7 +1260,7 @@ function positionTheIndicator(){
 		theIndicatorPercentage = Number(theIndicator.getAttribute('data-percentageIntoScene'));
 
 			// let theIndicatorParentHeight = Number(parseInt(window.getComputedStyle(theIndicator.parentNode).getPropertyValue("height")));
-			let theIndicatorParentHeight = parseInt(theIndicator.parentNode.getBoundingClientRect().height);
+			let theIndicatorParentHeight = parseInt(theIndicator.parentNode.getBoundingClientRect().height) - 2.5;
 			let theIndicatorPosition = theIndicatorParentHeight * theIndicatorPercentage
 			if (theIndicatorPercentage == -1) {theIndicatorPosition = 11 * currentZoomLevel}
 			theIndicator.style.top = theIndicatorPosition + "px"
@@ -1388,32 +1280,20 @@ function positionTheIndicator(){
 
 function hideSlugFor(entries){
 	
-	if (indexCardMode || $id("flexiContainer").classList.contains("nonProportionalMode")) {return}
-
-	//don't think i will go back to resizeobserver, so "entries" will probably never be passed here.
+	if (documentSetting.indexCardMode || $id("flexiContainer").classList.contains("nonProportionalMode")) {
+		$$(".sluglineIsHidden").forEach(item => {item.classList.remove("sluglineIsHidden")})
+		$$(".animateOpacity").forEach(item => {item.classList.remove("animateOpacity")})
+		return
+	}
 	
-		// if(entries){
-		// 	for (let entry of entries){
-		// 		if (Number(entry.contentRect.height) < (10.5 * currentZoomLevel)){
-		// 			entry.target.classList.add("hideSlugIfSmall")
-		// 		}else{
-		// 			entry.target.classList.remove("hideSlugIfSmall")
-		// 		}
-		// 	}
-		// }else{
+	$$(".scene").forEach(scene => {
+		
+		let trueOrFalse = (Number(scene.getBoundingClientRect().height) < (11.5 * currentZoomLevel))
 
-		let scenes = $$(".scene")
-			
-			for (let scene of scenes){
-			
-			if (Number(scene.getBoundingClientRect().height) < (11.5 * currentZoomLevel)){
-				scene.classList.add("animateOpacity")
-				scene.classList.add("hideSlugIfSmall")
-			}else{
-				scene.classList.remove("hideSlugIfSmall")
-			}
-		}
-	// }
+			scene.classList.toggle("animateOpacity", trueOrFalse)
+			scene.classList.toggle("sluglineIsHidden", trueOrFalse)
+		
+	})
 }
 
 function youAreHere(location, length, positionChangeOnly){
@@ -1443,13 +1323,10 @@ function youAreHere(location, length, positionChangeOnly){
 		if (outline[whichSceneAreWeIn].typeAsString != "Synopse"){
 			currentParentScroll = false
 		}
-		while(outline[whichSceneAreWeIn].typeAsString == "Synopse"){
+		while(outline[whichSceneAreWeIn].omitted && documentSetting.scenesAreProportional){
 			whichSceneAreWeIn--
 			if(whichSceneAreWeIn < 0){whichSceneAreWeIn = 0; break}
 		}
-		if(outline[whichSceneAreWeIn].omitted == 1 && areScenesProportional == 1) {
-			return
-		}	
 
 		mylog("we are in... " + whichSceneAreWeIn)
 		
@@ -1474,10 +1351,10 @@ function youAreHere(location, length, positionChangeOnly){
 		
 	var percentageIntoScene = (location - thisScenesBeginning) / (thisScenesEnd - thisScenesBeginning); // must also fix end position in plugin before delivering JSON
 	
-		if (pageBreaks[whichSceneAreWeIn]){
+		// killed // if (pageBreaks[whichSceneAreWeIn]){
 
-			percentageIntoScene = percentageIntoScene * pageBreaks[whichSceneAreWeIn]/outline[whichSceneAreWeIn].numberOfPages
-		}
+		// 	percentageIntoScene = percentageIntoScene * pageBreaks[whichSceneAreWeIn]/outline[whichSceneAreWeIn].numberOfPages
+		// }
 
 		if(!outline[whichSceneAreWeIn].sceneNumber || outline[whichSceneAreWeIn].typeAsString == "Section"){
 			
@@ -1487,7 +1364,7 @@ function youAreHere(location, length, positionChangeOnly){
 			if (outline[whichSceneAreWeIn].typeAsString == "Section"
 			&& outline[whichSceneAreWeIn].numberOfPages > 0 
 			&& location > thisScenesBeginning + outline[whichSceneAreWeIn].line.string.length
-			&& areScenesProportional == 1){
+			&& documentSetting.scenesAreProportional){
 
 				if(outline[whichSceneAreWeIn + 1]){//for all orphan texts that does not end the document
 
@@ -1526,6 +1403,7 @@ function youAreHere(location, length, positionChangeOnly){
 		let theIndicatorDiv = document.createElement("div")
 			theIndicatorDiv.id = "youAreHere"
 			theIndicatorDiv.classList.add("indicator")
+			theIndicatorDiv.dataset.location = location
 			theIndicatorDiv.setAttribute("data-percentageIntoScene", percentageIntoScene)
 			theIndicatorDiv.setAttribute("data-outlineElementCount", whichSceneAreWeIn)
 			theIndicatorDiv.setAttribute("data-theSceneNumber", whichSceneNumberAreWeIn)
@@ -1561,22 +1439,264 @@ function numberIntoEights(theNumber) {
 
 function __________UI_RELATED_STUFF (){}
 
+function getSettings(){
+
+	mylog()
+
+	//TODO: The problem here is that values that are note stored already will be undefined.
+	// We need to check for that and set defaults instead.
+
+	//Step 1: getting User Defaults
+	Beat.callAndWait(() => {
+        let ftoutlinerObject = Beat.getUserDefault("ftoutlinerObject")
+        	return(ftoutlinerObject)
+    	})
+    	.then(
+			response => { 
+				Object.assign( userDefault, JSON.parse(response) )
+				getDocumentSettings() //brings us to step two
+			},
+        	error => { 
+				console.log("Error retrieving userDefault") 
+			}
+    )
+
+	//Step 2: getting Document Settings
+		function getDocumentSettings(){	
+			Beat.callAndWait(() => {
+				let ftoutlinerObject = Beat.getDocumentSetting("ftoutlinerObject")
+				return ftoutlinerObject
+				})
+				.then(
+					response => { 
+						Object.assign( documentSetting, JSON.parse(response))
+						applySettings()
+					},
+					error => { console.log("Error retrieving documentSetting") }
+			)
+		}
+
+	//no more code can go here because of synchronicity!
+
+}
+
+
+function applySettings(){
+
+	//TODO: Check to see that all defaults are really present here!
+
+
+	let knownDocumentSettingDefaults = {
+		scenesAreProportional: true,
+
+		showSynopsisInScenes: false, 
+		showPageDividers: false, 
+		notesAreDisplayed: false,
+		markersAreDisplayed: false,
+		beatsAreDisplayed: false,
+		reviewsAreDisplayed: false,
+		allowMarkerTextInAllViews: false,
+		colorByPercentage: false,
+
+	//tracking settings
+		trackingIncludesSynopsis: true,
+
+	//Advanced Settings
+		showMultipleSceneLines: false, 
+		showMultipleSectionLines: false, 
+		allowLowerCaseSections: false, 
+		showLengthsInSections: false, 
+		showSelectionInfo: false,
+		showRevisions: false,
+
+	//indexCard Stuff
+		showLengths: "none", 
+		showNumbers: "inline", 
+		showPages: "inline", 
+		oneColumnOutline: false, 
+		currentZoomLevel: 1,
+		
+		indexCardHeight: 5,
+		cardState: [],
+		
+		indexCardMode: false,
+		showVerticals: false, 
+		autoWiden: false, 
+		widenedColumnsGetAutoHeight: false, 
+
+	//UI stuff
+		greyonly: false, 
+		boneyardIsClosed: true, 
+		notepanel: false, 
+		notepanelWidth: "200",
+
+		outdoor: 0,
+		saturation: 50,
+
+		windowSize: {	
+			x: 0, 
+			y: 0, 
+			width: 0, 
+			height: 0
+		},
+
+	}
+
+	let knownUserDefaults = {
+		loggingIsOn: false, 
+		realTimeIsOn: true, 
+		colorScheme: "Beat", 
+		warningsAreOn: true, 
+		invertTextOnDark: true,
+		excludeVoiceOvers: false,
+	}
+
+	Object.keys(knownDocumentSettingDefaults)
+		.filter(key => !(key in documentSetting))
+  		.forEach(key => {
+    		console.log("Didn't find " + key + " in documentSetting, so setting it to default value '" + knownDocumentSettingDefaults[key] + "'.");
+    		documentSetting[key] = knownDocumentSettingDefaults[key];
+  		});
+
+	Object.keys(knownUserDefaults)
+		.filter(key => !(key in userDefault))
+  		.forEach(key => {
+			console.log("Didn't find " + key + " in userDefault, so setting it to default value '" + knownUserDefaults[key] + "'.");
+			userDefault[key] = knownUserDefaults[key];
+  		});
+
+	Object.keys(documentSetting)
+		.filter(key => !(key in knownDocumentSettingDefaults))
+  		.forEach(key => {
+			console.log("Found " + key + " in documentSetting, but it is not a known default. FIX THIS!")
+  		});
+
+	Object.keys(userDefault)
+		.filter(key => !(key in knownUserDefaults))
+  		.forEach(key => {
+			console.log("Found " + key + " in userDefault, but it is not a known default. FIX THIS!")
+  		});
+
+	$id("flexiContainer").classList.toggle("dualSceneLines", documentSetting.showMultipleSceneLines)
+	$id("flexiContainer").classList.toggle("dualSectionLines", documentSetting.showMultipleSectionLines)
+	$id("flexiContainer").classList.toggle("allowLowerCaseSections", documentSetting.allowLowerCaseSections)
+	$id("flexiContainer").classList.toggle("showLengthsInSections", documentSetting.showLengthsInSections)
+	$id("flexiContainer").classList.toggle("allowMarkerTextInAllViews", documentSetting.allowMarkerTextInAllViews)
+	
+	$id("flexiContainer").classList.toggle("showPageDividers", documentSetting.showPageDividers)
+	
+	$id("flexiContainer").classList.toggle("verticals", documentSetting.showVerticals)
+	$id("flexiContainer").classList.toggle("autoWiden", documentSetting.autoWiden)
+	$id("flexiContainer").classList.toggle("widenedColumnsGetAutoHeight", documentSetting.widenedColumnsGetAutoHeight)
+	
+	//RESETTING THE NOTE PANEL
+		$id("flexiContainer").classList.toggle("notepanelIsExpanded", documentSetting.notepanel)
+		$id("notepanel").classList.toggle("expanded", documentSetting.notepanel)
+		theRoot.style.setProperty('--note-panel-width', documentSetting.notepanelWidth + "px")
+	
+	//HIGH CONTRAST STUFF
+		document.documentElement.setAttribute('data-outdoors', documentSetting.outdoor)
+		document.documentElement.style.setProperty('--saturation', documentSetting.saturation + "%")
+		$id("saturationRange").value = documentSetting.saturation
+
+	//DOCUMENT SETTINGS
+
+		//calling toggleProportional will mess up indexCardMode, se setting proportional by hand instead
+		//toggleProportional(documentSetting.scenesAreProportional)
+			flexiContainer.classList.toggle("nonProportionalMode", !documentSetting.scenesAreProportional)
+			document.getElementById("indexCardButton").innerHTML = documentSetting.scenesAreProportional ? outlineIcon : fixedIcon
+
+		//One-column
+			flexiContainer.style.display = documentSetting.oneColumnOutline ? "inline-block" : "flex"
+
+		//notes and such -- will be toggled below, inside toggleIndexCards	
+			notesAreDisplayed = documentSetting.notesAreDisplayed || false
+			markersAreDisplayed = documentSetting.markersAreDisplayed || false
+			beatsAreDisplayed = documentSetting.beatsAreDisplayed || false
+			reviewsAreDisplayed = documentSetting.reviewsAreDisplayed || false
+	
+		// indexCardMode -- now shoitched *twice* because once will reverse setting
+		// Note: The parameter is only used during applySettings to allow setting mode in spite of no elements yet.
+			toggleIndexCardMode(true)
+			toggleIndexCardMode(true)
+
+			toggleShowRevisions(documentSetting.showRevisions)
+
+		//TODO: this one is currently unclear -- aren't they set with defaults above?
+			showSceneLengths = documentSetting.showSceneLengths || "inline"
+			showSceneNumbers = documentSetting.showSceneNumbers || "inline"
+			showPageNumbers = documentSetting.showPageNumbers || "inline"
+			currentZoomLevel = documentSetting.currentZoomLevel || 1
+			indexCardHeight = documentSetting.indexCardHeight || 5
+		
+		
+		
+
+
+		$id("flexiContainer").classList.toggle("greyonly", documentSetting.greyonly)
+		$id("flexiContainer").classList.toggle("showSynopsisInScenes", documentSetting.showSynopsisInScenes)
+		$id("flexiContainer").classList.toggle("boneyardIsClosed", documentSetting.boneyardIsClosed)
+		
+		cardState = documentSetting.cardState || []
+
+		documentName = documentSetting.documentName
+		documentSubName = documentSetting.documentSubName
+		documentAuthor = documentSetting.documentAuthor
+
+//TODO: we should remove these and check boxes on menu opens instead. 
+//we are currently using some checkboxes as reference to what is on and off, but they should rather reflect values in usersettings etc!
+
+	//Apply the correct checkbox states on open:
+
+		for ([key, value] of Object.entries(userDefault)){					
+			let button = document.getElementById("buttonFor-" + key)
+				if(button){ 
+					if(value == true) button.setAttribute("checked", true) 
+				}
+		}
+
+	//Apply the correct checkbox states on open:
+		for ([key, value] of Object.entries(documentSetting)){					
+			let button = document.getElementById("buttonFor-" + key)
+				if(button){ 
+					if(value == true) button.setAttribute("checked", true) 
+				}
+		}
+
+	//NOW EXECUTING SOM STUFF BASED ON THE DEFAULTS WE GOT!
+
+	
+	document.documentElement.setAttribute('data-theme', userDefault.colorScheme)
+
+
+
+		theRoot.style.setProperty('--showSceneLength', showSceneLengths);
+		theRoot.style.setProperty('--showSceneNum', showSceneNumbers);
+		theRoot.style.setProperty('--showPageNum', showPageNumbers);
+		theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
+
+		// Beat.call(
+		// 	`Beat.custom.setWindowSize(${documentSetting.windowSize.x}, ${documentSetting.windowSize.y}, ${documentSetting.windowSize.width}, ${documentSetting.windowSize.height})`
+		// )
+
+		firstRun()
+
+		setAllButtons()
+		recalculateHeights("from applySettings")
+		mylog("DONE getting defaults")
+
+}
 
 function saveCurrentState() {
 	mylog()
 
-	mylog("scenes: " + cardStateForScenes)
-	mylog("sections: " + cardStateForSections)
 	rememberCardState()
-	mylog("scenes: " + cardStateForScenes)
-	mylog("sections: " + cardStateForSections)
 
-	documentSetting = {
-		showProportional: areScenesProportional,
-		showNumbers: whatAreSceneNumbers,
-		showLengths: whatAreSceneLengths,
-		showPages: whatArePageNumbers,
-		oneColumnOutline: oneColumnOutline,
+	Object.assign(documentSetting, {
+		
+		showNumbers: showSceneNumbers,
+		showLengths: showSceneLengths,
+		showPages: showPageNumbers,
 		currentZoomLevel: currentZoomLevel,
 		notepanelWidth: parseInt(getComputedStyle(theRoot).getPropertyValue('--note-panel-width')),
 
@@ -1587,11 +1707,9 @@ function saveCurrentState() {
 		noteButtonPurple: $id("noteButtonPurple")? $id("noteButtonPurple").checked : true,
 		noteButtonReview: $id("noteButtonReview")? $id("noteButtonReview").checked : false,
 
-		indexCardMode: indexCardMode,
 		indexCardHeight: indexCardHeight,
 
-		cardStateForScenes: [...cardStateForScenes],
-		cardStateForSections: [...cardStateForSections],
+		cardState: cardState,
 
 		notesAreDisplayed: notesAreDisplayed,
 		markersAreDisplayed: markersAreDisplayed,
@@ -1604,236 +1722,62 @@ function saveCurrentState() {
 		showMultipleSceneLines: ($id("flexiContainer").classList.contains("dualSceneLines")),
 		showMultipleSectionLines: ($id("flexiContainer").classList.contains("dualSectionLines")),
 		allowLowerCaseSections: ($id("flexiContainer").classList.contains("allowLowerCaseSections")),
-		showVerticals: ($id("flexiContainer").classList.contains("verticals")),
+		showMultiplewLowerCaseSections: ($id("flexiContainer").classList.contains("verticals")),
 		showPageDividers: ($id("flexiContainer").classList.contains("showPageDividers")),
-		showPageDividersAlways: ($id("flexiContainer").classList.contains("always")),
 
-		documentName: (documentName || false),
-		documentSubName: (documentSubName || false),
-		documentAuthor: (documentAuthor || false),
+		// documentName: (documentName || false),
+		// documentSubName: (documentSubName || false),
+		// documentAuthor: (documentAuthor || false),
 
 		boneyardIsClosed: ($id("flexiContainer").classList.contains("boneyardIsClosed")),
 
-		trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis,
+		// Values below this point are self-referencing and thus not needed to be explicitly included
+		// ideally, we should move other values down to this category, by referencing the documentSetting object in the code instead of the variables themselves
+		// such as from above: scenesAreProportinal, showSceneNumbers etc etc.
+			//trackingIncludesSynopsis: documentSetting.trackingIncludesSynopsis,
+			//showRevisions: documentSetting.showRevisions
 
-		showRevisions: documentSetting.showRevisions
-	}
+	})
 
-	mylog("documentSettings done")
+	Object.assign(userDefault, {
 
-	userDefault = {
-		ftoutlinerVersion: userDefault.ftoutlinerVersion,
-		realTimeUpdates: isRealTimeOn,
-		warningsAreOn: warningsAreOn,
-		colorScheme: colorScheme,
-
+		realTimeUpdates: realTimeIsOn,		
 		loggingIsOn: loggingIsOn,
-		invertTextOnDark: invertTextOnDark,
-
-		excludeVoiceOvers: userDefault.excludeVoiceOvers
-	}
-
-	mylog ("now looping all defaults into object")
-
-	
-		for([key, value] of Object.entries(documentSetting)){
-			Beat.call(`Beat.setDocumentSetting('${key}', '${value}')`)
-			mylog(`NOW STORING: ('${key}', '${value}')`)
-		}
 		
-		for([key, value] of Object.entries(userDefault)){
-			Beat.call(`Beat.setUserDefault('${key}', '${value}')`)
-			mylog(`NOW STORING: ('${key}', '${value}')`)
-		}
+		//AGAIN, these are self-referencing and thus not needed to be saved:
+			//colorScheme: colorScheme,
+			// ftoutlinerVersion: userDefault.ftoutlinerVersion,
+			// excludeVoiceOvers: userDefault.excludeVoiceOvers
+
+	})
+
+	// ACTUALLY WRITING THE SETTINGS TO THE DOCUMENT
+
+		userDefaultString = JSON.stringify(userDefault)
+		Beat.call((userDefaultString) => {Beat.setUserDefault("ftoutlinerObject", userDefaultString)}, userDefaultString)
+		documentSettingString = JSON.stringify(documentSetting)
+		Beat.call((documentSettingString) => {Beat.setDocumentSetting("ftoutlinerObject", documentSettingString)}, documentSettingString)
+
+		// if($id("dumpDiv")) $id("dumpDiv").innerHTML = JSON.stringify(documentSetting, null, 2)
 	
-	if(!isFullScreen)Beat.call("Beat.custom.saveWindowSize()")		
+	if(!isFullScreen)Beat.call("Beat.custom.saveWindowSize()")
+	
+	// Logging current classlist of FlexiContainer to dumpDiv
+		if($id("dumpDiv")) $id("dumpDiv").innerHTML = [...flexiContainer.classList].toString().replaceAll(",", "<br>")
+
+		console.log("end of save")
 
 }
 
-function getDefaults(){
-	Beat.log("BELOW SHOULD BE A LIST OF STUFF")
+function toggleDocumentSetting(settingKey){
 
-	for([key,value] of Object.entries(userDefault)){
-		Beat.log(key +": " + value)
-	}
+	let settingValue = documentSetting[settingKey]
+		if (typeof settingValue === "boolean") documentSetting[settingKey] = !settingValue
+		else return
 
-	for([key,value] of Object.entries(documentSetting)){
-		Beat.log(key +": " + value)
-	}
-
-	mylog("Objects retreived")
-
-	//USER DEFAULTS
-
-		loggingIsOn = userDefault.loggingIsOn || false
-		isRealTimeOn = userDefault.isRealTimeOn || 1
-		colorScheme = userDefault.colorScheme || "Beat"
-		Beat.log("colorScheme is " + colorScheme + " because userdef is " + userDefault.colorScheme)
-		warningsAreOn = userDefault.warningsAreOn
-			warningsAreOn = (warningsAreOn == true)
-
-		invertTextOnDark = userDefault.invertTextOnDark || true
-
-	mylog("User defaults done")
-
-	//DOCUMENT SETTINGS
-
-		areScenesProportional = documentSetting.areScenesProportional
-			if(areScenesProportional != "0"){areScenesProportional = 1}
-
-		whatAreSceneLengths = documentSetting.whatAreSceneLengths || "inline"
-		whatAreSceneNumbers = documentSetting.whatAreSceneNumbers || "inline"
-		whatArePageNumbers = documentSetting.whatArePageNumbers || "inline"
-		oneColumnOutline = documentSetting.oneColumnOutline || 0
-		currentZoomLevel = documentSetting.currentZoomLevel || 1
-		if (documentSetting.notepanelWidth) theRoot.style.setProperty('--note-panel-width', documentSetting.notepanelWidth + "px") 
-
-		// if ($(".noteButtons")){
-		// 	if($id("noteButtonGreen")) $id("noteButtonGreen")?.checked = (documentSetting.noteButtonGreen) || true
-		// 	if($id("noteButtonYellow")) $id("noteButtonYellow")?.checked = (documentSetting.noteButtonYellow) || true
-		// 	if($id("noteButtonRed")) $id("noteButtonRed")?.checked = (documentSetting.noteButtonRed) || true
-		// 	if($id("noteButtonMagenta")) $id("noteButtonMagenta")?.checked = (documentSetting.noteButtonMagenta) || true
-		// 	if($id("noteButtonPurple")) $id("noteButtonPurple")?.checked = (documentSetting.noteButtonPurple) || true
-		// 	if($id("noteButtonReview")) $id("noteButtonReview")?.checked = (documentSetting.noteButtonReview) || false
-		// }
-
-		indexCardHeight = documentSetting.indexCardHeight || 5
-		indexCardMode = documentSetting.indexCardMode || false
-			if(indexCardMode == "false" || indexCardMode == 0 || indexCardMode == "0"){indexCardMode = false}
-			if(indexCardMode != false){indexCardMode = true} 
-
-		theDocumentsWidth = documentSetting.theDocumentsWidth
-		theDocumentsHeight = documentSetting.theDocumentsHeight
-
-		notesAreDisplayed = documentSetting.notesAreDisplayed || false
-		markersAreDisplayed = documentSetting.markersAreDisplayed || false
-		beatsAreDisplayed = documentSetting.beatsAreDisplayed || false
-		reviewsAreDisplayed = documentSetting.reviewsAreDisplayed || false
-
-		$id("flexiContainer").classList.toggle("greyonly", documentSetting.greyonly || false)
-		if (documentSetting.notepanel){toggleNotepanel()}
-		$id("flexiContainer").classList.toggle("showSynopsisInScenes", documentSetting.showSynopsisInScenes || false)
-		$id("flexiContainer").classList.toggle("boneyardIsClosed", documentSetting.boneyardIsClosed || true)
-
-		theWindowsPositionX = documentSetting.theWindowsPositionX
-		theWindowsPositionY = documentSetting.theWindowsPositionY
-
-		cardStateForScenes = documentSetting.cardStateForScenes || []
-		cardStateForSections = documentSetting.cardStateForSections || []
-
-			for(let i = 0; i<cardStateForScenes.length; i++){
-			mylog("#" + i + " -- scene: " + cardStateForScenes[i] + ", section:  " + cardStateForSections[i])
-			}
-
-		documentName = documentSetting.documentName
-		documentSubName = documentSetting.documentSubName
-		documentAuthor = documentSetting.documentAuthor
-
-	//NOW EXECUTING SOM STUFF BASED ON THE DEFAULTS WE GOT!
-
-	document.documentElement.setAttribute('data-theme', colorScheme)
-	Beat.log("setting color to " + colorScheme)
-	$id("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
-	
-	$id("flexiContainer").classList.toggle("dualSceneLines", documentSetting.showMultipleSceneLines)
-	$id("flexiContainer").classList.toggle("dualSectionLines", documentSetting.showMultipleSectionLines)
-	$id("flexiContainer").classList.toggle("verticals", documentSetting.showVerticals)
-	$id("flexiContainer").classList.toggle("allowLowerCaseSections", documentSetting.allowLowerCaseSections)
-	$id("flexiContainer").classList.toggle("showPageDividers", documentSetting.showPageDividers)
-	$id("flexiContainer").classList.toggle("always", documentSetting.showPageDividersAlways)
-
-	if(areScenesProportional != 1){
-		document.getElementById("flexiContainer").classList.add("nonProportionalMode")
-	}
-
-	//REMOVED THIS because the outline isn't built yet, breaking the cardstate arrays
-		// if(indexCardMode || areScenesProportional != 1){
-		// 	recallCardState()
-		// }
-
-	if (indexCardMode){
-		toggleIndexCardMode(true)
-		toggleIndexCardMode(true)
-		// parameter only used when restoring values to allow setting mode in spite of no elements yet.
-	}
-
-	theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
-	theRoot.style.setProperty('--showSceneLength', whatAreSceneLengths);
-	theRoot.style.setProperty('--showSceneNum', whatAreSceneNumbers);
-	theRoot.style.setProperty('--showPageNum', whatArePageNumbers);
-	theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
-
-	setAllButtons()
-	mylog("DONE getting defaults")
-
-}
-
-function OLD_getDefaults(){
-	mylog("getDefaults()")
-
-loggingIsOn = document.getElementById('theDataDiv').getAttribute('data-logging')
-
-areScenesProportional = document.getElementById('theDataDiv').getAttribute('data-showProportional')
-mylog("areScenes...:" + areScenesProportional)
-
-	if(areScenesProportional != "0"){areScenesProportional = 1}
-
-mylog("areScenes...:" + areScenesProportional)
-
-whatAreSceneLengths = document.getElementById('theDataDiv').getAttribute('data-showLengths')
-whatAreSceneNumbers = document.getElementById('theDataDiv').getAttribute('data-showNumbers')
-whatArePageNumbers = document.getElementById('theDataDiv').getAttribute('data-showPages')
-isRealTimeOn = document.getElementById('theDataDiv').getAttribute('data-realTimeUpdates')
-colorScheme = document.getElementById('theDataDiv').getAttribute('data-colorScheme')
-oneColumnOutline = document.getElementById('theDataDiv').getAttribute('data-oneColumnOutline')
-warningsAreOn = document.getElementById('theDataDiv').getAttribute('data-warningsAreOn')
-	warningsAreOn = (warningsAreOn == "true")
-currentZoomLevel = document.getElementById('theDataDiv').getAttribute('data-currentZoomLevel')
-
-indexCardHeight = document.getElementById('theDataDiv').getAttribute('data-indexCardHeight')
-indexCardMode = ($id('theDataDiv').getAttribute('data-indexCardMode')) || false
-	
-	if(indexCardMode == "false" || indexCardMode == 0 || indexCardMode == "0"){indexCardMode = false}
-	if(indexCardMode != false){indexCardMode = true} 
-
-if(cardStateForScenes.length > 0){
-		cardStateForScenes = $id('theDataDiv').getAttribute('data-cardStateForScenes')?.split(",") || []
-		for(let i = 0; i < cardStateForScenes.length; i++) {cardStateForScenes[i] = JSON.parse(cardStateForScenes[i])}
-	}
-if(cardStateForSections.length > 0){
-		cardStateForSections = $id('theDataDiv').getAttribute('data-cardStateForSections')?.split(",")  || []
-		for(let i = 0; i < cardStateForScenes.length; i++) {cardStateForSections[i] = JSON.parse(cardStateForSections[i])}
-	}
-
-document.documentElement.setAttribute('data-theme', colorScheme)
-document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
-
-theDocumentsWidth = document.getElementById('theDataDiv').getAttribute('data-thePanelWidth')
-theDocumentsHeight = document.getElementById('theDataDiv').getAttribute('data-thePanelHeight')
-
-theWindowsPositionX = document.getElementById('theDataDiv').getAttribute('data-xposition')
-theWindowsPositionY = document.getElementById('theDataDiv').getAttribute('data-yposition')
-
-if(areScenesProportional != 1){
-	document.getElementById("flexiContainer").classList.add("nonProportionalMode")
-}
-
-	if(indexCardMode || areScenesProportional != 1){
-		recallCardState()
-	}
-
-	if (indexCardMode){
-
-		toggleIndexCardMode(true)
-		toggleIndexCardMode(true)
-		// parameter only used when restoring values to allow setting mode in spite of no elements yet.
-	}
-
-theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
-theRoot.style.setProperty('--showSceneLength', whatAreSceneLengths);
-theRoot.style.setProperty('--showSceneNum', whatAreSceneNumbers);
-theRoot.style.setProperty('--showPageNum', whatArePageNumbers);
-theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
+	applySettings()
+	recalculateHeights()
+	saveCurrentState()
 
 }
 
@@ -1845,176 +1789,50 @@ function forceRestart(){
 	
 }
 
+//===============================
 function __________LISTENING (){}
 
-function checkWhatKeyGotPressed(someoneJustPressed) {
-	mylog("checkWhatKeyGotPressed(" + someoneJustPressed.key + ")")
+function openSettingsWindow(){
 
-	//if (event.ctrlKey && event.altKey) return //because all ctrl + alt shortcuts will go through Beat instead
-	
-	//if (someoneJustPressed.key == " " && event.ctrlKey && event.altKey && event.metaKey) {event.preventDefault(); setSharedScreen()}
-	//if (someoneJustPressed.key == "j") {event.preventDefault(); toggleFullScreen()}
+	Beat.call(() => Beat.custom.displaySecondWindow("Advanced Settings", "settingswindow.html", 700, 800))
 
-	//DEVELOPMENT SHORTCUTS: 
-		//if (someoneJustPressed.key == "å" && !someoneJustPressed.altKey) {event.preventDefault(); forceRestart()}
-		if (someoneJustPressed.key == "ä" && event.metaKey && event.altKey && event.ctrlKey) {event.preventDefault(); Beat.call(`Beat.custom.reloadHTML()`)}
-		//if (someoneJustPressed.key == "!" && !someoneJustPressed.altKey) {event.preventDefault(); throwError()}
-	
+}
 
+function openPrintWindow(){
 
-	if (someoneJustPressed.key == "Escape") {
-		
-		event.preventDefault()
-		if(errorHasFired){return}
+  let allCSS = '';
+  
+  // Loop through all stylesheets
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    const styleSheet = document.styleSheets[i];
+    
+    // // Handle CORS issues by skipping external stylesheets
+    // if (styleSheet.href && styleSheet.href.indexOf(window.location.origin) === -1) {
+    //   continue;
+    // }
+    
+    // Loop through all CSS rules
+    try {
+      const cssRules = styleSheet.cssRules || styleSheet.rules; // cssRules for modern browsers, rules for older versions
+      for (let j = 0; j < cssRules.length; j++) {
+        allCSS += cssRules[j].cssText + '\n';
+      }
+    } catch (e) {
+      console.warn('Could not read stylesheet:', e);
+    }
+  }
 
-		escapeWasPressed()
+  	allCSS = "<style>" + allCSS + "</style>"
 
-		return
-	}
+	let html = JSON.stringify(allCSS + flexiContainer.outerHTML)
 
-	if (errorHasFired && someoneJustPressed.key == "Enter") {
-		event.preventDefault()
-		document.getElementById("errorClickButton").click()
-    }else if (someoneJustPressed.key == "Enter") {
+	Beat.call((html) => Beat.custom.displaySecondWindow("Print Preview", "printWindow.html", 1200, 800, false, html), html)
 
-		if($(".modal")){event.preventDefault(); $(".modal").close(); return}
-		
-		event.preventDefault()
-		let elements = $$(".section-heading.isSelected, .scene.isSelected, .synopsis.isSelected")
-		let element = elements[elements.length - 1]
-		if (element){
-			let rect = element.getBoundingClientRect()
-			contextMenu(element, (rect.x + rect.width/2), rect.y, true)
-		}
-	}
-	
-	if(errorHasFired){return} // nothing else is allowed when the error box is up.
-
-	// if (someoneJustPressed.key == "'" && !event.metaKey) {event.preventDefault(); showNewMenu($id("helpButton"), "showStuffMenu")}
-	
-	// 1. LETTERS
-
-	if (someoneJustPressed.key == "a" && event.ctrlKey) {event.preventDefault(); selectAllElements(true)}
-	if (someoneJustPressed.key == "a" && event.metaKey) {event.preventDefault(); selectAllElements(false)}
-	if (someoneJustPressed.key == "b" && event.metaKey) {event.preventDefault(); addShowHideBoneyard(); return}
-	if (someoneJustPressed.key == "b") {event.preventDefault(); toggleDisplayBeats()}
-
-	if (someoneJustPressed.key == "c" && event.ctrlKey) {
-		event.preventDefault()
-		document.getElementById("flexiContainer").classList.toggle("greyonly")
-		if(invertTextOnDark){
-			// weAreChangingColors = true
-			// startSmallUpdate()
-			reevaluateColorContrast()
-		}
-		setAllButtons()
-		updateDialogPanel()
-		return
-	}
-	if (someoneJustPressed.key == "c") {event.preventDefault(); toggleColorScheme()}
-		
-	if (someoneJustPressed.key == "d" && event.metaKey) {event.preventDefault(); deselectAllElements(false)}
-	if (someoneJustPressed.key == "d") {event.preventDefault(); expandOrCollapseSections(); return}
-	if (someoneJustPressed.key == "e" && event.metaKey) {event.preventDefault(); togglePrintMode(true); return}
-	if (someoneJustPressed.key == "e") {event.preventDefault(); anArrowWasClicked($(".arrowForIndexCards"), true); return}
-	if (someoneJustPressed.key == "f" && !event.metaKey) {event.preventDefault(); toggleProportional()}
-	
-	if (someoneJustPressed.key == "h" && !event.ctrlKey) {event.preventDefault(); outdoorMode()}
-	if (someoneJustPressed.key == "h" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("horizontal")}
-	
-	// if (someoneJustPressed.key == "j") {event.preventDefault(); Beat.call("Beat.custom.alertJSON()"); return}
-
-	if (someoneJustPressed.key == "l") {event.preventDefault(); toggleShowSceneLength()}
-	if (someoneJustPressed.key == "m" && !event.ctrlKey) {event.preventDefault(); toggleDisplayMarkers()}
-	if (someoneJustPressed.key == "m" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("unShowMarkerText")}
-	if (someoneJustPressed.key == "n") {event.preventDefault(); toggleDisplayNotes()}
-	if (someoneJustPressed.key == "o") {event.preventDefault(); toggleOneColumnOutline()}
-
-	if (someoneJustPressed.key == "p" && event.ctrlKey && event.altKey) {event.preventDefault(); $id("buttonForAlways").click(); return}
-	if (someoneJustPressed.key == "p" && event.ctrlKey) {event.preventDefault(); $id("buttonForPageDividers").click(); return}
-	if (someoneJustPressed.key == "p" && event.shiftKey && event.metaKey) {event.preventDefault(); event.stopPropagation(); newPrintBox(); return}
-	if (someoneJustPressed.key == "p" && event.metaKey) {event.preventDefault(); togglePrintMode(); return}
-	if (someoneJustPressed.key == "p") {event.preventDefault(); toggleShowPageNumbers()}
-
-	if (someoneJustPressed.key.toLowerCase() == "q" && !someoneJustPressed.metaKey) {event.preventDefault(); makeWider(false, true, event.shiftKey)}
-	
-	// if (someoneJustPressed.key == "r") {event.preventDefault(); toggleRealTime()}
-	if (someoneJustPressed.key == "r") {event.preventDefault(); toggleDisplayReviews()}
-	if (someoneJustPressed.key == "s" && someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); $id('buttonForDualLines')?.click(); return}
-	if (someoneJustPressed.key == "s" && !someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); toggleShowSceneNumbers()}
-	if (someoneJustPressed.key == "t" && someoneJustPressed.ctrlKey) {event.preventDefault(); $id('buttonForDualSectionLines')?.click(); return}
-	if (someoneJustPressed.key == "t" && !someoneJustPressed.ctrlKey) {event.preventDefault(); toggleTrackingContainer()}
-	if (someoneJustPressed.key == "u" && someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); $id('buttonForLowerCase')?.click(); return}
-	if (someoneJustPressed.key == "v" && someoneJustPressed.ctrlKey && !event.metaKey) {event.preventDefault(); $id('buttonForVerticals')?.click(); return}
-
-
-	if (someoneJustPressed.key == "w" && event.metaKey) {event.preventDefault(); Beat.call("Beat.custom.reallyQuit(true)")}
-	if (someoneJustPressed.key == "w") {event.preventDefault(); toggleWarnings()}
-
-	if (someoneJustPressed.key == "x") {event.preventDefault(); toggleIndexCardMode()}
-	if (someoneJustPressed.key == "y" && !event.ctrlKey) {event.preventDefault(); toggleDisplaySynopsis()}
-	if (someoneJustPressed.key == "y" && event.ctrlKey) {event.preventDefault(); flexiContainer.classList.toggle("onlySynopsis"); setAllButtons()}
-	if (someoneJustPressed.key == "z" && event.metaKey) {saveCurrentState(); weAreChangingColors == true} //hack to improve redraw speed when undoing
-
-
-	// 2. NON-LETTERS
-
-	if (someoneJustPressed.key == "," && someoneJustPressed.metaKey) {event.preventDefault(); if(!$id("advancedSettings").open)$id("advancedSettings").showModal(); setAllButtons()}
-
-	if (someoneJustPressed.key == "*") {event.preventDefault(); toggleShowRevisions()}
-	
-	if (someoneJustPressed.key == "F1") {event.preventDefault(); cycleMenus(event.shiftKey)}
-	if (someoneJustPressed.key == "?") {event.preventDefault(); toggleHelpContainer()}
-	if (someoneJustPressed.key == "§" && event.ctrlKey) {event.preventDefault(); cycleTabs(); return }
-	if (someoneJustPressed.key == "§" && !event.ctrlKey) { event.preventDefault(); toggleNotepanel(); return }
-
-	if (someoneJustPressed.key == "Backspace" && event.metaKey) {event.preventDefault(); deleteScene()}
-
-	if (someoneJustPressed.key == "Tab" && event.ctrlKey && event.shiftKey) {Beat.call("Beat.previousTab()"); return}
-	if (someoneJustPressed.key == "Tab" && event.ctrlKey) {Beat.call("Beat.nextTab()"); return}
-	if (someoneJustPressed.key == "Tab" && !event.ctrlKey) {event.preventDefault(); cycleNotes(event.shiftKey)}
-
-
-	// 3. DIGITS
-	
-	if (event.metaKey && event.ctrlKey && (someoneJustPressed.key == "=" || someoneJustPressed.key == "+" || someoneJustPressed.key == "-" || someoneJustPressed.code == "Digit0")){
-		event.preventDefault(); changeIndexCardHeight(someoneJustPressed.key); return
-	}
-	if (event.metaKey && (someoneJustPressed.key == "=" || someoneJustPressed.key == "+" || someoneJustPressed.key == "-" || someoneJustPressed.code == "Digit0")){
-		event.preventDefault(); zoomSizes(someoneJustPressed.key)
-	}
-
-	if (someoneJustPressed.code == "Digit0") {event.preventDefault(); deselectAllCharacters(); return false}
-	if(someoneJustPressed.code.startsWith("Digit")) {
-		event.preventDefault(); toggleSoloCharacter(someoneJustPressed.code.substr(-1,1))}
-
-	// 4. ARROWS
-
-	if ((someoneJustPressed.code == "ArrowUp" || someoneJustPressed.code == "ArrowDown")
-		&&
-		(!someoneJustPressed.metaKey && !someoneJustPressed.ctrlKey)){
-			event.preventDefault(); walkTheOutline(event)
-	}
-
-	// 5. MODIFIERS
-		
-	if (someoneJustPressed.key == "Alt") {
-		mylog("inside ALT")
-		altIsBeingPressed = true
-		$("#flexiContainer").classList.add("showAddButton")
-
-		if(currentlyHoveredElement){
-			insertAddButton(currentlyHoveredElement)
-			addPromoteButtons(currentlyHoveredElement)
-		}
-		mylog("currently hovering: " + currentlyHoveredElement)		
-		
-	} 
 }
 
 function escapeWasPressed(){
 
-	console.log("secape")
+	if(errorHasFired){return}
 
 		if ($id("advancedSettings".open)) {$id("advancedSettings").close(); return}
 		if ($id("menu")){closeNewMenu(); return false}
@@ -2024,7 +1842,7 @@ function escapeWasPressed(){
 		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
 		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
 		if ($id('textContainer')){toggleTrackingContainer(true); return false}
-		if (contextMenuIsOpen) {closeContextMenu(); return false}
+		if ($(".contextMenu")) { $$(".contextMenu").forEach(menu => menu.remove()) ; return false }
 		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
 		if ($('.expandedReview')) {collapseReviews(); return false}
 		if ($id('expandedNote')) {collapseNote(); return false}
@@ -2047,28 +1865,28 @@ function releaseALT(){
 	altIsBeingPressed = false
 	previouslyHovered = false
 	document.getElementById("printButton").innerHTML = printerIcon
-	$("#flexiContainer").classList.remove("showAddButton")
-	if($id("addButton")){removeAddButton()}
-	removePromoteButtons()
 
 }
 
 function somethingWasClicked() {
 	mylog()
 
-	mylog("somethingWasClicked: " + event.target.classList + event.target.id + event.target)
+	let theButton = event.button
+	let rightClick = (event.ctrlKey && !event.metaKey && !event.altKey) || theButton == 2
+		if(rightClick || event.target.closest(".contextMenu")){
+			return
+		}
+
 	mylog("flexiContainer now has...:" + $id("flexiContainer").classList)
 
-	if(event.target.closest(".bottomButton") || event.target.classList.contains("displayNumberOf")){mylog("return out of clicked"); return}
+	if(event.target.closest(".bottomButton") 
+		|| event.target.classList.contains("displayNumberOf")
+		|| event.target.classList.contains("trashNote")
+		){mylog("return out of clicked"); return}
 	if($id("synEditBox")) return
 
 	let theClickedThing = event.target
-	let theButton = event.button
-	let rightClick = event.ctrlKey || theButton == 2
 	let length
-
-	// console.log(theClickedThing)
-	// console.log(theClickedThing.closest(".scene, .section")?.id, outline[theClickedThing.closest(".scene, .section")?.id])
 
 	let a = [...theClickedThing.classList]
 
@@ -2098,42 +1916,34 @@ function somethingWasClicked() {
 
 	mylog("before if(event.altKey)")
 
-	if(event.altKey){
-		switch(theClickedThing.id){
-			case "addScene":
-				mylog("case: addScene")
-				addElement(theClickedThing)
-				return
-			case "addSection":
-				mylog("case: addSection")
-				addElement(theClickedThing)
-				return
-			default:
-				muteColors(theClickedThing, event.shiftKey) 
-				//NOTE: sending literal clicked thing here, so can be either scene or sceneheading!
-				return
-		}
+	if(event.altKey && !event.metaKey){
+
+		muteColors(theClickedThing, event.shiftKey) 
+		//NOTE: sending literal clicked thing here, so can be either scene or sceneheading!
+		return
+		
 	}
 
-	let gotoIndex = Math.max(parseInt(theClickedThing.getAttribute("data-line")), 1)
-	
-	// if (theClickedThing.id == "expandedNote" || theClickedThing.id == "trashNote"){		
-	// 	length = document.getElementById('expandedNoteText').innerHTML.replace(/\<br\>/g, "\n").length
-	// }
+	let gotoIndex = Math.max(parseInt(theClickedThing.getAttribute("data-line")), 0.1) //why?
+
+	//All note-clicking scenarios
+		if (["expandedNote", "notepanelNote", "note"].some(className => theClickedThing.classList.contains(className))) {
+
+			if(theClickedThing.classList.contains("note") && userDefault.oldNoteBehavior != true) return
+
+			let length = theClickedThing.closest(".expandedNote, .notepanelNote, .note").dataset.length
+			let color = window.getComputedStyle(theClickedThing.closest(".expandedNote, .notepanelNote, .note")).backgroundColor || "#888"
+			gotoIndex = parseInt(theClickedThing.getAttribute("data-line"))		
+			goto(gotoIndex, theClickedThing, length, rgbToHex(color))
+			return
+		}
 	
 	switch(theClickedThing.id){
 		case "expandedNote":
-			length = $('#expandedNoteText').innerHTML.replace(/\<br\>/g, "\n").length
-			gotoIndex = parseInt(theClickedThing.getAttribute("data-line"))		
-			goto(gotoIndex, theClickedThing, (length + 5))
-			return
-		case "trashNote":
-			length = $('#expandedNoteText').innerHTML.replace(/\<br\>/g, "\n").length
-			gotoIndex = theClickedThing.parentNode.parentNode.getAttribute("data-line")
-			goto(gotoIndex, theClickedThing, (length + 5), "#bb8888")
-			// Beat.call("Beat.timer(1.75, function(){Beat.replaceRange(" + (parseInt(gotoIndex)) + ", " + (length + 4) + ", '')})")
-			Beat.call("Beat.custom.deleteNote(" + (parseInt(gotoIndex)) + ", " + (length + 5) + ")")
-				// perhaps put this as a function in the plugin instead, and add if both previous and next line are empty then delete one of them
+		case "notepanelNote":
+			// length = theClickedThing.closest(".expandedNote, .notepanelNote, .note").dataset.length
+			// gotoIndex = parseInt(theClickedThing.getAttribute("data-line"))		
+			// goto(gotoIndex, theClickedThing, length)
 			return
 		case "cover": 
 			if (settingsContainerVisibility==1){
@@ -2154,7 +1964,7 @@ function somethingWasClicked() {
 
 	//ADDED TO FIX WHAT CONSIDERS CLICKED when in Index Card Mode
 	//this is redundant now, right?
-		if (indexCardMode && [...theClickedThing.classList].includes("synopsiscontainer")){
+		if (documentSetting.indexCardMode && [...theClickedThing.classList].includes("synopsiscontainer")){
 			while(theClickedThing.parentNode 
 				&& 
 				(![...theClickedThing.classList].includes("scene") && ![...theClickedThing.classList].includes("section")))
@@ -2164,7 +1974,7 @@ function somethingWasClicked() {
 		}
 
 		//Yes: This is needed
-		if (indexCardMode && [...theClickedThing.classList].includes("section")){
+		if (documentSetting.indexCardMode && [...theClickedThing.classList].includes("section")){
 			while(theClickedThing.firstChild && ![...theClickedThing.classList].includes("section-heading")){
 				theClickedThing = theClickedThing.firstChild
 			}
@@ -2184,17 +1994,23 @@ function somethingWasClicked() {
 		return false
 	}
 
+	// LOGIC TO SELECT AND DESELECT CLICKED ELEMENT(S)
+
 	if (a.includes("section-heading")) {theClickedThing = theClickedThing.parentNode; a = [...theClickedThing.classList]}
 	if (a.includes("sceneheading")) {theClickedThing = theClickedThing.parentNode; a = [...theClickedThing.classList]}
 
-	if (event.metaKey){
+	if (event.metaKey && !event.altKey){
 		if (a.includes("isSelected")) {
 			theClickedThing.classList.remove('isSelected')
+			updateSelectionInfo()
 			return
 		}
 
-		if (a.includes("scene") || a.includes("section") || a.includes("synopsis")) {theClickedThing.classList.add('isSelected')}
-		return
+		if (a.includes("scene") || a.includes("section") || a.includes("synopsis")) {
+			theClickedThing.classList.add('isSelected')
+		}
+		updateSelectionInfo()
+		if(!documentSetting.clickingFocusesEditor) return
 	}
 
 	if (event.shiftKey){
@@ -2204,9 +2020,11 @@ function somethingWasClicked() {
 					let setCurrentElementToStartElement = $id("youAreHere").parentNode.id
 					$id(setCurrentElementToStartElement).classList.add("isSelected")
 				}else{
-			theClickedThing.classList.add('isSelected')
-			return
-			}
+					theClickedThing.classList.add('isSelected')
+					updateSelectionInfo()
+					return
+				}
+			//updateSelectionInfo()
 		}
 
 		if (a.includes("synopsis")){
@@ -2216,8 +2034,6 @@ function somethingWasClicked() {
 			let firstSynopsis = allSynopsis.indexOf(alreadySelectedElements[0])
 			let lastSynopsis = allSynopsis.indexOf(alreadySelectedElements[alreadySelectedElements.length - 1])
 			
-			console.log(justSelectedSynopsis, firstSynopsis, lastSynopsis)
-
 			if (justSelectedSynopsis < firstSynopsis){
 				for (let selectThis = justSelectedSynopsis; selectThis < firstSynopsis; selectThis++ ){
 					allSynopsis[selectThis]?.classList.add("isSelected")
@@ -2231,7 +2047,6 @@ function somethingWasClicked() {
 			if (firstSynopsis < justSelectedSynopsis && justSelectedSynopsis < lastSynopsis){
 				let selectThis = justSelectedSynopsis
 				do {
-					console.log(selectThis, allSynopsis[selectThis - 1].classList, allSynopsis[selectThis - 1].classList.contains("isSelected"))
 					allSynopsis[selectThis]?.classList.add("isSelected")
 					selectThis --
 				} while(!allSynopsis[selectThis]?.classList.contains("isSelected"))
@@ -2256,7 +2071,7 @@ function somethingWasClicked() {
 				let selectThis = $id(i)
 				if (selectThis){
 					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection") && ![...selectThis.classList].includes("synopsis")){
-						if (!(areScenesProportional == 1 && [...selectThis.classList].includes("isOmitted"))){
+						if (!(documentSetting.scenesAreProportional && [...selectThis.classList].includes("isOmitted"))){
 							selectThis.classList.add('isSelected')
 						}
 					}
@@ -2267,23 +2082,28 @@ function somethingWasClicked() {
 				let selectThis = $id(i)
 				if (selectThis){
 					if (![...selectThis.classList].includes("dimmedScene") && ![...selectThis.classList].includes("dimmedSection") && ![...selectThis.classList].includes("synopsis")){
-						if (!(areScenesProportional == 1 && [...selectThis.classList].includes("isOmitted"))){
+						if (!(documentSetting.scenesAreProportional && [...selectThis.classList].includes("isOmitted"))){
 							selectThis.classList.add('isSelected')
 						}
 					}
 				}
 			}
 		}
+		updateSelectionInfo()
 		return
 	}
 
-	deselectAllElements()
+	if(documentSetting.clickingFocusesEditor){
+		if(!theClickedThing.closest(".scene, .section, .synopsis")) deselectAllElements()
+	}else{
+		deselectAllElements()
+	}
 
 	//Finally: if the clicked thing was an outline element, let's go there!
 
-	if([...theClickedThing.classList].includes('note')){	
-		length = theClickedThing.innerHTML.replace(/\<br\>/g, "\n").length + 5
-	}
+	// if([...theClickedThing.classList].includes('note')){	
+	// 	length = theClickedThing.innerHTML.replace(/\<br\>/g, "\n").length + 5
+	// }
 	if (theClickedThing.classList.contains("review")){
 		expandReview(theClickedThing)
 		length = parseInt(theClickedThing.getAttribute("data-length")) + 1
@@ -2305,12 +2125,66 @@ function somethingWasClicked() {
 		theClickedThing.closest(".section").classList.add("isSelected")
 	}
 
+	updateSelectionInfo()
+
 	// setTimeout(makeWider(theClickedThing),210)
 
 	mylog("end of sthWasClicked -- " + theClickedThing.classList)
 
+		//Behavior depending on settings:
+
+		//Clicking a scene immediately focuses Editor
+		if(documentSetting.clickingFocusesEditor && !event.metaKey){
+			if (theClickedThing.closest(".scene, .section, .synopsis")){
+				Beat.call("Beat.focusEditor()") 
+			}
+		}
+
 	if (gotoIndex) {goto(gotoIndex, theClickedThing, length)}
 	mylog("now returning")
+}
+
+var selectionInfo = {}
+
+function updateSelectionInfo(){
+
+	if(!documentSetting.showSelectionInfo) return
+	if(!$$(".isSelected, .dimmedScene, .dimmedSection, .uncolorAllScenesBut")) return
+
+	let selectionInfo = {}
+		selectionInfo.length = 0
+		selectionInfo.numberOfScenes = $$(".scene.isSelected").length
+		selectionInfo.numberOfSections = $$(".section.isSelected").length
+
+		$id("infoField").style.backgroundColor = "" //resets color if set previously
+		$id("infoField").style.opacity = "" //resets opacity if set previously
+
+	let measurableStuff = $$(".scene.isSelected, .orphan.isSelected, .section.isSelected")
+	let actionWord = "selected scene" + (measurableStuff.length > 1 ? "s" : "")
+
+	if (measurableStuff.length == 0 && $(".dimmedScene, .dimmedSection")) {
+		measurableStuff = $$(".scene:not(.dimmedScene), .section:not(.dimmedSection)")
+		actionWord = "scene" + (measurableStuff.length > 1 ? "s" : "") + " with " + $id("characterMenuList")?.selectedOptions[0]?.value
+	}else if (measurableStuff.length == 0 && flexiContainer.classList.contains("uncolorAllScenesBut")) {
+		let color = colorsArray.find(color => flexiContainer.classList.contains(color.toLowerCase()))?.toLowerCase()
+		measurableStuff = $$(".scene." + color)
+		actionWord = color + " scene" + (measurableStuff.length > 1 ? "s" : "")
+		$id("infoField").style.backgroundColor = "color-mix(in oklab, hsl(var(--" + color + ")), white 20%)"
+		$id("infoField").style.opacity = "0.8"
+	}
+
+	measurableStuff.forEach(element => {
+		
+		selectionInfo.length += Number(element.dataset.lengthOfScene)
+
+	})
+
+	$id("infoField").innerHTML = measurableStuff.length > 0 ?
+		`${selectionInfo.numberOfScenes || measurableStuff.length} ${actionWord}<br/>
+		${numberIntoEights(selectionInfo.length).replace(/pg(s*)/, "")} pages total`
+		: ""
+
+
 }
 
 function makeWider(theClickedThing, cycledWithKey, shift){
@@ -2373,45 +2247,101 @@ function makeWider(theClickedThing, cycledWithKey, shift){
 function walkTheOutline(e){
 
 	mylog()
-	closeContextMenu()
 
 	let direction = (e.key == "ArrowDown") ? 1 : -1
 
-	mylog(direction)
-
 	let selectedElements = $$(".isSelected")
 	let startingElement
-		if (selectedElements.length > 0){
-			mylog("length was > 0")
-			startingElement = selectedElements[0]
-			if (selectedElements.length > 1){
-				if (direction == 1) startingElement = selectedElements[selectedElements.length -1]
+
+		if (selectedElements.length > 0) {
+			if (direction == 1) {
+				startingElement = selectedElements[selectedElements.length - 1].closest(".scene, .section");
+				} else {
+				startingElement = selectedElements[0].closest(".scene, .section");
 			}
-		}else{
-			mylog("length was <= 0")
-			if(!$id("youAreHere")) return
-			mylog("but there was a you are here?")
-			let elementNumber = Number($id("youAreHere").getAttribute('data-outlineElementCount'))
-			startingElement = $id(elementNumber)
+		} else {
+			if (!$id("youAreHere")) return;
+			startingElement = $id("youAreHere").closest(".scene, .section");
 		}
 
 	let gotoElement = Number(startingElement.id) + direction
-		while (outline[gotoElement + direction] && outline[gotoElement].typeAsString == "Synopse") {gotoElement = gotoElement + direction}
+		if (gotoElement < 0 || gotoElement > outline.length - 1) return
 
-		let allScenesOrSections = $$(".section, .scene")
-			lastSceneOrSection = allScenesOrSections[allScenesOrSections.length - 1]
-		if(gotoElement < 0 || gotoElement > Number(lastSceneOrSection.id)){return}
+		if(!e.shiftKey)deselectAllElements()
+
+		$id(gotoElement).classList.add("isSelected")
+		updateSelectionInfo()
+
+	let gotoIndex = $id(gotoElement).getAttribute("data-line")
+	let theClickedThing = $id(gotoElement)
+	let length = outline[gotoElement].line.string.length + 1
+	let blinkColor = theClickedThing.style.backgroundColor
+
+	goto(gotoIndex, theClickedThing, length, blinkColor)
+
+}
+
+function walkTheOutlineSideWays(e){
+
+	if(documentSetting.oneColumnOutline || $$(".level1").length < 2) return
+
+	let element = $$(".isSelected").length == 1 ? $(".isSelected") : ($id("youAreHere").closest(".scene, .section"))
+	let direction = (e.key == "ArrowRight") ? 1 : -1
+
+	let allColumns = $$(".level1")
+	let thisColumn = element.closest(".level1")
+	let thisColumnNumber = Array.from(allColumns).indexOf(thisColumn)
+
+	let gotoColumn = thisColumnNumber + direction
+		if(gotoColumn < 0 || gotoColumn > allColumns.length - 1) return
+
+	let currentBoundings = element.getBoundingClientRect()
+
+	// let gotoElement = Array.from(($$(".level1"))[gotoColumn].querySelectorAll(".scene, .section")).filter(element => element.getBoundingClientRect().top >= heightOnPage)[0]
+	
+	
+	let gotoElement = Array.from($$(".level1")[gotoColumn].querySelectorAll(".scene, .section-heading")).filter(element => {
+		gotoBoundings = element.getBoundingClientRect()
+    	return 	gotoBoundings.top >= currentBoundings.top && gotoBoundings.top + gotoBoundings.height <= currentBoundings.top + currentBoundings.height //means gotoelement is inside current's boundaries
+				||
+				gotoBoundings.top <= currentBoundings.top && gotoBoundings.top + gotoBoundings.height >= currentBoundings.top + currentBoundings.height //means current element is inside gotoelement's boundaries
+				||
+				gotoBoundings.top >= currentBoundings.top //finally, means gotoelement is below current element
+  	})[0]?.closest(".scene, .section");
+	
+	if(!gotoElement) gotoElement = Array.from($$(".level1")[gotoColumn].querySelectorAll(".scene, .section")).at(-1)
+		if(!gotoElement) return
 
 	if(!e.shiftKey)deselectAllElements()
+	gotoElement.classList.add("isSelected")
 
-	$id(gotoElement).classList.add("isSelected")
-		let gotoIndex = $id(gotoElement).getAttribute("data-line")
-		let theClickedThing = $id(gotoElement)
-		let length = outline[gotoElement].line.string.length + 1
-		let blinkColor = theClickedThing.style.backgroundColor
+	let gotoIndex = gotoElement.getAttribute("data-line")
+	let length = outline[gotoElement.id].line.range.length
+	// let blinkColor = gotoElement.style.backgroundColor	
+	updateSelectionInfo()
+	goto(gotoIndex, gotoElement, length)
 
-	mylog("now goto")
-	goto(gotoIndex, theClickedThing, length, blinkColor)
+
+}
+
+let waitStateCounter = 0
+
+function toggleWaitState(trueOrFalse){
+
+	mylog("toggleWaitState: " + trueOrFalse)
+
+	if (trueOrFalse) {
+		waitStateCounter++
+		console.log("waitStateCounter: " + waitStateCounter)
+	}else{
+		waitStateCounter = 0
+		console.log("waitStateCounter was RESET.")
+	}
+
+	document.getElementById('outOfSyncDiv').style.display = trueOrFalse ? 'block' : "none"
+	document.getElementById('outOfSyncDiv').classList.toggle('animate', trueOrFalse)
+	document.getElementById('flexiContainer').classList.toggle('wait', trueOrFalse)
+
 
 
 }
@@ -2441,9 +2371,17 @@ function setSharedScreen(){
 function toggleFullScreen(){
 
 	isFullScreen = !isFullScreen
-
 	Beat.call(`Beat.custom.toggleFull()`)
-	// Beat.call(`Beat.htmlWindow.toggleFullScreen()`)
+
+}
+
+function switchFocus(){
+
+	if (flexiContainer.classList.contains("focused")){
+		Beat.call(() => Beat.focusEditor())
+	}else{
+		Beat.call(() => Beat.custom.switchToHTML())
+	}
 
 }
 
@@ -2457,6 +2395,7 @@ function toggleExcludeVoiceOvers(){
 	//collectCharacters()
 	
 	setAllButtons()
+	firstRun()
 
 }
 
@@ -2466,10 +2405,11 @@ function toggleIncludeSynopsis(){
 
 	saveCurrentState()
 
-	updateFilter()
-	//collectCharacters()
+	//updateFilter()
+	collectCharacters()
 
 	setAllButtons()
+	firstRun()
 
 }
 
@@ -2484,19 +2424,21 @@ function toggleMultipleSceneLines(){
 
 function toggleInvertText(){
 
-invertTextOnDark = !invertTextOnDark
-weAreChangingColors = true
-startSmallUpdate()
-setAllButtons()
-saveCurrentState()
+	userDefault.invertTextOnDark = !userDefault.invertTextOnDark
+
+	reevaluateColorContrast()
+	setAllButtons()
+	saveCurrentState()
 
 }
 
 function toggleOneColumnOutline() { 
-	mylog("toggleOneColumnOutline")
-	oneColumnOutline = 1 - oneColumnOutline;
-	document.getElementById("flexiContainer").style.display = flexOrInLineBlock[oneColumnOutline]
-	$id("flexiContainer").classList.toggle("oneColumnOutline", oneColumnOutline)
+	mylog()
+
+	documentSetting.oneColumnOutline = !documentSetting.oneColumnOutline
+
+	flexiContainer.style.display = documentSetting.oneColumnOutline ? "inline-block" : "flex"
+	$id("flexiContainer").classList.toggle("oneColumnOutline", documentSetting.oneColumnOutline)
 	
 	setAllButtons()
 	saveCurrentState()
@@ -2511,52 +2453,42 @@ function toggleOneColumnOutline() {
 function toggleIndexCardMode(firstrun){
 	mylog("toggleIndexCardMode")
 
-	//remember to 1. set all indexCardmode to true or false, and 
-	// 				2. transform on open from 1/2 to true
-
-	mylog("entering toggleIndex..." + indexCardMode)
-	indexCardMode = !indexCardMode
+	documentSetting.indexCardMode = !documentSetting.indexCardMode
 	
 	if(!firstrun){ // will allow changing in spite of empty flexicontainer when opening doc and restoring mode!
-		if($$(".scene").length == 0 && $$(".section").length == 0){indexCardMode = false}
+		if($$(".scene").length == 0 && $$(".section").length == 0){documentSetting.indexCardMode = false}
 	}
 
-	if (indexCardMode) {
+	if (documentSetting.indexCardMode) {
 
 			mylog("indexCards ON")
 
-			if($(".hideSlugIfSmall")){
-				mylog("YES TO HIDE SLUG")
-				let smalls = $$(".hideSlugIfSmall")
-				for (small of smalls){
-					mylog ("REMOVING")
-					small.classList.remove("hideSlugIfSmall")
-				}
+			if(!firstrun){ // or else sluglines will blink when changing values in settings dialog.
+				$$(".sluglineIsHidden").forEach(element => {
+					element.classList.remove("sluglineIsHidden")
+				})
 			}
 
-			scenesWereProportionalBeforeIndexMode = (areScenesProportional == 1) ? true : false
-				areScenesProportional = 0
-				document.getElementById("flexiContainer").classList.remove("nonProportionalMode")
-						
-			//document.getElementById("indexCardButton").classList.add("buttonIsActive")
-			document.getElementById("flexiContainer").classList.add("indexcards")
-			// document.getElementById("flexiContainer").classList.remove("showSynopsisInScenes")
+			scenesWereProportionalBeforeIndexMode = (documentSetting.scenesAreProportional)
+			documentSetting.scenesAreProportional = false
+			flexiContainer.classList.remove("nonProportionalMode")
+				
+			flexiContainer.classList.add("indexcards")
 			document.getElementById("indexCardButton").innerHTML = newIndexCardIcon
 			
 	}else{
 
 			mylog("indexCards OFF")
 			
+			flexiContainer.classList.remove("indexcards")
 			document.getElementById("indexCardButton").classList.remove("buttonIsActive")
-			document.getElementById("flexiContainer").classList.remove("indexcards")
 
-			//hacky way to turn back prop to where it was and have icon redraw. 
-			toggleProportional()
-			if (!scenesWereProportionalBeforeIndexMode){
-				mylog("turning proportional back on when leaving index card mode")
-				toggleProportional()}
+			//turn back proportional to where it was before indexCards, and have icon redraw. 
+				toggleProportional(scenesWereProportionalBeforeIndexMode)
 
 	}
+
+	if(firstrun) return
 
 	setAllButtons()
 	youAreHere()
@@ -2574,67 +2506,70 @@ function toggleIndexCardMode(firstrun){
 	
 function toggleShowSceneNumbers() {
 	mylog("toggleShowSceneNumbers")
-	if (whatAreSceneNumbers == "inline") {
+	if (showSceneNumbers == "inline") {
 		theRoot.style.setProperty('--showSceneNum', 'none');	
 		}else{
 		theRoot.style.setProperty('--showSceneNum', 'inline');	
 		}
 		
-	whatAreSceneNumbers = theRoot.style.getPropertyValue('--showSceneNum');
+	showSceneNumbers = theRoot.style.getPropertyValue('--showSceneNum');
+	documentSetting.showSceneNumbers = showSceneNumbers
+
 	setAllButtons()
 	saveCurrentState()
 }
 
 function toggleShowPageNumbers() {
 	mylog("toggleShowPageNumbers")
-	if (whatArePageNumbers == "inline") {
+	if (showPageNumbers == "inline") {
 		theRoot.style.setProperty('--showPageNum', 'none');	
 		}else{
 		theRoot.style.setProperty('--showPageNum', 'inline');	
 		saveCurrentState()
 	}
 		
-	whatArePageNumbers = theRoot.style.getPropertyValue('--showPageNum');
+	showPageNumbers = theRoot.style.getPropertyValue('--showPageNum');
+	documentSetting.showPageNumbers = showPageNumbers
+
 	recalculateHeights()
 	setAllButtons()
 }
 
 function toggleShowSceneLength() {
 	mylog("toggleShowSceneLength")
-	if (whatAreSceneLengths == "inline") {
+	if (showSceneLengths == "inline") {
 		theRoot.style.setProperty('--showSceneLength', 'none');	
 		}else{
 		theRoot.style.setProperty('--showSceneLength', 'inline');	
 	}
 		
-	whatAreSceneLengths = theRoot.style.getPropertyValue('--showSceneLength'); //double-check: Do I still use this?
+	showSceneLengths = theRoot.style.getPropertyValue('--showSceneLength'); //double-check: Do I still use this?
+	documentSetting.showSceneLengths = showSceneLengths
+
 	setAllButtons()
 	saveCurrentState()
 }
 
 function toggleWarnings() {
 	mylog("toggleWarning")
-	warningsAreOn = warningsAreOn ? false : true
+
+	userDefault.warningsAreOn = !userDefault.warningsAreOn
 		
 	setAllButtons()
 	saveCurrentState()
 }
 
-function toggleShowRevisions() {
+function toggleShowRevisions(absolute) {
 
 	mylog(" from " + documentSetting.showRevisions)
 
-	documentSetting.showRevisions = (documentSetting.showRevisions === false)
+
+  	documentSetting.showRevisions = typeof absolute === 'undefined' ? !documentSetting.showRevisions : absolute;
 
 	if(documentSetting.showRevisions){
 		collectRevisionIndices()
 	}else{
-		let currentDivs = $$(".revision")
-		if(currentDivs.length > 0){
-			currentDivs.forEach(element => {
-				element.remove()
-			});
-		}
+		$$(".revision").forEach(revision => { revision.remove() })
 	}
 	
 	setAllButtons()
@@ -2642,17 +2577,16 @@ function toggleShowRevisions() {
 
 function toggleDisplayNotes() {
 	mylog("toggleDisplayNotes")
-	notesAreDisplayed = (notesAreDisplayed == false)
+
+	documentSetting.notesAreDisplayed = !documentSetting.notesAreDisplayed
+	notesAreDisplayed = documentSetting.notesAreDisplayed
 		
 	if(notesAreDisplayed){
 		collectNotes("toggleDisplayNotes")
 	}else{
 		collapseNote()
-		let noteElements = document.getElementsByClassName("noteContainer")
-		
-		for (i = noteElements.length-1; i > -1; i--) {
-			noteElements[i].remove()
-		}
+		let noteElements = $$(".noteContainer")
+			noteElements.forEach(element => {element.remove()})
 	}
 	setAllButtons()
 	//saveCurrentState()
@@ -2660,8 +2594,9 @@ function toggleDisplayNotes() {
 
 function toggleDisplayMarkers() {
 	mylog("toggleDisplayMarkers")
-	markersAreDisplayed = (markersAreDisplayed == false)
-	
+
+	documentSetting.markersAreDisplayed = !documentSetting.markersAreDisplayed
+	markersAreDisplayed = documentSetting.markersAreDisplayed
 	
 	if(markersAreDisplayed){
 		document.getElementById("flexiContainer").classList.add("markersAreDisplayed")
@@ -2678,7 +2613,9 @@ function toggleDisplayMarkers() {
 function toggleDisplayReviews() {
 
 	mylog()
-	reviewsAreDisplayed = (reviewsAreDisplayed == false)
+
+	documentSetting.reviewsAreDisplayed = !documentSetting.reviewsAreDisplayed
+	reviewsAreDisplayed = documentSetting.reviewsAreDisplayed
 
 	if(reviewsAreDisplayed){
 		flexiContainer.classList.add("reviewsAreDisplayed")
@@ -2695,9 +2632,11 @@ function toggleDisplayReviews() {
 
 function toggleDisplayBeats() {
 	mylog("toggleDisplayBeats")
-	beatsAreDisplayed = (beatsAreDisplayed == false)
+
+	documentSetting.beatsAreDisplayed = !documentSetting.beatsAreDisplayed
+	beatsAreDisplayed = documentSetting.beatsAreDisplayed
 	
-	if(beatsAreDisplayed){
+	if(documentSetting.beatsAreDisplayed){
 		$("#flexiContainer").classList.add("beatsAreDisplayed")
 		collectNotes("toggleDisplayBeats")
 	}else{
@@ -2715,7 +2654,10 @@ function toggleDisplayBeats() {
 function toggleDisplaySynopsis() {
 	mylog("toggleDisplaySynopsis")
 	if ($id("flexiContainer").classList.contains("indexcards")){return}
+
 	document.getElementById("flexiContainer").classList.toggle("showSynopsisInScenes")
+	documentSetting.showSynopsisInScenes = document.getElementById("flexiContainer").classList.contains("showSynopsisInScenes")
+
 	setAllButtons()
 }
 	
@@ -2764,8 +2706,8 @@ function toggleTrackingContainer(close) {
 function toggleColorScheme() { 
 	mylog("toggleColorScheme")
 
-	colorScheme = 'FTOutlinerBeat'.replace(colorScheme, "")
-	document.documentElement.setAttribute('data-theme', colorScheme)
+	userDefault.colorScheme = 'FTOutlinerBeat'.replace(userDefault.colorScheme, "")
+	document.documentElement.setAttribute('data-theme', userDefault.colorScheme)
 	
 	setAllButtons()
 	saveCurrentState()
@@ -2775,10 +2717,11 @@ function toggleColorScheme() {
 
 function outdoorMode(){
 
-	mylog(outdoor)
+	mylog("outdoorMode:" + documentSetting.outdoor)
 
-	outdoor = 1 - outdoor
-	document.documentElement.setAttribute('data-outdoors', outdoor)
+	documentSetting.outdoor = 1 - documentSetting.outdoor
+	document.documentElement.setAttribute('data-outdoors', documentSetting.outdoor)
+
 	setAllButtons()
 	updateDialogPanel()
 	reevaluateColorContrast()
@@ -2788,78 +2731,57 @@ function outdoorMode(){
 function toggleProportional(absolute) { 
 	mylog("toggleProportional")
 
-	if(indexCardMode){
+	if(documentSetting.indexCardMode){
 		toggleIndexCardMode(); 
-		if(!absolute){
+		if(typeof absolute === 'undefined'){
 			return
 		}
 	}
 
-	if(absolute){ //set to opposite value and then toggle with the rest of the code
-		if (absolute == "on"){areScenesProportional = 0}
-		else {areScenesProportional = 1}	
-	}
-
-	areScenesProportional = 1 - areScenesProportional;
-	theRoot.style.setProperty('--proportionalScenes', areScenesProportional);
-	// document.getElementById("buttonForProportional").checked = (areScenesProportional == 1);
-
-	if(areScenesProportional == 1){
-
-		document.getElementById("flexiContainer").classList.remove("nonProportionalMode")
-		document.getElementById("indexCardButton").innerHTML = outlineIcon
-
-	}
-	else
-	{
-		document.getElementById("flexiContainer").classList.add("nonProportionalMode")
-		document.getElementById("indexCardButton").innerHTML = fixedIcon
+	documentSetting.scenesAreProportional = typeof absolute === 'undefined' ? !documentSetting.scenesAreProportional : absolute;
 	
-		let scenes = $$(".scene")
-		for (let scene of scenes){
-			scene.classList.remove("hideSlugIfSmall")
-		}
+	flexiContainer.classList.toggle("nonProportionalMode", !documentSetting.scenesAreProportional)
+	document.getElementById("indexCardButton").innerHTML = documentSetting.scenesAreProportional ? outlineIcon : fixedIcon
+
+	if(!documentSetting.scenesAreProportional){
+		$$(".sluglineIsHidden").forEach(element => {
+			element.classList.remove("sluglineIsHidden")
+		})
 	}
 
-	if (notesAreDisplayed){
+	if (documentSetting.notesAreDisplayed){
 		toggleDisplayNotes()
 		toggleDisplayNotes()
 	}
 
-	if (markersAreDisplayed){
+	if (documentSetting.markersAreDisplayed){
 		toggleDisplayMarkers()
 		toggleDisplayMarkers()
 	}
 
-	if (beatsAreDisplayed){
+	if (documentSetting.beatsAreDisplayed){
 		toggleDisplayBeats()
 		toggleDisplayBeats()
 	}
 
-	if (reviewsAreDisplayed){
+	if (documentSetting.reviewsAreDisplayed){
 		toggleDisplayReviews()
 		toggleDisplayReviews()
 	}
 
-	// if (flexiContainer.classList.contains("showSynopsisInScenes")){
-	// 	toggleDisplaySynopsis()
-	// 	toggleDisplaySynopsis()
-	// }
-
-
-	mylog("In toggleProportional, before RecalculateHeights()")
 	recalculateHeights("from ToggleProportional")
-
-	mylog("Scenes are proportional: " + areScenesProportional)
 
 	setAllButtons()
 	saveCurrentState()
 	reevaluateColorContrast()
 }
 
-function toggleRealTime() { 
+function toggleRealTime() {
+
 	mylog("toggleRealTime")
-	isRealTimeOn = 1 - isRealTimeOn;
+	realTimeIsOn = 1 - realTimeIsOn;
+	documentSetting.realTimeIsOn = realTimeIsOn
+
 	setAllButtons()
 }
 
@@ -2878,9 +2800,18 @@ function addShowHideBoneyard(){
 
 }
 
+function changeSaturation(){
+
+	documentSetting.saturation = Number($id("saturationRange").value)
+	document.documentElement.style.setProperty('--saturation', documentSetting.saturation + "%")
+
+	saveCurrentState()
+
+}
+
 function __________ACTIONS(){}
 
-function goto(gotoIndex, theClickedThing, length, blinkColor){
+function goto(gotoIndex, theClickedThing, length = theClickedThing?.dataset.length, blinkColor = theClickedThing?.dataset.color){
 
 	mylog("goto " + gotoIndex)
 
@@ -2889,15 +2820,10 @@ function goto(gotoIndex, theClickedThing, length, blinkColor){
 		Beat.call("Beat.scrollToScene(Beat.currentParser.sceneAtIndex(" + gotoIndex + "))")
 	}
 		
-	if (classes.includes("showActLength")){gotoIndex ++}
+	//if (classes.includes("showActLength")){gotoIndex ++}
 	gotoIndex = Math.min(gotoIndex, absoluteTextLength - 1)
 	
 	Beat.call("Beat.scrollTo(" + gotoIndex + ")") 
-		
-		//for debugging purposes: Selects entire scene object if clicking it
-			// if (a.includes("sceneheading") || a.includes("section") || a.includes("thisIsASynopsis")){
-			// Beat.call("Beat.setSelectedRange(" + gotoIndex + "," + outline[theClickedThing.getAttribute("data-elementCount")].sceneLength + ")")
-			// }
 
 	if (classes.includes("pageDivider")) return
 
@@ -2917,30 +2843,38 @@ function goto(gotoIndex, theClickedThing, length, blinkColor){
 	}
 
 	if (classes.includes("note") || classes.includes("expandedNote") || classes.includes("notepanelNote")){
-		blinkColor = "#cccc55"
-
-		if(classes.includes("notepanelNote")){
-			let noteNumber = theClickedThing.id.substring("notepanelNote".length)
-			mylog("this is note: ------------------------------------------------- " + noteNumber)
-			// mylog(globalNotesData[noteNumber].string.replace(/\<br\/\>/g, "_"))
-			length = globalNotesData[noteNumber].string.replace(/\<br\/\>/g, "_").length + 1
-		}
+		//blinkColor = rgbToHex(theClickedThing.dataset.color) || "#cccc55"
+		//2023 commented out: length = Number(theClickedThing.dataset.length) + (Number(theClickedThing.dataset.inline)? 1 : 0)
+		//alertThis(rgbToHex(theClickedThing.dataset.color))
 	}
 
 	blinkColor = blinkColor || "#888888"
 	textColor = textColor || false
-	//Beat.call("Beat.alert('" + length + "','" + theClickedThing.classList + "')")
 
 	let blinkLength = length || "Beat.currentParser.lineAtIndex(" + gotoIndex + ")?.string?.length + 1"
-	Beat.call("Beat.custom.blinkTheLine(" + gotoIndex + "," + blinkLength + ", '" + blinkColor + "' , '" + textColor + "');")
-		
-		// //This previouse selected a clicked note -- temporarily disabled because blinking is enough?
-			// if ([...theClickedThing.classList].includes("note") || theClickedThing.id == "expandedNote"){
-			// 	if (theClickedThing.id != "expandedNote"){
-			// 		length = theClickedThing.innerHTML.replace(/\<br\>/g, "\n").length
-			// 	}
-			// 	Beat.call("Beat.setSelectedRange(" + (parseInt(gotoIndex) + 2) + ", " + length + ")")
-			// }
+		Beat.call("Beat.custom.blinkTheLine(" + gotoIndex + "," + blinkLength + ", '" + blinkColor + "' , '" + textColor + "');")
+
+	//Select the clicked thing in the editor
+		if(documentSetting.clickingSelectsInEditor || (event.metaKey && event.ctrlKey && event.altKey)){		
+			if (theClickedThing.closest(".scene, .section")){
+				let lineOfScene = outline[theClickedThing.closest(".scene, .section, .synopsis").dataset.myId]
+				Beat.call("Beat.setSelectedRange(" + lineOfScene.sceneStart + "," + (lineOfScene.sceneEnd - lineOfScene.sceneStart) + ")")
+			}
+		}
+
+}
+
+function rgbToHex(rgbString){
+
+	let values = rgbString.replace(/rgb(a)*\(/, "").replace(")", "").split(",")
+	let rgbAsHex = "#"
+	for (value of values){
+			if (rgbAsHex.length == 7){ break }
+			let thisvalue = Number(value).toString(16).toUpperCase()
+				thisvalue = thisvalue.length > 1 ? thisvalue : "0" + thisvalue
+				rgbAsHex += thisvalue
+		}
+	return rgbAsHex
 }
 
 function selectAllElements(altWasPressed) {
@@ -2967,6 +2901,7 @@ function selectAllElements(altWasPressed) {
 		element.classList.add("isSelected")
 		}
 	}
+	updateSelectionInfo()
 }
 
 // Below is a function stolen from https://davidwalsh.name/javascript-debounce-function
@@ -3047,9 +2982,7 @@ function zoomSizes(key){
 
 function isThisOffScreen(element){
 
-	mylog("=====================")
 	mylog("======== determining off/onscreen for..." + element?.classList)
-	mylog("=====================")
 
 	if(!element) return
 
@@ -3062,7 +2995,7 @@ function isThisOffScreen(element){
 	// mylog("window height: " + window.innerHeight)
 	
 
-	return (
+	let result = (
 		(rect.x + rect.width) < 0 
             || 
 		(rect.y) < 20
@@ -3071,6 +3004,8 @@ function isThisOffScreen(element){
 			|| 
 		rect.y + rect.height > (window.innerHeight - 70))
 	)
+
+	return result
 }
 
 function scrollNicelyIntoView(element, whichContainer){
@@ -3152,55 +3087,67 @@ function toggleConsole(){
 
 }
 
+var anErrorHasOccured = false
+
 // function mylog(text, noError, important, sameline){
-function mylog(text, isError){
+function mylog(abstext, isError){
 
-	text = JSON.stringify(mylog.caller.name).substr(1, mylog.caller.name.length) + ":      " + (text || "--------------------")
+	if (anErrorHasOccured) return //don't log any more entries after the offending one
 
+	text = JSON.parse(JSON.stringify(mylog.caller.name))
+	text += abstext ? (":     " + abstext) : ""
+
+	//this is a real time suck, so keep this off at all times if possible!
 	if(loggingIsOn){
 		let log = "Beat.log(`" + text + "`)"
-		Beat.call(log)
+			Beat.call(log)
+			console.log(text)
 	}
 
-	logArray.push(new Date().toISOString() + " -- " + text)
-		while (logArray.length > 50){logArray.shift()}
+	//saving to the crashlog
+		logArray.push(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' }) + "." + new Date().getMilliseconds().toString().padStart(3, '0') + " -- " + text)
+		while (logArray.length > 100){logArray.shift()}
 
-	if(!isError){return}
+		if(!isError){return}
 
-		Beat.log(" ")
-		Beat.log(" ")
-		Beat.log(" ")
-		Beat.log(JSON.stringify(mylog.caller?.caller?.name) + " > " + JSON.stringify(mylog.caller?.name))
-		Beat.log("*******************************")
-		Beat.log("* ========== ERROR ========== *")
-		Beat.log("*******************************")
+	//The rest is when an error has indeed happened!
 
+		anErrorHasOccured = true
+
+		logArray = logArray.reverse() //so as to get offending command at the top, thankyouverymuch
+		
+		logArray.push(" ")
+		logArray.push("____________________________________________________________")
 		logArray.push(" ")
 		logArray.push("flexiContainerclassList:")
-		logArray.push(flexiContainer.classList)
-		logArray.push("-------------------------")
+		logArray.push(" ")
+		logArray.push(Array.from(flexiContainer.classList).join("\n"))
+		logArray.push(" ")
+		logArray.push("____________________________________________________________")
+		logArray.push(" ")
+		logArray.push("Document Settings:")
+		logArray.push(" ")
 		for (var property in documentSetting) {
-  			logArray.push(property + ": " + documentSetting[property])
+			if(["documentName", "documentSubName", "documentAuthor"].includes(property)){continue} //don't send user-related info
+			logArray.push(property + ": " + documentSetting[property])
 		}
+		logArray.push("____________________________________________________________")
+		logArray.push(" ")
+		logArray.push("User Defaults:")
+		logArray.push(" ")
 		for (var property in userDefault) {
   			logArray.push(property + ": " + userDefault[property])
 		}
+
 		displayErrorMessage(logArray)
+
+
+		console.log("🔴🔴🔴 FTOutliner had an error. Below is the stack trace:")
+			(JSON.parse(JSON.stringify(logArray)))
+		Beat.log("🔴🔴🔴 FTOutliner had an error. Below is the stack trace:")
+		Beat.log(logArray.join("\n"))
+
 
 }
 
 </script>
-
-<!-- <style>
-	.scene::after{
-
-position: absolute;
-top: 0;
-left: 0;
-content: attr(data-line) "," attr(data-line-end);
-background-color: red;
-color: white;
-
-
-	}
-</style> -->

@@ -1,4 +1,527 @@
 <style>
+
+#__________CONTEXTMENU{}
+
+.contextMenu{
+
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 0.8rem;
+    line-height: 0.8rem;
+
+    --menuBackground: hsla(8, 17%, 91%, 0.8);
+    --menuBorder: hsla(0, 0%, 0%, 0.2);
+    --menuHover: #4C9AFD;
+
+    background: var(--menuBackground);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    padding: 4px 4px;
+    width: fit-content;
+    border-radius: 6px;
+    border: 1px solid var(--menuBorder) ;
+
+    cursor: pointer;
+
+    box-shadow: 2px 2px 15px rgba(0,0,0,0.3);
+
+    z-index: 999999;
+
+}
+
+.contextMenu:focus{
+
+    outline: none;
+
+}
+
+.contextMenu ul {
+
+    padding: 0;
+    margin: 0 !important
+
+}
+
+.contextMenu li{
+
+    position: relative;
+
+    display: block;
+    padding: 3px 10px 3px 10px !important;
+    margin: 0 !important;
+    font-size: 13px;
+    line-height: 18px !important;
+    height: auto;
+
+    list-style-type: none;
+    border-radius: 4px;
+
+}
+
+.contextMenu li:not(.greyedOut):hover,
+.contextMenu li:not(.greyedOut).keySelected {
+
+    background: var(--menuHover);
+    color: white;
+
+}
+
+.contextMenu li.greyedOut{
+
+    opacity: 0.4;
+
+}
+
+.contextMenu hr{
+
+    margin: 6px 8px;
+    color: hsla(8, 17%, 91%, 0.6);
+    opacity: 0.6;
+}
+
+.contextMenu .shortcut {
+
+    float: right;
+    padding-left: 20px;
+    opacity: 0.3;
+    letter-spacing: calc(0.1rem);
+
+}
+
+.contextmenuicon {
+
+    float: left;
+    margin-right: 8px;
+    height: 14px;
+    left: -2px;
+    margin-top: 2px !important;
+    width: 14px;
+    color: hsla(var(--mycolor)) !important;
+    fill: hsla(var(--mycolor)) !important;
+
+    overflow: visible !important;
+
+}
+
+.checkedIcon::after {
+
+    content: "✓";
+
+    font-weight: bold;
+    font-size: 10px;
+
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 3px;
+    left: 12px;
+    transform: -50% -50%;
+
+    color: black;
+    z-index: 99999;
+
+}
+
+.contextMenu svg{
+
+    transition: none !important;
+    fill: hsla(var(--mycolor)) !important;
+
+
+}
+
+.contextMenu li:not(.greyedOut):hover svg:not(.svgCircle), 
+.contextMenu li:not(.greyedOut):hover .contextmenuicon {
+
+        --mycolor: 0, 0%, 100%, 1;
+        /* fill: white; */
+        
+}
+
+</style>
+
+<script>
+
+    let replacableKeys = ["Shift", "Alt", "Meta", "Control", "Tab", "Enter", "Backspace", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "LeftClick"]
+    let keystToReplace = ["⇧", "⌥", "⌘", "⌃", "⇥", "↩", "⌫", "↑", "↓", "←", "→", leftClickIcon]
+    let svgCircle = "<svg class='svgCircle' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50'/></svg>"
+    
+    //First create the colors menu
+    const availableColors = colorsArray    
+    let colorMenuItems = []
+        colorsArray.forEach (color => {
+            colorMenuItems.push({
+                menuItem: color,
+                shortcut: [""],
+                icon: svgCircle,
+                iconColor: color,
+                showFor: ["synopsis", "scene", "section"],
+                command: (item) => { setItemColor(item, color) },
+            })
+        })
+        colorMenuItems.find(item => item.menuItem === "Remove Color").icon = "<p style ='font-size: 22px !important; transform: translateY(-6px); line-height: 24px !important;'>&#xd7;</p>"
+        colorMenuItems.find(item => item.menuItem === "Special").icon = ""
+        colorMenuItems.find(item => item.menuItem === "Special").showFor = ["section"]
+
+    //then add all the other menuitems
+    let contextMenuContents = colorMenuItems.concat([
+        {   
+            //NOTE: this entry is a template for the available/used keys in the menu object
+            menuItem: "template",
+            menuName: function(item) {return "Menu Name"},
+            shortcut: ["Meta", "Control", "Alt", "t"],
+            icon: svgCircle,
+            iconColor: "red",
+            iconSpecialColor: function(item) {return "red"},
+            hoverColor: "blue",
+            showFor: ["nothing"],
+            butNotFor: ["omitted"],
+            greyOutIf: () => { return !document.querySelector(".selected") }, 
+            checkedIf: (item) => { return item.classList.contains("checked") },
+            command: (item) => { zoomTo("all", item) },
+        },
+        {
+            menuItem: "divider",
+            showFor: ["synopsis", "scene", "section"],
+        },
+        {   
+            menuItem: "Highlight color",
+            menuName: function(item) {
+                let col = availableColors.find(col => item.classList.contains(col.toLowerCase()))
+                if (!col) return "Can't Highlight Custom Colors"
+                return this.invisiblyChecked(item) ? `Un-highlight ${col} Scenes`: `Highlight ${col} Scenes`},
+            shortcut: ["Alt", "LeftClick"],
+            icon: funnelIcon,
+            iconColor: "",
+            hoverColor: "",
+            iconSpecialColor: function(item) {return (this.invisiblyChecked(item)) ? availableColors.find(col => item?.classList?.contains(col.toLowerCase())) : "" }, 
+            showFor: ["scene"],
+            // butNotFor: ["holiday"],
+            invisiblyChecked: (item) => { return (!!document.querySelector("#flexiContainer.uncolorAllScenesBut")) && availableColors.some(col => flexiContainer.classList.contains(col.toLowerCase()) && item.classList.contains(col.toLowerCase())) },
+            //checkedIf: (item) => { return (!!document.querySelector("#flexiContainer.uncolorAllScenesBut")) && availableColors.some(col => flexiContainer.classList.contains(col.toLowerCase()) && item.classList.contains(col.toLowerCase())) },
+            greyOutIf: (item) => { return !availableColors.find(col => item.classList.contains(col.toLowerCase())) }, 
+            command: (item) => { muteColors(item) },
+        },
+        {   
+            menuItem: "Un-highlight all colors",
+            // menuName: function(item) {
+            //     let col = availableColors.find(col => item.classList.contains(col.toLowerCase()))
+            //     if (!col) return "Can Only Highlight Standard Colors"
+            //     return this.checkedIf(item) ? `Un-highlight ${col} Scenes`: `Highlight ${col} Scenes`},
+            shortcut: ["Alt", "LeftClick"],
+            icon: funnelIcon,
+            iconColor: "",
+            hoverColor: "",
+            iconSpecialColor: function(item) {return ((!!document.querySelector("#flexiContainer.uncolorAllScenesBut")) && availableColors.some(col => flexiContainer.classList.contains(col.toLowerCase()) && item.classList.contains(col.toLowerCase()))) ? 
+                availableColors.find(col => item.classList.contains(col.toLowerCase())) : "" }, 
+            showFor: ["flexiContainer"],
+            // butNotFor: ["holiday"],
+            //checkedIf: (item) => { return (!!document.querySelector("#flexiContainer.uncolorAllScenesBut")) && availableColors.some(col => flexiContainer.classList.contains(col.toLowerCase()) && item.classList.contains(col.toLowerCase())) },
+            greyOutIf: (item) => { return !availableColors.find(col => item.classList.contains(col.toLowerCase())) }, 
+            command: (item) => { muteColors(null) },
+        },
+        {   
+            menuItem: "Selection to new Doc",
+            shortcut: [""],
+            icon: toNewIcon,
+            iconColor: "",
+            showFor: ["scene"],
+            command: (item) => { copyContentsToClipboard() },
+        },
+        {
+            menuItem: "divider",
+            showFor: ["scene"],
+        },
+        //  OMIT AND UN-OMIT ARE CURRENTLY NOT AVAILABLE because wonky
+        //  Must be be fixed in order to be used
+        // {   
+        //     menuItem: "Omit Scene",
+        //     shortcut: [""],
+        //     icon: hiddenIcon,
+        //     iconColor: "",
+        //     showFor: ["scene"],
+        //     butNotFor: ["isOmitted"],
+        //     command: (item) => { omitScene(item) },
+        // },
+        // {   
+        //     menuItem: "Un-omit Scene",
+        //     shortcut: [""],
+        //     icon: showIcon,
+        //     iconColor: "",
+        //     showFor: ["isOmitted"],
+        //     butNotFor: ["section", "synopsis"],
+        //     command: (item) => { unOmitScene(item) },
+        // },
+        {   
+            menuItem: "Rename Scene",
+            menuName: (item) => {return "Rename " + (item.classList.contains("scene") ? "Scene" : item.classList.contains("section") ? "Section Header" : item.classList.contains("synopsis") ? "Synopsis" : "")},
+            shortcut: ["Alt","Enter"],
+            icon: "",
+            iconColor: "",
+            showFor: ["scene", "section"],
+            greyOutIf: (item) => { return $$(".isSelected").length > 1 },
+            command: (item) => { editContent(false, $id("youAreHere").closest(".scene, .section")) }, //false is instead of sending an event
+        },
+        {   
+            menuItem: "Delete Scene",
+            menuName: (item) => {return "Delete " + (item.classList.contains("scene") ? "Scene" : item.classList.contains("section") ? "Section Header" : item.classList.contains("synopsis") ? "Synopsis" : "")},
+            shortcut: ["Meta","Backspace"],
+            icon: trashIcon,
+            iconColor: "",
+            hoverColor: "#880000",
+            showFor: ["synopsis", "scene", "section"],
+            command: (item) => { deleteScene() }, //send no element, finds selected element in function instead
+        },
+        {
+            menuItem: "divider",
+            showFor: ["scene", "section"],
+        },
+        {   
+            menuItem: "Demote Section Level",
+            shortcut: ["Control", "Alt", "ArrowRight"],
+            icon: "",
+            iconColor: "",
+            showFor: ["section"],
+            // butNotFor: ["level5", "level6", "level7", "level8", "level9"],
+            greyOutIf: (item) => { return ["level5", "level6", "level7", "level8", "level9"].includes(item.classList) }, 
+            command: (item) => { promoteSection(item) },
+        },
+        {   
+            menuItem: "Promote Section Level",
+            shortcut: ["Control", "Alt", "ArrowLeft"],
+            icon: "",
+            iconColor: "",
+            showFor: ["section"],
+            // butNotFor: ["level1"],
+            greyOutIf: (item) => { return item.classList.contains("level1") }, 
+            command: (item) => { demoteSection(item) },
+        },
+        {
+            menuItem: "divider",
+            showFor: ["section"],
+        },
+        {   
+            menuItem: "Add Section Before",
+            shortcut: ["Control", "Alt", "Shift", "ArrowUp"],
+            icon: "",
+            iconColor: "",
+            showFor: ["scene", "section"],
+            greyOutIf: () => { return document.querySelectorAll(".isSelected").length > 1 }, 
+            command: (item) => { addElement(item, "section", true) }, //true means beforeInsteadOfAfter
+        },
+        {   
+            menuItem: "Add Section After",
+            shortcut: ["Control", "Alt", "Shift", "ArrowDown"],
+            icon: "",
+            iconColor: "",
+            showFor: ["scene", "section"],
+            greyOutIf: () => { return document.querySelectorAll(".isSelected").length > 1 },  
+            command: (item) => { addElement(item, "section") },
+        },
+        {
+            menuItem: "divider",
+            showFor: ["scene", "section"],
+        },
+        {   
+            menuItem: "Add Scene Before",
+            shortcut: ["Control", "Alt", "ArrowUp"],
+            icon: "",
+            iconColor: "",
+            showFor: ["scene", "section"],
+            greyOutIf: () => { return document.querySelectorAll(".isSelected").length > 1 }, 
+            command: (item) => { addElement(item, "scene", true) }, //true means beforeInsteadOfAfter
+        },
+        {   
+            menuItem: "Add Scene After",
+            shortcut: ["Control", "Alt", "ArrowDown"],
+            icon: "",
+            iconColor: "",
+            showFor: ["scene", "section"],
+            greyOutIf: () => { return document.querySelectorAll(".isSelected").length > 1 },  
+            command: (item) => { addElement(item, "scene") },
+        },
+        {   
+            menuItem: "Unlocked scenes to A-scenes",
+            shortcut: ["!"],
+            icon: "",
+            iconColor: "",
+            showFor: ["flexiContainer"],
+            greyOutIf: () => { return !outline.find(scene => (/(?:#)(.+)(?:#){1}\s*$/.test(scene.string))) },  
+            command: (item) => { addLetteredScenesWhenLocked() },
+        },
+    ])
+
+function displayContextMenu(event, element){
+
+    event.preventDefault()
+    event.stopPropagation()
+    closeNewMenu()
+
+    element = element || event.target //the element is sent when triggering menu with keys
+    let item = element.closest(".synopsis, .scene, .section, .flexiContainer")
+        if (!item) return
+
+    if (!event.shiftKey && !event.metaKey && !item.classList.contains('isSelected')) {deselectAllElements()}
+        item.classList.add("isSelected")
+
+    document.querySelectorAll(".contextMenu").forEach( menu => {menu.remove()})
+    if (!item) return
+
+
+
+    let contextMenu = document.createElement("div")
+        contextMenu.id = "contextMenu"
+        contextMenu.tabIndex = "1"
+        contextMenu.classList.add("contextMenu")
+        contextMenu.style.position = "absolute"
+        let ypos = (event.clientY || element.getBoundingClientRect().top) + 20
+        let xpos = (event.clientX || element.getBoundingClientRect().left) + 20
+        contextMenu.style.top = ypos + "px"
+        contextMenu.style.left = xpos + "px"
+        contextMenu.onmouseenter = function(){ $$(".keySelected").forEach(item => item.classList.remove("keySelected")) }
+        contextMenu.addEventListener("keydown", function(event){
+            event.preventDefault()
+            event.stopPropagation()
+            let items = Array.from(contextMenu.querySelectorAll("li:not(.greyedOut)"))
+                if(!items.length) return
+            let currentlySelected = items.indexOf(contextMenu.querySelector(".keySelected"))
+            if (event.key == "Escape") contextMenu.remove()
+            if (event.key == "ArrowDown") {
+                    if (currentlySelected === undefined || currentlySelected == items.length -1) currentlySelected = -1
+                    items.forEach(item => item.classList.toggle("keySelected", false))
+                    items[currentlySelected + 1]?.classList.toggle("keySelected", true)
+            }
+            if (event.key == "ArrowUp") {
+                if (currentlySelected === undefined || currentlySelected == -1) currentlySelected = items.length
+                    items.forEach(item => item.classList.toggle("keySelected", false))
+                    items[currentlySelected - 1]?.classList.toggle("keySelected", true)
+            }
+            if (event.key == "Enter") {
+                items[currentlySelected]?.click()
+                $$(".isSelected").forEach(item => item.classList.remove("isSelected"))
+            }
+        })
+    
+    document.body.appendChild(contextMenu)
+
+        contextMenu.focus()
+        contextMenu.onblur = function(){ contextMenu.remove() }
+
+    let list = document.createElement("ul")
+    for (contentLine of contextMenuContents){
+
+        if (!contentLine.showFor.some(classname => {return item.classList.contains(classname)})) continue
+        if (contentLine.butNotFor && contentLine.butNotFor.some(classname => {return item.classList.contains(classname)})) continue
+
+        if (contentLine.menuItem == "divider"){
+            let listItem = document.createElement("hr")
+                list.appendChild(listItem)
+                continue
+        }
+
+        let shortcutKeysInObj = contentLine.shortcut || ""
+        let shortcutKeys = []
+            for(shortcutKey of shortcutKeysInObj){
+                if (replacableKeys.includes(shortcutKey)){
+                    shortcutKey = keystToReplace[replacableKeys.indexOf(shortcutKey)]
+                }
+            shortcutKeys.push(shortcutKey.toUpperCase())
+            }
+
+        let listItem = document.createElement("li")
+         
+        if(contentLine.hoverColor) listItem.style.setProperty("--menuHover", contentLine.hoverColor)
+        if(contentLine.greyOutIf) listItem.classList.toggle("greyedOut", contentLine.greyOutIf(item))
+
+        if(!listItem.classList.contains("greyedOut")){
+                listItem.onclick = (function(command) {
+                return function(event) {
+                    event.stopImmediatePropagation()
+                    event.stopPropagation()
+                    event.preventDefault()
+                    command(item);
+                    contextMenu.remove()
+                }
+            })(contentLine.command);
+            listItem.oncontextmenu = listItem.onclick
+        }
+
+            let iconChecked = false
+                if(contentLine.checkedIf && contentLine.checkedIf(item)) iconChecked = true
+            
+            let iconColor = contentLine.iconColor.toLowerCase()
+                if (contentLine.iconSpecialColor) iconColor = contentLine.iconSpecialColor(item).toLowerCase()
+
+                if(availableColors.some(col => contentLine.menuItem.toLowerCase() == col.toLowerCase()) && (item.classList.contains(contentLine.menuItem.toLowerCase()))){
+                    iconChecked = true
+                }
+            let menuName = contentLine.menuItem
+                if (contentLine.menuName) menuName = contentLine.menuName(item)
+            listItem.innerHTML = `<span class='contextmenuicon ${iconChecked ? "checkedIcon" : ""}' style='--mycolor: var(--${iconColor})'>${contentLine.icon || ""}</span>${menuName}<span class='shortcut'>${shortcutKeys.join("")}</span>`;
+
+            if (contentLine.iconOutline) listItem.querySelector(".contextmenuicon").style.stroke = contentLine.iconOutline(item)
+
+        list.appendChild(listItem)
+    }
+    contextMenu.appendChild(list)
+
+    if (xpos + contextMenu.offsetWidth > window.innerWidth) contextMenu.style.left = window.innerWidth - contextMenu.offsetWidth + "px"
+    if (ypos + contextMenu.offsetHeight > window.innerHeight) contextMenu.style.top = window.innerHeight - contextMenu.offsetHeight + "px"
+
+    if (list.textContent == "") contextMenu.remove()
+
+}
+
+function setItemColor(item, color){
+
+    toggleWaitState(true)
+    $$(".contextMenu").forEach(menu => {menu.remove()})
+
+    if (color.toLowerCase() == "remove color") {color = "none"}
+
+    // if (!item.classList.contains("isSelected") && $$("isSelected").length) {deselectAllElements()} //deselect all other elements if a new one is selected
+    if (item && !$$("isSelected").length) {item.classList.add("isSelected")} //select the item if it is not selected yet
+
+    let elements = $$('.isSelected') ||[item]
+
+    for (element of elements) {
+
+        let elementId = element.id
+
+        if (element.classList.contains("synopsis")){
+			let parentId = element.closest(".scene, .section").id
+			let synopsisNumber = Number(elementId.toString().replace(/^s.*_/, ""))
+
+            Beat.call(([color, parentId, synopsisNumber])=>{
+                Beat.setColorForScene(color, Beat.outline()[parentId]?.synopsis[synopsisNumber])
+            }, [color, parentId, synopsisNumber])
+        
+        }else{
+
+            Beat.call((color, elementId)=>{
+                Beat.setColorForScene(color, Beat.outline()[elementId])
+            }, color, elementId)
+        
+        } 
+    }
+}   
+
+function deselectAllElements(){
+
+    mylog()
+
+    $$('.isSelected').forEach(item => item.classList.remove('isSelected'))
+    updateSelectionInfo()
+
+}
+
+</script>
+
+
+
+<!-- OLD STUFF BELOW -->
+
+<style>
 #contextmenu {
     position: absolute;
     /* background-color: rgba(192,192,192,0.9); */
@@ -79,7 +602,7 @@
     transform: translateY(2.5px);
 }
 
-.trashCanMenuItem > #trashbutton{
+.trashCanMenuItem > .trashbutton{
     fill: rgb(165, 0, 0);
     opacity: 0.8 !important;
     transition: fill 0ms !important;
@@ -93,7 +616,7 @@
     transition: fill 0ms !important;
 }
 
-.trashCanMenuItem:hover > #trashbutton, #deleteSceneCommand:hover > .trashCanMenuItem > #trashbutton, 
+.trashCanMenuItem:hover > .trashbutton, #deleteSceneCommand:hover > .trashCanMenuItem > .trashbutton, 
 .eyeWithCrossMenuItem:hover > .eyeWithCrossIcon, #omitSceneCommand:hover > .eyeWithCrossMenuItem > .eyeWithCrossIcon
 .eyeMenuItem:hover > .eyeIcon, #unOmitSceneCommand:hover > .eyeMenuItem > .eyeIcon,
 .clipboardMenuItem:hover > #toNewIcon{
@@ -133,232 +656,13 @@
 
 <script>
 
-function contextMenu(theRightClickedThing, x, y, rightClick){
-
-    mylog("from " + JSON.stringify(contextMenu.caller?.name))
-    mylog("clicked this: " + theRightClickedThing.classList)
-
-    if(theRightClickedThing.classList.contains("editBox"))return
-    
-    a = [...theRightClickedThing.classList]
-
-    if(theRightClickedThing.classList.contains("synopsiscontainer") || theRightClickedThing.classList.contains("orphanText") || theRightClickedThing.classList.contains("sceneheading") || theRightClickedThing.classList.contains("section-heading")){
-            
-        theRightClickedThing = theRightClickedThing.closest(".scene, .section")
-            
-        if (theRightClickedThing.classList.contains("section")){ 
-            //because absurdly we need to go back down the sectiontext (and soon up again but oookay.)
-            theRightClickedThing = theRightClickedThing.querySelector(".section-heading")
-            }
-    } 
-
-    //create the context menu.
-
-    if ((rightClick) && (theRightClickedThing.classList.contains("scene") || theRightClickedThing.classList.contains("synopsis") || theRightClickedThing.classList.contains("section-heading"))) {      
-        
-        if (theRightClickedThing.classList.contains("section-heading")){theRightClickedThing = theRightClickedThing.parentNode}
-        if (theRightClickedThing.classList.contains("sceneheading")){theRightClickedThing = theRightClickedThing.parentNode}
-        if (!event.metaKey && !theRightClickedThing.classList.contains('isSelected')) {deselectAllElements()}
-        
-        theRightClickedThing.classList.add('isSelected')
-        a = [...theRightClickedThing.classList]
-        createContextMenu(a, x, y)
-        flexiContainer.classList.remove("wait")       
-        return
-    }
-
-    
-
-    //user chose a color
-    if (theRightClickedThing.classList.contains('colorListItem')) {
-
-        flexiContainer.classList.toggle("wait", true)
-        let redraw = flexiContainer.getBoundingClientRect()
-        
-        closeContextMenu()
-
-        let item = theRightClickedThing.id
-        if (item == "remove color") {item = "none"}
-
-        let selectedElements = $$('.isSelected')
-        let elementCountArray = []
-
-            for (element of selectedElements) {
-
-                if (areScenesProportional == 1 && [...element.classList].includes("isOmitted")){continue}
-                
-                let elementCount = element.id
-                elementCountArray.push(elementCount)
-
-            }
-        
-        weAreChangingColors = true
-        Beat.call("Beat.custom.changeElementColor(" + JSON.stringify(elementCountArray) + ", '" + item + "')")
-        
-        deselectAllElements()
-    }   
-
-    //user chose a command
-    if ([...theRightClickedThing.classList].includes('command')) {
-
-        closeContextMenu()
-
-        if(theRightClickedThing.id == 'contentsToClipboard'){
-            copyContentsToClipboard()
-        }
-
-        if (theRightClickedThing.id == 'omitSceneCommand'){
-            omitScene(theRightClickedThing)
-        }
-
-        if (theRightClickedThing.id == 'unOmitSceneCommand'){
-            unOmitScene(theRightClickedThing)
-        }
-
-        if (theRightClickedThing.id == 'deleteSceneCommand'){
-            deleteScene(theRightClickedThing)
-        }
-        mylog("end of 'user chose command'")
-    }
-    
-    closeContextMenu()
-    mylog("end of contextMenu()")
-}
-
-function setContextMenuPosition(event, contextMenu) {
-
-    mylog()
-
-    var mousePosition = {};
-    var menuPosition = {};
-    var menuDimension = {};
-
-    menuDimension.x = window.getComputedStyle(contextMenu).width
-    menuDimension.y = window.getComputedStyle(contextMenu).height
-
-    mousePosition.x = event.pageX;
-    mousePosition.y = event.pageY;
-
-    menuPosition.x = mousePosition.x;
-
-    menuPosition.y = mousePosition.y;
-
-return menuPosition;
-}
-
-function deselectAllElements(){
-
-    mylog()
-
-    let selectedElements = $$('.isSelected')
-
-    if (selectedElements.length){
-        for (i = selectedElements.length - 1; i > -1; i--) {
-            selectedElements[i].classList.remove('isSelected')
-        }
-    }
-
-    mylog("end of deselectallelements")
-}
-
-function createContextMenu(clickedThingsClassList, x, y){   
-    
-    mylog()
-    mylog(clickedThingsClassList)
-
-    let theContextMenu = $id('contextmenu')
-    let pluralSuffix = ""
-    let currentlySetColor = "none"
-
-    let elements = $$('.isSelected')
-    let someAreOmitted = false
-    let someAreUnOmitted = false
-    if (elements.length > 1) {pluralSuffix = "s"}
-    for (element of elements){
-        if([...element.classList].includes("isOmitted")){someAreOmitted = true}
-        if(![...element.classList].includes("isOmitted")){someAreUnOmitted = true}
-    }    
-
-    theContextMenu.innerHTML = ""
-    for (item of colorsArray) {
-        if ([...clickedThingsClassList].includes(item.toLowerCase())){currentlySetColor = item.toLowerCase()}
-        if (item == "Special" && !clickedThingsClassList.includes("section")){continue}
-        let iconString = ""
-        if (item == "Remove Color"){iconString = "<p style ='font-size: 22px !important; transform: translateY(-11px); line-height: 24px !important;'>&#xd7;</p>"}
-        theContextMenu.innerHTML += "<li class='colorListItem' id='" + item.toLowerCase() + "'>" + 
-            "<div class='colorSquare clickThru' style='background-color: hsl(var(--" + item.toLowerCase() + "))'>" + iconString + "</div>  &nbsp;&nbsp;" +
-            item + "</li>"
-    }
-
-    if(!clickedThingsClassList.includes("synopsis")){
-        theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
-        theContextMenu.innerHTML += "<li class='command' id='contentsToClipboard'>" + 
-            "<div class='clipboardMenuItem clickThru'>" + toNewIcon + "</div>  &nbsp;&nbsp;Selection to New Doc</li>"
-
-        // theContextMenu.innerHTML += "<li id='contextMenuDivider3' class='clickThru contextMenuDivider'><hr></li>"
-        // theContextMenu.innerHTML += "<li class='command' id='addMarker'>" + 
-        //     "<div class='addMarkerMenuItem clickThru'>" +  "" + "</div>  &nbsp;&nbsp;Add Marker</li>"
-        // theContextMenu.innerHTML += "<li class='command' id='addNote'>" + 
-        //     "<div class='addNoteMenuItem clickThru'>" +  "" + "</div>  &nbsp;&nbsp;Add Note</li>"
-    }
-
-    theContextMenu.innerHTML += "<li id='contextMenuDivider1' class='clickThru contextMenuDivider'><hr></li>"
-    
-    $id('contextMenuDivider1').classList.add("displayNone")
-
-    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('sceneheading')){
-        $id('contextMenuDivider1').classList.remove("displayNone")
-                // theContextMenu.innerHTML += `<li>${clickedThingsClassList}</li>`
-                // theContextMenu.innerHTML += `<li>${someAreOmitted}</li>`
-                // theContextMenu.innerHTML += `<li>${someAreUnOmitted}</li>`
-        if (!clickedThingsClassList.includes('isOmitted') || someAreUnOmitted){
-        theContextMenu.innerHTML += "<li class='command' id='omitSceneCommand'>" + 
-            "<div class='eyeWithCrossMenuItem clickThru'>" + hiddenIcon + "</div>  &nbsp;&nbsp;Omit Scene" + pluralSuffix + "</li>"
-        }
-        if (clickedThingsClassList.includes('isOmitted') || someAreOmitted){
-        theContextMenu.innerHTML += "<li class='command' id='unOmitSceneCommand'>" + 
-            "<div class='eyeMenuItem clickThru'>" + showIcon + "</div>  &nbsp;&nbsp;Un-omit Scene" + pluralSuffix + "</li>"
-        }
-    }
-
-    if (clickedThingsClassList.includes('scene') || clickedThingsClassList.includes('sceneheading') || clickedThingsClassList.includes('synopsis') ||  clickedThingsClassList.includes('section-heading')){
-        $id('contextMenuDivider1').classList.remove("displayNone")
-        let objectType = "scene"
-            if (clickedThingsClassList.includes('synopsis')) objectType = "synopse"
-            if (clickedThingsClassList.includes('section-heading')) objectType = "section"
-        theContextMenu.innerHTML += "<li class='command' id='deleteSceneCommand'>" + 
-            "<div class='trashCanMenuItem clickThru'>" + trashIcon + "</div><span style='float:right; color: gray;'>⌘⌫</span>  &nbsp;&nbsp;Delete " + objectType + pluralSuffix + "</li>"
-    }
-
-
-    // //statistics section! DISABLED FOR NOW... but might be good if improved!
-    // if (clickedThingsClassList.includes('sceneheading')){
-    //     theContextMenu.innerHTML += "<li id='contextMenuDivider2' class='clickThru contextMenuDivider'><hr></li>"
-    //     let numberOfScenesLikeThis = $$("." + currentlySetColor)
-    //     theContextMenu.innerHTML += "x of " + numberOfScenesLikeThis.length + " scenes of color " + currentlySetColor
-
-    // }
-    
-    theContextMenu.classList.add('visible')
-    if (x + theContextMenu.offsetWidth > window.innerWidth - 20) {x = x - theContextMenu.offsetWidth}
-    if (y + theContextMenu.offsetHeight > window.innerHeight - 20) {y = y - theContextMenu.offsetHeight}
-    theContextMenu.style.top = y + "px"
-    theContextMenu.style.left = x + "px"
-
-    contextMenuIsOpen = true
-
-    mylog("done creating")
-    
-}
-
 function closeContextMenu(){
 
     mylog()
 
-    let theContextMenu = $id('contextmenu')
+    $$(".contextMenu").forEach(menu => {menu.remove()})
     contextMenuIsOpen = false
-    if(theContextMenu){theContextMenu.classList.remove('visible')}
-
+    
     mylog("exiting")
 }
 
@@ -368,7 +672,7 @@ function omitScene(){
 
     let elements = $$('.isSelected')
 
-        if(areScenesProportional == 1){
+        if(documentSetting.scenesAreProportional){
             for(element of elements){
                 //element.classList.add("dimmedScene")
                 element.classList.add("shrinkingWhenOmitting")
@@ -393,8 +697,7 @@ function omitScene(){
     }
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
-    weAreChangingColors = true
-    Beat.call("Beat.custom.omitScene(" + areScenesProportional + ", [" + [...elementsToOmit] + "])")
+    Beat.call("Beat.custom.omitScene(" + documentSetting.scenesAreProportional + ", [" + [...elementsToOmit] + "])")
     deselectAllElements()
 }
 
@@ -402,9 +705,9 @@ function unOmitScene(){
 
     mylog()
 
-    Beat.call("Beat.onTextChangeDisabled = true")
-    Beat.call("Beat.onOutlineChangeDisabled = true")
-	Beat.call("Beat.onSelectionChangeDisabled = true")
+    // Beat.call("Beat.onTextChangeDisabled = true")
+    // Beat.call("Beat.onOutlineChangeDisabled = true")
+	// Beat.call("Beat.onSelectionChangeDisabled = true")
 
     elements = $$('.isSelected')
     let elementsToUnOmit = []
@@ -416,12 +719,13 @@ function unOmitScene(){
         }
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
-    weAreChangingColors = true
     Beat.call("Beat.custom.unOmitScene([" + [...elementsToUnOmit] + "])")
     deselectAllElements()
 }
 
 function deleteScene(){
+
+    //TODO: rewrite this locally!
 
     mylog()
 
@@ -429,7 +733,7 @@ function deleteScene(){
     if (elements.length == 0) return
 
         for(element of elements){
-            element.classList.add("dimmedScene")
+            element.classList.add("toBeDeleted")
         }
 
     let elementsToDelete = []
@@ -438,17 +742,16 @@ function deleteScene(){
             elementsToDelete.push(elements[i].id)
         }
         
-    weAreChangingColors = true
     if (elements[0].classList.contains("synopsis")){
         for (e of elementsToDelete) {
             elementsToDelete[elementsToDelete.indexOf(e)] = JSON.stringify(e)
         }
-        let doThis = `Beat.custom.deleteSynopsis([${[...elementsToDelete]}], ${warningsAreOn})`
+        let doThis = `Beat.custom.deleteSynopsis([${[...elementsToDelete]}], ${userDefault.warningsAreOn})`
         Beat.call(doThis)
     }else if (elements[0].classList.contains("section")){
-        Beat.call("Beat.custom.deleteSection([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+        Beat.call("Beat.custom.deleteSection([" + [...elementsToDelete] + "], " + userDefault.warningsAreOn + ")")
     }else{
-        Beat.call("Beat.custom.deleteScene([" + [...elementsToDelete] + "], " + warningsAreOn + ")")
+        Beat.call("Beat.custom.deleteScene([" + [...elementsToDelete] + "], " + userDefault.warningsAreOn + ")")
     }
     deselectAllElements()
     mylog("exiting")
@@ -458,8 +761,7 @@ function ifYesToDelete(){ //this is visually-related stuff only and does not alt
 
     mylog("YES TO DELETE: Now shrinking the scenes.")
 
-    let selectedScenes = document.querySelectorAll('.dimmedScene')
-    // console.log(selectedScenes)
+    let selectedScenes = document.querySelectorAll('.toBeDeleted')
 
     mylog("this many: " + selectedScenes.length)
 
@@ -472,13 +774,11 @@ function ifYesToDelete(){ //this is visually-related stuff only and does not alt
         scene.style.opacity = "1"
         scene.style.height = "0px"
         scene.style.minHeight = "0px"
-        // scene.style.margin = "0"
 
         let syncons = scene.querySelectorAll(".synopsis, .synopsiscontainer") || false
 
         if (syncons.length > 0){
             for (syncon of syncons){
-            // syncon.classlist?.add("longerAnimation")
             syncon.style.scale = "0px 0px"
             syncon.style.height = "0px"
             syncon.style.minHeight = "0px"
@@ -490,13 +790,12 @@ function ifYesToDelete(){ //this is visually-related stuff only and does not alt
 function undimAllScenes(){
 
     mylog()
+
     actualChangesToScriptInProgress = false //this is for the errorhandler to know what was happening
+    
+    $$(".toBeDeleted").forEach(element => {element.classList.remove("toBeDeleted")})
+    $$('.dimmedScene').forEach(item => item.classList.remove('dimmedScene'))
 
-    let elements = $$('.dimmedScene')
-
-	for(i = elements.length-1; i > -1; i--){
-		elements[i].classList.remove('dimmedScene')
-	}
 }
 
 function copyContentsToClipboard(){

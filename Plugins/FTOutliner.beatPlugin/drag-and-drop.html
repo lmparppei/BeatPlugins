@@ -204,11 +204,10 @@ function onDragStart(e) {
 
     e.stopPropagation()
     collapseNote()
-    removeAddButton()
 
-    Beat.call("Beat.onTextChangeDisabled = true")
-    Beat.call("Beat.onOutlineChangeDisabled = true")
-	Beat.call("Beat.onSelectionChangeDisabled = true")
+    // Beat.call("Beat.onTextChangeDisabled = true")
+    // Beat.call("Beat.onOutlineChangeDisabled = true")
+	// Beat.call("Beat.onSelectionChangeDisabled = true")
 
     dropTookPlace = false 
     beforeOrAfter = false
@@ -221,7 +220,7 @@ function onDragStart(e) {
     mylog("onDragStart: " + e.target.classList)
 
     //don't drag scene dots in index card mode for sections
-    if(indexCardMode && e.target.classList.contains('scene') && ![...e.target.parentNode.classList].includes('isExpanded')){
+    if(documentSetting.indexCardMode && e.target.classList.contains('scene') && ![...e.target.parentNode.classList].includes('isExpanded')){
         Beat.call("Beat.alert('Not allowed', 'Moving scene dots around in this view would be quite insecure and finicky. So no.')")
         return
     }
@@ -234,8 +233,14 @@ function onDragStart(e) {
 
     //check so that all selected items are of the same kind!
     let draggedObjectTypes = [] 
-    $$(".isSelected").forEach(element => {draggedObjectTypes.push(Array.from(element.classList).filter(cl => ["section", "scene", "synopsis"].includes(cl)))})
-    if(!draggedObjectTypes.every(val => val === draggedObjectTypes[0])){
+    $$(".isSelected").forEach(element => {
+        //draggedObjectTypes.push(Array.from(element.classList).filter(cl => ["section", "scene", "synopsis"].includes(cl)))
+        let filteredClasses = Array.from(element.classList).filter(cl => ["section", "scene", "synopsis"].includes(cl))
+            if (filteredClasses.length > 0) {
+            draggedObjectTypes.push(filteredClasses[0])
+            }
+    })
+    if(!draggedObjectTypes.every(val => {return val === draggedObjectTypes[0]})){
         alertThis("Can not move different element types at once.")
         return
     }
@@ -349,7 +354,7 @@ function onDragStart(e) {
 
                     if (outline[i].typeAsString == "Synopse"){mylog("synopsis so continuing"); continue}
 
-                    if (outline[i].omitted == 1 && areScenesProportional == 1){reasonString = "It may look as if they are, but the range you are trying to move contains one or more hidden (omitted) scenes, which were not selected. \\n\\nSwitch to non-flexible mode (shortcut: F) to select the entire range."}
+                    if (outline[i].omitted == 1 && documentSetting.scenesAreProportional){reasonString = "It may look as if they are, but the range you are trying to move contains one or more hidden (omitted) scenes, which were not selected. \\n\\nSwitch to non-flexible mode (shortcut: F) to select the entire range."}
             
                     e.stopPropagation()
                     e.preventDefault()
@@ -431,9 +436,9 @@ function onDragEnd(e, cancelButton){
 
         deselectAllElements()
 
-    Beat.call("Beat.onTextChangeDisabled = false")
-    Beat.call("Beat.onOutlineChangeDisabled = false")
-	Beat.call("Beat.onSelectionChangeDisabled = false")
+    // Beat.call("Beat.onTextChangeDisabled = false")
+    // Beat.call("Beat.onOutlineChangeDisabled = false")
+	// Beat.call("Beat.onSelectionChangeDisabled = false")
 }
 
 function onDragEnter(e) {
@@ -569,7 +574,7 @@ function onDragOverForSynopsis(e, draggedOver, previouslyDraggedOverElement){
     //expand scene dots and return
     if (draggedOver.classList.contains("scene") &&
         !draggedOver.closest(".section")?.classList.contains("isExpanded") &&
-        indexCardMode){
+        documentSetting.indexCardMode){
             draggedOver.closest(".section")?.classList.add("isExpanded")
             return
     }
@@ -760,8 +765,6 @@ function onDragOverForSections(e, draggedOver){
     //now adjusting everything if draggedOver was level1 (fri 13)
     //but only if we are NOT dragging an entire act! (2023-01-05)
         if(draggedOver.classList.contains("level1") && !$id("ghost").firstChild.classList.contains("level1")){
-
-            console.log("🥸🥸🥸")
                         
             // first correctly store drop index
             //dropDiv.dataset.insertBeforeScene = Number(draggedOver.id) + 1 //changed 2023-01-04
@@ -862,7 +865,7 @@ function onDragOverForScenes(e, draggedOver){
         if (draggedOver.parentNode?.classList.contains("section") &&
             !draggedOver.parentNode?.classList.contains("level1") &&
             !draggedOver.parentNode?.classList.contains("isExpanded") &&
-            indexCardMode){
+            documentSetting.indexCardMode){
                 draggedOver.closest(".section")?.classList.add("isExpanded")
                 return
         }
@@ -883,7 +886,7 @@ function onDragOverForScenes(e, draggedOver){
             sectionbounding.top = boundingForHeading.top
             sectionbounding.bottom = boundingForHeading.bottom
 
-            if(indexCardMode && !draggedOver.closest(".section").classList.contains(".collapsedSection")){
+            if(documentSetting.indexCardMode && !draggedOver.closest(".section").classList.contains(".collapsedSection")){
 
                 boundingForContainer = draggedOver.closest(".section").querySelector(".synopsiscontainer").getBoundingClientRect()
                 sectionbounding.bottom = boundingForContainer.bottom
@@ -1048,7 +1051,6 @@ function onDrop(e){
     mylog("insert before" + insertBeforeScene)
     
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
-    weAreChangingColors = true
     let synopsisMove = $id("dropDiv").dataset.dropSynopsisHere || null
 
     // alertThis(synopsisMove)
@@ -1062,7 +1064,7 @@ function onDrop(e){
     //even newer, since 1.977: sending explicit drop-position for synopsis 
     //also sending makeCopy, which leaves the original in place!
     let makeCopy = altIsBeingPressed
-    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + warningsAreOn + "," + rangeStart + "," + rangeEnd + "," + synopsisMove + "," + makeCopy +")")
+    Beat.call("Beat.custom.moveScenes(" + firstScene + ", " + lastScene + ", " + insertBeforeScene + ", " + userDefault.warningsAreOn + "," + rangeStart + "," + rangeEnd + "," + synopsisMove + "," + makeCopy +")")
     rangeStart = false
     rangeEnd = false
 }
@@ -1100,7 +1102,7 @@ function ifYesToMove(){ //this is visually-related stuff only and does not alter
             clone.classList.add("countMeOut") //this is all a convoluted way when preserving open and collapsed sections... phew...
             clone.classList.add("longerAnimation", "shrinkToNone")
             clone.classList.remove("beingDragged", "isSelected")
-            document.getElementById("dropDiv").insertAdjacentElement("beforebegin", clone)
+            document.getElementById("dropDiv")?.insertAdjacentElement("beforebegin", clone)
             onlyToProvokeAnimation = document.getElementById(cloneName).getBoundingClientRect()         
             document.getElementById(cloneName).classList.remove("shrinkToNone")
         scene.classList.add("shrinkToNone")
@@ -1114,6 +1116,7 @@ function ifYesToMove(){ //this is visually-related stuff only and does not alter
             scene.style.minHeight = "0"
             scene.style.margin = "0"
         }
+        
         if (closeBoneyardAfter){
             $id("flexiContainer").classList.add("boneyardIsClosed")
             closeBoneyardAfter = false

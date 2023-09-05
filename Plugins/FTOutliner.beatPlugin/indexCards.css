@@ -371,6 +371,13 @@ transform: translateY(-3px);
 
 }
 
+.indexcards .level1 > .orphanText:has( > .synopsiscontainer:empty){
+
+	min-height: 0px !important;
+	
+
+}
+
 .indexcards .special:not(.collapsedSection:not(.level1)) > .orphanText,
 .indexcards .special:not(.collapsedSection:not(.level1)) > .orphanText > .synopsiscontainer,
 .indexcards .special:not(.collapsedSection:not(.level1)) > .synopsiscontainer{

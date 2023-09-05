@@ -2,9 +2,9 @@
 
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
-Copyright: Fredrik T Olsson 2021-2022
-Version: 1.54
-Compatibility: 1.985
+Copyright: Fredrik T Olsson 2021-2023
+Version: 1.70
+Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
 
@@ -17,122 +17,69 @@ a {
 </style>
 <p>A <b>Flexible Time Outliner</b> for navigating, structuring and editing your screenplay.</p>
 <ul>
-	<li>Scenes arranged per #act and displayed proportionally to their length in the script</li>
-	<li>Notes and markers displayed right in their corresponding place in the outline</li>
-	<li>Color, hide or delete scenes via right click context menu</li>
+	<li>Arrange your scenes vertically per #act, proportionally to their length in the script</li>
+	<li>Show your notes and markers right in their corresponding places in the outline</li>
+	<li>Right click to color, delete or rename scenes or sequences</li>
 	<li>Drag-and-drop to rearrange scenes or entire sequences</li>
-	<li>Track characters by highlighting scenes, or isolate scenes of certain color</li>
-	<li>Print your outline (or export to PDF)
+	<li>Track characters by highlighting scenes, or filter by colors</li>
+	<li>Export your outline to PDF
 	<li>Fully editable index card view
-	<li>Slide-over Note Panel with all notes in one list
+	<li>Slide-over Note Panel with all your notes in one long list
 	<li>Boneyard (for storing scenes outside of the script structure)
 	<li>and lots more...
 </ul>
 <p>For more info, questions or support visit <a href="https://github.com/ftolsson/ftoutliner/wiki" target="_default">the FTOutliner wiki</a></p>
 </Description>
 
-*/ 
+*/
 
-// Beat.openConsole()
+function __________VARIABLES(){}
 
-Beat.setUserDefault("ftoutlinerVersion", "1.54") //also change in description above!
+//VERSION NUMBER checking -- also change in the download description above!
+var ftoutlinerVersion = "1.7"
+Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
-if (!Beat.compatibleWith(1.985)){
+if (!Beat.compatibleWith(1.996)){
 
 	Beat.alert("You need to update Beat to run FTOutliner",
-		"This version of FTOutliner uses new features introduced in Beat 1.977 and will not run with older versions.\n\nPlease visit Apple's AppStore to update.")
+		"This version of FTOutliner uses new features introduced in Beat 1.996 and will not run with older versions.\n\nPlease visit Apple's AppStore to update.")
 	return
 }
 
-var backgroundAlreadyRunning = false
-var queueOneMoreFullUpdate = false
+//GLOBAL PLUGIN-ONLY VARIABLES
 
-var reset = Beat.assetAsString("reset.css")
-var css = Beat.assetAsString("outline.css")
-var globals = Beat.assetAsString("globals.html")
-var template = Beat.assetAsString("outline.html")
-var dnd = Beat.assetAsString("drag-and-drop.html")
-var dialogs = Beat.assetAsString("dialogs.html")
-var charactertracking = Beat.assetAsString("charactertracking.html")
-var displaynotes = Beat.assetAsString("displaynotes.html")
-var contextmenu = Beat.assetAsString("contextmenu.html")
-var editcontent = Beat.assetAsString("editcontent.html")
-var addelements = Beat.assetAsString("addelements.html")
-var printCSS = Beat.assetAsString("printOutlineCSS.css")
-var indexcards = Beat.assetAsString("indexCards.html")
-var indexcards_css = Beat.assetAsString("indexCards.css")
-var notepanel = Beat.assetAsString("notepanel.html")
-var menu = Beat.assetAsString("menu.html")
-var printing = Beat.assetAsString("printing.html")
-var thePanelWidth, thePanelHeight, thePanelX, thePanelY
-// var storingDefaultsHTML = makeStoringDefaultsDiv()
-var allDefaultsHTML = makeStoringDefaultsDiv()
+var windowTitle = "FTOutliner"
+let html = buildHTML()
+
 var location, length
-var html
 
 var fullUpdateInProgress = false
-var smallUpdateInProgress = false
-
-var	html = //storingDefaultsHTML +
-	reset +
-	css +
-	globals +
-	allDefaultsHTML +
-	// dialogs +
-	charactertracking +
-	displaynotes +
-	contextmenu + 
-	indexcards +
-	indexcards_css +
-	notepanel +
-	menu +
-	dialogs + //changed
-	printing +
-	editcontent +
-	addelements +
-	dnd +
-	template
-
-var charactersArray, scenesWithCharactersArray
-var hackyAbsoluteHeightOfLine = 0 // 0.07195301353931427/2 // VERY HACKY: THIS IS TO ADD ONE EXTRA LINE AT TIMES
-
-var startTime
-var midTime1, midTime2, midTime3
-var endTime
-var endTimes =  []
-var dispatchTimes = []
-var paginateStartTime, paginateEndTime, timeSpentPaginatingLines = 0
-var runCounter = 0
-var runCounterText = 0
-
-var fullTimer = false
 var selectionTimer = null
 
-var documentName, documentSubName, documentAuthor
-
-var reallyDelete
-var windowTitle = "FTOutliner"
-
-var outlineJustFired
+var previousLineObject = {} //used to check whether a change is in a line that affects pagination
 
 var viewSubMenuItems = []
 var showSubMenuItems = []
 var notesSubMenuItems = []
 var dialogSubMenuItems = []
 
-var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
-	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), thePanelHeight) 
+let windowSizes = Beat.getDocumentSetting('windowSize')
+var thePanelX = windowSizes?.x || 0
+var thePanelY = windowSizes?.y || 0
+var thePanelWidth = windowSizes?.width || 800
+var thePanelHeight = windowSizes?.height || 800
 
-// if(Beat.compatibleWith(1.986))	
+var htmlWindow = Beat.htmlWindow(html, thePanelWidth, thePanelHeight, function(){Beat.end()});
+	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), Math.max(thePanelHeight, 380)) 
+
+Beat.custom = {}
+
 createMenu(htmlWindow)
 
-// fetchDocumentTitles()
-loopToFetchDocumentTitles()
-setWindowTitle()
+if(Beat.getDocumentSetting("ftoutlinerObject")) setWindowTitle()
 
-// =======================
-// END OF GLOBAL VARIABLES
-// =======================
+
+function __________APP_MENUBAR(){}
 
 function createMenu(htmlWindow){
 
@@ -157,8 +104,10 @@ function createMenu(htmlWindow){
 	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Backward", ["ctrl", "alt", ","], function () { htmlWindow.runJS("cycleBubbles('-1')") }))
 	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Forward", ["ctrl", "alt", "."], function () { htmlWindow.runJS("cycleBubbles('1')") }))
 
-	let aboutMenuItem = Beat.menuItem("About FTOutliner", [], function () { htmlWindow.runJS("displayAboutBox()") })
+	let settingsMenuItem = Beat.menuItem("FTOutliner settings", ["alt", "ctrl", ","], function () { htmlWindow.runJS("openSettingsWindow()") })
+	//let aboutMenuItem = Beat.menuItem("About FTOutliner", [], function () { htmlWindow.runJS("displayAboutBox()") })
 	let splitScreenMenuItem = Beat.menuItem("Arrange side-by-side with Beat", ["alt", "ctrl", "\ "], function () { htmlWindow.runJS("setSharedScreen()") })
+	let switchFocusMenuItem = Beat.menuItem("Switch focus Beat ⮂ FTOutliner", ["alt", "ctrl", "cmd", "\ "], function () { htmlWindow.runJS("switchFocus()") })
 	let zoomInMenuItem = Beat.menuItem("Increase Font Size", ["alt", "ctrl", "+"], function () { htmlWindow.runJS("zoomSizes('+')") })
 	let zoomOutMenuItem = Beat.menuItem("Decrease Font Size", ["alt", "ctrl", "-"], function () { htmlWindow.runJS("zoomSizes('-')") })
 	let resetZoomMenuItem = Beat.menuItem("Reset Font Size", ["alt", "ctrl", "0"], function () { htmlWindow.runJS("zoomSizes('0')") })
@@ -173,7 +122,7 @@ function createMenu(htmlWindow){
 	let menuDivider4 = Beat.separatorMenuItem()
 	let appMenu = Beat.menu("FTOutliner", [
 		// aboutMenuItem,
-		splitScreenMenuItem, 
+		settingsMenuItem,
 		menuDivider1,
 		zoomInMenuItem, 
 		zoomOutMenuItem,
@@ -181,17 +130,21 @@ function createMenu(htmlWindow){
 		menuDivider2,
 		viewSubMenu, 
 		showSubMenu, 
-		menuDivider3,
 		sidePanelMenuItem,
 		notesSubMenu, 
 		dialogSubMenu,
-		menuDivider4,
+		menuDivider3,
 		highlightCharacterMenuItem,
+		menuDivider4,
+		splitScreenMenuItem, 
+		switchFocusMenuItem,
 	])
 
 }
 
-Beat.custom = {};
+Beat.custom.switchToHTML = function(){
+	htmlWindow.focus()
+}
 
 Beat.custom.updateShowMenu = function(itemNumber, value){
 	updateShowMenuItem(itemNumber, value)
@@ -207,58 +160,138 @@ function updateViewsMenuItem(itemNumber, value){
 	viewSubMenuItems[itemNumber].on = value
 }
 
-Beat.custom.reloadCode = function(){
+function __________EXTERNAL_WINDOW_STUFF(){}
+
+var secondWindow
+
+Beat.custom.displaySecondWindow = function(name, file, width=800, height=800, selfClose=true, data=false){
+
+	//if (secondWindow) secondWindow.close()
+	secondWindow = false
+	secondWindow = Beat.htmlWindow("", width, height, function(){}, true);
+
+	let html = Beat.assetAsString(file)
+	selfCloseString = selfClose ? `
+		window.addEventListener("blur", function (){
+			Beat.call("Beat.custom.closeSecondWindow()")
+		})` : ``
+
+	secondWindow.setHTML(`
+		<body>${html}
+			<script>
+				${selfCloseString}
+				var pageData = ${data}
+			</script>
+		</body>
+	`)
+	
+	let x = (Beat.screen()[2] - width)/2
+	let y = (Beat.screen()[3] - height)/2
+	secondWindow.setFrame(x, y, width, height)
+	secondWindow.title = name
+
+}
+
+function __________welcomeWindow(){} 
+
+//NOTE: This is runtime code NOT INSIDE A FUNCTION, moved down here to circumvent hoisting issues
+let showWelcome = JSON.parse(Beat.getUserDefault("ftoutlinerObject"))["dontShowWelcomeWindowFor" + ftoutlinerVersion.replace(".", "")]
+	if(!showWelcome){
+
+		Beat.custom.displaySecondWindow("Welcome", "welcomewindow.html", 800, 650, false)
+
+	}
+
+Beat.custom.closeSecondWindow = function(){	secondWindow.close() }
+
+Beat.custom.sendToMain = function(key, value, nameOfVariable){
+
+	// //Turn this on to see what got sent over
+	// 	let contents = ""
+	// 		for ([key, value] of Object.entries(objectValues)){
+	// 			contents += ((value == true) ? "✅ " : "❌ ") + key + " ----- " + value + "\n"
+	// 		}
+	// 		Beat.alert(`contents of sent variable ${nameOfVariable}:`, contents) 
+
+	Beat.log("💜" + "," + key + "," + value + "," + nameOfVariable)
+
+	htmlWindow.runJS(`${nameOfVariable}.${key} = ${value}
+			
+						Beat.log("${nameOfVariable}" + ", " + "${key}")
+						Beat.log(JSON.stringify(${nameOfVariable}.${key}))
+
+						applySettings()
+						saveCurrentState()
+					`)
+
+}
+
+function __________RELOADERS(){}
+
+Beat.custom.reloadCode = function(){ //hard restart the plugin, i.e. the entire code
 
 	Beat.restart()
 
 }
 
-Beat.custom.reloadHTML = function(){
+Beat.custom.reloadHTML = function(){ //soft restart the plugin, i.e. only the HTML window
 
-	reset = Beat.assetAsString("reset.css")
-	css = Beat.assetAsString("outline.css")
-	globals = Beat.assetAsString("globals.html")
-	template = Beat.assetAsString("outline.html")
-	dnd = Beat.assetAsString("drag-and-drop.html")
-	dialogs = Beat.assetAsString("dialogs.html")
-	charactertracking = Beat.assetAsString("charactertracking.html")
-	displaynotes = Beat.assetAsString("displaynotes.html")
-	contextmenu = Beat.assetAsString("contextmenu.html")
-	editcontent = Beat.assetAsString("editcontent.html")
-	addelements = Beat.assetAsString("addelements.html")
-	printCSS = Beat.assetAsString("printOutlineCSS.css")
-	indexcards = Beat.assetAsString("indexCards.html")
-	indexcards_css = Beat.assetAsString("indexCards.css")
-	notepanel = Beat.assetAsString("notepanel.html")
-	menu = Beat.assetAsString("menu.html")
-	printing = Beat.assetAsString("printing.html")
-
- 	//storingDefaultsHTML = makeStoringDefaultsDiv()
-	allDefaultsHTML = makeStoringDefaultsDiv()
-
-
-	html = //storingDefaultsHTML +
-	reset +
-	css +
-	globals +
-	allDefaultsHTML +
-	// dialogs +
-	charactertracking +
-	displaynotes +
-	contextmenu + 
-	indexcards +
-	indexcards_css +
-	notepanel +
-	menu +
-	dialogs + //changed
-	printing +
-	editcontent +
-	addelements +
-	dnd +
-	template
+	html = buildHTML()
+	
+	let windowSizes = Beat.getDocumentSetting('windowSize')
+		thePanelX = windowSizes?.x || 0
+		thePanelY = windowSizes?.y || 0
+		thePanelWidth = windowSizes?.width || 800
+		thePanelHeight = windowSizes?.height || 800
 
 	htmlWindow.setHTML(html)
 	htmlWindow.setFrame(thePanelX, thePanelY, Math.max(thePanelWidth, 380), thePanelHeight) 
+}
+
+function buildHTML(){
+
+	let reset = 		Beat.assetAsString("reset.css")
+	let css = 			Beat.assetAsString("outline.css")
+	let globals = 		Beat.assetAsString("globals.html")
+	let template = 		Beat.assetAsString("outline.html")
+	let dnd = 			Beat.assetAsString("drag-and-drop.html")
+	let dialogs = 		Beat.assetAsString("dialogs.html")
+	let charactertracking = Beat.assetAsString("charactertracking.html")
+	let displaynotes = 	Beat.assetAsString("displaynotes.html")
+	let contextmenu = 	Beat.assetAsString("contextmenu.html")
+	let keyboard = 		Beat.assetAsString("keyboard.html")
+	let editcontent = 	Beat.assetAsString("editcontent.html")
+	let addelements = 	Beat.assetAsString("addelements.html")
+	let printCSS = 		Beat.assetAsString("printOutlineCSS.css")
+	let indexcards = 	Beat.assetAsString("indexCards.html")
+	let indexcards_css = Beat.assetAsString("indexCards.css")
+	let notepanel = 	Beat.assetAsString("notepanel.html")
+	let scenepanel = 	Beat.assetAsString("scenepanel.html")
+	let menu = 			Beat.assetAsString("menu.html")
+	let printing = 		Beat.assetAsString("printing.html")
+
+	let html = 
+		reset +
+		css +
+		globals +
+		charactertracking +
+		displaynotes +
+		contextmenu + 
+		keyboard +
+		indexcards +
+		indexcards_css +
+		notepanel +
+		scenepanel +
+		menu +
+		dialogs + 
+		printing +
+		editcontent +
+		addelements +
+		dnd +
+		template
+
+	return html
+
 }
 
 Beat.onEscape(function () {
@@ -267,182 +300,237 @@ Beat.onEscape(function () {
 
 })
 
+function __________OUTLINE_UPDATERS(){}
 
-Beat.onOutlineChange (function() { 
+/* === NOTE ON HOW UPDATING WORKS AS OF TODAY, 2023-07-28 ===
+
+1. onTextChange is called. If it determines that pagination is not needed, it adds the old pagination to the new data and sends it.
+2a. If so, it also invalidates the next onPreviewFinished
+2b. If not invalidated, onPreviewFinished creates pagination and sends with the data
+That's basically it. Plus a lot of ifs and buts. But who counts.
+*/
+
+var pauseOnePaginationUpdate = false
+var paginationPauseTimer = null
+var onTextChangeTimer = null
+
+var emergencyExit = false
+
+Beat.onTextChange(function(location, length) { 
+
+	console.log("onTextChange")
+
+	// This function checks every change for whether it affects layout.
+	// If it does not, we skip pagination which is time consuming. 
 	
-	outlineJustFired = true
-	let jsToRun = `startFullUpdate()`	
-	htmlWindow.runJS(jsToRun)
+	emergencyExit = true
 
-			// PLUGIN: onOutlineChange (THIS FUNCTION) will call...
-			// HTMLWINDOW: startFullUpdate, which will call...
-			// PLUGIN: beat.custom.updateEntireOutline, 
-			//         makeJSON, then
-			//         paginateThis, which returns to updateEntireOutline, which will call...
-			// HTMLWINDOW: updateEverything
+	if(fullUpdateInProgress){ 
+		//this is now set when deferring to onPreviewFinished, so that a paginated update can never be canceled 
+		//by re-evaluating the need while already waiting for one
+		return
+	}
+	
+	if (onTextChangeTimer) {
+        onTextChangeTimer.invalidate()
+        onTextChangeTimer = null
+    }
+
+	pauseOnePaginationUpdate = false //used to come after the timer. Putting it here should exclude the possibility that a change that needs pagination is overruled by one that doesn't.
+
+	htmlWindow.runJS(`toggleWaitState(true)`)
+    onTextChangeTimer = Beat.timer(0.2, function() {
+
+		console.time("onTextChange")
+		
+		//determine which line changed
+			let parser = Beat.currentParser
+			let line = parser.lineAtPosition(location)
+				if(!line) return //try to circumvent error when typing on last line
+
+			// First coarse guard clause: this means several lines were changed (e.g. copy/paste) so make full update
+			console.log("Comparing to see if several lines were changed: ", previousLineObject.length != Beat.lines().length)
+			if((previousLineObject.length != Beat.lines().length)){
+				console.log("Sending to previewFinished b/c multiple lines changed")
+				fullUpdateInProgress = true
+				return 
+			} 
+			// Second: check if the nummber of linewraps in the line-at-cursor changed.
+				// console.log("wrapped lines: ", numberOfWrappedLines(line.string, line.typeAsString()), numberOfWrappedLines(previousLineObject[Beat.lines().indexOf(line)].string, line.typeAsString()))
+				// if(numberOfWrappedLines(line.string, line.typeAsString()) != numberOfWrappedLines(previousLineObject[Beat.lines().indexOf(line)].string, line.typeAsString())){
+				// 	console.log("Sending to previewFinished b/c number of wrapped lines for this line changed")
+				// 	fullUpdateInProgress = true
+				// 	return 
+				// }
+			// Third: check if the number of omitted lines or headings changed
+			console.time("checking for headings and hidden lines")
+			if ((previousLineObject.filter(line => ["Heading", "Section"].includes(line.typeAsString)).map(line => line.typeAsString).join(",") != Beat.outline().map(line => line.typeAsString()).join(","))
+				||
+				(previousLineObject.filter(line => line.omitted).length != Beat.lines().filter(line => line.omitted).length)
+				|| 
+				(previousLineObject.filter(line => line.typeAsString === "Heading").map(line => line.UUID).join(",") !== Beat.outline().filter(line => line.typeAsString() === "Heading").map(line => line.UUID).join(","))
+				){
+				console.log("Deferring to previewFinished b/c number/order of outline objects, or some sceneheading UUID, changed")
+				console.timeEnd("checking for headings and hidden lines")
+				fullUpdateInProgress = true
+				return
+			}
+			console.timeEnd("checking for headings and hidden lines")
+
+		//determine the printing part of the line that has changed
+			let nonPrintingRanges = line.ranges.notes//.concat(line.ranges.omitted)
+			let	nonPrintingRangesRev = nonPrintingRanges.sort((a, b) => b[0] - a[0]);
+			let printingLine = nonPrintingRangesRev.reduce((acc, [location, length]) => acc.slice(0, location) + acc.slice(location + length), line.string);
+
+		//determine the printing part of the previous, same line
+			let linePreviously = previousLineObject[Beat.lines().indexOf(line)] || false
+			let previousNonPrintingRanges = linePreviously?.ranges?.notes//.concat(linePreviously.ranges.omitted)
+			let previousNonPrintingRangesRev = previousNonPrintingRanges?.sort((a, b) => b[0] - a[0]);
+			let previousPrintingLine = previousNonPrintingRangesRev?.reduce((acc, [location, length]) => acc.slice(0, location) + acc.slice(location + length), linePreviously.string);
+
+		//console.timeEnd("onTextChange")
+
+		if(["Section", "Note", "Synopse"].includes(line.typeAsString()) 
+			||
+			line.omitted
+			||
+			printingLine.trimEnd() == previousPrintingLine?.trimEnd()
+			){
+
+				console.log ("determining only pagination-less update needed")
+				pauseOnePaginationUpdate = true
+
+				try{
+
+					Beat.async(function () {
+
+						console.log("in async, onTextChange")	
+
+						//FUNCTION SIMILAR TO previewFinished, BUT WHICH DOES NOT CALL PAGINATION
+							let json = JSON.stringify(outlineWithoutPagination())
+
+						// Get all lines as JSON
+							let linesAsJSON = Beat.linesAsJSON()
+
+						// Get entire screenplay
+							let fullScreenplay = Beat.getText()
+
+							if(!json || !linesAsJSON || !fullScreenplay){
+								pauseOnePaginationUpdate = false
+								fullUpdateInProgress = true
+								return
+							}
+							
+							Beat.sync(function () {
+								console.log("SENDING WITHOUT PAGINATION")
+								htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
+							})
+
+							previousLineObject = JSON.parse(linesAsJSON)
+
+						console.log("onTextChange async finished without errors")
+
+					})	
+
+				}catch(e){
+
+					pauseOnePaginationUpdate = false
+
+					console.log("error in onTextChange: " + e)
+					console.log("Therefore a last-minute deferral to onPreviewFinished")
+					fullUpdateInProgress = true
+					return
+
+				}
+
+			}else{
+
+				console.log ("deferring to onPreviewFinished")
+				fullUpdateInProgress = true
+
+				htmlWindow.runJS(`toggleWaitState(true)`)
+
+			}
+			console.timeEnd("onTextChange")
+	}) //timer end
 
 })
 
-Beat.custom.updateEntireOutline = function (location, length, previousOutlineLength) {
+Beat.onPreviewFinished(function(changedIndices) {
 
-	if (backgroundAlreadyRunning){
-		return}
+	if(pauseOnePaginationUpdate){
+		pauseOnePaginationUpdate = false
+		return
+	}
+    
+	// This is the earliest index which has changed
+	// currently not used, but might be used in the future to optimize the update
+    let index = changedIndices[0]
+
+	// this triggers the "updateEntireOutline", which WILL deliver pagination data
+	// NOTE: currently, "updateEntireOutline" is a custom Beat function in order to being callable from the HTML window
+	Beat.custom.updateEntireOutline()
+})
+
+Beat.custom.updateEntireOutline = function (location, length) {
+
+	console.time("updateEntireOutline")
 
 	fullUpdateInProgress = true		
-	let jsToRun = `
-		document.getElementById('outOfSyncDiv').style.display = 'block';
-		document.getElementById('outOfSyncDiv').classList.add('animate');
-		document.getElementById('flexiContainer').classList.add('wait');
-		`
-		htmlWindow.runJS(jsToRun)
+	emergencyExit = false
 
-	if(!location){
+	htmlWindow.runJS(`toggleWaitState(true)`);
+
+	if (!location) {
 		location = Beat.selectedRange().location
 	}
-	
-	let outlineElements = [...Beat.outline()]
-	const paginator = Beat.paginator()
 
-	Beat.dispatch(function(){
-		Beat.log("          Now entering dispatch")
+	Beat.async(function () {
+		
+		let startTime = Date.now()
 
-		backgroundAlreadyRunning = true
+			// Get the whole paginated JSON
+			let json = JSON.stringify(outlineWithPagination())
 
-		let pagesForElements = []
-		let pageBreakPositions = []
-		let pages
-		let pageBreaks
-	
-			try{
+			// Get all lines as JSON
+			let linesAsJSON = Beat.linesAsJSON()
 
-				for (scene of outlineElements){
-					let returnvalue = paginateThis(scene, paginator)
-						pagesForElements.push(returnvalue[0])
-						pageBreakPositions.push(returnvalue[1] || false)
-						//pagesForElements.push(paginateThis(scene, paginator))
+			// Send it to the HTML window
+			let fullScreenplay = Beat.getText()
+
+			if((!json || !linesAsJSON) && fullScreenplay.length > 0){
+				Beat.resetPreview()
+				return
+			}
+
+			Beat.sync(function () {
+				
+				//BUG HUNT PART III: If zero-height scenes encountred, don't update outline but immediately reset preview
+				if (json.endsWith(`"alert"]`)) {
+					Beat.resetPreview()
+					return
 				}
-				
-				pages = JSON.stringify(pagesForElements)
-				pageBreaks = JSON.stringify(pageBreakPositions)
-				
-			} catch(e) {
-				Beat.dispatch_sync(function(){	
-					htmlWindow.runJS(`mylog("There was an ERROR in the background: updateEntireOutline() ` + e + `", true)`)
-				})
-			}
-		
-		Beat.dispatch_sync(function(){	
-			Beat.log("          dispatch_sync, runJS")
 
-			let tmp = makeJSON() 
-			let json = tmp.json
-			let frontMatter = tmp.frontMatter
-
-			htmlWindow.runJS("updateEverything(" + json + "," + location + "," + length + "," + pages + "," + Beat.getText().length + "," + pageBreaks + "," + frontMatter + ")")
+				htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
+			})
 			
+			console.time("stringifyingLine")
+			previousLineObject = JSON.parse(linesAsJSON)
+			console.timeEnd("stringifyingLine")
 
-			if(queueOneMoreFullUpdate){
-				queueOneMoreFullUpdate = false
-				//Beat.log("Firing another round due to queued up outline change!")
-				Beat.custom.updateEntireOutline()
-			}
-
-			backgroundAlreadyRunning = false
-			fullUpdateInProgress = false
-			
-			// BELOW: small update immediately after FULL seems to mitigate anomaly when writing at end-of-scene
-			// Reason: during the second that the full update takes to paginate, the outline MAY become offset to
-			// the pagination data. UpdateOneScene collects the outline in milliseconds, thus reasonably syncing it
-			// to the paginated data. This is not perfect, but seems to be as good as we can get.
-			
-			outlineJustFired = false
-			Beat.custom.updateOnlyOneScene(location, length)
-		})
+			fullUpdateInProgress = false	
 	})
-}
-
-Beat.onTextChange(function (location, length) { 
-	// Beat.log("FIRED: onTextChange -- location is " + location)
-
-	if(outlineJustFired){
-		return
-	}
-
-	if(location){ //check if we are in an outline element and if so disreagard this call
-		let outlineDetector = Beat.currentParser.lineAtIndex(location)
-		
-		if (outlineDetector?.isOutlineElement()){
-
-			//Beat.log("            >>> ENDING onTextChange bc writing in outline")
-			return
-		}
-	}
-
-	if (!fullUpdateInProgress){
-		smallUpdateInProgress = true
-		htmlWindow.runJS("startSmallUpdate(" + location + "," + length + ", " + "1000" + ", " + JSON.stringify(Beat.currentParser?.sceneAtPosition(location)?.typeAsString()) + ")") 
-	}
-	
-			// PLUGIN: onTextChange (THIS FUNCTION) will call...
-			// HTMLWINDOW: startSmallUpdate, which will call...
-			// PLUGIN: beat.custom.updateOnlyOneScene, which will call...
-			//         makeJSON, then
-			//         paginateThis, which returns to updateOnlyOneScene, which will call...
-			// HTMLWINDOW: updateOneScene
-
-})
-
-Beat.custom.updateOnlyOneScene = function (location, length) {
-	//Beat.log("==================== updateOnlyOneScene, location is" + location)
-	htmlWindow.runJS("document.getElementById('outOfSyncDiv').classList.add('animate')");
-	htmlWindow.runJS("document.getElementById('outOfSyncDiv').style.display = 'block'");
-	htmlWindow.runJS("document.getElementById('flexiContainer').classList.add('wait')");
-
-	if(outlineJustFired){
-		//Beat.log("CANCELED UPDATE_ONLY_ONE B/C OutlineJustFired"); 
-		return
-	}
-
-	if (backgroundAlreadyRunning){
-		//Beat.log("          CANCELLED UPDATE ONLY ONE B/C BACKGROUND WAS RUNNING!")
-		return
-	}
-
-	if (location < Beat.outline()[0]?.sceneStart){ //look for title page changes only if typing before first outline
-		
-		let a = Beat.currentParser.lineAtPosition(location)
-		if (a.isTitlePage){
-			fetchDocumentTitles(a.string)
-		}
-	}
-
-	runCounterText++
-	//Beat.log("Only Once Scene is now RUNNING! " + runCounterText)
-	
-	let outlineElements = Beat.outline()
-	let whichSceneAreWeIn = 0
-	while (outlineElements[whichSceneAreWeIn + 1] && outlineElements[whichSceneAreWeIn + 1].sceneStart < location){
-		whichSceneAreWeIn ++
-	}
-
-	while (outlineElements[whichSceneAreWeIn - 1] && outlineElements[whichSceneAreWeIn].typeAsString() == "Synopse"){whichSceneAreWeIn --} //added to fix static scenes if synopse 21'11'17
-
-	let scene = outlineElements[whichSceneAreWeIn]
-	const paginator = Beat.paginator()
-	let returnvalue = paginateThis(scene, paginator)
-		let pages = returnvalue[0]
-		let pageBreakPosition = returnvalue[1]
-
-	let tmp = makeJSON() 	
-	let json = tmp.json
-	let frontMatter = tmp.frontMatter
-	
-	htmlWindow.runJS("updateOneScene(" + json + "," + whichSceneAreWeIn + "," + pages + "," + location + "," + length + "," + Beat.getText().length + "," + pageBreakPosition + "," + frontMatter + ")")
+	console.timeEnd("updateEntireOutline")
 }
 
 Beat.onSelectionChange(function (location, length) {
+
+	console.log("onSelectionChange")
+
+	htmlWindow.runJS(`currentCaretPosition = ${location}; currentCaretLength = ${length}`);
 	
-	if (fullUpdateInProgress || smallUpdateInProgress){
+	//Does this one ever happen now? Answer: the full update does, the small does not.
+	if (fullUpdateInProgress){
 		return
 	}
 
@@ -452,104 +540,151 @@ Beat.onSelectionChange(function (location, length) {
     }
 
     selectionTimer = Beat.timer(0.2, function() {
-		htmlWindow.runJS("youAreHere(" + location + "," + length + ", true)") //last value is "positionChangeOnly"
+		htmlWindow.runJS("youAreHere(" + location + "," + length + ", true)") 
+		//the TRUE at the end means this was a "positionChangeOnly"
     })
 })
 
+let sceneData = [] //This is now global in order to be re-useable when no new pagination is needed
+let pagination
+const paginationManager = Beat.currentPagination()
 
+function outlineWithoutPagination() {
 
-function ____________________HELPERS__________(){}
+	console.log("outlineWithoutPagination")	
 
-// function paginateThis(scene, paginator, content) { //PREVIOUSLY HAD CONTENT HERE
-function paginateThis(scene, paginator) {
-
-	//Beat.log("PaginateThis") This is the wildest time-suck. How to avoid?
-
-	let fixedPage
-	let content
-	let pageBreakIndex
+	let altSceneData = []
 
 	try{
+		for (const scene of Beat.outline()) {
+			let data = scene.json()
+	
+			let previousData = sceneData[Beat.outline().indexOf(scene)]
+	
+				data.numberOfPages = previousData.numberOfPages
+				data.startsOnPage = previousData.startsOnPage
+				data.positionOnPage = previousData.positionOnPage
+				data.breakLines = previousData.breakLines
+		
+			altSceneData.push(data)
+		}
+	}catch{
+	
+		Beat.resetPreview()
+		return false
 
-		content = Beat.linesForScene(scene)	
+	}
 
-		//pageBreakFinder:
+	return altSceneData
 
-			let subContent = []
-			let addExtraLine = 0
-			
-			for (contentline of content){
-				
-				if(contentline.typeAsString() == "Page Break") {
-					
-					paginator.paginateLines(subContent)
-					pageBreakIndex = (paginator.numberOfPages + paginator.lastPageHeight - (paginator.lastPageHeight > 0 ? (paginator.numberOfPages < 1 ? 0 : 1) : 0))
-					
-					//break // NO: without break, we will do this for the LAST pagebreak in a scene if several. Which seems reasonable!
-				}
+}
 
-				if(contentline.typeAsString() == "Heading") addExtraLine = 2/58
+function outlineWithPagination() {
 
-				subContent.push(contentline)
+	console.time("outlineWithPagination")
+	
+	let zeroHeight = []
+		pagination = paginationManager.finishedPagination
+		sceneData = []
+	
+	for (const scene of Beat.outline()) {
+
+		if(emergencyExit) break
+
+		let data = scene.json()
+
+		data.numberOfPages = pagination.heightForRange({ location: scene.position, length: scene.length }) / Beat.currentPagination().maxPageHeight
+			//the above replaces the below, because of faulty values in heightForScene. This may or may not have been fixed in Beat already.
+			//data.numberOfPages = pagination.heightForScene(scene) / Beat.currentPagination().maxPageHeight
+
+		data.startsOnPage = pagination.pageNumberAt(scene.position)
+		data.positionOnPage = 0.0
+
+		//BUG HUNT PART I: Checking for zero-height scenes!
+			if (data.numberOfPages == 0 && data.typeAsString == "Heading" && !data.omitted){ 
+				zeroHeight.push(data)
 			}
 
-		paginateStartTime = new Date ()
-		paginator.paginateLines(content)
+		if (data.startsOnPage > 0) {
+			// Get the (relative) y position of the block for this line
+			// If it's below 0, it's probably an outline element
+			let page = pagination.pages[data.startsOnPage - 1]
+				data.positionOnPage = page?.positionOfBlockForLine(scene.line)
+				if (data.positionOnPage < 0) data.positionOnPage = 0.0;
+		} 
 
-		paginateEndTime = new Date ()
-		timeSpentPaginatingLines += (paginateEndTime.getTime() - paginateStartTime.getTime())
+		//any length of a hidden heading should go into its closest visible parent!
+			if (data.omitted){			
+				let closestVisibleParent = -1
+					while (sceneData.at(closestVisibleParent).omitted && (sceneData.length + closestVisibleParent > 0)){
+						closestVisibleParent --
+					}
+					sceneData.at(closestVisibleParent).numberOfPages += data.numberOfPages
+				data.numberOfPages = 0 //because the height of the omitted scene is now transferred to previous unomitted one
+			}
 
-		let pagesToReduceWith = 0
-		// if (paginator.lastPageHeight > 0){
-		// pagesToReduceWith = (paginator.numberOfPages < 1)? 0 : 1
-		// }
-			if (paginator.lastPageHeight > 0 && paginator.numberOfPages > 0) pagesToReduceWith = 1
-		fixedPage = paginator.numberOfPages + paginator.lastPageHeight - pagesToReduceWith
+		let lines = Beat.linesForScene(scene)
+		let breakLines
+		
+			breakLines = lines.filter(line => line.typeAsString() == "Page Break").map(line => {
+				let previousLine = Beat.currentParser.lineAtIndex(line.range.location - 2)
+				let thispage = pagination.pageNumberAt(line.range.location - 2)
+				let page = pagination.pages[thispage -1]
+				return {"startPageIncFraction": thispage + page?.positionOfBlockForLine(previousLine), "fullpage": pagination.pageNumberAt(line.range.location), "pageBreakIndex": line.range.location}
+			})
+		
+		data.breakLines = breakLines
+		sceneData.push(data)
 
-		// if(accumulatedLastPageHeight) fixedPage = fullPageLengthForBrokenScene
-
-		smallUpdateInProgress = false
-
-		// fixedPage += hackyAbsoluteHeightOfLine / 2 //adds a line before each scene. Since removed, and since changed to HALF a line.
-		fixedPage += addExtraLine
-
-	} catch(e) {
-		Beat.dispatch_sync(function(){	
-			htmlWindow.runJS(`mylog("There was an ERROR in the background: paginatethis() ` + e + `", true)`)
-		})
 	}
+	
+	//BUG HUNT PART II: Firing a dialog if there was a zero-height scene
+		if (zeroHeight.length){ 
+			console.log("!!! Zero Height Happened for " + zeroHeight.length + "scenes:", zeroHeight)
+			sceneData.push("alert") 
+			Beat.sync(function () {
+					// 	Beat.resetPreview()
+					//Beat.alert("Zero Height Scene(s) Detected", "FTOutliner has detected one or more scenes with zero height. This is a bug in Beat, and you should report it to the developer. In the meantime, FTOutliner will try to fix it for you. Please wait a few seconds.")
+				})
+		}
 
-	//Beat.log("End of PaginateThis  -- result was " + fixedPage)
-	return [fixedPage, pageBreakIndex]
+	console.timeEnd("outlineWithPagination")
+	return sceneData
 }
 
-function makeJSON(){
+function __________HELPERS_____(){}
 
-	let outlineItems = Beat.outlineAsJSON() 
-	let allLines = Beat.lines()
-	let frontMatter = 0
+function numberOfWrappedLines(str, typeAsString) {
 
-	//what in the world did I think this one was doing?
-		// for (let i = 0; i < outlineItems.length; i ++){
-		// 	outlineItems[i].pageBreak = "---"
-		// }
+	console.time("calculating number of wrapped lines")
 
-	let line
-	for (line of allLines){
-		if (line.isTitlePage() || ["Empty", "Synopse"].includes(line.typeAsString())) {
-			frontMatter = line.position + line.range.length
-		}
-		if (!line.isTitlePage() && !["Empty", "Synopse"].includes(line.typeAsString())) {
-			break
-		}
+	const pageWidths = {
+		Action: 60,
+		Character: 38,
+		Parenthetical: 27,
+		Dialogue: 35,
+		Lyrics: 60,
+		Heading: 60,
 	}
-	outlineItems[0].frontMatter = frontMatter //this is NOT shipping it over -- what to do...
 
-    let json = JSON.stringify(outlineItems)
+	const pageWidth = pageWidths[typeAsString]
 
-	// Beat.log(outlineItems)
-    return {"json": json, "frontMatter": frontMatter}
-}
+	let words = str.split(' ');
+	let lineLength = 0;
+	let lineCount = 1;
+  
+	for (let word of words) {
+	  if (lineLength + word.length <= pageWidth) {
+		lineLength += word.length + 1; // add 1 for the space
+	  } else {
+		lineCount++;
+		lineLength = word.length + 1; // add 1 for the space
+	  }
+	}
+  
+	console.timeEnd("calculating number of wrapped lines")
+	return lineCount;
+  }
 
 function titleCaseThis(str) {
 	let upper = true;
@@ -563,388 +698,24 @@ function titleCaseThis(str) {
 	  newStr += upper ? str[i].toUpperCase() : str[i].toLowerCase();
 	  upper = false;
 	}
-	// Beat.log("titleCase of " + str + " is now" + newStr)
 	return newStr;
 }
 
 
-
 function ____________________STORING_STUFF___________________(){}
 
-function makeStoringDefaultsDiv(){
-
-	let userDefault = {}
-	let documentSetting = {}
-
-	userDefault.ftoutlinerVersion = Beat.getUserDefault("ftoutlinerVersion")
-
-	userDefault.isRealTimeOn = Beat.getUserDefault("realTimeUpdates") || 1
-		if(userDefault.isRealTimeOn != 0){userDefault.isRealTimeOn = 1}
-	userDefault.warningsAreOn = Beat.getUserDefault("warningsAreOn") || true
-		if(userDefault.warningsAreOn != "false"){userDefault.warningsAreOn = true}
-	userDefault.colorScheme = `"${Beat.getUserDefault("colorScheme")}"` || `"FTOutliner"`
-		if(userDefault.colorScheme != `"Beat"`){userDefault.colorScheme = `"FTOutliner"`}
-	userDefault.loggingIsOn = Beat.getUserDefault("loggingIsOn") || false
-		if(userDefault.loggingIsOn != "true"){userDefault.loggingIsOn = false}
-
-	userDefault.invertTextOnDark = Beat.getUserDefault("invertTextOnDark")
-		if(userDefault.invertTextOnDark != "false"){userDefault.invertTextOnDark = true}
-
-	userDefault.excludeVoiceOvers = Beat.getUserDefault("excludeVoiceOvers") || false
-	 	if(userDefault.excludeVoiceOvers != "true"){userDefault.excludeVoiceOvers = false}
-
-	documentSetting.areScenesProportional = Beat.getDocumentSetting("showProportional") || 1
-		if(documentSetting.areScenesProportional != "0"){documentSetting.areScenesProportional = "1"}
-	documentSetting.whatAreSceneNumbers = `"${Beat.getDocumentSetting("showNumbers")}"` || "none"
-		if(documentSetting.whatAreSceneNumbers !== `"none"` && documentSetting.whatAreSceneNumbers !== `"inline"`){documentSetting.whatAreSceneNumbers = `"none"`}
-	documentSetting.whatAreSceneLengths = `"${Beat.getDocumentSetting("showLengths")}"` || "none"
-		if(documentSetting.whatAreSceneLengths != `"none"` && documentSetting.whatAreSceneLengths != `"inline"`){documentSetting.whatAreSceneLengths = `"none"`}
-	documentSetting.whatArePageNumbers = `"${Beat.getDocumentSetting("showPages")}"` || "none"
-		if(documentSetting.whatArePageNumbers != `"none"` && documentSetting.whatArePageNumbers != `"inline"`){documentSetting.whatArePageNumbers = `"none"`}
-	documentSetting.oneColumnOutline = Beat.getDocumentSetting("oneColumnOutline") || "0"
-		if(documentSetting.oneColumnOutline != "1" && documentSetting.oneColumnOutline != "0"){documentSetting.oneColumnOutline = "0"}
-	documentSetting.currentZoomLevel = Number(Beat.getDocumentSetting("currentZoomLevel")) || 1
-		if(documentSetting.currentZoomLevel < 0 || documentSetting.currentZoomLevel > 2){documentSetting.currentZoomLevel = 1}
-	documentSetting.notepanelWidth = parseInt(Beat.getDocumentSetting("notepanelWidth")) || false
-
-	documentSetting.noteButtonGreen = Beat.getDocumentSetting("noteButtonGreen") || true
-	documentSetting.noteButtonYellow = Beat.getDocumentSetting("noteButtonYellow") || true
-	documentSetting.noteButtonRed = Beat.getDocumentSetting("noteButtonRed") || true
-	documentSetting.noteButtonMagenta = Beat.getDocumentSetting("noteButtonMagenta") || true
-	documentSetting.noteButtonPurple = Beat.getDocumentSetting("noteButtonPurple") || true
-	documentSetting.noteButtonReview = Beat.getDocumentSetting("noteButtonReview") || false
-
-	documentSetting.indexCardMode = Beat.getDocumentSetting("indexCardMode") || false
-	documentSetting.indexCardHeight = Number(Beat.getDocumentSetting("indexCardHeight")) || 3
-	 	if(documentSetting.indexCardHeight < 0 || documentSetting.indexCardHeight > 20){documentSetting.indexCardHeight = 3}
-
-	documentSetting.cardStateForScenes = "[" + Beat.getDocumentSetting("cardStateForScenes") + "]"|| "[]"
-	documentSetting.cardStateForSections = "[" + Beat.getDocumentSetting("cardStateForSections") + "]" || "[]"
-
-	documentSetting.notesAreDisplayed = Beat.getDocumentSetting("notesAreDisplayed") || false
-		//if(documentSetting.notesAreDisplayed != true){documentSetting.notesAreDisplayed = false}
-	documentSetting.markersAreDisplayed = Beat.getDocumentSetting("markersAreDisplayed") || false
-		//if(documentSetting.markersAreDisplayed != true){documentSetting.markersAreDisplayed = false}
-	documentSetting.beatsAreDisplayed = Beat.getDocumentSetting("beatsAreDisplayed") || false
-	//if(documentSetting.BeatsAreDisplayed != true){documentSetting.BeatsAreDisplayed = false}
-	documentSetting.reviewsAreDisplayed = Beat.getDocumentSetting("reviewsAreDisplayed") || false
-	documentSetting.greyonly = Beat.getDocumentSetting("greyonly") || false
-	documentSetting.notepanel = Beat.getDocumentSetting("notepanel") || false
-	documentSetting.showSynopsisInScenes = Beat.getDocumentSetting("showSynopsisInScenes") || false
-	documentSetting.showMultipleSceneLines = Beat.getDocumentSetting("showMultipleSceneLines") || false
-	documentSetting.showMultipleSectionLines = Beat.getDocumentSetting("showMultipleSectionLines") || false
-	documentSetting.allowLowerCaseSections = Beat.getDocumentSetting("allowLowerCaseSections") || false
-	documentSetting.showVerticals = Beat.getDocumentSetting("showVerticals") || false
-	documentSetting.showPageDividers = Beat.getDocumentSetting("showPageDividers") || false
-	documentSetting.showPageDividersAlways = Beat.getDocumentSetting("showPageDividersAlways") || false
-
-	documentSetting.documentName = Beat.getDocumentSetting("documentName") || false
-	if(documentSetting.documentName) documentSetting.documentName = JSON.stringify(documentSetting.documentName)
-	documentSetting.documentSubName = Beat.getDocumentSetting("documentSubName") || false
-	if(documentSetting.documentSubName) documentSetting.documentSubName = JSON.stringify(documentSetting.documentSubName)
-	documentSetting.documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
-	if(documentSetting.documentAuthor) documentSetting.documentAuthor = JSON.stringify(documentSetting.documentAuthor)
+Beat.custom.saveWindowSize = function() { //DO NOT REMOVE THIS, IT IS CALLED FROM THE HTML WINDOW
 	
-	documentSetting.boneyardIsClosed = Beat.getDocumentSetting("boneyardIsClosed") || false
-
-	documentSetting.trackingIncludesSynopsis = Beat.getDocumentSetting("trackingIncludesSynopsis") || true
-	documentSetting.showRevisions = Beat.getDocumentSetting("showRevisions") || false
-
-	thePanelWidth = Beat.getDocumentSetting("thePanelWidth");
-		if(!thePanelWidth){thePanelWidth = 800}
-	thePanelHeight = Beat.getDocumentSetting("thePanelHeight");
-		if(!thePanelHeight){thePanelHeight = 800}
-	thePanelX = Beat.getDocumentSetting("xposition");
-		if(!thePanelX){thePanelX = 0}
-	thePanelY = Beat.getDocumentSetting("yposition");
-		if(!thePanelY){thePanelY = 0}
-
-	documentSetting.theDocumentsWidth = thePanelWidth
-	documentSetting.theDocumentsHeight = thePanelHeight
-	documentSetting.theWindowsPositionX = thePanelX
-	documentSetting.theWindowsPositionY = thePanelY
-
-	let allDefaults = `<script>
-		Beat.call("Beat.log('in HTML: Now exectuing the setting of userDefaults')")
-
-		var userDefault = {
-		`
-
-			for([key, value] of Object.entries(userDefault)){
-				allDefaults += `
-					${key} : ${value},`
-			}
-
-		allDefaults += `}
-		
-		Beat.call("Beat.log('in HTML: Now executing the setting of documentSettings')")
-
-		var documentSetting = {`
-
-			for([key, value] of Object.entries(documentSetting)){
-				allDefaults += `
-					${key}: ${value},`
-			}
-
-		allDefaults += `}
+	let winSize = htmlWindow.getFrame()
 	
-		Beat.call("Beat.log('Successfully done')")
-		
-		documentName = documentSetting.documentName //hack to transfer value to global variable
-		documentSubName = documentSetting.documentSubName //hack to transfer value to global variable
-		documentAuthor = documentSetting.documentAuthor //hack to transfer value to global variable
+	Beat.setDocumentSetting('windowSize', {
 
-		</script>`
+		x: winSize.x,
+		y: winSize.y,
+		width: winSize.width,
+		height: winSize.height
 
-		Beat.log(allDefaults)
-
-	return allDefaults
-}
-
-Beat.custom.setFrame = function (theWindowsPositionX, theWindowsPositionY, theDocumentsWidth, theDocumentsHeight){
-	htmlWindow.setFrame(theWindowsPositionX, theWindowsPositionY, Math.max(theDocumentsWidth, 380), theDocumentsHeight)
-}
-
-Beat.custom.saveWindowSize = function() {
-	let a = htmlWindow.getFrame()
-	
-	Beat.setDocumentSetting('xposition', a.x)
-	Beat.setDocumentSetting('yposition', a.y)
-	Beat.setDocumentSetting('thePanelHeight', a.height)
-	Beat.setDocumentSetting('thePanelWidth', a.width)
-}
-
-Beat.custom.limitWidth = function() {
-
-	let a = htmlWindow.getFrame()
-
-	htmlWindow.setFrame(a.x, a.y, 380, a.height)
-	htmlWindow.runJS("someoneResizedTheWindow()")
-
-}
-
-function ____________________CHARACTER_TRACKING___________________(){}
-
-Beat.custom.addCharacterClasses = function() {
-
-	let allLines = Beat.lines()
-	//let allScenes = Beat.scenes()
-	let allScenes = Beat.outline()
-	charactersArray = []
-	let occurrencesForCharacter = []
-
-	for (line of allLines){
-		if (line.omitted){continue}
-		if (line.typeAsString() == "Character"){
-			let name = line.string
-			name = name.replace(/^\^/, "")
-			name = name.replace(/^@/, "")
-			name = name.replace(/\(.*\)/gm, '');
-			name = name.replace(/\'/gm, '´');
-			name = titleCaseThis(name)
-			name = name.trim()
-			if (!charactersArray.includes(name)){
-				charactersArray.push(name)
-				occurrencesForCharacter.push(0)
-			}else{
-				occurrencesForCharacter[charactersArray.indexOf(name)] ++
-			}
-		}
-	}
-	
-	let temporarySortingArray = []
-	let biggestNumber
-	let index
-	for (let i = 0; i < occurrencesForCharacter.length; i++){
-
-		biggestNumber = Math.max(...occurrencesForCharacter)
-		index = occurrencesForCharacter.indexOf(biggestNumber)
-		temporarySortingArray.push(charactersArray[index])
-		occurrencesForCharacter[index] = -1
-	}
-
-	charactersArray = temporarySortingArray
-	scenesWithCharactersArray = []
-
-	// I now have all characters. Time to evaluate scenes.
-
-	const outline = [...Beat.outline()]
-	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
-	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
-
-	for (scene of allScenes){
-		const lines = Beat.linesForScene(scene)
-		const sceneNumber = outline.indexOf(scene)//scene.sceneNumber
-		let copyOfCharacters = [...charactersArray]
-		let charactersInScene = ""
-
-		//Beat.log("now evaluating characters in a... " + scene.typeAsString() + " with " + lines.length + " lines")
-
-		for (line of lines){
-
-			if (line.omitted){continue}
-
-			if (line.typeAsString() == "Character") {
-				let name = line.string
-
-				if(excludeVoiceOvers){
-					//Beat.log("I AM CHECKING FOR EXLUSION, because EXCLUDE = " + excludeVoiceOvers)
-					let extension = name.match(/\((.*)\)/)
-					if(extension){
-						if (["VO", "V.O", "V.O.", "PRELAP"].includes(extension[1].toUpperCase())) continue
-					}
-				} 
-
-				name = name.replace(/^\^/, "")
-				name = name.replace(/^@/, "")
-				name = name.replace(/\(.*\)/gm, '');
-				name = name.replace(/\'/gm, '´');
-				name = name.trim()
-				name = titleCaseThis(name)
-
-			 	if (copyOfCharacters.includes(name)){
-					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
-					let spacelessName = name.replace(/ /g, "_")
-					spacelessName = spacelessName.replace(/\'|\"/g, "-")
-					charactersInScene += spacelessName + " "
-				}
-			}
-
-			if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {
-
-				for (let i=0; i<copyOfCharacters.length; i++){
-					let name = copyOfCharacters[i]
-
-					//new matching
-					// Beat.log("now matching: " + name)
-					// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
-					// let matchString = line.string.match(regOfName, "i")
-					// Beat.log(matchString)
-					// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
-					
-					//old matching
-					//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
-					
-					let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
-					if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
-						// Beat.log("YES (add). The match is: " + matchIndex)
-						// Beat.log(line.string.substr(matchIndex, name.length))
-
-						copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
-						let spacelessName = name.replace(/ /g, "_")
-						spacelessName = spacelessName.replace(/\'|\"/g, "-")
-						charactersInScene += spacelessName + " "
-					}
-				}
-			}
-		}
-		scenesWithCharactersArray[sceneNumber]=charactersInScene	
-	}	
-	htmlWindow.runJS("makeCharacterMenu(" + JSON.stringify(charactersArray) + "," + JSON.stringify(scenesWithCharactersArray) + "); updateFilter()")
-}
-
-Beat.custom.reevaluateCharactersForScene = function(outlineNumber, sendToUpdateTrueOrFalse){
-
-	let excludeVoiceOvers = (Beat.getUserDefault("excludeVoiceOvers") == "true")
-	let trackingIncludesSynopsis = (Beat.getDocumentSetting("trackingIncludesSynopsis") == "true")
-	const scene = Beat.outline()[outlineNumber]
-	// const sceneNumber = Beat.outline()[outlineNumber].sceneNumber
-
-	const lines = Beat.linesForScene(scene)
-	let copyOfCharacters = [...charactersArray]
-	let charactersInScene = ""
-
-	for (line of lines){
-
-		if (line.omitted){continue}
-
-		if (line.typeAsString() == "Character") {
-			let name = line.string
-
-			if(excludeVoiceOvers){
-				//Beat.log("I AM CHECKING FOR EXLUSION, because EXCLUDE = " + excludeVoiceOvers)
-
-				let extension = name.match(/\((.*)\)/)
-				if(extension){
-					if (["OS", "O.S.", "VO", "V.O.", "PRELAP"].includes(extension[1].toUpperCase())) continue
-				}
-			} 
-
-			name = name.replace(/^\^/, "")
-			name = name.replace(/^@/, "")
-			name = name.replace(/\(.*\)/gm, '');
-			name = name.replace(/\'/gm, '´');
-			name = name.trim()
-			name = titleCaseThis(name)
-
-			 if (copyOfCharacters.includes(name)){
-				copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
-				let spacelessName = name.replace(/ /g, "_")
-				spacelessName = spacelessName.replace(/\'|\"/g, "-")
-
-				charactersInScene += spacelessName + " "
-			}
-		}
-
-		if (line.typeAsString() == "Action" || (trackingIncludesSynopsis && line.typeAsString() == "Synopse")) {			for (let i=0; i<copyOfCharacters.length; i++){
-				let name = copyOfCharacters[i]
-
-				//new matching
-				// Beat.log("now matching: " + name)
-				// let regOfName = new RegExp(name.toLowerCase().replace(/´/g, "'"))
-				// let matchString = line.string.match(regOfName, "i")		
-				// Beat.log(matchString)
-				// if (matchString && matchString[0].substr(0,1) == matchString[0].substr(0,1).toUpperCase()){
-
-				//old matching
-				//if (line.string.includes(name.replace(/´/g, "'")) || line.string.includes(name.replace(/´/g, "'").toUpperCase())){
-
-				let matchIndex = line.string.toUpperCase().indexOf(name.toUpperCase().replace(/`/g, "'"))
-				if (matchIndex > -1 && line.string.substr(matchIndex, 1) == line.string.substr(matchIndex, 1).toUpperCase()){
-					//Beat.log("YES (reev). The match is: " + matchIndex)
-					// Beat.log(line.string.substr(matchIndex, name.length))
-
-					copyOfCharacters.splice(copyOfCharacters.indexOf(name), 1)
-					let spacelessName = name.replace(/ /g, "_")
-					spacelessName = spacelessName.replace(/\'|\"/g, "-")
-
-					charactersInScene += spacelessName + " "
-				}
-			}
-		}
-	}
-	// scenesWithCharactersArray[sceneNumber]=charactersInScene
-	scenesWithCharactersArray[outlineNumber]=charactersInScene
-	if(sendToUpdateTrueOrFalse){htmlWindow.runJS("updateFilter(" + JSON.stringify(scenesWithCharactersArray) + ")")}
-}
-
-Beat.custom.changeElementColor = function (elements, newColor){	
-
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
-
-	const allOutlineElements = Beat.outline()
-	for (element of elements){
-		if (element.includes("_")){
-			let parentNumber = Number(element.toString().replace(/^s/, "").replace(/_.*$/, ""))
-			let synopsisNumber = Number(element.toString().replace(/^s.*_/, ""))
-			let synopsis = Beat.outline()[parentNumber].synopsis[synopsisNumber]
-				Beat.setColorForScene(newColor, synopsis)
-		}else{
-			Beat.setColorForScene(newColor, allOutlineElements[element])
-		}
-	}
-
-	Beat.onTextChangeDisabled = false
-	Beat.onOutlineChangeDisabled = false
-	Beat.onSelectionChangeDisabled = false
-
-	//if(!location){
-		location = Beat.selectedRange().location
-	//}
-
-	htmlWindow.runJS("startSmallUpdate(" + location + ", false, 0)")
+	})
 }
 
 function ____________________NOTES__________(){}
@@ -954,167 +725,25 @@ Beat.custom.testSendingLineObject = function(){
 	console.time("lineobject")
 
 	const allLines = Array.from(Beat.lines())
-	console.log(allLines)
-	console.log(arrayToJSON(allLines))
-	// const linesAsJSON = JSON.stringify(allLines)
-	// console.log(linesAsJSON)
 
 	console.timeEnd("lineobject")
 
 }
 
-Beat.custom.collectNotes = function() {
-	Beat.log("collecting notes")
-	// let inTime = new Date()
-	// let allOutlineElements = [...Beat.outline()]
-	// let parser = Beat.currentParser 
-
-	//Experimental alternate way to extract notes
-	//Only: Not getting inline notes anymore...
-		//console.time("filter")
-		//const allTheLines = [...Beat.lines()]
-		//const result = allTheLines.filter(line => line.note);
-		//console.log(result)
-		//console.timeEnd("filter")
-
-	Beat.log("entering dispatch")
-	Beat.dispatch(function(){
-		Beat.log("in dispatch")
-
-		let note = []
-		let marker = []
-		let beats = []
-		let numberOfStorylines = 0
-		let previousStoryLine
-		let actualNote = []
-		let outlineElementNumber = -1
-		let lastElementThatWasScene = -1
-		let entry = 0
-		let markernumber = 0
-
-		let reg = (/\[\[.*\]\]/)
-		
-			let allLines = Beat.lines()
-									
-					for (line of allLines){
-								
-						if (line.typeAsString() == "Synopse" && !Beat.compatibleWith(1.977)){
-							outlineElementNumber ++
-							continue
-						} //only interesting in old synopsis model
-						
-						if (["Heading", "Section"].includes(line.typeAsString())){
-							outlineElementNumber ++
-							lastElementThatWasScene = outlineElementNumber
-						}
-
-						if (!line.note && !line.string.includes("[[")) continue
-
-						//first check: inline notes
-						if(!line.note && line.string.includes("[[")){
-							if(!["Heading", "Section", "Synopse"].includes(line.typeAsString())){
-								let result = reg.exec(line.string)
-								if (result){
-									note[entry] = {}
-									let inlineNote = result[0]
-									let inlineNoteIndex = result.index || 0												
-									//note[entry] = new notesData((line.position + inlineNoteIndex), inlineNote)
-									note[entry].outlineElementNumber = lastElementThatWasScene
-									note[entry].position = (line.position + inlineNoteIndex)
-									note[entry].string = inlineNote
-									entry ++
-								}
-							}
-						}
-
-						//second check: full-line notes
-						if(line.note) {
-							
-							//third check: full-line but not starting
-							if(!line.string.trim().startsWith("[[")) {
-									try{note[entry-1].string += "<br/>" + line.string}
-									catch {
-										continue
-									}
-								continue
-							}
-							
-							note[entry] = {}
-							note[entry].outlineElementNumber = lastElementThatWasScene
-							note[entry].position = line.position
-							note[entry].string = line.string
-							entry ++
-						}
-					}
-				outlineElementNumber ++ //this is redundant, no?
-
-			// Cycle all notes and put them in different arrays depending on type.
-			// (This opens for creating new subsets of notes depending on starting term.)
-			for (entry of note){
-				if (entry.string.trim().startsWith("[[marker")){
-					let stringIntoColor = entry.string.trim().toLowerCase().replace(/\[\[marker:*\s*/, "")
-					stringIntoColor = stringIntoColor.match(/^#+[0-9]+|[a-z]*/)
-					entry.color = stringIntoColor
-					if(entry.string.includes(":")){
-						stringIntoStory = entry.string?.replace(/^(.*?):/,"")?.replace(/\]\]/, "")?.toUpperCase()
-						entry.story = stringIntoStory
-					}
-					marker.push(entry)
-				}else if(entry.string.trim().startsWith("[[beat")){
-					let strippedString = entry.string.replace(/\[\[beat\s*/i, "").replace(/\]\]/,"")
-					let stringIntoStory = strippedString?.toUpperCase()
-					if(strippedString.includes(":")){
-						stringIntoStory = strippedString?.match(/^.*:/)[0]?.replace(/:/,"")?.toUpperCase()
-					}
-						//check if this is an existing storyline
-						let thisStoryline = false
-						let existingStoryline = false
-						for(let prev=0; prev<beats.length; prev++){
-							if (stringIntoStory == beats[prev].story){
-								thisStoryline = beats[prev].storyline
-								existingStoryline = true
-								break //breaks out of prev-loop
-							}
-						}
-						if(!existingStoryline){
-							numberOfStorylines++
-						}
-						previousStoryLine = stringIntoStory //now never used, can be scrapped
-					let stringIntoContent = strippedString.substring(stringIntoStory.length).replace(/^\s*:\s*/, "")
-					entry.storyline = thisStoryline || numberOfStorylines
-					entry.story = stringIntoStory || "UNNAMED BEAT"
-					entry.content = stringIntoContent
-					beats.push(entry)
-				}else{
-					actualNote.push(entry)
-				}
-			}
-
-			// Beat.log(JSON.stringify([...actualNote]))
-			// Beat.log(JSON.stringify([...marker]))
-			// Beat.log(JSON.stringify([...beats]))
-
-			Beat.dispatch_sync(function (){
-				let outTime = new Date()
-					htmlWindow.runJS("displayNotes(" + JSON.stringify([...actualNote]) + "," + JSON.stringify([...marker]) + "," + JSON.stringify([...beats]) + ")")
-			})
-	})
-}
-
 function ____________________OMITTING_AND_DELETING__________(){}
 
-Beat.custom.omitScene = function(areScenesProportional, scenesToOmit, updatesDisabled) { 
+Beat.custom.omitScene = function(scenesAreProportional, scenesToOmit, updatesDisabled) { 
 
-	if (areScenesProportional == 1){
+	if (scenesAreProportional == 1){
 		let plural = (scenesToOmit.length > 1) ? "s" : ""
 		Beat.alert("Where did my scene"+plural+" go?", "You are now in Flexible mode, and since omitted scenes literally takes up no space in the finished script, they are invisible in this view.\n\nToggle to non-flexible display (shortcut\xa0F) to see any omitted scenes." )
 	}
 
 	const outline = [...Beat.outline()]
 
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
+	// Beat.onTextChangeDisabled = true
+	// Beat.onOutlineChangeDisabled = true
+	// Beat.onSelectionChangeDisabled = true
 
 	for (let i=0; i<scenesToOmit.length; i++){
 
@@ -1207,27 +836,11 @@ Beat.custom.omitScene = function(areScenesProportional, scenesToOmit, updatesDis
 		}
 		checkForDoubleBlankLines(startCheck)
 	}
-
-	if(!updatesDisabled){
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-
-		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-			"document.getElementById('flexiContainer').classList.add('wait'); " +
-			"startSmallUpdate(001)"
-		htmlWindow.runJS(jsToRun) //note: used to be startFullUpdate
-	}
 }
 
 Beat.custom.unOmitScene = function(scenesToUnOmit, updatesDisabled) {
 
 	const outline = [...Beat.outline()]
-
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
 
 	for (let i = 0; i < scenesToUnOmit.length; i++){
 
@@ -1340,41 +953,6 @@ Beat.custom.unOmitScene = function(scenesToUnOmit, updatesDisabled) {
 		}
 		
 	} // ENDING THE LOOP
-
-	if(!updatesDisabled){
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-
-		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-			"document.getElementById('flexiContainer').classList.add('wait'); " +
-			"startFullUpdate()"
-		htmlWindow.runJS(jsToRun)
-	}
-}
-
-Beat.custom.deleteNote = function(location, length) {
-
-	let tmp = Beat.getText()
-	if (tmp.substring(location + length -1, location + length) != "\n" || tmp.substring(location - 1, location) != "\n"){
-		Beat.log("Found no CL deleting note")
-		if (tmp.substring(location -1, location) != " " || tmp.substring(location + length -1, location + length) != " "){
-			Beat.log("Also found no enclosing spaces on both sides")
-			length --
-		}
-	}
-
-	if (tmp.substring(location + length -1, location + length + 1) == "\n\n" 
-		&&
-		tmp.substring(location -1, location) == "\n"){
-			length ++
-	}
-
-	Beat.timer(1.75, function(){
-		Beat.replaceRange(location, length, '')
-	})
-
 }
 
 Beat.custom.deleteSynopsis = function(elementsToDelete, warningsAreOn) {
@@ -1383,29 +961,48 @@ Beat.custom.deleteSynopsis = function(elementsToDelete, warningsAreOn) {
 	let deleteMessage
 
 	if(elementsToDelete[0].includes("_")){
-		let parentNumber = Number(elementsToDelete[0].toString().replace(/^s/, "").replace(/_.*$/, ""))
-		let synopsisNumber = Number(elementsToDelete[0].toString().replace(/^s.*_/, ""))
+		let parentNumber = Number(elementsToDelete.at(-1).toString().replace(/^s/, "").replace(/_.*$/, ""))
+		let synopsisNumber = Number(elementsToDelete.at(-1).toString().replace(/^s.*_/, ""))
 		deleteMessage = Beat.outline()[parentNumber].synopsis[synopsisNumber].string.toUpperCase().replace(/^=/, "").replace(/\[\[.*\]\]/, "")
 	}else{
-		deleteMessage = outline[elementsToDelete[elementsToDelete.length-1]].string.toUpperCase()
+		deleteMessage = outline[elementsToDelete.at(-1)].string.toUpperCase().replace(/^=/, "").replace(/\[\[.*\]\]/, "")
 	}
 	if (elementsToDelete.length > 1) {deleteMessage += "\nand " + (elementsToDelete.length - 1) + " more synopsis"}
 
 	if(warningsAreOn){
-
-		reallyDelete = Beat.confirm("You are about to delete the synopsis\n" + deleteMessage + "", "No other script text will be deleted\n\nThe action CAN be undone by hitting cmd+z, but beware that once you keep writing the scene may soon become irretrievably lost forever.\n\nAre you entirely sure?")
-
-		if (!reallyDelete){
+		
+		let doDelete = Beat.modal({
+			title: "Confirm Delete",
+			info: "You are about to delete the synopsis\n" + deleteMessage + "\nNo other script text will be deleted\n\nThe action CAN be undone by hitting cmd+z.",
+			items: [
+				{
+					type: "checkbox",
+					name: "turnOffWarnings",
+					label: "Turn off all warnings in the future"
+				},
+			]
+		}, response => {
+			
+			if (response) {
+				// The user clicked OK
+				doDelete = true
+				if (response.turnOffWarnings == true) {
+					Beat.custom.sendToMain("warningsAreOn", false, "userDefault")
+				}
+				return true
+			} else {
+				// The user clicked CANCEL
+				return false
+			}
+		})
+	
+		if (!doDelete){
 			htmlWindow.runJS(`
 				undimAllScenes()
 				`)
 			return
 		}
 	}
-
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
 
 	for (element of elementsToDelete){
 		if (element.includes("_")){
@@ -1428,16 +1025,6 @@ Beat.custom.deleteSynopsis = function(elementsToDelete, warningsAreOn) {
 			checkForDoubleBlankLines(where + 1)
 		}
 	}
-	
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-
-		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-			"document.getElementById('flexiContainer').classList.add('wait'); " +
-			"startFullUpdate()"
-		htmlWindow.runJS(jsToRun)
 }
 
 Beat.custom.deleteScene = function(elementsToDelete, warningsAreOn) {
@@ -1448,24 +1035,46 @@ Beat.custom.deleteScene = function(elementsToDelete, warningsAreOn) {
 
 	Beat.log('you have sent:' + elementsToDelete + 'elements to delete')
 
-	let deleteMessage = outline[elementsToDelete[elementsToDelete.length-1]].string.toUpperCase()
-	if (elementsToDelete.length > 1) {deleteMessage += "\nand " + (elementsToDelete.length - 1) + " more scenes or sequences"}
+	let deleteMessage = outline[elementsToDelete.at(-1)].string.toUpperCase().replace(/^=/, "").replace(/\[\[.*\]\]/, "")
+	for (let i = 2; i < Math.min(6, elementsToDelete.length); i++){
+		deleteMessage += "\n" + outline[elementsToDelete.at(-i)].string.toUpperCase().replace(/^=/, "").replace(/\[\[.*\]\]/, "")
+	}
+	if (elementsToDelete.length > 5) {deleteMessage += "\nand " + (elementsToDelete.length - 5) + " more"}
 
 	if(warningsAreOn){
+
+		let doDelete = Beat.modal({
+			title: "Confirm Delete",
+			info: "You are about to delete the scene" + (elementsToDelete.length > 1 ? "s" : "") + "\n" + deleteMessage + "\nincluding all contents.\n\nThis can be undone by hitting cmd+z.",
+			items: [
+				{
+					type: "checkbox",
+					name: "turnOffWarnings",
+					label: "Turn off all warnings in the future"
+				},
+			]
+		}, response => {
+			
+			if (response) {
+				// The user clicked OK
+				doDelete = true
+				if (response.turnOffWarnings == true) {
+					Beat.custom.sendToMain("warningsAreOn", false, "userDefault")
+				}
+				return true
+			} else {
+				// The user clicked CANCEL
+				return false
+			}
+		})
 	
-		reallyDelete = Beat.confirm("You are about to delete \n" + deleteMessage + "\nincluding all contents!", "This action CAN be undone by hitting cmd+z, but beware that once you keep writing the scene may soon become irretrievably lost forever.\n\nAre you entirely sure?")
-		
-		if (!reallyDelete){
+		if (!doDelete){
 			htmlWindow.runJS(`
 				undimAllScenes()
 				`)
 			return
 		}
 	}
-
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
 
 	//first: un-omit all scenes to delete + the one after.
 	this.unOmitScene(elementsToDelete, true)
@@ -1503,18 +1112,14 @@ Beat.custom.deleteScene = function(elementsToDelete, warningsAreOn) {
 			}
 		}
 
-		let jsToRun = "ifYesToDelete();" +
-			"document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-			"document.getElementById('flexiContainer').classList.add('wait'); " +
-			"startFullUpdate(500)"
-		htmlWindow.runJS(jsToRun)
+		htmlWindow.runJS("ifYesToDelete()")
 
-		Beat.timer(500, function(){
-			Beat.onTextChangeDisabled = false
-			Beat.onOutlineChangeDisabled = false
-			Beat.onSelectionChangeDisabled = false
-		})
+}
+
+Beat.custom.resetPreview = function(){
+
+	Beat.resetPreview()
+
 }
 
 Beat.custom.deleteSection = function(elementsToDelete, warningsAreOn) {
@@ -1525,14 +1130,37 @@ Beat.custom.deleteSection = function(elementsToDelete, warningsAreOn) {
 
 	Beat.log('you have sent:' + elementsToDelete + 'elements to delete')
 
-	let deleteMessage = outline[elementsToDelete[elementsToDelete.length-1]].string.toUpperCase()
+	let deleteMessage = outline[elementsToDelete[elementsToDelete.length-1]].string.toUpperCase().replace(/^=/, "").replace(/\[\[.*\]\]/, "")
 	if (elementsToDelete.length > 1) {deleteMessage += "\nand " + (elementsToDelete.length - 1) + " more sequences"}
 
 	if(warningsAreOn){
-	
-		reallyDelete = Beat.confirm("You are about to delete the section\n" + deleteMessage + "\nincluding all synopsis inside!", "Scenes (and nested sections) below deleted sections will stay intact.\n\nThis action CAN be undone by hitting cmd+z, but beware that once you keep writing the scene may soon become irretrievably lost forever.\n\nAre you entirely sure?")
 		
-		if (!reallyDelete){
+		let doDelete = Beat.modal({
+			title: "Confirm Delete",
+			info: "You are about to delete the section\n" + deleteMessage + "\nincluding any potential synopsis directly inside it.\n\nScenes and nested sections inside/below will stay intact.\n\nThis action can be undone by hitting cmd+z.",
+			items: [
+				{
+					type: "checkbox",
+					name: "turnOffWarnings",
+					label: "Turn off all warnings in the future"
+				},
+			]
+		}, response => {
+			
+			if (response) {
+				// The user clicked OK
+				doDelete = true
+				if (response.turnOffWarnings == true) {
+					Beat.custom.sendToMain("warningsAreOn", false, "userDefault")
+				}
+				return true
+			} else {
+				// The user clicked CANCEL
+				return false
+			}
+		})
+	
+		if (!doDelete){
 			htmlWindow.runJS(`
 				undimAllScenes()
 				`)
@@ -1540,9 +1168,9 @@ Beat.custom.deleteSection = function(elementsToDelete, warningsAreOn) {
 		}
 	}
 
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
+	// Beat.onTextChangeDisabled = true
+	// Beat.onOutlineChangeDisabled = true
+	// Beat.onSelectionChangeDisabled = true
 
 	// PREVIOSLY CHECKED FOR OMISSIONS (inherited from deleteScene() function)
 	// but since we're only removing a LINE now, let's just check that there is no /* or */ present in the line
@@ -1585,16 +1213,6 @@ Beat.custom.deleteSection = function(elementsToDelete, warningsAreOn) {
 			// 	nextSceneIsOmitted = false
 			// }
 		}
-	
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-
-		let jsToRun = "document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-			"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-			"document.getElementById('flexiContainer').classList.add('wait'); " +
-			"startFullUpdate()"
-		htmlWindow.runJS(jsToRun)
 }
 
 Beat.custom.checkBlankLines = function(position){
@@ -1607,8 +1225,9 @@ Beat.custom.checkBlankLines = function(position){
 function checkForDoubleBlankLines(position){
 
 	let parser = Beat.currentParser
+	let rangeToCheck = 15 //this is how many lines back and forwards to look
 
-	for (dbl=0; dbl<15; dbl++){
+	for (dbl = 0; dbl < rangeToCheck; dbl ++){
 
 		let indexOfLineAbove = JSON.parse(JSON.stringify(parser.lineAtPosition(position - 1)?.position || 0))
 
@@ -1631,6 +1250,51 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		warningsAreOn = false
 	}
 
+	// if(warningsAreOn){
+
+	// 	let rangeOfScenes = ""
+	// 	let numberOfScenesToMove = 0
+	// 	for (scenes = firstScene; scenes<lastScene+1; scenes++){
+	// 		if(outline[scenes].typeAsString() == "Synopse"){continue}
+	// 		rangeOfScenes +=
+	// 		((outline[scenes].sceneNumber != undefined) ? 
+	// 			"(" + outline[scenes].sceneNumber + ") " : 
+	// 			"") +
+	// 			outline[scenes].string.toUpperCase() + "\n" +
+	// 			((outline[scenes].sceneNumber == undefined) ? 
+	// 			"\ncontaining\n\n" : 
+	// 			"")
+	// 			numberOfScenesToMove++
+	// 	}
+
+	// 	let reallyMove = Beat.confirm("Verify Move!",
+	// 		"\nYou are about to move " + 
+	// 		((outline[firstScene].typeAsString() != "Section") ?
+	// 			"the scene" 
+	// 			: "the section") +
+	// 		(((outline[firstScene].typeAsString() != "Section") && numberOfScenesToMove > 1) ? 
+	// 			"s" 
+	// 			: "") +
+	// 		"\n\n" + 
+	// 		(((outline[firstScene].typeAsString() != "Section")) ? 
+	// 			rangeOfScenes 
+	// 			: (outline[firstScene].string.toUpperCase()) + "\n") + 
+	// 		((outline[insertBeforeScene]) ? 
+	// 			("\nto immediately before\n\n" + 
+	// 			(outline[insertBeforeScene].omitted == 1 ? "the omitted scene called \n" 
+	// 			: "") +
+	// 		(((outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString() == "Heading") 
+	// 			? ("(" + outline[insertBeforeScene].sceneNumber + ") ") : "") +
+	// 			outline[insertBeforeScene].string.toUpperCase()))
+	// 			: "\nto immediately after the last scene of your script.")
+	// 		+ 
+	// 		"\n\nDo you want to proceed?\n")
+	// 	if (!reallyMove) {
+	// 		htmlWindow.runJS(`onDragEnd(false, true)`)
+	// 		return
+	// 	}
+	// }
+
 	if(warningsAreOn){
 
 		let rangeOfScenes = ""
@@ -1641,36 +1305,59 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 			((outline[scenes].sceneNumber != undefined) ? 
 				"(" + outline[scenes].sceneNumber + ") " : 
 				"") +
-				outline[scenes].string.toUpperCase() + "\n" +
+				outline[scenes].string.toUpperCase().replace(/\[\[.*\]\]/, "") + "\n" +
 				((outline[scenes].sceneNumber == undefined) ? 
 				"\ncontaining\n\n" : 
 				"")
 				numberOfScenesToMove++
 		}
-
-		let reallyMove = Beat.confirm("Verify Move!",
-			"\nYou are about to move " + 
-			((outline[firstScene].typeAsString() != "Section") ?
-				"the scene" 
-				: "the section") +
-			(((outline[firstScene].typeAsString() != "Section") && numberOfScenesToMove > 1) ? 
-				"s" 
-				: "") +
-			"\n\n" + 
-			(((outline[firstScene].typeAsString() != "Section")) ? 
-				rangeOfScenes 
-				: (outline[firstScene].string.toUpperCase()) + "\n") + 
-			((outline[insertBeforeScene]) ? 
-				("\nto immediately before\n\n" + 
-				(outline[insertBeforeScene].omitted == 1 ? "the omitted scene called \n" 
-				: "") +
-			(((outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString() == "Heading") 
-				? ("(" + outline[insertBeforeScene].sceneNumber + ") ") : "") +
-				outline[insertBeforeScene].string.toUpperCase()))
-				: "\nto immediately after the last scene of your script.")
-			+ 
-			"\n\nDo you want to proceed?\n")
-		if (!reallyMove) {
+		
+		let doMove = Beat.modal({
+			title: "Confirm Move",
+			info: "\nYou are about to move " + 
+					((outline[firstScene].typeAsString() != "Section") ?
+						"the scene" 
+						: "the section") +
+					(((outline[firstScene].typeAsString() != "Section") && numberOfScenesToMove > 1) ? 
+						"s" 
+						: "") +
+					"\n" + 
+					(((outline[firstScene].typeAsString() != "Section")) ? 
+						rangeOfScenes 
+						: (outline[firstScene].string.toUpperCase().replace(/\[\[.*\]\]/, "")) + "\n") + 
+					((outline[insertBeforeScene]) ? 
+						("to immediately before\n" + 
+						(outline[insertBeforeScene].omitted == 1 ? "the omitted scene called \n" 
+						: "") +
+					(((outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString() == "Heading") 
+						? ("(" + outline[insertBeforeScene].sceneNumber + ") ") : "") +
+						outline[insertBeforeScene].string.toUpperCase().replace(/\[\[.*\]\]/, "")))
+						: "\nto immediately after the last scene of your script.")
+					+ 
+					"\n\nDo you want to proceed?\n",
+			items: [
+				{
+					type: "checkbox",
+					name: "turnOffWarnings",
+					label: "Turn off all warnings in the future"
+				},
+			]
+		}, response => {
+			
+			if (response) {
+				// The user clicked OK
+				doMove = true
+				if (response.turnOffWarnings == true) {
+					Beat.custom.sendToMain("warningsAreOn", false, "userDefault")
+				}
+				return true
+			} else {
+				// The user clicked CANCEL
+				return false
+			}
+		})
+	
+		if (!doMove){
 			htmlWindow.runJS(`onDragEnd(false, true)`)
 			return
 		}
@@ -1682,9 +1369,9 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 	endPosition = Math.min(endPosition, Beat.getText().length)
 
 
-	Beat.onTextChangeDisabled = true
-	Beat.onOutlineChangeDisabled = true
-	Beat.onSelectionChangeDisabled = true
+	// Beat.onTextChangeDisabled = true
+	// Beat.onOutlineChangeDisabled = true
+	// Beat.onSelectionChangeDisabled = true
 
 	var theTextToMove
 
@@ -1780,23 +1467,6 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 			Beat.custom.omitScene(0, [theSceneAboveInserted], true)
 		}
 	}
-
-    //finally provoke a full update!
-
-	let jsToRun = "setTimeout(function(){" +
-		"document.getElementById('outOfSyncDiv').classList.add('animate'); " +
-		"document.getElementById('outOfSyncDiv').style.display = 'block'; " + 
-		"document.getElementById('flexiContainer').classList.add('wait'); " +
-		((synopsisMove ||makeCopy) ? "startSmallUpdate(false,false,0)},1)" : "startFullUpdate()},999)") 
-		//the 999 delay here is to allow animation to finish
-
-	htmlWindow.runJS(jsToRun)
-	
-	Beat.timer(1, function() {	//and this delay has the same purpose
-		Beat.onTextChangeDisabled = false
-		Beat.onOutlineChangeDisabled = false
-		Beat.onSelectionChangeDisabled = false
-	})
 	
 	//finally (2) here are some scope-only functions for inserting and deleting.
 
@@ -1842,7 +1512,7 @@ Beat.custom.reallyQuit = function (noconfirm) {
 function ____________________PRINT_AND_EXPORT___________________(){}
 
 
-Beat.custom.exportThis = function (content, classListOfFlexiContainer) {
+Beat.custom.exportThis = function (content, classListOfFlexiContainer, documentName, documentSubName, documentAuthor) {
 
 	let pathToCSS = `/Users/fredriktolsson/Library/Containers/fi.KAPITAN.Beat/Data/Library/Application Support/Beat/Plugins/FTOutliner.beatPlugin/`
 
@@ -1875,16 +1545,11 @@ Beat.custom.exportThis = function (content, classListOfFlexiContainer) {
 }
 
 
-Beat.custom.printThis = function (content, classListOfFlexiContainer) {
+Beat.custom.printThis = function (content, classListOfFlexiContainer, documentName, documentSubName, documentAuthor) {
 
-	documentName = Beat.getDocumentSetting("documentName") || false
-	if(documentName == "false")documentName = false
-	documentSubName = Beat.getDocumentSetting("documentSubName") || false
-	if(documentSubName == "false")documentSubName = false
-	documentAuthor = Beat.getDocumentSetting("documentAuthor") || false
-	if(documentAuthor == "false")documentAuthor = false
-
-	loopToFetchDocumentTitles()
+	let css = Beat.assetAsString("outline.css")
+	let printCSS = Beat.assetAsString("printOutlineCSS.css")
+	let notepanel = Beat.assetAsString("notepanel.html")
 
 	if (!documentName){
 		let message1 = "Print outline without title?"
@@ -1904,7 +1569,7 @@ Beat.custom.printThis = function (content, classListOfFlexiContainer) {
 		<body>
 		${css}  
 		${printCSS}  
-		${notepanel} 
+		${notepanel}
 			<div id="outerEdge">
 				<p class="headline"> ${documentName ? documentName.toUpperCase() : ""} </p>
 				<p class="headline2"> ${documentSubName ? documentSubName : ""} </p>
@@ -1931,52 +1596,6 @@ Beat.custom.printThis = function (content, classListOfFlexiContainer) {
 	)		
 }
 
-function loopToFetchDocumentTitles(){
-
-	let allLines = Beat.lines()
-	for (line of allLines){
-
-		if (line.isTitlePage && line.string){
-			fetchDocumentTitles(line.string)
-		}else{
-			break
-		}
-	}
-	return
-}
-
-function fetchDocumentTitles (titlePageLine) {
-
-if(!titlePageLine)return
-
-//so what we need to do is:
-// if there is a titlepageline, keep going as is -- this function works now
-// but if there is no titlepageline value (which means startup) then we need to do a loop over all lines before first outline element (if there is a such) and call the stuff in here for every line
-// 3. We also must check for saved values when opening the printdialog, bc what is saved here seems not to show there.
-
-// order of priority: 
-// 1st -- check if there are values, because if so they win:
-
-let documentName = Beat.getDocumentSetting("documentName") || false
-if (documentName = "false") documentName = false
-let documentSubName = Beat.getDocumentSetting("documentSubName") || false
-if (documentSubName = "false") documentSubName = false
-
-if (!documentName && titlePageLine && titlePageLine.toLowerCase().startsWith("title:")){
-	documentName = titlePageLine.replace(/^title:\s*/i, "").toUpperCase()
-}
-if (!documentSubName && titlePageLine && titlePageLine.toLowerCase().startsWith("credit:")){
-	documentSubName = titlePageLine.replace(/^credit:\s*/i, "")
-}
-
-if (documentName) Beat.setDocumentSetting("documentName", documentName)
-if (documentSubName) Beat.setDocumentSetting("documentSubName", documentSubName)
-//if (!Beat.getDocumentSetting("documentAuthor") || Beat.getDocumentSetting("documentAuthor") == '""') Beat.setDocumentSetting("documentAuthor", xxx)
-
-setWindowTitle()
-
-}
-
 Beat.custom.setTheWindowTitle = function(){
 	setWindowTitle()
 }
@@ -1985,36 +1604,20 @@ function setWindowTitle() {
 
 	windowTitle = "FTOutliner"
 
-	// if (Beat.getDocumentSetting("documentName") && Beat.getDocumentSetting("documentName") != '""') documentName = (Beat.getDocumentSetting("documentName")) //|| (Beat.getDocumentSetting("documentName"))
-	// if (Beat.getDocumentSetting("documentSubName")  && Beat.getDocumentSetting("documentSubName") != '""') documentSubName = (Beat.getDocumentSetting("documentSubName")) //|| (Beat.getDocumentSetting("documentSubName"))
-	// if (Beat.getDocumentSetting("documentAuthor")  && Beat.getDocumentSetting("documentAuthor") != '""') documentAuthor = (Beat.getDocumentSetting("documentAuthor")) //|| (Beat.getDocumentSetting("documentAuthor"))
-	let documentName = (Beat.getDocumentSetting("documentName")) || false
-	let documentSubName = (Beat.getDocumentSetting("documentSubName")) || false
-	let documentAuthor = (Beat.getDocumentSetting("documentAuthor")) || false
+	let titlePageLines = Beat.lines()?.filter(line => line.isTitlePage)
+	let title = titlePageLines?.find(line => line.string?.toLowerCase().startsWith("title:"))?.string?.replace(/title:/i, "").trim().toUpperCase() || false
 
-	//This hopefully solves backwards compatibility and manages names whether stringified or not
-	if(documentName == "false") documentName = false
-	if(documentSubName == "false") documentSubName = false
-	if(documentAuthor == "false") documentAuthor = false
-	if(documentName) documentName = documentName.replace(/"*/g, ``)
-	if(documentSubName)documentSubName =documentSubName.replace(/"*/g, ``)
-	if(documentAuthor)documentAuthor = documentAuthor.replace(/"*/g, ``)
+	let documentSetting = JSON.parse(Beat.getDocumentSetting("ftoutlinerObject") || "{}")
 
-	Beat.log("ABOUT TO PARSE DOCUMENT NAME")
-	Beat.log(documentName)
-	Beat.log(documentSubName)
-	Beat.log(documentAuthor)
+	let documentName = documentSetting?.documentName || title || ""
+	let documentSubName = documentSetting?.documentSubName || ""
+	let documentAuthor = documentSetting?.documentAuthor || ""
 
+	// Beat.alert(documentName, documentSubName, documentAuthor)
 
-	// while(documentName && documentName.startsWith(`"`)) documentName = documentName.substr(1)
-	// while(documentName && documentName.substr(documentName.length - 1, 1) == `"`) documentName = documentName.substr(0, documentName.length - 1)
-	// while(documentSubName && documentSubName.startsWith(`"`)) documentSubName = documentSubName.substr(1)
-	// while(documentSubName && documentSubName.substr(documentSubName.length - 1, 1) == `"`) documentSubName = documentSubName.substr(0, documentSubName.length - 1)
-	// while(documentAuthor && documentAuthor.startsWith(`"`)) documentAuthor = documentAuthor.substr(1)
-	// while(documentAuthor && documentAuthor.substr(documentAuthor.length - 1, 1) == `"`) documentAuthor = documentAuthor.substr(0, documentAuthor.length - 1)
-	
-	// if (documentSubName && documentSubName.startsWith('"'))documentSubName = JSON.parse(documentSubName)
-	// if (documentAuthor && documentAuthor.startsWith('"'))documentAuthor = JSON.parse(documentAuthor)
+	if(documentName) documentName = documentName.replaceAll(/\*/g, "")
+	if(documentSubName)documentSubName =documentSubName.replaceAll(/\*/g, "")
+	if(documentAuthor)documentAuthor = documentAuthor.replaceAll(/\*/g, "")
 
 	if (documentName){windowTitle += " — " + documentName}
 	if (documentName && documentSubName){windowTitle += " (" + documentSubName + ")"}
@@ -2024,14 +1627,12 @@ function setWindowTitle() {
 
 Beat.custom.blinkTheLine = function(start, end, color, textcolor){
 
-	// Beat.alert(start, end)
-	//start = Beat.currentParser.lineAtIndex(start)?.position
-
 	if(Beat.currentParser.lineAtIndex(start) == null){
 		Beat.crash()
 	}
 
-	if (start != Beat.currentParser.lineAtIndex(start)?.position){end --} //removes extra character added to include CR if not full line
+	// if (start == Beat.currentParser.lineAtIndex(start)?.position && end == Beat.currentParser.lineAtIndex(start)?.range.length){
+	// 	end ++} //adds extra character to include CR if full line
 
 	Beat.timer(0.25, function () {
 		Beat.textBackgroundHighlight(color, start, end)
@@ -2099,12 +1700,14 @@ Beat.custom.copyRangeToClipboard = function(ranges){
 }
 
 Beat.custom.collectRevisionsInPlugin = function(){
+
+let timeIn = Date.now()
     
         let indexObject = (Beat.getRawDocumentSetting("Changed Indices"))
         let reviewObject = (Beat.getRawDocumentSetting("Revision"))
 
 		let indexAsJSON = JSON.stringify(indexObject)
-		let reviewAsJSON = JSON.stringify(reviewObject)
+		let reviewAsJSON = JSON.stringify(reviewObject)		
     
         //Beat.log(indexAsJSON)
         //Beat.log(reviewAsJSON)
@@ -2112,6 +1715,9 @@ Beat.custom.collectRevisionsInPlugin = function(){
 		htmlWindow.runJS(`
 			paintRevisions('${indexAsJSON}', '${reviewAsJSON}')
 		`)
+
+		let timeOut = Date.now() - timeIn
+			htmlWindow.runJS(`console.log("${timeOut} ms")`)
 
 }
 
@@ -2165,32 +1771,12 @@ Beat.custom.collectReviews = function(andThenCreateDoc){
 }
 
 Beat.custom.outlineToJSON = function(){
+	
 	let a = Beat.outlineAsJSON()
-	//Beat.newDocument(a)
+	Beat.newDocument(a)
 
-
-	let b = JSON.stringify(Beat.lines())
-	Beat.openConsole()
-Beat.log("...as JSON:")
-	Beat.log(a)
-Beat.log("...via JSON.stringify")
-	Beat.log(b)
-
-}
-
-Beat.custom.linesToJSON = function(){
-
-	let lines = Beat.lines()
-	let linesAsJSON = []
-
-	for (line of lines){
-		linesAsJSON.push({...line.forSerialization()})
-	}
-
-	linesAsJSON = JSON.stringify(linesAsJSON)
-	Beat.openConsole()
-	Beat.log(linesAsJSON)
-	// Beat.newDocument(linesAsJSON)
+	let b = Beat.linesAsJSON()
+	Beat.newDocument(b)
 
 }
 
@@ -2201,6 +1787,12 @@ Beat.custom.makeWindowsShareScreen = function(availHeight, availWidth){
 	
 	htmlWindow.setFrame(0, 0, splitX, availHeight)
 	Beat.setWindowFrame(splitX + 1, 0, availWidth/2, availHeight)
+
+}
+
+Beat.custom.setWindowSize = function(x, y, width, height){
+
+	htmlWindow.setFrame(x, y, Math.max(width, 380), height) 
 
 }
 
@@ -2301,8 +1893,3 @@ function highlightCharacter(name, onlyHighlightScenes, straightFromEditorWindow)
 	})
 
 }
-
-
-
-
-

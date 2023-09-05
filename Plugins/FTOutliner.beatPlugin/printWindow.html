@@ -1,6 +1,197 @@
+<body>
+
+    
+    <div id="preview">
+        <div id="tite" contenteditable=true>undefined</div>
+        <div id="subtitle" contenteditable=true>undefined</div>
+        
+    </div>
+
+    <div id="settings">this is the print wondow.</div>
+    
+</body>
+
+<script>
+
+let preview = document.getElementById("preview")
+let documentSetting
+
+window.addEventListener('load', function () {
+
+    preview.innerHTML += pageData
+
+    Beat.callAndWait(() => {
+            let ftoutlinerObject = Beat.getDocumentSetting("ftoutlinerObject")
+			return ftoutlinerObject
+    	})
+    	.then(
+			response => { 
+				documentSetting = JSON.parse(response)
+                document.querySelector("#tite").innerHTML = documentSetting.documentName || "document title"
+                document.querySelector("#subtitle").innerHTML = documentSetting.documentSubName || "document info"
+			},
+        	error => { 
+				console.log("Error retrieving userDefault") 
+			}
+    )
+
+
+})
+
+
+
+</script>
 <style>
 
 :root{
+
+    --menu-background: hsla(25, 64%, 96%, 1.00);/* rgb(240, 240, 240); /*was 232*/
+    --menu-border-color: #c1c1c1;
+    --menu-color: black; /*rgb(233,233,233);*/
+    --menu-hover-color: #027aff;
+
+}
+
+@media (prefers-color-scheme: dark) {
+
+:root{
+
+    --menu-background: hsla(25, 10%, 24%, 1.00);
+    --menu-border-color: rgb(81,81,81);
+    --menu-color: rgb(233,233,233);
+
+    --inkOnPaper: 0, 0%, 100%;
+    --paperBehindInk: 0, 0%, 0%;
+
+    }
+}
+
+body{
+
+    background-color: var(--menu-background) !important;
+    color: var(--menu-color);
+
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    font-weight: normal;
+    line-height: 17px;
+
+    padding: 20px;
+
+}
+
+#tite{
+
+    position: absolute;
+    top: 1cm;
+    width: 100%;
+
+    text-align: center;
+
+    font-size: 32px;
+    font-weight: 800;
+
+    margin-bottom: 10px;
+    color: black;
+
+}
+
+#subtitle{
+
+    position: absolute;
+    top: 1.9cm;
+    width: 100%;
+
+    text-align: center;
+
+    font-size: 22px;
+    font-weight: 200;
+
+    margin-bottom: 20px;
+    color: black;
+
+}
+
+#settings {
+
+    font-size: 13px;
+
+    float: right;
+    width: auto;
+    height: auto;
+    top: 0;
+
+    outline: 1px solid lime;
+}
+
+#preview{
+
+    position: absolute;
+
+    background-color: white;
+    border: 1px solid var(--menu-border-color);
+    
+    /* height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
+    width: calc((100vh - 40px) / (29.7/21));
+    max-width: calc((100vh - 40px) / (29.7/21)); */
+
+    height: 29.7cm !important;
+    width: 21cm !important;
+
+    transform-origin: top left;
+    scale: calc(65/100);
+
+
+    top: 20px;
+    left: 20px;
+    /* aspect-ratio: 21/29.7 !important; */
+
+    overflow: hidden;
+
+}
+
+#preview .flexiContainer {
+
+    position: absolute;
+
+    top: 2.7cm;
+    left: 1cm;
+
+    width: 19.5cm !important;
+    height: 26.5cm !important;
+    /* outline: 1px dotted teal; */
+
+    overflow: visible;
+
+}
+
+#preview * {
+
+    --fontSizeFactor: 0.7 !important;
+    --heightFactor: calc(13 / (21 / 29.7));
+
+    box-shadow: none !important;
+
+    
+}
+
+#preview .flexiContainer *{
+
+    pointer-events: none !important;
+
+}
+
+#preview .pageDivider{
+
+    border-color: black !important;
+    color: black !important
+
+}
+
+#---FROM_PRINTCSS{}
+
+root{
 
 /* --yellow: rgb(255, 210, 0);
 --red: rgb(239,0,73);
@@ -54,16 +245,10 @@
 
 --act-length-opacity: 60%;
 
---fontSizeFactor: 1;
 }
 
 * {
     background-image: none;
-}
-
-body {
-   background: #fff !important;
-   max-height: calc(29.7cm);
 }
 
 /* :root{
@@ -71,20 +256,21 @@ body {
     --fontSizeFactor: 0.8;
 } */
 
-#flexiContainer{
+/* #flexiContainer{
 
-    /* margin-top: 25px;  */
     margin-top: 3mm; 
 
     width: 21cm;
     min-width: 21cm;
     max-width: 21cm;
-    /* height: 29.6cm;
+    height: 29.6cm;
     min-height: 29.6cm; 
-    max-height: calc(29.6cm - 30px);*/
+    max-height: calc(29.6cm - 30px);
+
+    outline: 1px dotted black;
 
     overflow: visible !important;
-}
+} */
 
 * {
     -webkit-print-color-adjust: exact;
@@ -126,7 +312,7 @@ body {
 
     overflow: hidden; 
 
-    height: calc(var(--flexibleHeight) * var(--paperHeightFactor)) !important;
+    /* height: calc(var(--flexibleHeight) * var(--paperHeightFactor)) !important; */
 
 }
 
