@@ -420,13 +420,18 @@ Beat.onTextChange(function(location, length) {
 							if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
 								pauseOnePaginationUpdate = false
 								fullUpdateInProgress = true
-								Beat.resetPreview()
+								Beat.sync(function () {
+									Beat.resetPreview()
+								})
 								return
 							}
 						// CHECK #2
 							if(!json || !linesAsJSON || !fullScreenplay){
 								pauseOnePaginationUpdate = false
 								fullUpdateInProgress = true
+								Beat.sync(function () {
+									Beat.resetPreview()
+								})
 								return
 							}
 							
@@ -512,12 +517,17 @@ Beat.custom.updateEntireOutline = function (location, length) {
 			// CHECK #1
 			if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
 				fullUpdateInProgress = false
-				Beat.resetPreview()
+				Beat.sync(function () {
+					Beat.resetPreview()
+				})
 				return
 			}
 			// CHECK #2
 			if((!json || !linesAsJSON) && fullScreenplay.length > 0){
-				Beat.resetPreview()
+				fullUpdateInProgress = false
+				Beat.sync(function () {
+					Beat.resetPreview()
+				})
 				return
 			}
 
@@ -590,7 +600,6 @@ function outlineWithoutPagination() {
 		}
 	}catch{
 	
-		Beat.resetPreview()
 		return false
 
 	}
@@ -664,7 +673,7 @@ function outlineWithPagination() {
 			sceneData.push("alert") 
 			Beat.sync(function () {
 					// 	Beat.resetPreview()
-					//Beat.alert("Zero Height Scene(s) Detected", "FTOutliner has detected one or more scenes with zero height. This is a bug in Beat, and you should report it to the developer. In the meantime, FTOutliner will try to fix it for you. Please wait a few seconds.")
+					//	Beat.alert("Zero Height Scene(s) Detected", "FTOutliner has detected one or more scenes with zero height. This is a bug in Beat, and you should report it to the developer. In the meantime, FTOutliner will try to fix it for you. Please wait a few seconds.")
 				})
 		}
 
