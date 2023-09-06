@@ -1171,6 +1171,7 @@ function toInitialsCase(string){
     /* body:has(#notepanel.expanded .dialogtab.selectedtab) .section:not(.dontDim) > .section-heading{ */
         body:has(.displayNumberOf) .section:not(:has(.orphanText > .dontDim)) > .section-heading{
         color: transparent !important; /*hsl(var(--paperBehindInk), 0.05) !important;*/
+        border: none;
     }
 
     /* body:has(#notepanel.expanded .dialogtab.selectedtab) .dimmedSection,
@@ -1591,6 +1592,9 @@ function toInitialsCase(string){
 
     .dialogChunk {
 
+        white-space: normal !important;
+        word-wrap: break-word !important;
+
         /* background: linear-gradient(hsla(var(--paperBehindInk), 0.60), hsla(var(--paperBehindInk), 0.60)), var(--localColor); */
         background: linear-gradient(hsla(0, 0%, 100%, 0.60), hsla(0, 0%, 100%, 0.60)), var(--localColor);
         /* border: 1px solid hsla(var(--inkOnPaper), 0.3); */
@@ -1671,12 +1675,16 @@ function toInitialsCase(string){
 
     .dialogChunk i{
 
+        white-space: normal;
+        word-wrap: break-word;
         font-style: italic;
 
     }
 
     .dialogChunk b{
 
+        white-space: normal;
+        word-wrap: break-word;
         font-weight: bold;
 
     }

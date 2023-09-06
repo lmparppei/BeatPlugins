@@ -2394,6 +2394,12 @@ html[data-outdoors='1'] #flexiContainer:not(.indexcards) .section:not(.level1){
 
 }
 
+html[data-outdoors='1'] body:has(.displayNumberOf) .section:not(.level1){  
+
+	box-shadow: none !important;
+
+}  
+
 html[data-outdoors='1'] .section > .section-heading:not(.level1 > .section-heading){
 	
 	color: black !important;
@@ -2595,13 +2601,13 @@ html[data-outdoors='1'] #outOfSyncDiv{
 	;
 }
 
-html[data-outdoors='1'] .indexcards .section:not(.level1) > .section-heading{
+html[data-outdoors='1'] .indexcards .section:not(.level1, .dimmedSection) > .section-heading{
 
 	border-style: solid !important;
 
 }
 
-html[data-outdoors='1'] :not(.indexcards) .section > .section-heading:not(.level1 > .section-heading){
+html[data-outdoors='1'] :not(.indexcards, :has(.displayNumberOf)) .section:not(.dimmedSection) > .section-heading:not(.level1 > .section-heading){
 
 	border-bottom: 1px black solid;
 }

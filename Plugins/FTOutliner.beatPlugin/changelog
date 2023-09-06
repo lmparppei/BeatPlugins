@@ -44,8 +44,8 @@ But *WHAT A PAGINATION SYSTEM* that is! Thanks to Lauri-Matti for your hard work
 This means that page numbers in FTOutliner now matches those in Beat (and the final print) as good as 1:1, in places like
 * page numbers on sections
 * page numbers at the bottom of acts
-* forced pagebreaks, which now appears as jagged edges where the break occurs (followd by uncolored space to represent the part of the page where nothing is printed)
-* As a result, PAGE DIVIDERS have been moved from their hidden spot inside the Advanced Settings to the VIEW MENU instead: All page breaks for your screenplay can be shown in the margin of each column. Perfect for those note sessions where someone says "my next note is on page 42" -- just click the page number in the outline and you're there. Or for when you're writing and you really want to keep track of the growth of your script.
+* forced pagebreaks, which now appears as jagged edges where the break occurs (followed by uncolored space to represent the blank page area below)
+* As a result, PAGE DIVIDERS have been moved from their hidden spot inside the Advanced Settings to the VIEW MENU instead: All pagination for your screenplay can be shown in the margin of each column. 
 
 *FIXES AND ENHANCMENTSENTSETNS:*
 

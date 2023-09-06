@@ -415,12 +415,22 @@ Beat.onTextChange(function(location, length) {
 						// Get entire screenplay
 							let fullScreenplay = Beat.getText()
 
+						// will this finally catch incorrectly delivered pagination?
+						// CHECK #1
+							if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
+								pauseOnePaginationUpdate = false
+								fullUpdateInProgress = true
+								Beat.resetPreview()
+								return
+							}
+						// CHECK #2
 							if(!json || !linesAsJSON || !fullScreenplay){
 								pauseOnePaginationUpdate = false
 								fullUpdateInProgress = true
 								return
 							}
 							
+						// ALL GOOD: Send the data to the HTML window
 							Beat.sync(function () {
 								console.log("SENDING WITHOUT PAGINATION")
 								htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
@@ -498,15 +508,25 @@ Beat.custom.updateEntireOutline = function (location, length) {
 			// Send it to the HTML window
 			let fullScreenplay = Beat.getText()
 
+			// will this finally catch incorrectly delivered pagination?
+			// CHECK #1
+			if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
+				fullUpdateInProgress = false
+				Beat.resetPreview()
+				return
+			}
+			// CHECK #2
 			if((!json || !linesAsJSON) && fullScreenplay.length > 0){
 				Beat.resetPreview()
 				return
 			}
 
+			// ALL GOOD: Send the data to the HTML window
 			Beat.sync(function () {
 				
 				//BUG HUNT PART III: If zero-height scenes encountred, don't update outline but immediately reset preview
 				if (json.endsWith(`"alert"]`)) {
+					fullUpdateInProgress = false
 					Beat.resetPreview()
 					return
 				}
