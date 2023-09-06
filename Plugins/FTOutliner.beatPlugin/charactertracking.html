@@ -27,6 +27,7 @@ html[data-outdoors='1'] #flexiContainer .dimmedScene > .sceneheading{
 #characterButton:is(.red, .orange, .yellow, .green, .teal, .cyan, .blue, .purple, .magenta, .pink, .brown, .grey, .black, .white) {
     background: none !important;
     opacity: 1 !important;
+    transition: none !important;
 }
 
 #characterButton.red > svg path{
@@ -283,80 +284,219 @@ var iCameFromMenu = false
 var scenesWithCharacters = []
 var searchBoxDelay
 
+var globalScenesWithDialog = []
+
+
 function collectCharacters() {
+
+    // important note: when this was part of the plugin back-and-forth, the plugin ended this by calling updateFilter()
+    // since I do not call updateFilter from the end of this function, be vigilant about whether this may case problems
+    // (and no, I don't dare calling updateFilter from here, in case this function should be able to be called without)
+
     mylog()
-    //first request the data, then have plugin send that data into makeCharacterMenu
-    Beat.call("Beat.custom.addCharacterClasses()")
-}
+    console.time("collectCharacters2023")
 
-function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
+    let removal = userDefault.excludeVoiceOvers ? /(\(.+\))$/ : ""
+    let allCharacters2023 = lines.filter(line => line.typeAsString == "Character" && !line.omitted).map(line => 
+        line.string.replace(/^\^*@*/, "")   /* removes dual dialog ^ or forced dialog @ */
+        .replace(/\'/g, `’`)                /* replaces that pesky apostrophe that creates so much problems */
+        .replace(removal, "").trim())       /* if characters with extensions count as the main character, remove the extension */ 
 
-    globalAllCharacters = allCharacters
+    //sort the characters by how many times they appear in the script
+        const characterCounts = allCharacters2023.reduce((acc, val) => {
+            if (!acc[val]) {
+                acc[val] = 1;
+            } else {
+                acc[val]++;
+            }
+            return acc;
+            }, []);
+
+        const sortedCharacters = Object.keys(characterCounts).sort((a, b) => {
+            return characterCounts[b] - characterCounts[a];
+        });
+
+    //collect all characters in each scene, with different options
+        let outlineElementsWithCharactersDialogOnly = []
+        let outlineElementsWithCharactersIncludingAction = []
+        let outlineElementsWithCharactersInSynopsisOnly = []
+        let scenesWithDialog2023 = []
+
+        let outlineElementNumber = -1
+        let trimmedName
+        let wordsplitters = /[,.:;!?\)\(\s\")]+/ //for now, I have removed apostrophes \' from wordsplitters to catch names like O'Neil
+        for (line of lines){
+
+            //if (line.omitted) continue
+
+            if (line.typeAsString == "Heading" || line.typeAsString == "Section"){
+                outlineElementNumber ++
+                outlineElementsWithCharactersDialogOnly[outlineElementNumber] = []
+                outlineElementsWithCharactersIncludingAction[outlineElementNumber] = []
+                outlineElementsWithCharactersInSynopsisOnly[outlineElementNumber] = []
+                scenesWithDialog2023[outlineElementNumber] = []
+            }
+            
+            if (line.typeAsString == "Character" && !line.omitted){
+                trimmedName = line.string.replace(/^@/, "").toUpperCase().replace(removal, "").replace(/\'/, "’").trim() 
+                if(sortedCharacters.some(character => character.toUpperCase() == trimmedName.toUpperCase())){
+                    if (!outlineElementsWithCharactersDialogOnly[outlineElementNumber]?.includes(trimmedName)) {
+                        outlineElementsWithCharactersDialogOnly[outlineElementNumber].push(trimmedName)
+                    }
+                    if (!outlineElementsWithCharactersIncludingAction[outlineElementNumber]?.includes(trimmedName)) {
+                        outlineElementsWithCharactersIncludingAction[outlineElementNumber].push(trimmedName)
+                    }
+                }
+                alsoCollectDialog()
+            }
+            if (line.typeAsString == "Action" && !line.omitted){
+                sortedCharacters.forEach(character => {
+                    apostrophedCharacter = character.replace(/’/g, `\'`) //replacing character BACK to normal apostrophe when comparing to avoid repeating for every word
+                    if (compareThese(line.string, apostrophedCharacter)) { 
+                        if (!outlineElementsWithCharactersIncludingAction[outlineElementNumber]?.includes(character)) {
+                            outlineElementsWithCharactersIncludingAction[outlineElementNumber].push(character.toUpperCase());
+                        }
+                    }
+                })
+            }
+            if (documentSetting.trackingIncludesSynopsis && line.typeAsString == "Synopse"){
+                sortedCharacters.forEach(character => {
+                    apostrophedCharacter = character.replace(/’/g, `\'`) //replacing character BACK to normal apostrophe when comparing to avoid repeating for every word
+                    if (compareThese(line.string, apostrophedCharacter)) { 
+                        if (!outlineElementsWithCharactersInSynopsisOnly[outlineElementNumber]?.includes(character)) {
+                            outlineElementsWithCharactersInSynopsisOnly[outlineElementNumber].push(character);
+                        }
+                    }
+                })
+            }
+        }
+
+        function alsoCollectDialog(){
+
+            if (!($id("notepanel").classList.contains("expanded") && $(".selectedtab").classList.contains("dialogtab"))) return
+
+            let additionalLines = 0
+            let currentLine = lines.indexOf(line)
+        
+            while (["Character", "Dialogue", "Parenthetical"].includes(lines[currentLine + additionalLines]?.typeAsString)){
+
+                scenesWithDialog2023[outlineElementNumber].push({
+                    "character": trimmedName,
+                    "position": lines[currentLine + additionalLines].position,
+					"string": lines[currentLine + additionalLines].string, 
+					"typeAsString": lines[currentLine + additionalLines].typeAsString,
+					"omitted": lines[currentLine + additionalLines].omitted,
+					"currentLine": lines[currentLine + additionalLines],
+                })
+                additionalLines ++
+            }
+        }
+
+        function compareThese(string, character){
+
+            if (!string.toLowerCase().includes(character.toLowerCase())) return false //to avoid having to loop through all words if not even present
+
+            // FIRST, if the character has multiple words, let not split the line but compare directly. 
+            // This will demand at least one uppercase letter in the match (to avoid matching "OLD BROWN" with "his old brown hat")
+            // which unfortunately means not matching "the third thug" in action with a speaking character "THE THIRD THUG"
+            // This seems like a reasonable trade-off for now, and will catch "Dr. Zjivago" and "Sheila's mother", both of which are more important.
+            if (character.includes(" ")){
+                // if (string.toLowerCase().includes(character.toLowerCase)) return true
+                const regex = new RegExp(character, 'i');
+                const match = string.match(regex);
+                    if (match && match[0] != match[0].toLowerCase()) {
+                    return true;
+                    }
+            } 
+
+            //THEN, more time-consuming word-by-word comparisons for single-word characters
+            
+            let words = string.split(wordsplitters)
+
+            if (words.includes(character)) return true //spelling is exactly as once captured (text: McLaren, original: @McLaren)
+            if (words.includes(toInitialsCase(character))) return true //spelling is like a name, regardless of case when captured. (text: Mclaren)
+            if (words.includes(character.toUpperCase())) return true //character is typed in caps now but perhaps not when captured (text: MCLAREN)
+
+            //Below is a test to see if we can also get McLaren as well as McLAREN, and if so at what cost?
+            if (words.some(word => (word.charAt(0) + word.slice(1).toLowerCase()) === (character.charAt(0) + character.slice(1).toLowerCase()))) return true;
+
+            return false
+        }
+
+    //Finally, here's an array with characters in both action AND synopsis
+    let outlineElementsWithChactersAnywhere = 
+        outlineElementsWithCharactersIncludingAction.map((characters, index) => 
+            characters.concat(outlineElementsWithCharactersInSynopsisOnly[index])
+        )
+
+    console.timeEnd("collectCharacters2023")
+
+    //For now, in order to be able to use old code, let's merge this into the old variable names! Aug 2023
+
+        allCharacters = sortedCharacters
+        globalAllCharacters = allCharacters
+        scenesWithCharactersProxy = 
+            // documentSetting.trackingIncludesSynopsis ? outlineElementsWithCharactersInSynopsisOnly : outlineElementsWithCharactersIncludingAction
+            documentSetting.trackingIncludesSynopsis ? outlineElementsWithChactersAnywhere : outlineElementsWithCharactersIncludingAction
+
+    //Here's the old code:
+    //from here, we should potentially make it a new function called applycharactes
 
     if ((!scenesWithCharacters.length) || (scenesWithCharacters != scenesWithCharactersProxy)){
 
-    let previouslySelectedCharacters
-    let reselectThese = []
+        let previouslySelectedCharacters
+        let reselectThese = []
 
         let itemNumber = 0
         scenesWithCharacters = scenesWithCharactersProxy //workaround to make this globally accessible
 
-        if ($id("characterMenuList").selectedOptions){
-             
-            previouslySelectedCharacters = $id("characterMenuList").selectedOptions
-            for (character of previouslySelectedCharacters){
-                reselectThese.push(character.value)
+        //remember what characters in the menu were selected before
+            if ($id("characterMenuList").selectedOptions){        
+                previouslySelectedCharacters = $id("characterMenuList").selectedOptions
+                for (character of previouslySelectedCharacters){
+                    reselectThese.push(character.value)
+                }
             }
-        }
 
-        $id("characterMenuList").innerHTML = "" 
-        $id("allDialogFor").innerHTML = "<option class='menuitem' value='ALL'>ALL</option>" 
+        //populating/re-populating the character menu and track dialog menu (in case something changed)
+            $id("characterMenuList").innerHTML = "" 
+            $id("allDialogFor").innerHTML = "<option class='menuitem' value='ALL'>ALL</option>" 
 
-        for (item of allCharacters){
-            itemNumber ++
-            $id("characterMenuList").innerHTML += 
-                "<option class='menuitem' value='" + item + "'>" + 
-                (itemNumber<10 ? "(" + itemNumber + ")  " : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") +
-                item +
-                "</option>"
-            $id("allDialogFor").innerHTML +=
-                "<option class='menuitem' value='" + item + "'>" + 
-                item +
-                "</option>"
-        }
+            for (item of allCharacters){
+                
+                itemNumber ++
 
-        if (reselectThese.length){
+                $id("characterMenuList").innerHTML += 
+                    `<option class='menuitem' value='${item}'>
+                        ${itemNumber<10 ? `(${itemNumber})  ` : `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`}
+                        ${item}
+                    </option>`
 
-            for (character of reselectThese){
-                for (i = 0; i < characterMenuList.length; i++){
-                    if (characterMenuList[i].value == character){
-                        characterMenuList.options[i].selected = true;
+                $id("allDialogFor").innerHTML += `
+                    <option class='menuitem' value="${item}">
+                        ${item}
+                    </option>`
+            }
+
+        //and reselect those we remembered previously
+            if (reselectThese.length){
+                for (character of reselectThese){
+                    for (i = 0; i < characterMenuList.length; i++){
+                        if (characterMenuList[i].value == character){
+                            characterMenuList.options[i].selected = true;
+                        }
                     }
                 }
             }
-        }
-
-
     }
-    mylog("testing check for allCharacters.length, which is now " + allCharacters.length)
 
     if (iCameFromToggleCharacter && allCharacters.length > 0){
         toggleSoloCharacter(iCameFromToggleCharacter[0], iCameFromToggleCharacter[1])
     }
+
     if (iCameFromMenu){
         iCameFromMenu = false
         trackingMenu()
-    }
-    if ($id("notepanel").classList.contains("expanded") && $(".selectedtab").classList.contains("dialogtab")){
-        //if dialogpanel is open, then 
-        //1. check what name is selected
-        //2. off to plugin to collect dialog
-        name = $(".dialogtab").dataset.currentCharacter || "ALL"
-        // alertThis([...$id("allDialogFor").options].map(option => option.value))
-        // alertThis(([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(name), name)
-        $id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(name)
-
-        Beat.call("Beat.custom.runHightlightCharacter('" + name + "')")
     }
 
     if(trackingContainerVisibility == 1){
@@ -364,6 +504,11 @@ function makeCharacterMenu(allCharacters, scenesWithCharactersProxy) {
     }
 
     mylog("end of collect")
+
+    // FINALLY, added for 2023 version:
+    // make the dialog global so as to be available for the dialogpanel
+        globalScenesWithDialog = scenesWithDialog2023
+
 }
 
 function alsoFillColorDropdown(){
@@ -390,13 +535,12 @@ function alsoFillColorDropdown(){
 
 function updateFilter(scenesWithCharactersProxy){
 
-    mylog()
-    
+    mylog()    
 
     let allScenes = $$('.scene')
     let allSections = $$('.section')
 
-    if (scenesWithCharactersProxy) {scenesWithCharacters = scenesWithCharactersProxy} //again making it global
+    //if (scenesWithCharactersProxy) {scenesWithCharacters = scenesWithCharactersProxy} //again making it global
 
     let selectedCharacters = $id("characterMenuList").selectedOptions
 
@@ -406,18 +550,17 @@ function updateFilter(scenesWithCharactersProxy){
         for (scene of allScenes){scene.classList.add("dimmedScene")}
         
             for (i=0; i<outline.length; i++){
-                if (outline[i].typeAsString == "Heading" || outline[i].typeAsString == "Section"){
+                //if (outline[i].typeAsString == "Heading" || outline[i].typeAsString == "Section"){
                     let num = i
 
                     let removeDim = false
                     if (scenesWithCharacters[num]){
+
+                        
                         removeDim = true
                         for (currentCharacter of selectedCharacters){
 
-                            let spacelessName = currentCharacter.value.replace(/ /g, "_")
-                            spacelessName = spacelessName.replace(/\'|\’|\"/g, "-")
-
-                            if (!scenesWithCharacters[num].includes(spacelessName)) {
+                            if (!scenesWithCharacters[num].includes(currentCharacter.value.toUpperCase())) {
                             removeDim = false
                             }
                         }
@@ -426,7 +569,7 @@ function updateFilter(scenesWithCharactersProxy){
                     if (removeDim == true){$id(i).classList.remove("dimmedScene")}
                     if (removeDim == true){$id(i).classList.remove("dimmedSection")}
 
-                }
+                //}
             }
     }
     else
@@ -449,6 +592,8 @@ function updateFilter(scenesWithCharactersProxy){
             document.getElementById("selectedCharacterName").innerHTML += currentCharacter.value + "<br/>"
         }
     }
+
+    updateSelectionInfo()
     mylog("end of UpdateFilter")
 }
 
@@ -534,6 +679,7 @@ function muteColors(theClickedThing, shift){
                 $id("characterButton").classList.remove(color.toLowerCase())
             }
         }
+        updateSelectionInfo()
         return
     }
 
@@ -563,10 +709,20 @@ function muteColors(theClickedThing, shift){
     }
     
     deselectAllElements()
-
+    updateSelectionInfo()
 }
 
 function _____________(){}
+
+function initiateCharacterBubbles(){
+
+    collectCharacters()
+
+    //$id("allDialogFor").selectedIndex = 0
+
+    showCharacterBubbles("ALL")
+
+}
 
 function unShowCharacterBubbles(){
 
@@ -574,7 +730,7 @@ function unShowCharacterBubbles(){
     $$(".connectorcontainer").forEach( connector => { connector.remove() })
     $$(".displayNumberOf").forEach( numberof => { numberof.remove() })
 
-    deselectAllCharacters()
+    if(!$id("dialogsearch")?.value) {deselectAllCharacters()} //avoid blinkage: don't remove "dimmedScene" if filtering underway
 
     $$(".scene .orphan").forEach(element => {
         element.removeEventListener("mouseenter", function(){
@@ -639,66 +795,61 @@ function selectThisDialog(dlgId){
 
 }
 
-function initiateCharacterBubbles(name){
-
-    console.time("bubbles")
-
-    if($id("characterMenuList").options.length == 0){
-        collectCharacters()
-        //Note to self:
-        //  this sends us to collectCharacters(), which immediately send us to
-        //  Beat.custom.addCharacterClasses()
-        //  which collects all characters and sends us back to makeCharacterMenu()
-        //  inside which we now populate the DialogPanel menu as well.
-
-    }else{
-
-        // More notes to self: 
-        // The two lines below are now only executed if the list is already poopulated!
-        // if it is empty, they are instead run from wihtin makeCharacterMenu, due to asynchronicity
-             name = $id("allDialogFor").selectedOptions[0]?.innerText.toUpperCase() || "ALL"
-             Beat.call("Beat.custom.runHightlightCharacter('" + name + "')")
-    }
 
 
-}
-
-function updateDialogPanel(){
+function updateDialogPanel(scenesWithDialog){
 
     if (!($id("notepanel").classList.contains("expanded") && $(".selectedtab").classList.contains("dialogtab"))){ return }
 
-    $(".dialogtab").dataset.currentCharacter = $id("allDialogFor").selectedOptions[0]?.innerText.toUpperCase()
+    let alreadySelected = $id("allDialogFor").selectedOptions[0]?.innerText.trim() || "ALL"
+
     collectCharacters()
+    showCharacterBubbles(alreadySelected, true)
 
 }
 
-function showCharacterBubbles(scenesWithDialog, characterName, redraw){
+function showCharacterBubbles(characterName, redraw){
 
     mylog()
-    $id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(characterName)
+
+    console.time("bubbles")
+
+    // re-select already selected character!
+        if(characterName){
+            $id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf(characterName) || 0
+        }else{
+            characterName = $id("allDialogFor").selectedOptions[0]?.innerText.trim() || "ALL"
+        }
     
     let scrolledAmountBeforeRedraw = $id("dialogpanelcontent").scrollTop
     let allChunks = $$(".sceneChunk")
     
-    if(allChunks.length > 0){  
-        //when chunks already present, clean up before doing anything else:
+    //when chunks already present, clean up before doing anything else:
+        if(allChunks.length > 0){  
             unShowCharacterBubbles()
-    }
-    
-    for (let scene of scenesWithDialog){
+        }
 
-        let theId = scenesWithDialog.indexOf(scene)
+    //if no character is selected, loop all dialog, otherwise only loop dialog for selected character
+        let selectedScenesWithDialog = characterName == "ALL" ? globalScenesWithDialog : globalScenesWithDialog.map(scene => scene.filter(line => line.character == characterName))
+    
+    for (let scene of selectedScenesWithDialog){
+
+        let theId = selectedScenesWithDialog.indexOf(scene)
+            
+        // This PROBABLY helps against a bug PROBABLY caused by the scenes being updated from the plugin while this loop is running
+            if(!$id(theId)) break 
+
         let orphanId
-            if($id(theId).classList.contains("section")){
-                // console.log("found an orphan:" , $id(theId).querySelector(".orphanText")?.id)
+            if($id(theId)?.classList.contains("section")){
                 orphanId = $id(theId).querySelector(".orphanText")?.id
             }
 
         if (scene.length == 0) continue
 
         let chunk = document.createElement("div")
+            
             chunk.id = "dialogIn" + theId
-            chunk.orphanId = orphanId
+            chunk.dataset.orphanId = orphanId
             chunk.dataset.parentId = theId
             chunk.style.color = $id(theId).querySelector(".sceneheading").style.color
             chunk.dataset.charactername = characterName
@@ -726,8 +877,6 @@ function showCharacterBubbles(scenesWithDialog, characterName, redraw){
                     chunkHTML += `<div class='dialogChunk' id='dialog${dlgNumber}'
                     onclick = selectThisDialog('dialog${dlgNumber}')>`
                 }
-                
-                if(line.currentLine) thisIsTheCurrentChunk = "dialog" + dlgNumber
 
                 let omittedString = ""
                     if(line.omitted) omittedString = " omitted"
@@ -739,28 +888,28 @@ function showCharacterBubbles(scenesWithDialog, characterName, redraw){
                 chunkHTML = chunkHTML.replace(/\*\*(.*)\*\*/g, "<b>$1</b>")
                 chunkHTML = chunkHTML.replace(/\*(.*)\*/g, "<i>$1</i>")
                 chunkHTML = chunkHTML.replace(/\_(.*)\_/g, "<u>$1</u>")
-
             }
-
-        chunkHTML += `</div>` //finalizes the last chunk-in-chunk div
+            chunkHTML += `</div>` //finalizes the last chunk-in-chunk div
 
         //add all dialogChunks to the sceneChunk:
+            chunk.innerHTML += chunkHTML
+            chunk.dataset.startPos = chunk.firstChild.data-line
+            chunk.dataset.endPos = chunk.lastChild.data-line + chunk.lastChild.innerText.length
 
-        chunk.innerHTML += chunkHTML
-        chunk.dataset.startPos = chunk.firstChild.data-line
-        chunk.dataset.endPos = chunk.lastChild.data-line + chunk.lastChild.innerText.length
-
-        //and the sceneChunk to the sidepanel:
-            
+        //and the sceneChunk to the sidepanel:          
             $id("dialogpanelcontent").appendChild(chunk)
-                if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("selectedDialog")
-                if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("hasCursor")
+                // if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("selectedDialog")
+                //if(thisIsTheCurrentChunk && !redraw) $id(thisIsTheCurrentChunk).classList.add("hasCursor")
 
-                chunkSizes = chunk.getBoundingClientRect()
+        if($id("dialogsearch").value) chunk.classList.add("displayNone")
+                //chunkSizes = chunk.getBoundingClientRect()
 
         //add number of dialogs to corresponding scene
 
             let displayNumberOf = document.createElement("div")
+
+            $id(orphanId || theId).appendChild(displayNumberOf)
+
                 displayNumberOf.id = "displayNumberOf" + theId //chunk.id
                 displayNumberOf.dataset.parentId = theId
                 displayNumberOf.classList.add("displayNumberOf")
@@ -769,20 +918,22 @@ function showCharacterBubbles(scenesWithDialog, characterName, redraw){
                 displayNumberOf.style.top = "50%"
                 displayNumberOf.style.left = "50%"
                 
-                displayNumberOf.textContent = chunk.querySelectorAll(".dialogChunk").length //+ " LINE" + (chunk.querySelectorAll(".dialogChunk").length > 1 ? "S" : "")
+                displayNumberOf.textContent = chunk.querySelectorAll(".dialogChunk").length
 
-                displayNumberOf.onmouseenter = function(){
-                    $id("dialogIn" + theId).classList.add("hoveredSceneChunk") 
-                }
-                displayNumberOf.onmouseleave = function(){
-                    $id("dialogIn" + theId).classList.remove("hoveredSceneChunk") 
-                }
-                displayNumberOf.onclick = function(){
-                    selectSceneChunk(chunk)
-                    scrollNicelyIntoView(chunk.querySelector(".dialogChunk") || chunk, $id("dialogpanelcontent"))
-                }
+                displayNumberOf.onmouseenter = onmouseenterForDNO                
+                    function onmouseenterForDNO(){
+                        $id("dialogIn" + theId).classList.add("hoveredSceneChunk") 
+                    }
 
-            $id(orphanId || theId).appendChild(displayNumberOf)
+                displayNumberOf.onmouseleave = onmouseleaveForDNO                
+                    function onmouseleaveForDNO(){
+                        $id("dialogIn" + theId).classList.remove("hoveredSceneChunk") 
+                    }
+                displayNumberOf.onclick = onclickForDNO                
+                    function onclickForDNO(){
+                        selectSceneChunk(chunk)
+                        scrollNicelyIntoView(chunk.querySelector(".dialogChunk") || chunk, $id("dialogpanelcontent"))
+                    }
 
         //must set color after "displaynumberof", or else getcomputedstyle delivers blank    
             chunk.style.setProperty("--localColor", window.getComputedStyle($id(theId)).backgroundColor)
@@ -809,7 +960,7 @@ function showCharacterBubbles(scenesWithDialog, characterName, redraw){
         });
 
     $id("dialogpanelcontent").onscroll = function(){ updateDialogPanelOnScroll() }
-    if($id("dialogsearch").value) onlyShowMatchingDialogs()
+    if($id("dialogsearch").value) onlyShowMatchingDialogs(true)
 
     console.timeEnd("bubbles")
 
@@ -866,7 +1017,6 @@ function createOrUpdateConnectorFor(element){
                 if (window.getComputedStyle(connectedScene).display == "none"){
                     nextVisibleScene = connectedScene
                     while ($id(Number(nextVisibleScene.id) + 1) && window.getComputedStyle(nextVisibleScene).display == "none") {
-                        // console.log("looping: ", nextVisibleScene)
                         nextVisibleScene = $id(Number(nextVisibleScene.id) + 1)
                     }
                     nextSceneSizes = nextVisibleScene?.getBoundingClientRect()
@@ -955,13 +1105,38 @@ function onlyShowMatchingDialogs(nodelay){
                         dialog.innerHTML = newHTML;
                     }
                 }
-
         })
 
         let provokeRedraw = $id("dialogpanelcontent").getBoundingClientRect()
             
     }, delay);
 
+}
+
+function __________HELPERS__________(){} 
+
+function toCamelCase(string){
+
+    let words = string.split(" ")
+    let camelCase = words[0].toLowerCase()
+
+    for (let i = 1; i < words.length; i++){
+        camelCase += words[i].charAt(0).toUpperCase() + words[i].slice(1).toLowerCase()
+    }
+
+    return camelCase
+}
+
+function toInitialsCase(string){
+
+    let words = string.split(" ")
+    let output = ""
+
+    for (word of words){
+        output += " " + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    }
+
+    return output.trim()
 }
 
 </script>
@@ -996,6 +1171,7 @@ function onlyShowMatchingDialogs(nodelay){
     /* body:has(#notepanel.expanded .dialogtab.selectedtab) .section:not(.dontDim) > .section-heading{ */
         body:has(.displayNumberOf) .section:not(:has(.orphanText > .dontDim)) > .section-heading{
         color: transparent !important; /*hsl(var(--paperBehindInk), 0.05) !important;*/
+        border: none;
     }
 
     /* body:has(#notepanel.expanded .dialogtab.selectedtab) .dimmedSection,
@@ -1416,6 +1592,9 @@ function onlyShowMatchingDialogs(nodelay){
 
     .dialogChunk {
 
+        white-space: normal !important;
+        word-wrap: break-word !important;
+
         /* background: linear-gradient(hsla(var(--paperBehindInk), 0.60), hsla(var(--paperBehindInk), 0.60)), var(--localColor); */
         background: linear-gradient(hsla(0, 0%, 100%, 0.60), hsla(0, 0%, 100%, 0.60)), var(--localColor);
         /* border: 1px solid hsla(var(--inkOnPaper), 0.3); */
@@ -1496,12 +1675,16 @@ function onlyShowMatchingDialogs(nodelay){
 
     .dialogChunk i{
 
+        white-space: normal;
+        word-wrap: break-word;
         font-style: italic;
 
     }
 
     .dialogChunk b{
 
+        white-space: normal;
+        word-wrap: break-word;
         font-weight: bold;
 
     }

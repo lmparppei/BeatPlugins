@@ -38,9 +38,6 @@ MARK: -Root
 
 	--baseFontSize: 12px;
 		
-	--proportionalScenes: 1;
-	--indexCardMode: 0;
-	--popupVisibility: hidden;
 	--showSceneNum: none;
 	--showPageNum: none;
 	--showSceneLength: none;
@@ -338,9 +335,13 @@ __________BASIC ELEMENTS{}
 .scene, .orphanText{
 
 	position: relative;
+	/* container-name: scene;
+	container-type: size; */
+	overflow: visible;
 	
 	/* setting margin-top programmatically due to allowing space for orphan material */
 	margin-top: 1px;
+	margin-top: 0px;
     margin-right: 8px;
 	margin-left: 6px;
 	margin-bottom: 0px;
@@ -353,6 +354,7 @@ __________BASIC ELEMENTS{}
 	line-height: calc(14px * var(--fontSizeFactor));
 	
 	border: none; 
+	border: 0.5px solid rgba(0, 0, 0, 0.35);
 	border-radius: 3px;	
 	
 	color: #000;
@@ -364,7 +366,9 @@ __________BASIC ELEMENTS{}
 
 	pointer-events: all;
 
-	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%); 
+	box-shadow: 0 1rem 2rem hsl(0 0% 0% / 20%),
+				inset 0.5px 0.5px 0 0px rgba(255, 255, 255, 0.3),
+				inset -0.5px -0.5px 0 0px rgba(0, 0, 0, 0.3); 
 	transition: height 0.1s, width 0.2s;
 
 	height: calc(var(--flexibleHeight) * var(--heightFactor));
@@ -373,13 +377,17 @@ __________BASIC ELEMENTS{}
 
 #flexiContainer.nonProportionalMode .isExpanded > .scene{
 
-	height: calc(var(--fixedHeight) * var(--fontSizeFactor)) !important;
+	height: calc(var(--fixedHeight) * var(--fontSizeFactor) + 1px) !important;
+
+	/* padding-top: 1px;
+	padding-bottom: 1px; */
 
 }
 
 .sceneheading {
 
 	margin-left: 0px;
+	margin-top: -1px;
 
 	padding-left: 6px;
 	padding-right: 4px;
@@ -394,6 +402,8 @@ __________BASIC ELEMENTS{}
 
 	overflow: hidden;
 	text-overflow: ellipsis;
+
+	transition: opacity 0.2s;
 
 }
 
@@ -454,41 +464,6 @@ __________BASIC ELEMENTS{}
 
 	pointer-events: all;
 	
-}
-
-DISABLED.level1 > .synopsiscontainer{
-	
-	/* --localColor: rgba(0,0,0,0.2); */
-	height: auto !important;
-	/* min-height: 14px !important; */
-	
-}
-
-DISABLED.showSynopsisInScenes:not(.indexcards) .synopsiscontainer{
-	display: block;
-	background: none !important;
-	margin: 0;
-	padding: 0;
-
-	position:relative;
-	padding-top: 3px;
-	padding-bottom: 3px;
-}
-
-DISABLED.showSynopsisInScenes:not(.indexcards) .section:not(.level1) > .synopsiscontainer:has( > .synopsis)::before{
-
-	/*PURPOSE: Fixed view, allows faint background to synopsiscontainer of sections*/
-
-	content: "";
-	position: absolute;
-	top: 0px;
-	left: 2px;
-	right: 0;
-	bottom: 0;
-
-	background: var(--localColor) !important;
-	opacity: 0.2;
-
 }
 
 .synopsis,
@@ -711,11 +686,11 @@ __________PAGE BREAK REREPRESENTATIONS{}
 #flexiContainer:not(.indexcards):not(.nonProportionalMode) .blankPage {
 
 	position: absolute !important;
-	left: 0px !important;
-	width: 100% !important;
+	left: -0.5px !important;
+	width: calc(100% + 1px) !important;
 
 	border-top: 10px transparent !important; /* prepare space for cogs */
-	background-image: linear-gradient(transparent, transparent),/*linear-gradient(orange, orange), /* general block background, always goes first, overlapping everything below it */
+	background-image: linear-gradient(transparent, transparent),
 					linear-gradient(to bottom right, 
 						transparent 50.5%, 
 						var(--pageBackground) 50.5%), 
@@ -738,8 +713,9 @@ __________PAGE BREAK REREPRESENTATIONS{}
 
 } */
 
-#flexiContainer.showPageDividers.always:not(.indexcards, .nonProportionalMode) :is(.scene, .orphanText),
-#flexiContainer.showPageDividers:not(.always, .indexcards, .nonProportionalMode) .level1:hover :is(.scene, .orphanText){
+#flexiContainer.showPageDividers:not(.indexcards, .nonProportionalMode) :is(.scene, .orphanText){
+/* #flexiContainer.showPageDividers.always:not(.indexcards, .nonProportionalMode) :is(.scene, .orphanText),
+#flexiContainer.showPageDividers:not(.always, .indexcards, .nonProportionalMode) .level1:hover :is(.scene, .orphanText){ */
 
 	margin-right: calc(2px + (10px * var(--fontSizeFactor))) !important;
 	transition: height 0.1s, width 0.2s, margin 0.2s;
@@ -806,8 +782,9 @@ __________PAGE BREAK REREPRESENTATIONS{}
 
 }
 
-#flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
-#flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{
+#flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider{
+/* #flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
+#flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{ */
 
 	--pageDividerColor: rgba(255,255,255,1); /*and now we set the color to visible*/
 	
@@ -888,7 +865,8 @@ __________WIDER ACTS{}
 	position: absolute;
 	margin-right: 0px; 
 	margin-top: 2px;
-	right: 0px;
+	/* right: 0px; */
+	left: 0px;
 
 	height: calc(12px * var(--fontSizeFactor));
 	width: 30px;
@@ -949,8 +927,10 @@ __________COLLAPSED IN FIXED VIEW{}
 .nonProportionalMode:not(.indexcards) .section:not(.isExpanded) > .scene{
 
 	height: 0px !important;
-	margin: 0 !important;
+	margin: 1px !important;
+	/* margin-top: 1px !important; *//*REMMED OUT 2023-08*/
 	min-height: 0px !important;
+	border: none !important;
 
 }
 
@@ -1100,25 +1080,14 @@ MARK: -FIX THIS PRONTO!
 	
 	font-weight: bold;
 	font-size: calc(8px * var(--fontSizeFactor)) !important;
-	/* background-color: #fff;  */
-	/* FIX: currently cannot have background because it won't be shut off by hideslugifsmall class */
-	
-	/* position: relative !important; */
-	float: right !important;
-	/* top: -17px !important; */
-	/* top: calc(-0px - 1px * var(--fontSizeFactor)) !important; */
 
+	float: right !important;
 	
 	opacity: 45% !important;
-	margin-top: 0px !important; /*calc(1px * var(--fontSizeFactor)) !important;*/
+	margin-top: 0px !important;
 	margin-left: 0px !important;
 
 	padding: 0px 4px 0px 4px !important;
-	/* margin-bottom: 5px !important; */
-	/* height: 10px !important; */
-	/* height: calc(10px * var(--fontSizeFactor)) !important; */
-
-	/* border: maroon 1px solid !important;  */
 
 	pointer-events: none;
 
@@ -1129,39 +1098,84 @@ MARK: -FIX THIS PRONTO!
 }
 
 p >.clear{
-	/* display: inline-block !important; */
+
 	float: none;
-	/* clear: both; */
-	/* border: lime 1px solid !important; */
+
 	margin-top: 40px !important;
 	max-width: 100% !important;
 	overflow: hidden !important;
 }
 
-.showSectionPageNumber{
+.sectionInfoDiv {
+
+	float: right;
+	white-space: nowrap;
+}
+
+/* #flexiContainer.dualSectionLines .sectionInfoDiv{
+
+	white-space: normal !important;
+	height: inherit !important;
+	outline: 1px dotted red
+
+} */
+
+.showSectionPageNumber,
+.sectionLengths{
+
 	display: var(--showPageNum);
 	
-	color: inherit; /*was 555*/
+	color: inherit;
 	font-weight: normal;
 	font-size: calc(8px * var(--fontSizeFactor)) !important;
 
 	text-transform: none !important;
-	/* background-color: #fff; */
-	/* FIX: currently cannot have background because it won't be shut off by hideslugifsmall class */
 	
-	/* position: relative !important; */
-	float: right !important;
+	/* float: right !important; */
 	text-align: right !important;
 	right: 0px !important;
 	
-	opacity: 45% !important; /*was 95*/
+	opacity: 45% !important; 
 	border-radius: 6px;
-	/* margin-top: 2px; */
-	margin-top: calc(1px * var(--fontSizeFactor)) !important;
-	padding: 0px 4px 4px 4px;
-	height: 1px; /*to avoid making sectionheadings higher*/
+	margin-top: calc(1px * var(--fontSizeFactor) - 1) !important;
+	padding: 0px 0px 0px 4px;
+
+	height: auto; 
+	margin-bottom: calc(-5px * var(--fontSizeFactor));
 	pointer-events: none !important;
-	}
+
+	text-align: right;
+
+}
+
+.sectionLengths {
+
+	font-weight: normal;
+
+	display: none;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+
+	height: auto;
+	overflow: visible;
+
+}
+
+/*#flexiContainer:not(.dualSectionLines)*/ .sectionLengths br {
+	display: none;
+}
+
+#flexiContainer.showLengthsInSections .sectionLengths{
+
+	display: inline;
+
+}
+
+#flexiContainer.showLengthsInSections .showSectionPageNumber{
+
+	font-weight: bold;
+
+}
 
 .expandedNote .showSectionPageNumber{
 	display: none
@@ -1218,6 +1232,15 @@ ________COLORS{}
 
 }
 
+.section.special:not(.level1) > .section-heading{
+
+	background-image: none;
+	border-color: var(--special) !important; 
+	color: hsl(0deg, 0%, 95%) !important; 
+	text-align: center;
+
+}
+
 /*ONE TO REPLACE THEM ALL?*/
 .uncolorAllScenesBut.red .scene:not(.red), 
 .uncolorAllScenesBut.yellow .scene:not(.yellow),
@@ -1265,12 +1288,15 @@ ________COLORS{}
 .uncolorAllScenesBut.black .synopsiscontainer:not(.black),
 
 .scene.dimmedScene, 
+.scene.toBeDeleted,
 
 .dimmedSection > .section-heading,
 .dimmedSection > .synopsiscontainer,
 
 .section.dimmedScene > .section-heading,
+.section.toBeDeleted > .section-heading,
 .section.dimmedScene > .orphanText > .displayNumberOf
+.section.toBeDeleted > .orphanText > .displayNumberOf
 {
 
 	opacity: 0.15 !important
@@ -1367,14 +1393,7 @@ ________COLORS{}
 	.uncolorAllScenesBut.white .synopsiscontainer:not(.white) > .synopsis:not(.white),
 	.uncolorAllScenesBut.black .synopsiscontainer:not(.black) > .synopsis:not(.black),
 
-	REMMED.dimmedScene,
-	REMMED.dimmedScene > .sceneheading,
-	REMMED.dimmedScene > .synopsiscontainer,
-	REMMED.dimmedScene > .synopsiscontainer > .synopsis,
-
-	.dimmedSection > .section-heading,
-	REMMED.dimmedSection > .synopsiscontainer,
-	REMMED.dimmedSection > .synopsis
+	.dimmedSection > .section-heading
 	{
 
 		--localColor: rgb(255,255,255) !important;
@@ -1444,7 +1463,7 @@ MARK: -"End of Types". so now what?
 
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0.4), rgba(255,255,255,0.4) 100%);
 
-	transition: opacity 0.3s !important;
+	transition: opacity 0.8s !important;
 	z-index: 10000;
 }
 
@@ -1452,7 +1471,7 @@ MARK: -"End of Types". so now what?
 	-webkit-backdrop-filter: blur(2px) !important;
 	backdrop-filter: blur(2px) !important;
 
-	opacity: 0.95 !important;
+	opacity: 0.95;
 	transition: opacity 0.3s !important;
 }
 
@@ -1464,63 +1483,7 @@ MARK: -"End of Types". so now what?
 	top: 0.5px !important; 
 }
 
-/* .tooltip{
-	visibility: hidden;
-	overflow: hidden;
-	white-space: normal !important;
-	border: 1px black solid;
-	border-radius: 5px !important;
-	background-color: inherit;
-	
-	position: relative !important; /*was relative;*
-	top: var(--putPopupHereY); 
-	left: var(--putPopupHereX); 
-	
-	z-index: 9998;
-	
-	width: 300px !important; /*was 240*
-	height: 400px !important; /*was 400*
-	box-shadow:2px 2px 10px black !important;
-	
-	transition: 0.0s !important;	
-	}
-
-p.tooltipHead{
-	background-color: rgba(0,0,0,0.2);
-	border-bottom: 2px black solid !important;
-	display: block;
-	color: black;
-	padding: 6px 10px 4px 10px !important;
-	white-space: normal !important;
-	
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-	font-size: calc(12px * var(--fontSizeFactor)) !important;
-	font-weight: bold !important;
-	line-height: 14px !important;
-	
-	margin-bottom: 10px !important;
-	}
-	
-p.tooltipInfo{
-	
-	background-color: black !important;
-	color: silver !important;
-	width: 100%;
-	text-align: right;
-	padding: 4px 10px 4px 10px !important;
-	font-size: calc(10px * var(--fontSizeFactor)) !important; 
-	display: block;
-	margin: 0px;
-	opacity: 100% !important;
-	position: absolute !important;
-	bottom: 0px !important;
-
-}
-
-.scene:hover > .tooltip {
-	visibility: var(--popupVisibility) !important;
-	transition-delay: 0.1s !important;
-} */
+#----------- INDICATOR {}
 	
 .indicator {
 	position: absolute; 
@@ -1819,9 +1782,8 @@ nope.loggingIsOn .indicator p { /*for debugging purposes only*/
 	color: white !important;
 }
 	
-/* .hideSlugIfSmall,  */
-.hideSlugIfSmall > .sceneheading{
-		/* color: rgba(0,0,0,calc(1 - var(--proportionalScenes))) !important; */
+/* .sluglineIsHidden,  */
+.sluglineIsHidden > .sceneheading{
 	opacity: 0 !important;
 }
 
@@ -1831,8 +1793,7 @@ nope.loggingIsOn .indicator p { /*for debugging purposes only*/
 
 
 
-.hideSlugIfSmall:not(:has(.marker:hover)):hover{
-		color: rgba(0,0,0,calc(1 - var(--proportionalScenes))) !important;
+.sluglineIsHidden:not(:has(.marker:hover)):hover{
 		background-image: -webkit-linear-gradient(top, rgba(20,20,20,0.80), rgba(20,20,20,0.80) 100%) !important;
 }
 	
@@ -1848,13 +1809,16 @@ nope.loggingIsOn .indicator p { /*for debugging purposes only*/
 	background-color: rgba(40,40,40,1) !important;
 }
 
-.section:not(.level1).isSelected {
+.section/*:not(.level1)*/.isSelected {
 	color: white !important;
 	border-color: rgba(0,0,0,0.9) !important;
 }
-.section:not(.level1).isSelected > .section-heading {
+.section/*:not(.level1)*/.isSelected > .section-heading {
 	color: white !important;
 	background-color: rgba(0,0,0,0.9) !important;	
+}
+.section.level1.isSelected > .section-heading {
+	border-radius: 3px
 }
 #flexiContainer:not(.indexcards) .section:not(.level1).isSelected > .synopsiscontainer {
 	color: white !important;
@@ -2000,6 +1964,7 @@ MARK: -UI
 	font-size: 32px !important;
 	line-height: 30px !important;
 	margin-top: -20px !important;
+	fill: white;
 }
 
 #notesButton{
@@ -2226,7 +2191,7 @@ button:hover{
 	transition: none !important;
 }
 
-.hideSlugIfSmall .padlockIcon{
+.sluglineIsHidden .padlockIcon{
 	/* height: 9px !important; */
 	height: calc(9px * var(--fontSizeFactor)) !important;
 	width: 12px !important;
@@ -2266,20 +2231,23 @@ MARK: -Inline Synopsis
 -- SHOWING INLINE SYNOPSIS ------------------ {}
 --------------------------------------------- {}
 
-.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:not(.hideSlugIfSmall > .synopsiscontainer)
+.showSynopsisInScenes:not(.indexcards) .synopsiscontainer:not(.sluglineIsHidden > .synopsiscontainer)
 	:not(.nonProportionalMode .section:not(.isExpanded) > .scene >.synopsiscontainer){
 	display: block;
 }
 
 #flexiContainer.nonProportionalMode.showSynopsisInScenes:not(.indexCards) .isExpanded > .scene {
-	min-height: calc(14px * var(--fontSizeFactor)) !important;
+	min-height: calc(15px * var(--fontSizeFactor)) !important;
 	height: auto !important;
 }
 
-.showSynopsisInScenes:not(.indexcards) .scene{
+.showSynopsisInScenes:not(.indexcards) .scene:nth-child(1 of .scene){
+
+	margin-top: 2px !important;
+
 }
 
-.showSynopsisInScenes:not(.indexcards) .scene:not(.hideSlugIfSmall) .sceneheading{
+.showSynopsisInScenes:not(.indexcards) .scene:not(.sluglineIsHidden) .sceneheading{
 	opacity: 0.5;
 	font-weight: bold;
 	
@@ -2426,14 +2394,22 @@ html[data-outdoors='1'] #flexiContainer:not(.indexcards) .section:not(.level1){
 
 }
 
+html[data-outdoors='1'] body:has(.displayNumberOf) .section:not(.level1){  
+
+	box-shadow: none !important;
+
+}  
+
 html[data-outdoors='1'] .section > .section-heading:not(.level1 > .section-heading){
 	
 	color: black !important;
 	background: white !important;
 	background: transparent !important;
-	border-top: 1px black solid;
-	border-left: 1px black solid;
-	border-right: 1px black solid;
+	/* border-top: 0px black solid;
+	border-left: 0px black solid;*/
+	border-right: 1px black solid; 
+
+	/* box-shadow: inset -1.75px 0 0 0.25px yellow; */
 
 }
 
@@ -2458,13 +2434,16 @@ html[data-outdoors='1'] .indexcards .section:not(.level1, .special) > .section-h
 	
 }
 
+html[data-outdoors='1'] .scene,
 html[data-outdoors='1'] .isExpanded > .scene{
 
-	border: 1px solid black !important;
-	background-color: white;
+	border: 0.5px solid black !important;
+	/* background-color: white; */
+	background-color: color-mix(in oklab, var(--localColor), white var(--saturation));
 	box-shadow: none !important; 
 
-	box-shadow: 6px 0 0 0px inset var(--localColor) !important;
+	box-shadow: 6px 0 0 0px inset var(--localColor),
+				0px 0 0 1px inset var(--localColor) !important;
 
 }
 
@@ -2520,7 +2499,7 @@ html[data-outdoors='1'] .showActLength
 
 html[data-outdoors='1'] /* .greyonly */ .scene:not(.special){
 
-	font-weight: 600 !important;
+	/* font-weight: 600 !important; */
 
 }
 
@@ -2622,13 +2601,13 @@ html[data-outdoors='1'] #outOfSyncDiv{
 	;
 }
 
-html[data-outdoors='1'] .indexcards .section:not(.level1) > .section-heading{
+html[data-outdoors='1'] .indexcards .section:not(.level1, .dimmedSection) > .section-heading{
 
 	border-style: solid !important;
 
 }
 
-html[data-outdoors='1'] :not(.indexcards) .section > .section-heading:not(.level1 > .section-heading){
+html[data-outdoors='1'] :not(.indexcards, :has(.displayNumberOf)) .section:not(.dimmedSection) > .section-heading:not(.level1 > .section-heading){
 
 	border-bottom: 1px black solid;
 }
@@ -2731,7 +2710,7 @@ rgba(221, 221, 221, 1) !important */
 ;
 }
 
-html[data-outdoors='1'] .scene:hover > .sceneheading {
+html[data-outdoors='1'] .scene:not(.sluglineIsHidden):hover > .sceneheading {
 
 	color: black !important;
 	background-color: transparent !important;
@@ -2809,16 +2788,65 @@ html[data-outdoors='1'] .widerButtonOn{
 
 html[data-outdoors='1'] .pageDivider {
 
-	--pageDividerColor: rgba(0,0,0,0) !important;
+	--pageDividerColor: rgba(0,0,0,1) !important;
 
 }
 
-html[data-outdoors='1'] #flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
+html[data-outdoors='1'] #notepanel .tab,
+html[data-outdoors='1'] #notepanel .chunkHeading:not(:hover, :has(:hover)) {
+
+	color: black ;
+
+}
+
+html[data-outdoors='1'] #notepanel .chunkHeading:has(:hover) {
+
+	color: white !important;
+
+}
+
+html[data-outdoors='1'] {
+
+	--dragging-cursor-color: blue !important
+
+}
+
+#saturationSlider{
+
+	-webkit-appearance: none; 
+	appearance: none;
+
+	position: absolute;
+	width: 190px;
+	height: 24px;
+	right: 280px;
+	bottom: 14px;
+
+	display: none
+
+}
+
+#saturationSlider:hover{
+
+	box-sizing: content-box;
+	translate: 30px 30px;
+	border: 30px solid transparent !important;
+
+}
+
+html[data-outdoors='1'] #saturationSlider{
+
+	display: block
+
+}
+
+
+/* html[data-outdoors='1'] #flexiContainer.showPageDividers.always:not(.indexcards):not(.nonProportionalMode) .level1 .pageDivider,
 html[data-outdoors='1'] #flexiContainer.showPageDividers:not(.indexcards):not(.nonProportionalMode) .level1:hover .pageDivider{
 
 	--pageDividerColor: rgba(0,0,0,1) !important; 
 	
-}
+} */
 
 /*
 MARK: -Boneyard
@@ -2906,6 +2934,9 @@ float: right;
 #flexiContainer:not(.oneColumnOutline).boneyardIsClosed .level1.boneyard *{
 
 	width: 0 !important;
+	height: 1vh !important;
+	overflow: hidden !important;
+
 	opacity: 0 !important;
 	pointer-events: none !important;
 
@@ -3032,5 +3063,117 @@ MARK: -Buttons
 	}
 	
 }
+
+#----- INFO FIELD ---------------{}
+
+#infoField{
+
+	position: absolute;
+	left: 125px;
+	top: 7px;
+
+	display: inline-block;
+
+	padding: 3px 6px;
+	border-radius: 4px;
+
+	font-size: 10px;
+	font-weight: bold;
+	line-height: 12px;
+
+	opacity: 30%;
+
+	background-color: white;
+	color: black;
+
+	/* position: absolute; */
+	/* top: 0px; */
+	/* left: 0px; */
+	width: auto;
+
+	
+}
+
+#infoField::first-line{
+
+	font-weight: 600 !important;
+
+}
+
+#infoField:hover{
+	
+	opacity: 80%;
+	
+}
+
+#infoField:not(:empty){
+	
+	transition: opacity 0.2s !important;
+
+}
+
+#infoField:empty{
+
+	opacity: 0% !important
+
+}
+
+#----- SLIDERS ---------------{}
+
+#saturationRange {
+
+	position: absolute;
+	top: 10px;
+	width: 150px;
+
+	display: none
+
+}
+
+#saturationSlider:hover #saturationRange {
+
+	display: block
+
+}
+
+input[type=range]:focus {
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: grey;
+  border: 1px black solid;
+  border-radius: 2px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1), 
+  			inset 0px 0px 0px 2px black;
+  border: 1px solid black !important;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: silver;
+  margin-top: -9px;
+}
+input[type=range]:focus::-webkit-slider-thumb {
+  border: 1px solid black;
+  box-shadow: 0px 0px 5px black;
+}
+
+.paletteIcon{
+
+	position: absolute;
+	top: 0px;
+	right: 0px;
+
+	width: 24px;
+	height: 24px;
+
+
+}
+
+
 
 </style>

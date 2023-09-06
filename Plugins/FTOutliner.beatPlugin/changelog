@@ -1,10 +1,72 @@
-v. 1.54 (February 28, 2023)
-===========================
+#v 1.7 (September 5, 2023)
 
-A GENERAL NOTE ABOUT MACOS (or rather Safari, or rather Webkit) COMPATIBILITY: 
+*FINALLY*, a looong overdue, much-needed update! Much of the codebase has been rewritten to catch up with the many great additions to the Beat API, and even if most of the changes aren't visible to the eye this should mean a big improvement to stability and speed.
+
+1. Includes the changes of the never-released v 1.60, see changelog below. The big highlight is:
+* *PAGE NUMBERS* are now spot on between the Beat document and FTOutliner
+  - As a result, there is a now an option in the view menu to have page numbers visible in the margin of the columns. (The page numbers are clickable too, for those meeting situations where someone says "so on page 48" -- just click and you're there. Personally, I keep them on all the time.)
+  - Lengths and ranges are now much more reliable as a result, and you can also display total lengths on sections (via Advanced Settings)
+
+2. Tons of under-the-hood changes:
+* Completely re-vamped system for updating FTOutliner's timeline. More reliable, less chance of mismatch between document and outline.
+* Less communication back and forth between FTOutliner and Beat when it's not needed, with speed gains for both.
+* Re-vamped context menu system. Looking almost exactly the same so don't expect anything exciting, but also much more maintainable and expandible. 
+* New system for collecting and displaying notes and markers. Again, looking exactly the same, but faster and more reliable.
+* Changed how dialog boxes work. More specifically: By opening in a new window instead of divs that may or may not fit within FTOutliner's window size. Currently, this affects the Advanced Settings dialog (and the one you're looking at now) but others will gradually move over too.
+
+3. Additions that are actually somewhat visible to the eye:
+* Option when selecting one or more scenes to display their total length in pages in the bottom button row.
+* In High Contrast Mode, a slider lets you set the color saturation for scenes from white only to fully colored.
+* Option to (temporarily?) show scenes colored by progress instead of assigned scene color. Progress is entered manually by adding a note with a percentage such as [[50%]] anywhere in a scene. 
+* Menu Item to report bugs directly through GitHub Issues
+* Options to adjust the interaction between main window and plugin:
+  - Should you want to, you can set each click to immediately focus the document, allowing you to start writing at once.
+  - Should you NOT want that, but you're still a keyboard-centric user and want to switch focus back and forth between FToutliner and document, there is now a keyboard shortcut (ctrl+alt+cmd+SPACE) to do that.
+  - FTOutliner is easier to use keyboard-only: Walk scenes with arrow keys, hit ENTER to open context menu at selected scene, use keys in context menu. (This will gradually happen for the menus at the bottom as well. They can already be opened with F1, but not selected using keys.)
+* To add new scenes or sections from directly within the outline, instead of holding ALT (which annoyingly made buttons appear and scenes shift around when you held ALT for other reasons) adding new content is now done from the right click (context) menu.
+* The same goes for increasing and decreasing the level of sections, which is done via the context menu too. 
+* Lots of minor tweaks, visual and otherwise. I hope I got everything right.
+
+4. Known Issues:
+* For now, omitting (hiding) scenes from within FTOutliner has been disabled. FTOutliner's old logic was not really reliable, and until it is, I don't think we should use it. So there.
+* There will be bugs. See below.
+
+5. Bugfixes:
+* The bugfixes are too many to mention, many of them never fixed per se but rather just not there anymore after rewriting the context where they appeared.
+* On the flip side, I'm sure I have introduced new ones. Please do report whatever you run into -- I have been using FTOutliner daily for my day job during development and find it more stable than ever, but for every new user there will be new ways to work. So please help me catch the stuff I didn't foresee.
+
+
+#v 1.60 (never released)
+
+This is mainly an update to bring FTOutliner up to speed with Beat's new pagination system.
+But *WHAT A PAGINATION SYSTEM* that is! Thanks to Lauri-Matti for your hard work (and for explaining very patiently how to use it).
+
+This means that page numbers in FTOutliner now matches those in Beat (and the final print) as good as 1:1, in places like
+* page numbers on sections
+* page numbers at the bottom of acts
+* forced pagebreaks, which now appears as jagged edges where the break occurs (followed by uncolored space to represent the blank page area below)
+* As a result, PAGE DIVIDERS have been moved from their hidden spot inside the Advanced Settings to the VIEW MENU instead: All pagination for your screenplay can be shown in the margin of each column. 
+
+*FIXES AND ENHANCMENTSENTSETNS:*
+
+* NOTES AND MARKERS both now accepts any color that Beat accepts -- Beat's base palette, plus any HEX number. In addition, FTOutliner can display a note with any HTML color name (such as hotpink or gold), although those will only be shown with the default note color in Beat itself
+* For NOTES IN THE NOTEPANEL, a trashcan button now appears when hovering to allow deleting notes from there too
+* There is also much less risk that deleting a note will delete the note + VAT. Enough is enough.
+
+*ONE LITTLE ADDITION:* 
+* Added advanced setting to optionally show the length of a section in the section header next to its starting page nuber. For those who'd want that.
+
+*BUG FIXES:*
+* Fixed a bug where dragging multiple objects of the same type resulted in a dialog saying you can only drag objects of the same type. Which you were already doing. No more of that nonsense.
+
+
+
+#v 1.54 (February 28, 2023)
+
+*A GENERAL NOTE ABOUT MACOS (or rather Safari, or rather Webkit) COMPATIBILITY:* 
 * Since a few updates back, FTOutliner needs at least WebKit version 613.1.17 to run properly. This means you need to have Safari 15.4 or higher installed, which is comapatible as far back as MacOs Catalina (10.15). There is now a warning on startup letting you know if your webkit version is too old, as some very odd behavior has been reported in older versions. I apologize if this means breaking compatibility with some systems.
 
-NEW FEATURES
+*NEW FEATURES*
 * The Notepanel is now the SIDEPANEL. Oh? So what? Well, so now it has two tabs, one of which is the old Notepanel, and one of which is...:
   - The new DIALOG PANEL will let you display all dialog for ANY character (while also indicating the corresponding scene in the outline) ...
   - ...or, alternatively, the dialog for ALL characters in one long list. 
@@ -14,18 +76,18 @@ NEW FEATURES
   - All FTOutliner-specific shortcuts have CTRL + ALT modifier keys
   - This currently DOES NOT replace the in-plugin modifier-less shortcuts, but rather acts as a complement. 
 
-IMPROVEMENTS
+*IMPROVEMENTS*
 * Dragging and dropping now also allows COPYING -- hold down ALT while dragging and the original object will stay after dropping, creating a duplicate in the new position
 * A range of synopsis can now be selected via shift-clicking the last one in the desired range, just like with scenes
 * Two additions to the ADVANCED SETTINGS now lets you 
   - automatically widen columns of index card currently being edited
   - allow index cards of widened columns to be tall enough to show all text inside it
 
-MINOR IMPROVEMENTS
+*MINOR IMPROVEMENTS*
 * If a note starts with ? or ! for coloring purposes it will not show in the hovered/listed note
 * Notes will now show with correct italics or bold instead of asterisks when cycled and in the notepanel
 
-BUGS: 
+*BUGS:*
 * Fixed a crash that could occur upon returning to FTOutliner after unfocusing it while ALT was pressed
 * Fixed a crash that could occur when double-clicking-to-edit right at the end of a synopsis
 * Added Error message instead of crash when trying to drag element of different types at once
@@ -37,17 +99,16 @@ BUGS:
 * Fixed other minor cosmetic stuff
 
 
-v 1.53 (January 24, 2023)
-=========================
+#v 1.53 (January 24, 2023)
 
-1. FREEFORM SYNOPSIS EDITING is now also available in FIXED MODE:
+*1. FREEFORM SYNOPSIS EDITING* is now also available in FIXED MODE:
 
 * When synopsis are set to show (toggle with Y) hovering a scene or section with no synopsis will show an option to double-click to add a first synopsis.
 * Already present synopsis can be doubleclicked and edited (along with all other synopsis of that scene/section, as one long free text)
 * Dragging and dropping is available to since before.
 This means that functionality wise, Fixed View is almost identical to the Index Card View. The difference lies in visual presentation, where the index cards have fixed sizes regardless of content, but the Fixed view will adjust to fit no more, no less, than the synopsis within them. Which is best? You be the judge. (And yes, you may once again argue this makes the Fixed View the most flexible. I once again pretend I didn't hear that.)
 
-2. An ADVANCED SETTINGS dialog has been added, available from the settings menu or using CMD + comma, with a couple of more specific but no less useful features:  
+*2.* An *ADVANCED SETTINGS* dialog has been added, available from the settings menu or using CMD + comma, with a couple of more specific but no less useful features:  
 * OPTIONALLY SHOW MULTIPLE LINES for sceneheadings and sections. This is available throug the ADVANCED SETTINGS, a new dialog 
   - Multiple Lines works across all three views. 
   - For all views, areas will grow to accomodate the entire text -- with the exception of SCENES in Flexible View, which will hode whatever doesn't fits inside the size of the scene.
@@ -59,35 +120,32 @@ This means that functionality wise, Fixed View is almost identical to the Index 
 
 * Option to show VERTICAL BARS for sections in the Index Card View, making hierarchical levels clearer just like in Fixed and Flexible views. Not saying you should, only that you can.
 
-3. OTHER IMPROVEMENTES:
+*3. OTHER IMPROVEMENTS:*
 * Adjustments to adding new synopsis in Fixed and Index Card Views: synopsis area for scenes/sections without present synopsis is hidden/collapsed by default and will appear when hovering the scene's/section's heading. (In Index Card View, this relates ony to #ACTS, and to ##SECTIONS with the color "special"). This sounds complicated but is quite straightforward.
 * Improvements to visual feedback and ease-of-use when using the ALT key to add new elements in the outline
 * Adding a new section using a section's add buttons now adds a section of the same level
 * A bunch of cosmetical fixes and some long overdue sanitizing of the CSS, especially to the HIGH CONTRAST mode. Please report any errors if something turns out unreadable.
 
-4. BUG FIXES: 
+*4. BUG FIXES:* 
 * Fixed an error when cycling notes using the TAB key if no notes or reviews were present in the document
 * Fixed a bug when dropping a section below an #ACT header, making the dropped section end up in the wrong place.
 * Fixed a bug when deleting a ##SECTION header that was fully or partly hidden (using /* */) could produce undexpected results
 * Fixed a bug where orphan text (i.e. text that sits directly under a ###Section, with no scene heading) could under throw an error under certain circumtances
 
 
-v 1.52 (January 9, 2023)
-=======================
+#v 1.52 (January 9, 2023)
 
 Hotfix to version number format that stopped the update mechanism 
 
 
-v 1.51 (January 7, 2023)
-=======================
+#v 1.51 (January 7, 2023)
 
 Hotfix for bug when drag-and-dropping an #ACT at the absolute end of the script to be inserted in the wrong place.
 
 
-v 1.5 (January 5, 2023)
-=======================
+#v 1.5 (January 5, 2023)
 
-NEW FEATURES AND IMPROVEMENTS:
+*NEW FEATURES AND IMPROVEMENTS:*
 
 * BIG CHANGE TO EDITING INDEX CARDS: 
   - In index card mode, you can now FREELY EDIT ALL OF THE SYNOPSIS on a card -- not just one by one as before. Double click the synopsis area of the index card to enter edit mode -- and all synopses already present on it will turn into one single text where you can add new lines, merge existing ones, or edit what's there. 
@@ -111,7 +169,7 @@ NEW FEATURES AND IMPROVEMENTS:
 * Finally, FTOutliner now conforms to Beat's new synopsis model. Which hopefully will mean nothing when using FTOutliner per se. Other than that they work again, after some time of not.
 
 
-BUG FIXES:
+*BUG FIXES:*
 
 * Fixed an instance where deleting notes from the wastebin icon could also delete one empty adjacent line too many
 * Fixed a crash when cycling notes with TAB key if document had no review entries. 
@@ -124,10 +182,9 @@ BUG FIXES:
 
 
 
-v 1.44 (september 24, 2022)
-======================
+#v 1.44 (september 24, 2022)
 
-NEW FEATURES AND IMPROVEMENTS:
+*NEW FEATURES AND IMPROVEMENTS:*
 
 1. NOTES and REVIEWS
 
@@ -149,11 +206,11 @@ NEW FEATURES AND IMPROVEMENTS:
 
 * REVISIONS can now be displayed in the outline. Revised lines will be shown as overlaid blocks in the coreresponding revision color. Toggle with * (no menu item connected yet -- for now it's shortcut key-only).
 
-FURTHER CHANGES
+*FURTHER CHANGES*
 
 * The R shortcut key for toggling Real Time Updating has been removed (it now toggles Reviews instead). The menu item is still available under the settings menu, although most likely, FTOutliner (and Beat itself) has overcome the issues that made Beat too slow on certain machines. 
 
-BUG FIXES AND IMPROVEMENTS
+*BUG FIXES AND IMPROVEMENTS*
 
 * Material before the first #ACT -- i.e. when there's a first column without an act title -- used to not have a page count displayed at the bottom. It now does.
 * When editing a synopsis, hitting return with no text entered now deletes the synopsis altogether. It's been leaving an orphan = behind for a while, which, well, you know. Wasn't intentional.  
@@ -162,10 +219,9 @@ BUG FIXES AND IMPROVEMENTS
 * And finally almost fixed how FTOutliner handles document titles for the window title bar and/or headlines for print. Basically, if you don't have a title page, what you enter in the title dialog rules. If there's text in both places, what you entered/edited last will have precedence. But most of all, I hope we won't be seing any crashes due to this again. Or printouts that claim your script is called FALSE.  
 
 
-v 1.43 (Aug 28, 2022)
-======================
+#v 1.43 (Aug 28, 2022)
 
-IMPROVEMENTS:
+*IMPROVEMENTS:*
 
 1. Character Tracking
 
@@ -190,7 +246,7 @@ IMPROVEMENTS:
 * Added button when opening FTOutliner without outline elements in the main document, offering to preopulate the document with some acts and sequences to start off with 
 * Improvements to filtering by color, especially in Index Card View where section cards and synopsis now behave as expected
 
-BUG FIXES:
+*BUG FIXES:*
 
 * Fixed a bug in Index Card Mode that would change what sections/scenes were expanded/collapsed after editing text
 * Fixed a bug when switching to Flexible from any other view, whereby sections with orphan text would not immediately be given their appropriate height
@@ -200,23 +256,22 @@ BUG FIXES:
 * Fixed a rare but quite impairing memory leak that happened if hitting keyboard shortcut (number) for character tracking in document where no characters had yet been added
 * Other minor bug fixes.
 
-OTHER STUFF:
+*OTHER STUFF:*
 
 * Minor fixes to UI colors
 * Minor changes to names of menus and menu commands
 * Spent some time in the sun. That was nice.
 
-A GENERAL NOTE:
+*A GENERAL NOTE:*
 
 This version of FTOutliner makes use of the :(has) CSS selector, which means that some visual components will look better if you have upgraded Safari to version 15.4 or later. Safari 15.4 is available for MacOS Catalina or later. Do it if you can.
 
 
-v 1.42 (June 9, 2022)
-======================
+#v 1.42 (June 9, 2022)
 
 The post-release, how-did-I-not-notice-that update:
 
-BUG FIXES:
+*BUG FIXES:*
 
 * Fixed a bug that if the first section element was not a one-hashtag #ACT, every new section would start its own column until an #ACT was encountered
 * Fixed logic that incorrectly prevented dragging scenes or sequences into acts before the beginning of its first following lower-level section.
@@ -225,26 +280,23 @@ BUG FIXES:
 * Fixed a bug whereby using the ADD button to add a section at the absolute end of a document might cause Beat to freeze
 * Removed shortcut from the Force Restart menu item. It was never supposed be easily triggered (and also used a very local character, so frustrating for most people anyway had they wanted to)
 
-OTHER STUFF:
+*OTHER STUFF:*
 
 * Added Version History menu item. You probably know, that's probably how you're reading this right now.
 
 
-v 1.41 (May 24, 2022)
-======================
+#v 1.41 (May 24, 2022)
 
 HOTFIX: If a script document started with anything other than a #Section, FTOutliner would throw an error and have to be restarted (at which point it would probably throw a new error because there probably still was no #section there). That wasn't very ideal. So now that's fixed.
 
 
-v 1.4 (May 21, 2022)
-======================
+#v 1.4 (May 21, 2022)
 
 First of all, a bug correction to life itself: Turns out that the email address for error reporting has been down for a while. If anyone experienced problems due to this, my sincerest apologies. It is now fixed, and for any questions, bugs, or occasional undeserved praise, ftoutliner@eviltomato.com is once again the address to use!
 
 With that taken care of, today marks the release of a quite substantial rewrite of FTOutliner. It's so substantial that I decided to skip a number and call it 1.4. It's my plugin, I can do that. Anyway, here goes:
 
-NEW FEATURES:
--------------
+*NEW FEATURES:*
 
 * PERHAPS BOTH MOST AND LEAST IMPORTANT: A NEW MENU INTERFACE
 
@@ -290,18 +342,17 @@ NEW FEATURES:
     - New synopsis can be added by double-clicking the empty area in an index card
     - New index cards (scene or section) can be added directly below any card by holding ALT and selecting the plus button that appears
 
-  RESIZING
-  --------
+  *RESIZING*
+  
   - Resizing index cards now increases/decreases the number of lines shown, rather than changing it based on aspect ratio as before. This makes zooming in index more predictable and actually useful.
 
-  SO WHAT'S THE POINT WITH ALL THIS THEN? 
-  ---------------------------------------
+  *SO WHAT'S THE POINT WITH ALL THIS THEN? *
+  
   The idea, should you want to, is that you can now use index cards to outline your story from scratch -- all inside of FTOoutliner. Create cards and write directly into them, on a full-screen index card "board", knowing that everything will be stored as fountain text in your Beat document as you work. 
   This allows you to switch over to normal outline mode at any time -- with FTOutliner next to the normal Beat workspace -- when you feel that you're done using index cards and want to start writing in the document. (But you can of course return to index card mode again should you need to go back to the drawing board and restructure your ideas.)
 
 
-OTHER IMPROVEMENTS:
--------------------
+*OTHER IMPROVEMENTS:*
 
 * DRAGGING-AND-DROPPING has been redesigned and rewritten. It is much more intuitive, much more responsive, and much more reliable. So, yeah.
 
@@ -330,8 +381,7 @@ OTHER IMPROVEMENTS:
 * Fixed a bug whereby editing the content of a scene or section from the outline could be locked in editing mode if trying to exit by clicking outside
 
 
-WORK IN PROGRESS:
------------------
+*WORK IN PROGRESS:*
 
 This version contains a few features that are still work in progress. But isn't it the cool thing to do now, to include them in the release anyway and call them beta? 
 Well, here goes. The features below will need further testing, so use with caution and expect changes to behavior in upcoming releases. 
@@ -347,23 +397,19 @@ Well, here goes. The features below will need further testing, so use with cauti
 * Work in progress: Export outline as HTML. This is extremely bare-bones and probably not useful just yet. But wait and see.
 
 
-v 1.23 (feb 18, 2022)
-=====================
+#v 1.23 (feb 18, 2022)
 
 * HOTFIX to solve shortcut key combination for English keyboards. In addition to CMD + PLUS, which still works, FTOutliner now also listens for CMD + EQUAL
 
 
-v 1.22 (feb 11, 2022)
-======================
+#v 1.22 (feb 11, 2022)
 
 * HOTFIX to solve issue with sluggish behavior when typing in Sceneheadings or Synopsis.
 
 
-v 1.2 (jan 25, 2022)
-===================
+#v 1.2 (jan 25, 2022)
 
-NEW FEATURES:
--------------
+*NEW FEATURES:*
 
 * EXPORT OUTLINE TO PDF/PRINT. 
   - Click the print button or press CMD + P to open the print dialog. 
@@ -384,13 +430,11 @@ NEW FEATURES:
     - press CMD + A to select all non-dimmed scenes
     - right-click (or CTRL + click) on a selected scene to invoke the context menu
 
-IMPORTANT BUG FIX:
-------------------
+*IMPORTANT BUG FIX:*
 
 * Fixed a serious issue where repeatedly moving scenes or sequences with synopsis might move contents of next scene with it (effectively breaking it in two). This logic has now been completely rewritten. 
 
-SMALLER CHANGES AND BUG FIXES:
-------------------------------
+*SMALLER CHANGES AND BUG FIXES:*
 
 * IMPROVEMENT: Text that are not part of a scene -- i.e. immediately following a section header, without any preceding sceneheading -- will now be reflected in the outline (as their own type of striped quasi-scenes)
 * IMPROVEMENT: Markers are recognized even if they contain information after the MARKER COLOR beginning. This way, a marker can read [[MARKER RED: Must rewrite this scene without animals]] and convey the reason the marker is there to begin with. (Note: This is not supported by Beat itself, so if you depend on markers in the document scrollbar do not use this.)
@@ -413,18 +457,15 @@ SMALLER CHANGES AND BUG FIXES:
 * Also added undocumented feature (again meaning not mentioned anywhere else but here) to temporarily toggle off the display of all colors for scenes and sequences. Meant to clearly isolate notes and markers, in case they become drowned out by a busy coloring scheme. Togglable with CTRL + C.
 
 
-v 1.11 (nov 19, 2021)  
-=====================
+#v 1.11 (nov 19, 2021)  
 
 * Minor cosmetical fixes for older versions of MacOS and to make scrollbars less obtrusive
 * Fixed an bug that would display an error if making repeated rapid changes to outline elements
 
 
-v 1.10 (nov 18, 2021) 
-=====================
+#v 1.10 (nov 18, 2021) 
 
-NEW FEATURES:
-------------- 
+*NEW FEATURES:*
 
 * SHOW SCRIPT NOTES. Show any full-line [[script notes]] in the outline, positioned relative to their place in the script. (This excludes notes that are inline, i.e. part of an element with actual script text. Multi-line notes are accepted to.)
   Some tips:
@@ -452,8 +493,7 @@ NEW FEATURES:
 A NOTE: With this update, FTOutliner will for the first time will be able to make significant changes to the contents of your script. Great care has been taken to test and make sure that FTOutliner does not break anything in your text, but please doublecheck that any changes you do actually end up the way you intended and please report if anything seems incorrect. 
 On the bright side, you WILL be able to undo any changes if something doesn't end up the way you wanted it to. Thanks to the fact that Beat listens for (some) shortcuts even when a plugin is in focus, you can do this immediately by pressing cmd+z without switching to the main window, should you want to.
 
-SMALLER CHANGES: 
-----------------
+*SMALLER CHANGES:*
 
 * RESPONSIVENESS HAS BEEN MUCH IMPROVED, especially when typing around or in outline elements such as scene headings, sections or synopsis.
 
@@ -475,12 +515,12 @@ SMALLER CHANGES:
 * CHANGE: FTOutliner will now ask before closing. 
 
 
-v 1.01 (July 29, 2021)
-=====================
+#v 1.01 (July 29, 2021)
+
 * FIX: If screenplay does not start with an #ACT, scenes and ##sequences before any #ACT will now be stacked vertically too
 * IMPROVEMENT: Character list updates every time the Tracking dialog is opened, with any character already currently selected for tracking automatically reselected.
 
 
-v 1.0 (July 27, 2021)
-=====================
+#v 1.0 (July 27, 2021)
+
 Initial release

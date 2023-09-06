@@ -1,0 +1,146 @@
+<script>
+
+function updateScenePanel(){
+
+    if (!$(".scenestab.selectedtab")) return
+
+    let allSceneHeadings = outline.filter(element => { return element.typeAsString == "Heading" })
+    
+    // allSceneHeadings.forEach(scene => {
+        
+    //     $id("scenespanelcontent").innerText += scene.string + "\n"
+
+    // });
+
+    let parsedSlugs = Array.from(allSceneHeadings)
+    parsedSlugs.forEach(scene => {
+
+        intext = scene.stringForDisplay?.toUpperCase().match(/^\.*((int\.?)*[/]*(ext\.?)*(([/]*(int(\.+|\s+))*)))\s+/i) || [""]
+        timeofday = scene.stringForDisplay?.match(/-+\s*(.+)$/) || [""]
+
+        scene.intext = intext[0].trim()
+        scene.timeofday = timeofday[0].trim()
+        scene.location = scene.stringForDisplay?.substr(intext[0].length, (scene.stringForDisplay.length - ((timeofday[0].length + intext[0].length) || 0)))
+    })
+
+
+    let sceneHeadingsAlphabetically = Array.from(parsedSlugs)
+    sceneHeadingsAlphabetically.sort((a,b) => {
+        keyA = a.location
+        keyB = b.location
+        if (keyA < keyB) return -1;
+        if (keyA > keyB) return 1;
+        return 0
+    })
+
+    let numberOfUniqueLocations = []
+    let lastScene = ""
+    for (scene of sceneHeadingsAlphabetically){
+
+        if (scene.location != lastScene.location) {
+            numberOfUniqueLocations.push(scene)
+            numberOfUniqueLocations.at(-1).scenes = [scene.id]
+        }else{
+            numberOfUniqueLocations.at(-1).scenes.push(scene.id)
+        }
+        lastScene = scene
+    }
+
+    let table = document.createElement("table")
+    // let row = document.createElement("tr")
+    //         // row.style.setProperty("--localColor", `var(--${scene.color?.toLowerCase()})`)
+    //         row.dataset.line = scene.sceneStart
+    //         row.innerHTML = `
+    //                 <th class="field">I/E</th>
+    //                 <th class="field">LOCATION</th>
+    //                 <th class="field">TIME</th>
+    //                 `
+    //     table.appendChild(row)
+
+    numberOfUniqueLocations.forEach(scene => {
+        
+        let row = document.createElement("tr")
+            // row.style.setProperty("--localColor", `var(--${scene.color?.toLowerCase()})`)
+            row.dataset.line = scene.sceneStart
+            row.innerHTML = `
+                    <!--td class="field"> ${scene.scenes.length} </td-->
+                    <td class="field"> ${scene.intext} </td>
+                    <td class="field"> ${scene.location} </td>
+                    <td class="field"> ${scene.timeofday} </td>
+                    `
+        table.appendChild(row)
+                
+    });
+    
+    $id("scenespanelcontent").innerHTML = ""
+    $id("scenespanelcontent").appendChild(table)
+
+}
+
+</script>
+
+<style>
+
+#scenespanelcontent{
+
+    border: 1px solid hotpink;
+    position: absolute;
+    width: calc(100% - 8px);
+    padding: 8px !important;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+
+}
+
+
+
+#scenespanelcontent table{
+
+    /* background-color: hsl(var(--localColor)); */
+
+    position: relative;
+    
+    min-width: none;
+    width: inherit;
+    table-layout: auto;
+
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    
+}
+
+#scenespanelcontent tr{
+
+    /* width: 100%; */
+
+    background-color: hsl(var(--localColor)) !important;
+    border: 1px outset #555 !important;
+    border-radius: 4px;
+    overflow-x: hidden;
+
+}
+
+#scenespanelcontent td{
+
+    background-color: hsl(var(--localColor)) !important;
+    border: 1px black inset !important;
+    padding: 2px;
+    margin: 0px 3px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    width: auto;
+    max-width: 0;
+
+    /* table-layout: fixed; */
+    /* width: 1%; */
+
+}
+
+
+
+
+
+</style>

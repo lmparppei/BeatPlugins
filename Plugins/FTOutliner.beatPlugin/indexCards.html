@@ -4,23 +4,11 @@ function expandOrCollapseSections(){
 
 	mylog()
 
-	let allSections = $$(".section")
-
-	mylog("surely we can do that even if no present?")
-	mylog(allSections.length)
-
-	let removeIt = false
-	if ($(".level2")?.classList.contains("collapsedSection")){removeIt = true}
-
-	for (let section of allSections){
-		if (section.classList.contains("level1")){continue}
-
-		if (removeIt){
-			section.classList.remove("collapsedSection")
-		}else{
-			section.classList.add("collapsedSection")
-		}
-	}
+	let trueOrFalse = !$(".section:not(.level1)")?.classList.contains("collapsedSection")
+	
+	$$(".section").forEach(section => {
+		section.classList.toggle("collapsedSection", trueOrFalse)
+	})
 
 	$id("flexiContainer").scrollTo(0, 0)
 	setButtonForExpandedSections()
@@ -28,15 +16,12 @@ function expandOrCollapseSections(){
 
 }
 
-
-
 function anArrowWasClicked(theClickedThing, triggeredWithKey){
 
 	mylog()
-	if (!theClickedThing)return
-	if (!indexCardMode && areScenesProportional) return
-	//mylog("this was clicked: " + theClickedThing.classList )
 
+	if (!theClickedThing)return
+	if (!documentSetting.indexCardMode && documentSetting.scenesAreProportional) return
 
 	let closestSectionAbove = theClickedThing.closest(".section")
 
@@ -69,27 +54,15 @@ function anArrowWasClicked(theClickedThing, triggeredWithKey){
 		}
 	}else{
 
-		let doCollapse = [...closestSectionAbove.classList].includes("isExpanded")
-			// alertThis(closestSectionAbove.classList, doCollapse)
+		let doCollapse = closestSectionAbove.classList.contains("isExpanded")
 			
-		let sections = $$(".section")
-		for(section of sections){
-			//if ([...section.classList].includes("level1")){continue}
-			if(doCollapse){
-				section.classList.remove("isExpanded")
-			}else{
-				section.classList.add("isExpanded")
-			}
-		}
+		$$(".section").forEach(section => {
+			section.classList.toggle("isExpanded", !doCollapse)
+		})
 
-		let arrows = $$(".arrowForIndexCards")
-		for(arrow of arrows){
-			if(doCollapse){
-				arrow.classList.remove("expanded")
-			}else{
-				arrow.classList.add("expanded")
-			}
-		}
+		$$(".arrowForIndexCards").forEach(arrow => {
+			arrow.classList.toggle("expanded", !doCollapse)
+		})
 
 		mylog("going to recalc now")
 		$id("flexiContainer").scrollTo(0, 0)
@@ -103,300 +76,31 @@ function anArrowWasClicked(theClickedThing, triggeredWithKey){
 	rememberCardState()
 }
 
-
 function rememberCardState(){
+
 	mylog()
 
-	if(!outline){return}
-	if(outline.length == 0 ){return}
+	if(!outline || !$$(".section").length){
+		return}
 
-	outlineBeforeUpdate = JSON.parse(JSON.stringify(outline))
+	cardState = []
 
-	
-	// let sections = $$(".section:not(.countMeOut)") //this avoids counting clones of section when dragging-and-dropping. See ifYesToMove()
-	let sections = $$(".section:not(.countMeOut, .countMeOut .section)") //this avoids counting clones of section when dragging-and-dropping. See ifYesToMove()
-	cardStateForScenes = []
-	cardStateForSections = []
-	let sectionNumber = 0
-
-	// Beat.call("Beat.alert('"+sections.length+"')")
-
-
-	for (section of sections){
-
-	// for (let i = 0; i < outlineBeforeUpdate.length; i++){
-
-		// if(outlineBeforeUpdate[i].typeAsString != "Section"){continue}
-
-		// section = $id(sectionNumber)
-
-		//remmed out the below on 2022-08-17
-		//if(section.classList.contains("level1"))continue //THIS IS THE PROBLEM: We SHOULD save the state for acts too!
-		
-		let a = [...section.classList].includes("isExpanded")
-		let b = [...section.classList].includes("collapsedSection")
-		//let elementNumber = section.id
-		if(a){section.classList.add("noAnimation")}
-		if(b){section.classList.add("noAnimation")}
-		let c = section.getBoundingClientRect()
-		
-		cardStateForScenes[sectionNumber] = a
-		cardStateForSections[sectionNumber] = b
-		
-		sectionNumber ++
-	}
-	mylog("REMEMBERED THIS MANY CARDSTATES: " + cardStateForScenes.length + "(for this many sections" + sections.length + ")")
-}
-
-function makeCardStateEqual(){
-	mylog()
-
-	if(!outlineBeforeUpdate || outlineBeforeUpdate.length == 0 || !cardStateForScenes || !cardStateForSections){
-		return
-	}
-
-	mylog(`at this point, there are ${$$(".section").length} sections on screen`)
-	mylog(`and the cardstate arrays are ${cardStateForScenes.length} + ${cardStateForSections.length} long`)
-
-	//first: is the number of sections equal?
-	let newSections = []
-		for (let num = 0; num < outline.length; num ++) {
-			if(outline[num].typeAsString == "Section" && outline[num].sectionDepth > 1) //2022-06-16 added sectiondepth -- does this help with anomaly?
-			newSections.push(num)
-		}
-		
-	let oldSections = []
-		for (let num = 0; num < outlineBeforeUpdate.length; num ++) {
-			if(outlineBeforeUpdate[num].typeAsString == "Section" && outlineBeforeUpdate[num].sectionDepth > 1) //2022-06-16 added sectiondepth -- does this help with anomaly?
-			oldSections.push(num)
-		}
-	
-	mylog("created old and new sections, they were: OLD = " + oldSections.length + ", NEW =" + newSections.length)
-	mylog("the card states have the lengths: " + cardStateForScenes.length + " and " + cardStateForSections.length)
-	
-
-	if (oldSections.length == newSections.length){
-
-		mylog("decided they were equally long")
-
-		let forwardMismatch = false
-		let backwardMismatch = false
-		
-		for (let i = 0; i < newSections.length; i ++){
-			
-			//mylog ("walking thru matching stuff " + i)
-
-			if(outline[newSections[i]].string == outlineBeforeUpdate[oldSections[i]].string){ //reasonably unchanged element
-				//mylog("match!")
-				continue
-			}else{
-				forwardMismatch = i
-				mylog ("found a mismatch going forward")
-				break
-			}
-		}
-
-		if(forwardMismatch){
-			mylog("so now comparing from the back")
-			for (let i = newSections.length - 1; i >= forwardMismatch; i --){
-				
-				//mylog("we're walking again...")
-
-				if(outline[newSections[i]].string == outlineBeforeUpdate[oldSections[i]].string){ //reasonably unchanged element
-					continue
-				}else{
-					backwardMismatch = i
-					mylog ("and found one going backward too")
-					break
-				}
-			}
-		}
-		
-		if (!forwardMismatch || forwardMismatch == backwardMismatch) {
-			//this just means a section was renamed, so all is well. 
-			//return and use the saved values as is.
-			mylog("We decided either nothing changed, or it's probably just a renamed section")
-
-			outlineBeforeUpdate = JSON.parse(JSON.stringify(outline))
-			// rememberCardState()
-			return
-
-		}else{
-
-			//this means one or more sections have been shuffled around.
-			//let's compare and give old values to sections in their new places
-
-			mylog("does this cause error if moving last scene?")
-
-				let forwardMove
-					for (i = forwardMismatch; i < outline.length; i ++){
-
-						if (outline[newSections[i]]?.string == outlineBeforeUpdate[oldSections[forwardMismatch]]?.string){
-							forwardMove = i - forwardMismatch
-							break
-						}
-					}
-				let numberOfSections = 1
-					while (outline[newSections[i + numberOfSections]]?.string == outlineBeforeUpdate[oldSections[forwardMismatch + numberOfSections]]?.string){
-						numberOfSections ++
-						//fixed an error above with the conditional questionmark, but will this kill something?
-				}
-				
-				for (i = forwardMismatch; i < forwardMismatch + numberOfSections; i++ ){					
-					scenevalue = cardStateForScenes[i]
-					sectionvalue = cardStateForSections[i]
-
-					cardStateForScenes.splice(i + forwardMove + numberOfSections, 0, scenevalue)
-					cardStateForSections.splice(i + forwardMove + numberOfSections, 0, sectionvalue)
-				}
-				cardStateForScenes.splice(forwardMismatch, numberOfSections)
-				cardStateForSections.splice(forwardMismatch, numberOfSections)
-
-			outlineBeforeUpdate = JSON.parse(JSON.stringify(outline))
-			return
-		}
-	}
-
-	mylog("from here remains math if a section was either added or removed. (they could be more than one if made from the doc!")
-	//from here remains math if a section was either added or removed. 
-	//NOTE: they could be more than one if made by pasting or selecting a chunk and deleting in the doc window
-	//that is still not fixed!
-
-	if (newSections.length < oldSections.length){
-
-		// a section was deleted. Find it:
-
-		let forwardMismatch = false
-		
-		for (let i = 0; i < newSections.length; i ++){
-			
-			//mylog ("walking thru matching stuff in mismatching outlines" + i)
-
-			if(outline[newSections[i]].string == outlineBeforeUpdate[oldSections[i]].string){ //reasonably unchanged element
-				continue
-			}else{
-				forwardMismatch = i
-				mylog ("found a mismatch going forward")
-				break
-			}
-		}
-
-		cardStateForScenes.splice(forwardMismatch, 1) //remove it
-		cardStateForSections.splice(forwardMismatch, 1) //remove it
-	}
-
-	if (newSections.length > oldSections.length){
-
-		mylog("a section was inserted, because old length was " + oldSections.length + " Find it:")
-		// a section was inserted. Find it:
-
-		let forwardMismatch = false
-
-		for (let i = 0; i < newSections.length; i ++){
-		
-			//mylog ("walking thru matching stuff in mismatching outlines" + i)
-
-			if(outline[newSections[i]].string == outlineBeforeUpdate[oldSections[i]]?.string){ //reasonably unchanged element
-				continue
-			}else{
-				forwardMismatch = i
-				mylog ("found a mismatch going forward")
-				break
-			}
-		}
-		
-		mylog("BEFORE SPLICING: " + newSections.length + " > " + cardStateForScenes.length)
-
-		cardStateForScenes.splice(forwardMismatch, 0, true) //insert it
-		cardStateForSections.splice(forwardMismatch, 0, false) //insert it
-
-		mylog("SHOULD BE DONE: " + newSections.length + " == " + cardStateForScenes.length)
-	}
-
-	outlineBeforeUpdate = JSON.parse(JSON.stringify(outline))
-	return
+	$$(".section").forEach(section => {
+		let uuid = section.dataset.uuid
+		cardState.push({
+			uuid: uuid, 
+			isExpanded: section.classList.contains("isExpanded"), 
+			collapsedSection: section.classList.contains("collapsedSection")
+		})
+	})
 
 }
 
-function recallCardState(){
-
-	mylog("=========================================")
-	mylog("=========================================")
-	mylog("=========================================")
-	mylog("when we get here, there are " + $$(".section").length + " sections in the document.") 
-	mylog("The cardstates are this long: " + cardStateForScenes.length + " and " + cardStateForSections.length)
-	mylog("====================================")
-	mylog(cardStateForScenes)
-	mylog("====================================")
-	mylog(cardStateForSections)
-	mylog("====================================")
-	
-	if(!outlineBeforeUpdate || outlineBeforeUpdate.length == 0){
-		
-		if (cardStateForScenes.length == 0){ // so as to run on first run even if no previous outline
-		// return
-		// }else{
-			// this sets All scenes open + All sections closed if opening file without saved defaults
-			
-			//let sections = $$(".section:not(.level1)") //added :not here 2022-06-16 -- does that help with anomaly?
-			let sections = $$(".section") //removed it again 2022-08-17 bc scenes following acts were collapsed!?
-			let i = 0
-			for (section of sections){
-				// section.classList.add("isExpanded")
-				// section.classList.add("collapsedSection")
-				cardStateForScenes.push(true)
-				cardStateForSections.push(true)
-				i ++
-			}
-		}else{
-			mylog("so this happened: there is no outlineBeforeUpdate, so this is first run")
-			mylog("the length of the two cardstates are..." + cardStateForScenes.length + " and " + cardStateForSections.length)
-		}
-	}
-
-	if(outlineBeforeUpdate.length > 0){
-		makeCardStateEqual()
-	}
-				
-	//let sections = $$(".section:not(.level1)") //added :not here 2022-06-16 -- does that help with anomaly?
-	let sections = $$(".section") //removed again 2022-08-17 same reason as above
-	mylog("and the number of sections is " + sections.length)
-
-	if (sections.length != cardStateForScenes.length ||
-		sections.length != cardStateForSections.length){
-			mylog("this shouldn't happen, but cardState arrays & actual number of sections differ!")
-		return
-	}
-
-	let allStuff = $$(".synopsiscontainer, .scene")
-	for (stuff of allStuff){
-		stuff.classList.add("noAnimation")
-		let redraw = stuff.getBoundingClientRect()
-	}
-
-		for (let i = 0; i < sections.length; i++){
-
-			sections[i].classList.toggle("isExpanded", cardStateForScenes[i])
-			sections[i].classList.toggle("collapsedSection", cardStateForSections[i])
-			let redraw = sections[i].getBoundingClientRect()
-		}
-
-	allStuff = $$(".synopsiscontainer, .scene")
-	for (stuff of allStuff){
-		stuff.classList.remove("noAnimation")
-		let redraw = stuff.getBoundingClientRect()
-	}
-	
-	mylog("end of recall state")
-
-}
-
+var blurListener
 
 function indexCardEditor(theElement, e){
 
 	mylog()
-
-	console.log(e, event)
 
 	if($id("synEditBox"))return
 	
@@ -431,11 +135,11 @@ function indexCardEditor(theElement, e){
 		synEditBox.style.backgroundImage = "none"
 		synEditBox.style.color = "black"
 		synEditBox.style.border = attributes.border
-			if(indexCardMode) synEditBox.style.position = "absolute"
-			if(areScenesProportional == 0) synEditBox.style.position = "relative"
+			if(documentSetting.indexCardMode) synEditBox.style.position = "absolute"
+			if(!documentSetting.scenesAreProportional) synEditBox.style.position = "relative"
 		synEditBox.style.top = 0 + "px"
 		synEditBox.style.left = 0 + "px"
-			if(indexCardMode 
+			if(documentSetting.indexCardMode 
 					&& !synopsisContainer.closest(".scene, .section").classList.contains("level1")
 					&& !synopsisContainer.closest(".scene, .section").classList.contains("special")){
 				synEditBox.style.height = measures.height + "px"
@@ -490,7 +194,7 @@ function indexCardEditor(theElement, e){
 	// synopsisContainer.appendChild(synEditBox)
 	synopsisContainer.insertAdjacentElement("afterbegin", synEditBox)
 
-	let blurListener = new AbortController()
+	blurListener = new AbortController()
 
 	addConfirmButtons(synopsisContainer, blurListener)
 	
@@ -526,8 +230,9 @@ function indexCardEditor(theElement, e){
 		let node = document.createTextNode(text)
 		range.insertNode(node)
 		range.collapse(false)
-	}
-	)
+		},
+		{signal: blurListener.signal}
+		)
 
 	synEditBox.classList.add("noHover")
 	let allSelected = $$(".isSelected")
@@ -541,7 +246,8 @@ function indexCardEditor(theElement, e){
 		draggable.classList.add("usedToBeDraggable")
 	}
 	
-    document.removeEventListener("keydown", checkWhatKeyGotPressed)
+    // document.removeEventListener("keydown", checkWhatKeyGotPressed)
+	toggleCaptureKeypresses(false)
     document.addEventListener('keydown', synEditBoxListen)
     document.addEventListener('selectionchange', fixContentEditableWeirdness)
 
@@ -567,7 +273,6 @@ function addConfirmButtons(synopsisContainer, blurListener){
 		cancelButton.style.position = "absolute"
 		cancelButton.style.left = boxPos.x - flexiContainer.getBoundingClientRect().left - 10 + "px"
 		cancelButton.style.top = boxPos.y + boxScroll + boxPos.height - 10 + "px"
-		// cancelButton.classList.add("addButton")
 		cancelButton.classList.add("confirmButtons")
 		cancelButton.innerHTML = "×"
 		cancelButton.style.color = "#F33"
@@ -575,13 +280,12 @@ function addConfirmButtons(synopsisContainer, blurListener){
 		flexiContainer.appendChild(cancelButton)
 		
 		let okButton = document.createElement("div")
-		okButton.id = "okButton"
-		okButton.style.position = "absolute"
-		okButton.style.left = boxPos.x - flexiContainer.getBoundingClientRect().left - 10 + boxPos.width + "px"
-		okButton.style.top = boxPos.y + boxScroll + boxPos.height - 10 + "px"
-		// okButton.classList.add("addButton")
-		okButton.classList.add("confirmButtons")
-		okButton.innerHTML = "OK"
+			okButton.id = "okButton"
+			okButton.style.position = "absolute"
+			okButton.style.left = boxPos.x - flexiContainer.getBoundingClientRect().left - 10 + boxPos.width + "px"
+			okButton.style.top = boxPos.y + boxScroll + boxPos.height - 10 + "px"
+			okButton.classList.add("confirmButtons")
+			okButton.innerHTML = "OK"
 
 	flexiContainer.appendChild(okButton)
 
@@ -595,24 +299,29 @@ function addConfirmButtons(synopsisContainer, blurListener){
         })
         editBoxResizeObserver.observe($("#synEditBox"))
 
-	okButton.addEventListener("mousedown", function(){
-		blurListener.abort();
-		event.stopImmediatePropagation()
-		event.stopPropagation()
-		exitFromIndexCardEditor(true)},
-		true)
-	cancelButton.addEventListener("mousedown", function(){
-		blurListener.abort();
-		event.stopImmediatePropagation()
-		event.stopPropagation()
-		exitFromIndexCardEditor(false)},
-		true)
+	okButton.addEventListener("mousedown", okButtonCode, true)
+	cancelButton.addEventListener("mousedown", cancelButtonCode, true)
+	
+}
 
+function okButtonCode(){
+	blurListener.abort();
+	event.stopImmediatePropagation()
+	exitFromIndexCardEditor(true)
+}
+
+function cancelButtonCode(){
+	blurListener.abort();
+	event.stopImmediatePropagation()
+	exitFromIndexCardEditor(false)
 }
 
 function removeConfirmButtons(){
 
 	editBoxResizeObserver?.disconnect()
+
+	$id("okButton")?.removeEventListener("mousedown", okButtonCode, true)
+	$id("cancelButton")?.removeEventListener("mousedown", cancelButtonCode, true)
 
 	$id("cancelButton")?.remove()
 	$id("okButton")?.remove()
@@ -650,7 +359,6 @@ function fixContentEditableWeirdness(){
 	//2. FIX (I hope) for taking a colorclass distributed when hitting ENTER, and storing it in dataset until parsing time
 
 	if (sel.anchorOffset == 0){
-		//console.log(sel.anchorNode.classList || sel.anchorNode.parentElement.classList)
 		let classes = new Set(Array.from(sel.anchorNode?.classList || sel.anchorNode?.parentElement?.classList || ""))
 			classes.delete("synopsis")
 			classes.delete("clickThru")
@@ -691,12 +399,14 @@ function fixContentEditableWeirdness(){
 	}
 }
 
-function synEditBoxListen(){
+function synEditBoxListen(event){
 
 	mylog()
 
 	//NOTE: must catch ENTER, and add own new div -- or else .id will be repeated. Stupid contenteditable!
 	//This is now done by checking for re-apperaing id:s when parsing result instead
+
+	event.stopImmediatePropagation()
 
     if (event.key == "Escape"){event.preventDefault(); exitFromIndexCardEditor(false); return}
     if (event.key == "Enter" && event.metaKey){event.preventDefault(); exitFromIndexCardEditor(true); return}
@@ -717,10 +427,12 @@ function exitFromIndexCardEditor(confirmed){
 	if ($$(".synopsiscontainer:has(#synEditBox) > .synopsis") == $$("#synEditBox > .synopsis")) confirmed = false
 
 
-	$id("synEditBox").removeEventListener("blur", function(){exitFromIndexCardEditor(true)})
+	// $id("synEditBox").removeEventListener("blur", function(){exitFromIndexCardEditor(true)})
+	// the above should be handled by the AbortController
 	document.removeEventListener('keydown', synEditBoxListen)
 	document.removeEventListener('selectionchange', fixContentEditableWeirdness)
-	document.addEventListener('keydown', checkWhatKeyGotPressed)
+
+	toggleCaptureKeypresses(true)
 	removeConfirmButtons()
 
 	let allDraggables = $$(".usedToBeDraggable")
@@ -734,11 +446,10 @@ function exitFromIndexCardEditor(confirmed){
 	
 	if(confirmed){
 		$id("synEditBox").classList.add("wait")
-		let doUpdate = parseIndexCardPostEditing()
-		if(doUpdate){
-			weAreChangingColors = true
-			startSmallUpdate()
-		}
+		let runUpdate = parseIndexCardPostEditing()
+			if(runUpdate){
+				firstRun() //to make sure the outline updates, since synopsis won't trigger updates by itself
+			}
 	}else{
 		$id("synEditBox").remove()
 	}
@@ -811,6 +522,7 @@ function parseIndexCardPostEditing(){
 	let resultDivs = []
 
 	let previousIds = []
+
 	for (post of postEditDivs){
 
 		// if(post.innerText.trim() == ""){}
@@ -846,7 +558,6 @@ function parseIndexCardPostEditing(){
 
 				let string = "`= " + result.innerText + colorstring+ "\n`"
 				let doThis = `Beat.addString(${string}, ${insertionPoint})`.replaceAll("\n", "\\n")
-					// console.log(doThis)
 					Beat.call(doThis)
 			}
 
@@ -856,7 +567,6 @@ function parseIndexCardPostEditing(){
 				let endPoint = result.dataset.lineEnd - insertionPoint
 				let string = "`\n`"
 				let doThis = `Beat.replaceRange(${insertionPoint}, ${endPoint}, ${string})`.replaceAll("\n", "\\n")
-					// console.log(doThis)
 					Beat.call(doThis)
 			}
 
@@ -870,7 +580,6 @@ function parseIndexCardPostEditing(){
 				let string = `"\n"`
 					if (result.dataset.changeTo.trim() > "") string = "`= " + result.dataset.changeTo + colorstring + "\n`"
 				let doThis = `Beat.replaceRange(${insertionPoint}, ${endPoint}, ${string})`.replaceAll("\n", "\\n")
-					// console.log(doThis)
 					Beat.call(doThis)
 
 			}
@@ -880,8 +589,6 @@ function parseIndexCardPostEditing(){
 				//but do nothing
 			}
 		}
-
-	enableUpdating()
 
 	return true
 
@@ -946,21 +653,25 @@ function setInitialCaretPosition(div, clickPosition) {
 
 function enableUpdating(){
 
-Beat.call(`
-	Beat.onTextChangeDisabled = false
-	Beat.onOutlineChangeDisabled = false
-	Beat.onSelectionChangeDisabled = false
-	`)
+	return
+
+// Beat.call(`
+// 	Beat.onTextChangeDisabled = false
+// 	Beat.onOutlineChangeDisabled = false
+// 	Beat.onSelectionChangeDisabled = false
+// 	`)
 
 }
 
 function disableUpdating(){
 
-Beat.call(`
-Beat.onTextChangeDisabled = true
-Beat.onOutlineChangeDisabled = true
-Beat.onSelectionChangeDisabled = true
-`)
+	return
+
+// Beat.call(`
+// Beat.onTextChangeDisabled = true
+// Beat.onOutlineChangeDisabled = true
+// Beat.onSelectionChangeDisabled = true
+// `)
 
 }
 
@@ -1087,24 +798,41 @@ Beat.onSelectionChangeDisabled = true
 
 } */
 
+/*adding when dragging! */
+
+#flexiContainer.drag:is(.indexcards, .nonProportionalMode):has(#ghost > .synopsis) .synopsiscontainer,
+
 /*new behavior for act and special with hidden synopsiscontainer 2 of 2*/
-.indexcards:not(:has(.editBox,#synEditBox, .addButton)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer,
-.indexcards:not(:has(.editBox,#synEditBox, .addButton)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover,
-.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox, .addButton)) .section:has( > .section-heading:hover) > .synopsiscontainer,
-.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox, .addButton)) .scene:hover > .synopsiscontainer,
-.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox, .addButton)) .synopsiscontainer:hover {
+.indexcards:not(:has(.editBox,#synEditBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer,
+.indexcards:not(:has(.editBox,#synEditBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox)) .section:has( > .section-heading:hover) > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox)) .scene:hover > .synopsiscontainer,
+.showSynopsisInScenes:not(.indexcards, :has(.editBox,#synEditBox)) .synopsiscontainer:hover {
 
 	min-height: calc(14px * var(--fontSizeFactor)) !important;
 	transition: min-height 0.2s !important;
 
 }
 
+#flexiContainer.drag:is(.indexcards, .nonProportionalMode):has(#ghost > .synopsis) .synopsiscontainer:has(.synopsis){
+
+	padding-bottom: calc(14px * var(--fontSizeFactor)) !important;
+	transition: padding-bottom 0.2s !important;
+
+}
+/* #flexiContainer.drag:is(.indexcards, .nonProportionalMode):has(#ghost > .scene) .scene{
+
+	margin-bottom: calc(14px * var(--fontSizeFactor)) !important;
+	transition: margin-bottom 0.2s !important;
+
+} */
+
 /*new behavior for act and special with hidden synopsiscontainer 2 of 2*/
-.indexcards:not(:has(.editBox, #synEditBox, .addButton)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer:empty::after,
-.indexcards:not(:has(.editBox, #synEditBox, .addButton)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover::after,
-.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox, .addButton)) .section:has( > .section-heading:hover) > .synopsiscontainer:empty::after,
-.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox, .addButton)) .scene:hover > .synopsiscontainer:empty::after,
-.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox, .addButton)) .synopsiscontainer:empty:hover::after {
+.indexcards:not(:has(.editBox, #synEditBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)):has( > .section-heading:hover) > .synopsiscontainer:empty::after,
+.indexcards:not(:has(.editBox, #synEditBox)) .section:is(.level1, .special:has( > .synopsiscontainer:empty)) > .synopsiscontainer:empty:hover::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox)) .section:has( > .section-heading:hover) > .synopsiscontainer:empty::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox)) .scene:hover > .synopsiscontainer:empty::after,
+.nonProportionalMode.showSynopsisInScenes:not(.indexcards, :has(.editBox, #synEditBox)) .synopsiscontainer:empty:hover::after {
 
 	content: "double click to add synopsis";
 	text-align: center;
@@ -1192,7 +920,6 @@ Beat.onSelectionChangeDisabled = true
 
 }
 
-.promoteButtons,
 .confirmButtons{
 
     margin: 0px !important;
@@ -1222,107 +949,6 @@ Beat.onSelectionChangeDisabled = true
 	box-shadow: 0px 0px 4px rgba(0,0,0,0.4);
 
     /* transform: translate(-110%, -110%); */
-
-}
-
-.promoteButtons{
-
-	color: rgba(255,255,255,1) !important;
-	background: black !;
-	width: 30px !important;
-	border-radius: 10px;
-
-	z-index: 1 !important;
-	
-	translate: 0 -60%;
-	box-shadow: none;
-
-}
-
-.promoteButtons::before,
-.addButton:not(:hover)::before{
-	content: "";
-
-	width: 9px;
-	height: 9px;
-	background: white;
-
-	position: absolute;
-	top: calc(2.88px * 1.2);
-
-	z-index: -1 !important;
-	
-	clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 66% 33%, 0% 0%);
-	
-}
-
-.addButton:not(:hover)::before{
-
-	rotate: 135deg;
-	left: 3.5px;
-	top: 11px;
-
-	z-index: -1111 !important;
-
-
-}
-
-#promoteButton::before{
-	
-	rotate: -135deg;
-	left: calc(-4.32px * 1.0);
-	z-index: -20 !important;
-	
-}
-
-#demoteButton::before{
-	
-	rotate: 45deg;
-	right: calc(-4.32px * 1.1);
-	z-index: -20 !important;
-
-}
-
-#actioncontainer:has(.addButton:hover) #demoteButton{
-	translate: 50px -60%;
-	opacity: 0.2;
-	transition: translate 0.2s, opacity 0.2s;
-}
-#actioncontainer:has(.addButton:hover) #promoteButton{
-	translate: -50px -60%;
-	opacity: 0.2;
-	transition: translate 0.2s, opacity 0.2s;
-}
-
-/* .promoteButtons::after,
-.confirmButtons::after{
-
-	position: absolute;
-	content: "";
-	left: 50%;
-	top: 50%;
-	width: 100%;
-	height: 100%;
-
-	translate: -50% -50%; 
-
-	border: 20px solid transparent;
-	border-radius: 50%;
-
-}
-
-.promoteButtons:hover::after,
-.confirmButtons:hover::after{
-
-	border-color: rgba(255, 255, 255, 0.0);
-	transition: 0.2s;
-
-} */
-
-.promoteButtons:hover{
-
-	background: #ccc;
-	color: black !important;
 
 }
 

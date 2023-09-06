@@ -801,7 +801,7 @@ white-space: pre-wrap !important;
 #advancedSettings .shortcut{
 
 	position: absolute;
-right: 0px !important
+	right: 0px !important
 
 }
 
@@ -986,13 +986,18 @@ right: 0px !important
 			<div class="switch" onclick="$id('buttonForLowerCase').click()"></div>  
 					<label style="pointer-events: none" for="buttonForLowerCase">Show SECTION capitalization as typed rather than uppercase only<span class="shortcut" style="float:right">^U</span></label>
 		</li>
+		<li onclick="advancedTogglers('showLengthsInSections', 'buttonForSectionLengths')">
+			<input id="buttonForSectionLengths" type="checkbox">
+			<div class="switch" onclick="$id('buttonForSectionLengths').click()"></div>  
+					<label style="pointer-events: none" for="buttonForSectionLengths">Show accumulated length-in-pages for sections<span class="shortcut" style="float:right"></span></label>
+		</li>
 	</ul>
 	<br/>
 	<hr>
 	<ul>
 	<strong><br/>Pages</strong><br/>
 	<li  onclick="advancedTogglers('showPageDividers', 'buttonForPageDividers')">
-		<input id="buttonForPageDividers" type="checkbox">
+		<input id="buttonForPageDividers" type="checkbox" checked="">
 			<div class="switch"></div>  
 				<label style="pointer-events: none" for="buttonForPageDividers">Show page dividers (Flexible view only)<span class="shortcut" style="float:right">^P</span></label>
 	</li>
@@ -1000,7 +1005,7 @@ right: 0px !important
 		<input id="buttonForAlways" type="checkbox">
 			<label for="buttonForAlways" class="labelBefore">When hovering</label>
 				<div class="switch"></div>
-			<label for="buttonForAlways" class="labelAfter">All the time<span class="shortcut" style="padding-right: 110px; float:right">⌥P</span></label>
+			<label for="buttonForAlways" class="labelAfter">All the time<span class="shortcut" style="padding-right: 110px; float:right">^⌥P</span></label>
 	</li>
 	<!--li  onclick="advancedTogglers('always', 'buttonForAlways')">
 		<input id="buttonForAlways" type="checkbox">
@@ -1040,7 +1045,7 @@ right: 0px !important
 
 function displayEmptyScreenMessage(){
 
-	if (areScenesProportional == 0){toggleProportional()} //or else message is not nicely centered vertically.
+	if (!documentSetting.scenesAreProportional){toggleProportional()} //or else message is not nicely centered vertically.
 
 	document.getElementById('outOfSyncDiv').style.display = 'none'
 	document.getElementById('outOfSyncDiv').classList.remove('animate')
@@ -1067,9 +1072,15 @@ function displayEmptyScreenMessage(){
 
 function addTemplate(){
 
+	mylog("adding template")
+	
 	let contentString = /*html*/ `#ACT I\\n\\n##Sequence 1\\n\\nInt. Somewhere -- day\\n\\nInt. Somewhere ELSE -- day\\n\\n##Sequence 2\\n\\nInt. ANOTHER PLACE -- day\\n\\nInt. YET ANOTHER PLACE -- day\\n\\n#ACT II\\n\\n##Sequence 3\\n\\nExt. some other location -- night\\n\\nInt. AND ONE MORE -- NIGHT\\n\\nInt. THEN THIS ONE -- day\\n\\n##Sequence 4\\n\\nInt. AND ALSO THIS -- DAY\\n\\nInt. FOLLOWED BY THIS -- day\\n\\n#ACT III\\n\\n##Sequence 5\\n\\nInt. Then finally the last few scenes -- evening\\n\\n##Sequence 6\\n\\nint. Just one more after this -- night\\n\\nInt. And thats it -- dusk\\n`
-
+	
+	mylog("string is written")
+	
 	Beat.call(`Beat.replaceRange(0, 0, "${contentString}")`)
+	
+	mylog("replace range has run")
 
 	// let hardCodedNumberOfScenes = 12
 
@@ -1094,23 +1105,30 @@ function addTemplate(){
 
 function displayErrorMessage(information){
 
-	//document.removeEventListener("keydown", checkWhatKeyGotPressed);
 	errorHasFired = true
 
-	let moveMessage = /*html*/`
-		<p class="errorWindowText"><b>FIRST OF ALL: </b><i><b>Your script is most likely okay!</b></i></p>
-		<p class="errorWindowText">For most of the time, FTOutliner does not touch the contents of your script, and there is no indication the error occured in any of the few places where it actually does.</p>
+	let hrefText = `mailto:ftoutliner@eviltomato.com?subject=Error report from FTOutliner&body=Hi,%0D%0A%0D%0AI just experienced an error in FTOutliner.%0D%0A%0D%0A
+			Here's what I was doing: (please be as detailed as possible)%0D%0A%0D%0A%0D%0A%0D%0A
+			____________________________________________________________%0D%0A
+			Below are the last up to 100 log entries leading up to the error.%0D%0A%0D%0A 
+			${information.join('%0D%0A').replaceAll('"', '%22').replaceAll("&", "%26").replaceAll(" ", "%20").replaceAll("\n", "%0D%0A")}%0D%0A%0D%0A`
+
+		console.log(hrefText)
+
+	let emergencyLevelText = /*html*/`
+		<p class="errorWindowText"><strong>FIRST OF ALL: </strong><i><b>Your script is most likely okay!</b></i></p>
+		<p class="errorWindowText">Most of the time, FTOutliner does not touch the contents of your script. There is no indication this error occured during one of those few instances.</p>
 		<p class="errorWindowText"><i>Of course, feel free to check the script for any anomalies. Should you find any, remember to hit UNDO (cmd+z) to return to the state before this error happened.</i></p>
 	`
 
 	if (actualChangesToScriptInProgress){
-		moveMessage = /*html*/`
-			<p class="errorWindowText"><b>THE BAD NEWS: </b></p>
-			<p class="errorWindowText">It seems that we were right in the middle of MOVING, DELETING or OMITTING/UN-OMITTING text when this happened.
+		emergencyLevelText = /*html*/`
+			<p class="errorWindowText"><strong>THE BAD NEWS: </strong></p>
+			<p class="errorWindowText">It seems that FTOUtliner was right in the middle of MOVING, DELETING or EDITING text when this happened.
 				</p>
 			<p class="errorWindowText">This means if we're really out of luck, FTOutliner may have managed to start, but not finish, a process of altering the contents of your script.</p>
 
-			<p class="errorWindowText"><b>THE GOOD NEWS: </b><p>
+			<p class="errorWindowText"><strong>THE GOOD NEWS: </strong><p>
 			<p class="errorWindowText">If it did, you should be able to use UNDO (cmd+z) to get back to your previous state. Once should be enough.<br/>
 				<i>So please look through your script document now to check if anything is off.</i></p>
 
@@ -1121,25 +1139,20 @@ function displayErrorMessage(information){
 	let message = /*html*/`
 	
 		<div id="errorWindow" class="settingsWindow" style="white-space: normal; ">
-
 		<div id="warningDiv">${warningSign}</div>
-
 		<p class="headline" >Uh-oh! We’ve encountered a problem.</p>
-
 		<p class="errorWindowText">This is embarrassing. FTOutliner just ran into an error and will need to be restarted.</p>
 		
-		${moveMessage}
+		${emergencyLevelText}
 
 		<p>&nbsp;</p>
 		<hr>
 		
 		<p class="errorWindowText"><b>WHEN YOU CLOSE THIS DIALOG, </b>FTOutliner will try to create an email with some data that may help track down exactly where in the code the error happened.</p>
-		<p class="errorWindowText">If possible, please add any details about what you were doing when the error message occurred, and send it to the pre-typed address. The only forwarded data will be the names of the latest jumps in the code. </p>
+		<p class="errorWindowText">Please add as much detail as possible about what you were doing when the error message occurred, and send it to the pre-typed address. The only forwarded data will be the names of the latest jumps in the code. </p>
 		<p class="errorWindowText">&nbsp;</p>
 
-		<p id="closeAfterErrorButtonPara" style="text-align: center"><a id="errorClickButton" class="generalButtonStyle" href="mailto:ftoutliner@eviltomato.com?subject=Error report from FTOutliner&body=Hi,%0D%0A%0D%0AI just experienced an error in FTOutliner.%0D%0A%0D%0AHere's what I was doing:%0D%0A%0D%0A%0D%0A
-			-------------------------------------------------------------------------%0D%0A
-			Below are the last 50 jumps that were performed in the code:%0D%0A%0D%0A ${information.join('%0D%0A')}" onclick="Beat.call('Beat.custom.reallyQuit(true)')">Close FTOutliner and create email</a>
+		<p id="closeAfterErrorButtonPara" style="text-align: center"><a id="errorClickButton" class="generalButtonStyle" href="${hrefText}" onclick="Beat.call('Beat.custom.reallyQuit(true)')">Close FTOutliner and create email</a>
 
 		<p>&nbsp;</p>
 		</div>
@@ -1276,64 +1289,62 @@ function newPrintBox(){
 		printbox.id = "printbox"
 		printbox.classList.add("settingsWindow")
 
-	let nameValue = (documentName == "false")? "" : documentName
-	let subNameValue = (documentSubName == "false")? "" : documentSubName
-	let authorValue = (documentAuthor == "false")? "" : documentAuthor
+	let nameValue = documentSetting.documentName || ""
+	let subNameValue = documentSetting.documentSubName || ""
+	let authorValue = documentSetting.documentAuthor || ""
 
 	let contents = /*html*/`
-
-	<div id="innerDiv">
-	<p class="headline">Print/Export Settings</p>
-	<br/>
-	<p>The following text will be used for information in the printed/exported page. <br/>
-		Fields that are left blank will print blank.</p>
-	<br/>
-	<label for="screenplayname" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Title &nbsp;</label><input type="text" tabindex="1" id="screenplayname" style="width: 74%;" value="${nameValue}" placeholder="The name of your screenplay"><br/>
-	<label for="subheader" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Subheader &nbsp;</label><input type="text" tabindex="2" id="subheader" style="width: 74%" value="${subNameValue}" placeholder="episode number, name of draft, etc"><br/>
-	<label for="writernames" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Writer(s) &nbsp;</label><input type="text" tabindex="3" id="writernames" style="width: 74%" value="${authorValue}" placeholder="That would be you"><br/>
-	</p>
-
-	<br/>&nbsp;
-	<br/>
-	<p class="mostText">NOTE: the outline will print in the same mode (flexible or non-proportional) and with the same scenes collapsed/expanded as shown on screen.</p>
-
-	<br/>
-	<br/>
-	<!--div style="display: flex; align-items: center; justify-content: center;"-->
-	<div style="text-align: right; white-space: normal;">
-	<div id="cancelButton" onclick="storeAndClosePrintbox(false)" class="generalButtonStyle">Cancel</div>
-	<div id="submitButton" style="margin-left: 2px;" onclick="storeAndClosePrintbox(true)" class="generalButtonStyle defaultButton">Save & Exit</div>
-	</div>
-
-	</div>`
+		<div id="innerDiv">
+		<p class="headline">Print/Export Settings</p>
+		<br/>
+		<p>The following text will be used for information in the printed/exported page. <br/>
+			Fields that are left blank will print blank.</p>
+		<br/>
+		<label for="screenplayname" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Title &nbsp;</label><input type="text" tabindex="1" id="screenplayname" style="width: 74%;" value="${nameValue}" placeholder="The name of your screenplay"><br/>
+		<label for="subheader" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Subheader &nbsp;</label><input type="text" tabindex="2" id="subheader" style="width: 74%" value="${subNameValue}" placeholder="episode number, name of draft, etc"><br/>
+		<label for="writernames" style="text-align: right; display: inline-block; width: 24% !important; padding-right: 0px;">Writer(s) &nbsp;</label><input type="text" tabindex="3" id="writernames" style="width: 74%" value="${authorValue}" placeholder="That would be you"><br/>
+		</p>
+		<br/>&nbsp;
+		<br/>
+		<p class="mostText">NOTE: the outline will print in the same mode (flexible or non-proportional) and with the same scenes collapsed/expanded as shown on screen.</p>
+		<br/>
+		<br/>
+		<!--div style="display: flex; align-items: center; justify-content: center;"-->
+		<div style="text-align: right; white-space: normal;">
+		<div id="cancelButton" onclick="storeAndClosePrintbox(false)" class="generalButtonStyle">Cancel</div>
+		<div id="submitButton" style="margin-left: 2px;" onclick="storeAndClosePrintbox(true)" class="generalButtonStyle defaultButton">Save & Exit</div>
+		</div>
+		</div>`
 
 		printbox.innerHTML = contents
 
 		if($id("menu"))$id("menu").remove()
-		document.removeEventListener("keydown", checkWhatKeyGotPressed)
-		document.addEventListener("keydown", textFieldListener)
+			toggleCaptureKeypresses(false)
+			document.addEventListener("keydown", textFieldListener)
 
-		coverContainer.style.display = "block"
-		flexiContainer.appendChild(printbox)
+			coverContainer.style.display = "block"
+			flexiContainer.appendChild(printbox)
+
+		// saveCurrentState()
 
 }
 
 function storeAndClosePrintbox(yesToStore){
 
-if(yesToStore){
+	if(yesToStore){
 
-	documentName = $id("screenplayname").value 
-	documentSubName = $id("subheader").value 
-	documentAuthor = $id("writernames").value 
+		documentSetting.documentName = $id("screenplayname").value 
+		documentSetting.documentSubName = $id("subheader").value 
+		documentSetting.documentAuthor = $id("writernames").value 
 
-	saveCurrentState()
-	Beat.call(`Beat.custom.setTheWindowTitle()`)
+		saveCurrentState()
+		Beat.call(`Beat.custom.setTheWindowTitle()`)
 
-}
+	}
 
-document.removeEventListener("keydown", textFieldListener)
-document.addEventListener("keydown", checkWhatKeyGotPressed)
-$id("printbox")?.remove()
+	document.removeEventListener("keydown", textFieldListener)
+	toggleCaptureKeypresses(true)
+	$id("printbox")?.remove()
 
 }
 
@@ -1348,9 +1359,7 @@ function textFieldListener(e){
 		event.preventDefault()
 		storeAndClosePrintbox(true)
 	}
-	if(e.key == "Tab"){
 
-	}
 }
 
 
