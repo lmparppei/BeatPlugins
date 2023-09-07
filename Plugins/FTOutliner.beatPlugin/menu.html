@@ -75,6 +75,8 @@
 
     white-space: pre !important;
 
+    pointer-events: none;
+
 }
 
 .menu::before,
@@ -538,6 +540,12 @@ box-shadow: inset 0px 0px 4px white,
     border: magenta 1px dotted */
 }
 
+.switch + label,
+label:has(+.switch) {
+    
+    pointer-events: none;
+}
+
 .greyedout {
     opacity: 0.2;
     pointer-events: none;
@@ -804,26 +812,39 @@ function indexCardMenu(){
             <p class="name">Outline Menu</p>
 
             <strong>Outline Mode: </strong>
-            <li onclick="toggleProportional(true)">
+            <li onclick="toggleProportional(true); 
+                $id('liForExpandedScenes').classList.toggle('greyedout', documentSetting.scenesAreProportional && !documentSetting.indexCardMode);
+                $id('liForExpandedSections').classList.toggle('greyedout', !documentSetting.indexCardMode);"
+                >
 		        <input id="buttonForFlexible" type="checkbox">
                 <div class="radio"></div><!--was class switch!-->
-                    <label for="buttonForFlexible">
+                    <label for="buttonForFlexible" style="pointer-events: none">
                         Flexible Time<span class="shortcut">F</span>
                     </label>
             </li>
 
-            <li onclick="toggleProportional(false)">
+            <li onclick="toggleProportional(false);
+                $id('liForExpandedScenes').classList.toggle('greyedout', documentSetting.scenesAreProportional && !documentSetting.indexCardMode);
+                $id('liForExpandedSections').classList.toggle('greyedout', !documentSetting.indexCardMode);
+                $id('strongForExpandedScenes').classList.toggle('greyedout', documentSetting.scenesAreProportional && !documentSetting.indexCardMode);
+                $id('strongForExpandedSections').classList.toggle('greyedout', !documentSetting.indexCardMode);"
+                >
 		        <input id="buttonForFixed" type="checkbox">
                 <div class="radio"></div>
-                    <label for="buttonForFixed">
+                    <label for="buttonForFixed" style="pointer-events: none">
                         Fixed Heights<span class="shortcut">F</span>
                     </label>
             </li>
 
-            <li onclick="toggleIndexCardMode()">
+            <li onclick="toggleIndexCardMode(); 
+                $id('liForExpandedScenes').classList.toggle('greyedout', documentSetting.scenesAreProportional && !documentSetting.indexCardMode);
+                $id('liForExpandedSections').classList.toggle('greyedout', !documentSetting.indexCardMode);
+                $id('strongForExpandedScenes').classList.toggle('greyedout', documentSetting.scenesAreProportional && !documentSetting.indexCardMode);
+                $id('strongForExpandedSections').classList.toggle('greyedout', !documentSetting.indexCardMode);"
+                >
 		        <input id="buttonForIndexCards" type="checkbox" >
                 <div class="radio"></div>
-                    <label for="buttonForIndexCards">
+                    <label for="buttonForIndexCards" style="pointer-events: none">
                         Index Cards<span class="shortcut">X</span>
                     </label>
             </li>
@@ -833,23 +854,23 @@ function indexCardMenu(){
             <strong>Colums:</strong><span class="shortcut" style="float:right">O</span><br/>
             <li class="centered" onclick="toggleOneColumnOutline()">
                 <input id="buttonForOneColumn" type="checkbox">
-                    <label for="buttonForOneColumn" class="labelBefore">Single</label>
+                    <label for="buttonForOneColumn" class="labelBefore" style="pointer-events: none">Single</label>
                         <div class="switch"></div>
-                    <label for="buttonForOneColumn" class="labelAfter">Multiple</label>
+                    <label for="buttonForOneColumn" class="labelAfter" style="pointer-events: none">Multiple</label>
             </li>
 
             <p class="hint">When set to multi, every # starts new column</p>
             <hr>
-            <strong class="${(documentSetting.scenesAreProportional || !$(".scene")) ? `greyedout` : ``}">Expand scenes: </strong><span class="shortcut" style="float:right">E</span><br/>
-            <li class="${(documentSetting.scenesAreProportional || !$(".scene")) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.arrowForIndexCards'), true)">
+            <strong id="strongForExpandedScenes" class="${(documentSetting.scenesAreProportional || !$(".scene")) ? `greyedout` : ``}">Expand scenes: </strong><span class="shortcut" style="float:right">E</span><br/>
+            <li id="liForExpandedScenes" class="${(documentSetting.scenesAreProportional || !$(".scene")) ? `greyedout` : ``} centered" onclick="anArrowWasClicked($('.arrowForIndexCards'), true)">
                 <input id="buttonForExpandedScenes" type="checkbox">
                     <label for="buttonForExpandedScenes" class="labelBefore">None</label>
                         <div class="switch" style="float:none !important; display: inline-block;"></div>
                     <label for="buttonForExpandedScenes" class="labelAfter">All</label>
             </li>
             <hr>
-            <strong class="${(!documentSetting.indexCardMode) ? `greyedout` : ``}">Expand sections: </strong><span class="shortcut" style="float:right">D</span><br/>
-            <li class="${(!documentSetting.indexCardMode) ? `greyedout` : ``} centered" onclick="expandOrCollapseSections()">
+            <strong id="strongForExpandedSections" class="${(!documentSetting.indexCardMode) ? `greyedout` : ``}">Expand sections: </strong><span class="shortcut" style="float:right">D</span><br/>
+            <li id="liForExpandedSections" class="${(!documentSetting.indexCardMode) ? `greyedout` : ``} centered" onclick="expandOrCollapseSections()">
                 <input id="buttonForExpandedSections" type="checkbox">
                     <label for="buttonForExpandedSections" class="labelBefore">None</label>
                         <div class="switch"></div>
@@ -897,16 +918,19 @@ function showStuffMenu(){
         <hr>
 
         <strong>Show info:</strong><br/>
+
         <li  onclick="toggleShowSceneNumbers()">
             <input id="buttonForNumbers" type="checkbox">
                 <div class="switch"></div>  
                     <label for="buttonForNumbers">Scene Numbers<span class="shortcut" style="float:right">S</span></label>
         </li>
+
         <li onclick="toggleShowPageNumbers()">
             <input id="buttonForPages" type="checkbox">
                 <div class="switch"></div>
                     <label for="buttonForPages">Page Numbers<span class="shortcut" style="float:right">P</span></label>
         </li>
+
         <li onclick="advancedTogglers('showPageDividers', 'buttonForPageDividersTwin'); setAllButtons()">
             <input id="buttonForPageDividersTwin" type="checkbox">
                 <div class="switch"></div>
@@ -928,12 +952,12 @@ function showStuffMenu(){
                 <div class="switch"></div> 
                     <label for="buttonForSceneLines">Multiple Scene Lines<span class="shortcut" style="float:right">^L</span></label>
         </li-->
-        <li ${documentSetting.indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis()">
+        <li ${documentSetting.indexCardMode ? `class="greyedout"` : ``} onclick="toggleDisplaySynopsis(); $id('liForOnlySynopsis').classList.toggle('greyedout', !$id('buttonForSynopsis').checked)">
             <input id="buttonForSynopsis" type="checkbox">
                 <div class="switch"></div> 
                     <label for="buttonForSynopsis">Show Inline Synopsis<span class="shortcut" style="float:right">Y</span></label>
         </li>
-        <li style="padding-left: 30px !important;"
+        <li id="liForOnlySynopsis" style="padding-left: 30px !important;"
             ${(flexiContainer.classList.contains("showSynopsisInScenes") && !flexiContainer.classList.contains("indexcards")) ? ``: `class="greyedout"`} onclick="flexiContainer.classList.toggle('onlySynopsis'); setAllButtons()">
             <input id="buttonForOnlySynopsis" type="checkbox">
                 <div class="switch"></div> 

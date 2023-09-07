@@ -270,11 +270,23 @@ let shortcutKeys = [
         command: (event) => { toggleNotepanel() }
     },
     {
+        key: ["Shift", "§"],
+        command: (event) => { toggleNotepanel() }
+    },
+    {
         key: ["Control", "§"],
         command: (event) => { cycleTabs() }
     },
     {
-        key: ["Shift", "Control", "§"],
+        key: ["Control", "`"],
+        command: (event) => { cycleTabs() }
+    },
+    {
+        key: ["Shift", "Control", "°"],
+        command: (event) => { cycleTabs() }
+    },
+    {
+        key: ["Shift", "Control", "±"],
         command: (event) => { cycleTabs() }
     },
     {
