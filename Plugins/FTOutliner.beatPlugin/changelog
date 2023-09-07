@@ -1,3 +1,10 @@
+#v 1.71 (September 7, 2023)
+
+*Post-realease hotfixes:*
+* Fix to issue where menu items were not clickable except directly on switch buttons
+* Fix to issue where menu items were not instantly greyed-out or un-greyed when they should be
+* Duct-tape fix to allow backtick `\`` as shortcut for the slide-in panel for languages where the key below `ESC` is not `§`. The menu will still always display the shortcut as `§` due to javascript keyboard unawareness.
+
 #v 1.7 (September 5, 2023)
 
 *FINALLY*, a looong overdue, much-needed update! Much of the codebase has been rewritten to catch up with the many great additions to the Beat API, and even if most of the changes aren't visible to the eye this should mean a big improvement to stability and speed.

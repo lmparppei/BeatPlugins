@@ -135,6 +135,8 @@
 
 			line = line.replaceAll(/\*(\S.+?)\*/g, "<strong>$1</strong>")
 			line = line.replaceAll(/\_(.+?)\_/g, "<i>$1</i>")
+			// line = line.replaceAll(/\`(.+?)\`/g, "<code>$1</code>")
+			line = line.replaceAll(/(?<!\\)\`(.+?)(?<!\\)\`/g, "<code>$1</code>").replaceAll(/\\`/g, "`")
 
 			if(line.startsWith("#")){
 
@@ -402,6 +404,18 @@
 
 		margin-top: 0px;
 		margin-bottom: 0px;
+
+	}
+
+	code {
+
+		font-family: monospace;
+
+		background-color: color-mix(in oklab, var(--menu-background), black 5%) ;
+		border: 1px solid color-mix(in oklab, var(--menu-background), black 10%) ;
+		/* color: white; */
+		padding: 0px 4px 1px 4px;
+		border-radius: 3px;
 
 	}
 
