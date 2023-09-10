@@ -950,6 +950,12 @@ function displayNotes(allNotes, typeOfNote){
                         noteElement.innerHTML = titleToDisplay
                         noteElement.dataset.title = titleToDisplay
                         noteElement.dataset.beatDescription = note.content.replace(/^.*?:/, "").trim()
+
+                        noteElement.onclick = (event) => {
+                            $$(`[data-title = "${event.target.dataset.title}"]`).forEach(beat =>{
+                                beat.classList.toggle("hoveredBeat", true)
+                            })
+                        }
                     }
             })
         }
@@ -1305,7 +1311,6 @@ function displayBeats(){
 
     return
    
-    // if (globalBeatData.length < 1){return}
     if (globalBeatData.length < 1 && !$(".beat")) return
     mylog()
 
@@ -1456,8 +1461,8 @@ function beatIsHovered(element){
 
             path.innerHTML = /*html*/`<svg height="100%" width="100%" viewBox="0 0 1000 1000" preserveAspectRatio="none" vector-effect="non-scaling-stroke" style="overflow:visible" >
                                     <g>
-                                        <path class="bottomstroke" stroke-dasharray="1,6" stroke-linecap="round" fill="none" d="M0,0 C900,0 100,1000 1000,1000" vector-effect="non-scaling-stroke"/>
-                                        <path class="topstroke" stroke-dasharray="1,6" stroke-linecap="round" fill="none" d="M0,0 C900,0 100,1000 1000,1000" vector-effect="non-scaling-stroke"/>
+                                        <path class="bottomstroke" stroke-dasharray="1,6" stroke-linecap="round" fill="none" d="M0,0 C1000,0 0,1000 1000,1000" vector-effect="non-scaling-stroke"/>
+                                        <path class="topstroke" stroke-dasharray="1,6" stroke-linecap="round" fill="none" d="M0,0 C1000,0 0,1000 1000,1000" vector-effect="non-scaling-stroke"/>
                                     </g>
                             </svg>`
 

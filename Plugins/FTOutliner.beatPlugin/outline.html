@@ -165,7 +165,9 @@ window.addEventListener('load', function () {
 	flexiContainer.classList.add("focused") //in order to correctly switch focus between main app and plugin right from the start
 	setAllEventlisteners()
 	getSettings()
-	firstRun()
+	//firstRun()
+		Beat.call("Beat.custom.updateEntireOutline()")
+
 })
 
 //	EVENTLISTENERS FOR keypresses and such
@@ -339,10 +341,11 @@ var typeTimer
 function firstRun(location, length){ 
 	
 	//Called AT STARTUP (and, if non-realtime, WHEN FOCUSED)
+	Beat.log("firstRun called")
 	mylog()
 
 	weAreCurrentlyEditingText = false
-	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ", true)")
+	Beat.call("Beat.custom.updateEntireOutline(" + location + "," + length + ")")
 
 }
 
@@ -409,7 +412,8 @@ function addSceneEnds(){
 				&& 
 				(hierarchy({...outline[nextSameLevelObject]}) > hierarchy({...outline[i]})
 				||
-				outline[nextSameLevelObject].omitted)){
+				outline[nextSameLevelObject].omitted
+				)){
 			nextSameLevelObject++
 		}
 		
@@ -1869,7 +1873,7 @@ function releaseALT(){
 }
 
 function somethingWasClicked() {
-	mylog()
+	mylog("--------------------")
 
 	let theButton = event.button
 	let rightClick = (event.ctrlKey && !event.metaKey && !event.altKey) || theButton == 2
@@ -1877,7 +1881,7 @@ function somethingWasClicked() {
 			return
 		}
 
-	mylog("flexiContainer now has...:" + $id("flexiContainer").classList)
+	mylog("flexiContainer classList at time of click: \n" + $id("flexiContainer").classList)
 
 	if(event.target.closest(".bottomButton") 
 		|| event.target.classList.contains("displayNumberOf")
@@ -2348,7 +2352,8 @@ function toggleWaitState(trueOrFalse){
 
 function __________TOGGLERS(){}
 
-	function advancedTogglers(classToToggle, buttonId, absolute){
+function advancedTogglers(classToToggle, buttonId, absolute){
+	mylog()
 
 	flexiContainer.classList.toggle(classToToggle)
 	$id(buttonId).checked = flexiContainer.classList.contains(classToToggle)
@@ -2360,6 +2365,7 @@ function __________TOGGLERS(){}
 }
 
 function setSharedScreen(){
+	mylog()
 
 	let availHeight = window.screen.availHeight
 	let availWidth = window.screen.availWidth
@@ -2369,6 +2375,7 @@ function setSharedScreen(){
 }
 
 function toggleFullScreen(){
+	mylog()
 
 	isFullScreen = !isFullScreen
 	Beat.call(`Beat.custom.toggleFull()`)
@@ -2376,6 +2383,7 @@ function toggleFullScreen(){
 }
 
 function switchFocus(){
+	mylog()
 
 	if (flexiContainer.classList.contains("focused")){
 		Beat.call(() => Beat.focusEditor())
@@ -2386,13 +2394,13 @@ function switchFocus(){
 }
 
 function toggleExcludeVoiceOvers(){
+	mylog()
 
 	userDefault.excludeVoiceOvers = !userDefault.excludeVoiceOvers
 
 	saveCurrentState()
 	
 	updateFilter()
-	//collectCharacters()
 	
 	setAllButtons()
 	firstRun()
@@ -2400,12 +2408,12 @@ function toggleExcludeVoiceOvers(){
 }
 
 function toggleIncludeSynopsis(){
+	mylog()
 
 	documentSetting.trackingIncludesSynopsis = !documentSetting.trackingIncludesSynopsis
 
 	saveCurrentState()
 
-	//updateFilter()
 	collectCharacters()
 
 	setAllButtons()
@@ -2414,15 +2422,18 @@ function toggleIncludeSynopsis(){
 }
 
 function toggleMultipleSceneLines(){
+	mylog()
 
 	documentSetting.showMultipleSceneLines = !documentSetting.showMultipleSceneLines
 	flexiContainer.classList.toggle("dualSceneLines", documentSetting.showMultipleSceneLines)
+
 	setAllButtons()
 	saveCurrentState()
 
 }
 
 function toggleInvertText(){
+	mylog()
 
 	userDefault.invertTextOnDark = !userDefault.invertTextOnDark
 
@@ -2451,7 +2462,7 @@ function toggleOneColumnOutline() {
 }
 
 function toggleIndexCardMode(firstrun){
-	mylog("toggleIndexCardMode")
+	mylog()
 
 	documentSetting.indexCardMode = !documentSetting.indexCardMode
 	
@@ -2505,7 +2516,8 @@ function toggleIndexCardMode(firstrun){
 }
 	
 function toggleShowSceneNumbers() {
-	mylog("toggleShowSceneNumbers")
+	mylog()
+	
 	if (showSceneNumbers == "inline") {
 		theRoot.style.setProperty('--showSceneNum', 'none');	
 		}else{
@@ -2536,7 +2548,8 @@ function toggleShowPageNumbers() {
 }
 
 function toggleShowSceneLength() {
-	mylog("toggleShowSceneLength")
+	mylog()
+	
 	if (showSceneLengths == "inline") {
 		theRoot.style.setProperty('--showSceneLength', 'none');	
 		}else{
@@ -2551,7 +2564,7 @@ function toggleShowSceneLength() {
 }
 
 function toggleWarnings() {
-	mylog("toggleWarning")
+	mylog()
 
 	userDefault.warningsAreOn = !userDefault.warningsAreOn
 		
@@ -2560,9 +2573,7 @@ function toggleWarnings() {
 }
 
 function toggleShowRevisions(absolute) {
-
-	mylog(" from " + documentSetting.showRevisions)
-
+	mylog()
 
   	documentSetting.showRevisions = typeof absolute === 'undefined' ? !documentSetting.showRevisions : absolute;
 
@@ -2576,7 +2587,7 @@ function toggleShowRevisions(absolute) {
 }
 
 function toggleDisplayNotes() {
-	mylog("toggleDisplayNotes")
+	mylog()
 
 	documentSetting.notesAreDisplayed = !documentSetting.notesAreDisplayed
 	notesAreDisplayed = documentSetting.notesAreDisplayed
@@ -2593,7 +2604,7 @@ function toggleDisplayNotes() {
 }
 
 function toggleDisplayMarkers() {
-	mylog("toggleDisplayMarkers")
+	mylog()
 
 	documentSetting.markersAreDisplayed = !documentSetting.markersAreDisplayed
 	markersAreDisplayed = documentSetting.markersAreDisplayed
@@ -2611,7 +2622,6 @@ function toggleDisplayMarkers() {
 }
 
 function toggleDisplayReviews() {
-
 	mylog()
 
 	documentSetting.reviewsAreDisplayed = !documentSetting.reviewsAreDisplayed
@@ -2631,7 +2641,7 @@ function toggleDisplayReviews() {
 }
 
 function toggleDisplayBeats() {
-	mylog("toggleDisplayBeats")
+	mylog()
 
 	documentSetting.beatsAreDisplayed = !documentSetting.beatsAreDisplayed
 	beatsAreDisplayed = documentSetting.beatsAreDisplayed
@@ -2652,7 +2662,8 @@ function toggleDisplayBeats() {
 }
 
 function toggleDisplaySynopsis() {
-	mylog("toggleDisplaySynopsis")
+	mylog()
+
 	if ($id("flexiContainer").classList.contains("indexcards")){return}
 
 	document.getElementById("flexiContainer").classList.toggle("showSynopsisInScenes")
@@ -2662,7 +2673,7 @@ function toggleDisplaySynopsis() {
 }
 	
 function toggleSettingsContainer() { 
-	mylog("toggleSettingsContainer")
+	mylog()
 
 	if (trackingContainerVisibility == 1){toggleTrackingContainer()}
 	if (helpContainerVisibility == 1){toggleHelpContainer()}
@@ -2673,7 +2684,7 @@ function toggleSettingsContainer() {
 }
 
 function toggleHelpContainer() {
-	mylog("toggleHelpContainer")
+	mylog()
 
 	closeNewMenu()
 
@@ -2686,7 +2697,7 @@ function toggleHelpContainer() {
 }
 
 function toggleTrackingContainer(close) { 
-	mylog("toggleTrackingContainer")
+	mylog()
 
 	if (settingsContainerVisibility == 1){toggleSettingsContainer()}
 	if (helpContainerVisibility == 1){toggleHelpContainer()}
@@ -2704,7 +2715,7 @@ function toggleTrackingContainer(close) {
 }
 
 function toggleColorScheme() { 
-	mylog("toggleColorScheme")
+	mylog()
 
 	userDefault.colorScheme = 'FTOutlinerBeat'.replace(userDefault.colorScheme, "")
 	document.documentElement.setAttribute('data-theme', userDefault.colorScheme)
@@ -2716,8 +2727,7 @@ function toggleColorScheme() {
 }
 
 function outdoorMode(){
-
-	mylog("outdoorMode:" + documentSetting.outdoor)
+	mylog()
 
 	documentSetting.outdoor = 1 - documentSetting.outdoor
 	document.documentElement.setAttribute('data-outdoors', documentSetting.outdoor)
@@ -2729,7 +2739,7 @@ function outdoorMode(){
 }
 	
 function toggleProportional(absolute) { 
-	mylog("toggleProportional")
+	mylog()
 
 	if(documentSetting.indexCardMode){
 		toggleIndexCardMode(); 
@@ -2777,8 +2787,8 @@ function toggleProportional(absolute) {
 }
 
 function toggleRealTime() {
+	mylog()
 
-	mylog("toggleRealTime")
 	realTimeIsOn = 1 - realTimeIsOn;
 	documentSetting.realTimeIsOn = realTimeIsOn
 
@@ -2786,6 +2796,7 @@ function toggleRealTime() {
 }
 
 function addShowHideBoneyard(){
+	mylog()
 
 	if(!$(".boneyard")){
 
@@ -2800,11 +2811,18 @@ function addShowHideBoneyard(){
 
 }
 
+var dialogTimeOut
+
 function changeSaturation(){
+	mylog()
 
 	documentSetting.saturation = Number($id("saturationRange").value)
 	document.documentElement.style.setProperty('--saturation', documentSetting.saturation + "%")
 
+	if (dialogTimeOut) clearTimeout(dialogTimeOut)
+		dialogTimeOut = setTimeout(() => {
+			updateDialogPanel()
+		}, 200);
 	saveCurrentState()
 
 }
@@ -3084,6 +3102,7 @@ function toggleConsole(){
 	flexiContainer.classList.toggle("loggingIsOn", loggingIsOn)
 
 	if(loggingIsOn){Beat.call("Beat.openConsole()")}
+	if(!loggingIsOn){firstRun()}
 
 }
 
@@ -3099,8 +3118,8 @@ function mylog(abstext, isError){
 
 	//this is a real time suck, so keep this off at all times if possible!
 	if(loggingIsOn){
-		let log = "Beat.log(`" + text + "`)"
-			Beat.call(log)
+		// let log = "Beat.log(`" + text + "`)"
+		// 	Beat.call(log)
 			console.log(text)
 	}
 

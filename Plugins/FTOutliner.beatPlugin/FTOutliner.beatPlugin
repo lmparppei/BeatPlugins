@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.71
+Version: 1.72
 Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
@@ -36,7 +36,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.71"
+var ftoutlinerVersion = "1.72"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -322,6 +322,14 @@ Beat.onTextChange(function(location, length) {
 
 	// This function checks every change for whether it affects layout.
 	// If it does not, we skip pagination which is time consuming. 
+
+	// If there is no previousLineObject, no need to wait, just do a full update. UNCLEAR IF THIS EVER HAPPENS, though.
+	if (!previousLineObject || previousLineObject.length == 0) {
+		Beat.log("NO PREVIOUS LINE OBJECT, so immediately doing full update")
+		fullUpdateInProgress = true
+		Beat.custom.updateEntireOutline()
+		return
+	}
 	
 	emergencyExit = true
 
@@ -340,29 +348,20 @@ Beat.onTextChange(function(location, length) {
 
 	htmlWindow.runJS(`toggleWaitState(true)`)
     onTextChangeTimer = Beat.timer(0.2, function() {
-
-		console.time("onTextChange")
 		
 		//determine which line changed
 			let parser = Beat.currentParser
 			let line = parser.lineAtPosition(location)
 				if(!line) return //try to circumvent error when typing on last line
 
-			// First coarse guard clause: this means several lines were changed (e.g. copy/paste) so make full update
+			// First guard clause: If several lines changed (e.g. copy/paste) make full update
 			console.log("Comparing to see if several lines were changed: ", previousLineObject.length != Beat.lines().length)
 			if((previousLineObject.length != Beat.lines().length)){
 				console.log("Sending to previewFinished b/c multiple lines changed")
 				fullUpdateInProgress = true
 				return 
 			} 
-			// Second: check if the nummber of linewraps in the line-at-cursor changed.
-				// console.log("wrapped lines: ", numberOfWrappedLines(line.string, line.typeAsString()), numberOfWrappedLines(previousLineObject[Beat.lines().indexOf(line)].string, line.typeAsString()))
-				// if(numberOfWrappedLines(line.string, line.typeAsString()) != numberOfWrappedLines(previousLineObject[Beat.lines().indexOf(line)].string, line.typeAsString())){
-				// 	console.log("Sending to previewFinished b/c number of wrapped lines for this line changed")
-				// 	fullUpdateInProgress = true
-				// 	return 
-				// }
-			// Third: check if the number of omitted lines or headings changed
+			// Second guard clause: If the number of omitted lines or headings changed, go to full update
 			console.time("checking for headings and hidden lines")
 			if ((previousLineObject.filter(line => ["Heading", "Section"].includes(line.typeAsString)).map(line => line.typeAsString).join(",") != Beat.outline().map(line => line.typeAsString()).join(","))
 				||
@@ -388,85 +387,42 @@ Beat.onTextChange(function(location, length) {
 			let previousNonPrintingRangesRev = previousNonPrintingRanges?.sort((a, b) => b[0] - a[0]);
 			let previousPrintingLine = previousNonPrintingRangesRev?.reduce((acc, [location, length]) => acc.slice(0, location) + acc.slice(location + length), linePreviously.string);
 
-		//console.timeEnd("onTextChange")
+		// Third guard clause: if NOT in an non-printing object, and the printing part of the line did chang, go to full update
 
-		if(["Section", "Note", "Synopse"].includes(line.typeAsString()) 
-			||
-			line.omitted
-			||
-			printingLine.trimEnd() == previousPrintingLine?.trimEnd()
-			){
+			if(!["Section", "Note", "Synopse"].includes(line.typeAsString()) 
+				&&
+				!line.omitted
+				&&
+				printingLine.trimEnd() !== previousPrintingLine?.trimEnd()
+				){
+
+					console.log ("deferring to onPreviewFinished")
+					fullUpdateInProgress = true
+
+					htmlWindow.runJS(`toggleWaitState(true)`)
+					return
+			}
+
+		//WE ARE PAST THE GUARD CLAUSES! Let's do a pagination-less update
 
 				console.log ("determining only pagination-less update needed")
 				pauseOnePaginationUpdate = true
 
 				try{
 
-					Beat.async(function () {
+					Beat.custom.updateEntireOutline(location, length, true) //true means skip pagination
 
-						console.log("in async, onTextChange")	
-
-						//FUNCTION SIMILAR TO previewFinished, BUT WHICH DOES NOT CALL PAGINATION
-							let json = JSON.stringify(outlineWithoutPagination())
-
-						// Get all lines as JSON
-							let linesAsJSON = Beat.linesAsJSON()
-
-						// Get entire screenplay
-							let fullScreenplay = Beat.getText()
-
-						// will this finally catch incorrectly delivered pagination?
-						// CHECK #1
-							if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
-								pauseOnePaginationUpdate = false
-								fullUpdateInProgress = true
-								Beat.sync(function () {
-									Beat.resetPreview()
-								})
-								return
-							}
-						// CHECK #2
-							if(!json || !linesAsJSON || !fullScreenplay){
-								pauseOnePaginationUpdate = false
-								fullUpdateInProgress = true
-								Beat.sync(function () {
-									Beat.resetPreview()
-								})
-								return
-							}
-							
-						// ALL GOOD: Send the data to the HTML window
-							Beat.sync(function () {
-								console.log("SENDING WITHOUT PAGINATION")
-								htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
-							})
-
-							previousLineObject = JSON.parse(linesAsJSON)
-
-						console.log("onTextChange async finished without errors")
-
-					})	
-
-				}catch(e){
-
-					pauseOnePaginationUpdate = false
+				}catch(e){ //because if error while updating we need a new, full round
 
 					console.log("error in onTextChange: " + e)
 					console.log("Therefore a last-minute deferral to onPreviewFinished")
+					
+					pauseOnePaginationUpdate = false
 					fullUpdateInProgress = true
 					return
 
 				}
 
-			}else{
-
-				console.log ("deferring to onPreviewFinished")
-				fullUpdateInProgress = true
-
-				htmlWindow.runJS(`toggleWaitState(true)`)
-
-			}
-			console.timeEnd("onTextChange")
 	}) //timer end
 
 })
@@ -484,12 +440,28 @@ Beat.onPreviewFinished(function(changedIndices) {
 
 	// this triggers the "updateEntireOutline", which WILL deliver pagination data
 	// NOTE: currently, "updateEntireOutline" is a custom Beat function in order to being callable from the HTML window
-	Beat.custom.updateEntireOutline()
+	//Beat.custom.updateEntireOutline()
+
+	try{
+
+		Beat.custom.updateEntireOutline() //no parameters means DO pagination
+
+	}catch(e){ //because if error while updating we need a new, full round
+
+		console.log("An error happened updating outline WITH pagination: " + e)
+		console.log("Therefore scheduling a new round")
+		
+		pauseOnePaginationUpdate = false
+		fullUpdateInProgress = true
+		return
+
+	}
 })
 
-Beat.custom.updateEntireOutline = function (location, length) {
+Beat.custom.updateEntireOutline = function (location, length, skipPagination = false) {
 
 	console.time("updateEntireOutline")
+	Beat.log("updateEntireOutline called with skipPagination = " + skipPagination)
 
 	fullUpdateInProgress = true		
 	emergencyExit = false
@@ -502,10 +474,15 @@ Beat.custom.updateEntireOutline = function (location, length) {
 
 	Beat.async(function () {
 		
-		let startTime = Date.now()
-
-			// Get the whole paginated JSON
-			let json = JSON.stringify(outlineWithPagination())
+		let json
+			// Get the whole JSON, paginated or not
+			if (skipPagination) {
+				Beat.log("Skipping pagination")
+				json = JSON.stringify(outlineWithoutPagination())
+			} else {
+				Beat.log("Doing pagination")
+				json = JSON.stringify(outlineWithPagination())
+			}
 
 			// Get all lines as JSON
 			let linesAsJSON = Beat.linesAsJSON()
@@ -514,17 +491,19 @@ Beat.custom.updateEntireOutline = function (location, length) {
 			let fullScreenplay = Beat.getText()
 
 			// will this finally catch incorrectly delivered pagination?
-			// CHECK #1
+			// CHECK #1. ERROR because mismatch in number of lines
 			if (JSON.parse(linesAsJSON).length != Beat.lines().length || JSON.parse(json).length != Beat.outline().length){			
-				fullUpdateInProgress = false
+				//fullUpdateInProgress = false //why? if error happens, better to make big update next time?
+				pauseOnePaginationUpdate = false
 				Beat.sync(function () {
 					Beat.resetPreview()
 				})
 				return
 			}
-			// CHECK #2
+			// CHECK #2. ERROR because no data
 			if((!json || !linesAsJSON) && fullScreenplay.length > 0){
-				fullUpdateInProgress = false
+				//fullUpdateInProgress = false //why? if error happens, better to make big update next time?
+				pauseOnePaginationUpdate = false
 				Beat.sync(function () {
 					Beat.resetPreview()
 				})
@@ -536,44 +515,22 @@ Beat.custom.updateEntireOutline = function (location, length) {
 				
 				//BUG HUNT PART III: If zero-height scenes encountred, don't update outline but immediately reset preview
 				if (json.endsWith(`"alert"]`)) {
+					pauseOnePaginationUpdate = false
 					fullUpdateInProgress = false
 					Beat.resetPreview()
 					return
 				}
 
+				console.log("SENDING JSON. Skipping pagination: ", skipPagination)
 				htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
 			})
 			
-			console.time("stringifyingLine")
 			previousLineObject = JSON.parse(linesAsJSON)
-			console.timeEnd("stringifyingLine")
 
 			fullUpdateInProgress = false	
 	})
 	console.timeEnd("updateEntireOutline")
 }
-
-Beat.onSelectionChange(function (location, length) {
-
-	console.log("onSelectionChange")
-
-	htmlWindow.runJS(`currentCaretPosition = ${location}; currentCaretLength = ${length}`);
-	
-	//Does this one ever happen now? Answer: the full update does, the small does not.
-	if (fullUpdateInProgress){
-		return
-	}
-
-    if (selectionTimer) {
-        selectionTimer.invalidate()
-        selectionTimer = null
-    }
-
-    selectionTimer = Beat.timer(0.2, function() {
-		htmlWindow.runJS("youAreHere(" + location + "," + length + ", true)") 
-		//the TRUE at the end means this was a "positionChangeOnly"
-    })
-})
 
 let sceneData = [] //This is now global in order to be re-useable when no new pagination is needed
 let pagination
@@ -581,15 +538,19 @@ const paginationManager = Beat.currentPagination()
 
 function outlineWithoutPagination() {
 
+	// This name is a bit misleading: The data returned does contain pagination -- but it is the old one.
+	// So "without" refers to no pagination being performed, just copied from last round.
+
 	console.log("outlineWithoutPagination")	
 
 	let altSceneData = []
+	const outlineCopy = Beat.outline()
 
 	try{
-		for (const scene of Beat.outline()) {
+		for (const scene of outlineCopy) {
 			let data = scene.json()
 	
-			let previousData = sceneData[Beat.outline().indexOf(scene)]
+			let previousData = sceneData[outlineCopy.indexOf(scene)]
 	
 				data.numberOfPages = previousData.numberOfPages
 				data.startsOnPage = previousData.startsOnPage
@@ -599,7 +560,7 @@ function outlineWithoutPagination() {
 			altSceneData.push(data)
 		}
 	}catch{
-	
+
 		return false
 
 	}
@@ -610,13 +571,14 @@ function outlineWithoutPagination() {
 
 function outlineWithPagination() {
 
-	console.time("outlineWithPagination")
+	console.log("outlineWithPagination")
 	
 	let zeroHeight = []
 		pagination = paginationManager.finishedPagination
 		sceneData = []
+	const outlineCopy = Beat.outline()
 	
-	for (const scene of Beat.outline()) {
+	for (const scene of outlineCopy) {
 
 		if(emergencyExit) break
 
@@ -677,9 +639,32 @@ function outlineWithPagination() {
 				})
 		}
 
-	console.timeEnd("outlineWithPagination")
 	return sceneData
 }
+
+function __________SELECTION_CHANGE_UPDATERS(){}
+
+Beat.onSelectionChange(function (location, length) {
+
+	console.log("onSelectionChange")
+
+	htmlWindow.runJS(`currentCaretPosition = ${location}; currentCaretLength = ${length}`);
+	
+	//Does this one ever happen now? Answer: the full update does, the small does not.
+	if (fullUpdateInProgress){
+		return
+	}
+
+    if (selectionTimer) {
+        selectionTimer.invalidate()
+        selectionTimer = null
+    }
+
+    selectionTimer = Beat.timer(0.2, function() {
+		htmlWindow.runJS("youAreHere(" + location + "," + length + ", true)") 
+		//the TRUE at the end means this was a "positionChangeOnly"
+    })
+})
 
 function __________HELPERS_____(){}
 

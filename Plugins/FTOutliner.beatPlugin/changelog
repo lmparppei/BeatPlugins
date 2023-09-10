@@ -1,3 +1,12 @@
+#v 1.72 (September 10, 2023)
+
+*IMPORTANT HOTFIX* to a serious synchronization issue where quickly decreasing the document's total number of lines caused FTOutliner to crash the main app.
+
+WHILE I WAS ALREADY IN THERE:
+* In addition to hovering a beat to show its description (the text after the colon, if present), clicking a beat now shows the descriptions for all beats of that label. 
+* In addition to `§`, backtick `\`` should now work as a shortcut for the notepanel. Yes, REALLY.
+* Minor visual fixes to the High Contrast mode. 
+
 #v 1.71 (September 7, 2023)
 
 *Post-realease hotfixes:*
