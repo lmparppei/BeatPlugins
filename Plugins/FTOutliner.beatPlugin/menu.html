@@ -40,7 +40,7 @@
 
     padding-right: 10px;
 
-    margin-bottom: 4px;
+    margin-bottom: 7px;
     padding-bottom: 4px;
 
     border-radius: 9px 9px 0 0 ;
@@ -965,7 +965,7 @@ function showStuffMenu(){
         </li>
         
         <hr>
-        <strong>Color Scheme: </strong><span class="shortcut" style="float:right">C</span><br/>
+        <strong>Color Scheme: </strong><span class="shortcut" style="float:right; pointer-events: none;">C</span><br/>
             <li class="centered" onclick="toggleColorScheme()">
                 <input id="buttonForColors" type="checkbox">
                     <label for="buttonForColors" class="labelBefore">FTOutliner</label>
@@ -1179,20 +1179,43 @@ function openDocumentationWindow(){
     Beat.call("Beat.custom.displaySecondWindow('Documentation', 'documentation.html', width=1200, height=800, false)")
 }
 
+function linesWindow(objectToDump, windowTitle){
+    
+    let sendLines = JSON.stringify(objectToDump)
+    Beat.call(([sendLines, windowTitle] ) => Beat.custom.displaySecondWindow(windowTitle, "textDumpWindow.html", 1200, 800, false, sendLines), [sendLines, windowTitle])
+
+}
+
 function settingsMenu(){
 
     let debugMenuItems = (loggingIsOn || altIsBeingPressed)? 
         /*html*/ `
-        <hr>
-        <strong>Development:</strong><br/>
-        <li onclick='Beat.call("Beat.custom.outlineToJSON()")'>
-                <p>Outline as JSON &gt; New Doc
-                <span class="shortcut" style="float:right"></span></p>
-            </li>
-        <li onclick='Beat.call("Beat.custom.linesToJSON()")'>
-                <p>Lines as JSON &gt; Beat.console
-                <span class="shortcut" style="float:right"></span></p>
-            </li>
+            <!--hr-->
+            <p class="name" style="border-radius: 0; margin-top: 4px; border-top: 1px solid #c44; background: #caa">Debugging Tools</p>
+            <strong>Open New Window With:</strong><br/>
+            <!--li onclick='Beat.call("Beat.custom.outlineToJSON()")'>
+                    <p>Outline as JSON &gt; New Doc
+                    <span class="shortcut" style="float:right"></span></p>
+                </li>
+            <li onclick='Beat.call("Beat.custom.linesToJSON()")'>
+                    <p>Lines as JSON &gt; Beat.console
+                    <span class="shortcut" style="float:right"></span></p>
+                </li-->
+            <li onclick='linesWindow(lines, "Lines As JSON")'>
+                    <p>Lines As JSON
+                    <span class="shortcut" style="float:right"></span></p>
+                </li>
+            <li onclick='linesWindow(outline, "Outline As JSON")'>
+                    <p>Outline As JSON
+                    <span class="shortcut" style="float:right"></span></p>
+                </li>
+            <!--li onclick='linesWindow("{" + logArray.reverse().join("},{"))'-->
+            <!--li onclick='linesWindow(logArray.reverse())'-->
+            <li onclick='linesWindow(logArray.reverse(), "Current FTOutliner log")'>
+                    <p>Current Log
+                    <span class="shortcut" style="float:right"></span></p>
+                </li>
+            <hr>
             <li onclick='toggleConsole()'>
                 <input id='buttonForLogging' type='checkbox'>
                     <div class='switch'></div>  

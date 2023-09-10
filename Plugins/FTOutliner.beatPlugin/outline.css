@@ -2381,6 +2381,93 @@ html[data-outdoors='1']{
 	
 }
 
+html[data-outdoors='1'] #notepanel{
+
+	box-shadow: 0 0 0 2px black !important;
+
+	&:not(.expanded){
+
+		box-shadow: none!important;
+
+	}
+
+}
+
+
+html[data-outdoors='1'] #notepanel .closetab{
+
+	color: black !important;
+
+}
+
+html[data-outdoors='1'] #notepanel .tab{
+
+	box-shadow: 1.2px -1px 0 0.7px rgba(0,0,0,1);
+
+
+}
+
+html[data-outdoors='1'] .menu .name {
+
+	background: #888;
+
+}
+
+html[data-outdoors='1'] .menu {
+
+	box-shadow: 0 0 0 2px black !important;
+	background: white;
+
+}
+
+html[data-outdoors='1'] .menu::before{
+
+	
+
+	box-shadow: -1.2px -1.2px 0 1.1px black !important;
+
+}
+
+html[data-outdoors='1'] .menu::after{
+
+	border-color: transparent !important;
+	border-top-color: white !important;
+	border-left-color: white !important;
+
+	box-shadow: none !important;
+	background: transparent !important;
+
+}
+
+html[data-outdoors='1'] .menu input:not(input:checked) + .radio,
+html[data-outdoors='1'] .menu input:not(input:checked) + .switch,
+html[data-outdoors='1'] .menu input:not(input:checked) + label + .switch{
+
+	border-color: #666 !important;
+	box-shadow: inset 0 0 0 1px #aaa !important;
+
+}
+
+html[data-outdoors='1'] .menu .switch::before{
+
+	border-color: black !important;
+	box-shadow: inset 0 0 0 1px black !important;
+
+}
+
+html[data-outdoors='1'] .menu .radio::after{
+
+	box-shadow: none !important;
+	background-color: white !important;
+
+}
+
+html[data-outdoors='1'] .notepanelNote {
+
+	background-image: linear-gradient(rgba(255, 255, 255, var(--saturation)), rgba(255, 255, 255, var(--saturation))) !important;
+
+}
+
 html[data-outdoors='1'] #flexiContainer:not(.indexcards) .section:not(.level1){
 
 	border-color: black;
@@ -2388,9 +2475,11 @@ html[data-outdoors='1'] #flexiContainer:not(.indexcards) .section:not(.level1){
 	padding-left: 2px;
 	
 	border-top-width: 1px;
+	box-sizing: border-box;
 	border-top-style: solid;
 
 	box-shadow: inset 5px 0 0 0 var(--localColor);
+	margin-top: 1px;
 
 }
 
@@ -2438,12 +2527,20 @@ html[data-outdoors='1'] .scene,
 html[data-outdoors='1'] .isExpanded > .scene{
 
 	border: 0.5px solid black !important;
-	/* background-color: white; */
+	box-sizing: border-box !important;
+	
 	background-color: color-mix(in oklab, var(--localColor), white var(--saturation));
+
 	box-shadow: none !important; 
 
-	box-shadow: 6px 0 0 0px inset var(--localColor),
-				0px 0 0 1px inset var(--localColor) !important;
+}
+
+html[data-outdoors='1'] .colorBorderInOutdoorMode .scene,
+html[data-outdoors='1'] .colorBorderInOutdoorMode .isExpanded > .scene{
+
+	box-shadow: 6px 0 0 0px inset var(--localColor);
+				/* 0px 0 0 1px inset var(--localColor) !important; */
+	
 
 }
 
@@ -2473,7 +2570,7 @@ html[data-outdoors='1'] .synopsis{
 
 html[data-outdoors='1'] .sceneheading{
 
-	padding-left: 8px !important;
+	padding-left: 6px !important;
 
 }
 
@@ -2609,7 +2706,10 @@ html[data-outdoors='1'] .indexcards .section:not(.level1, .dimmedSection) > .sec
 
 html[data-outdoors='1'] :not(.indexcards, :has(.displayNumberOf)) .section:not(.dimmedSection) > .section-heading:not(.level1 > .section-heading){
 
-	border-bottom: 1px black solid;
+	border-bottom: 1px var(--localColor) solid;
+	/* border-top: 1px var(--localColor) solid; */
+	/* border-left: 8px transparent solid; */
+
 }
 
 html[data-outdoors='1'] .section:not(.level1):not(.noHover):not(:has(:hover)):hover,
@@ -2768,7 +2868,7 @@ html[data-outdoors='1'] .synopsis:hover {
 html[data-outdoors='1']  .section:not(.level1).isSelected > .section-heading,
 html[data-outdoors='1']  .section:not(.level1).isSelected > .synopsiscontainer,
 html[data-outdoors='1']  .scene.isSelected,
-html[data-outdoors='1']  .scene.isSelected > .sceneheading,
+html[data-outdoors='1']  .scene.isSelected:not(.sluglineIsHidden) > .sceneheading,
 html[data-outdoors='1']  .scene.isSelected > .synopsiscontainer{
 	
 		color: white !important;
