@@ -141,6 +141,7 @@
 }
 
 .colorDropdown, 
+#sortDropDown,
 #allDialogFor {
 
         -webkit-appearance: none !important;
@@ -171,7 +172,11 @@
 
       }
 
+#sortDropDown,
 #allDialogFor{
+
+    /* width: unset !important;
+    background: unset !important; */
 
     /* width: auto !important; */
     font-weight: bold !important;
@@ -181,16 +186,19 @@
     padding: 0px 20px 0px 8px !important;
 }
 
+#sortDropDown:focus,
 #allDialogFor:focus{
     outline: none !important;
 }
 
 .colorDropdown:hover,
+#sortDropDown:hover,
 #allDialogFor:hover{
     color: white
 }
 
 .colorDropdown option,
+#sortDropDown option,
 #allDialogFor option{
     font-size: 14px !important;
     line-height: 26px !important; 
@@ -202,13 +210,15 @@
         font-weight: inherit !important;
     }
 
-    #allDialogFor option{
+#sortDropDown option,
+#allDialogFor option{
 
-        font-weight: bold !important;
+    font-weight: bold !important;
 
-    }
+}
     
 
+#scenespanelbuttons .hasSelect,
 #dialogpanelbuttons .hasSelect,
 :is(.menu, .modal) select:focus{
     outline: none;
@@ -216,6 +226,7 @@
     
 }
 
+#scenespanelbuttons .hasSelect,
 #dialogpanelbuttons .hasSelect{
     
     overflow: hidden !important;
@@ -260,6 +271,7 @@
     background: rgba(206,206,206);
 }
 
+#scenespanelbuttons .hasSelect,
 #dialogpanelbuttons .hasSelect{
 
     position: absolute;
@@ -280,12 +292,15 @@
 
 }
 
-#allDialogFor:focus{
+#sortDropDown  option,
+#allDialogFor  option{
 
     font-weight: normal !important;
 
 }
 
+#sortDropDown:checked,
+#sortDropDown:focus:checked,
 #allDialogFor:checked,
 #allDialogFor:focus:checked{
 
@@ -294,6 +309,8 @@
 }
 
 /* .menu li:has(select)::after, */
+#scenespanelbuttons .hasSelect::before,
+#scenespanelbuttons .hasSelect::after,
 #dialogpanelbuttons .hasSelect::before,
 #dialogpanelbuttons .hasSelect::after,
 :is(.menu, .modal) li.hasSelect::before,
@@ -302,8 +319,8 @@
 
     white-space: pre;
     position: absolute;
-    right: 8px;
-    top: 2px;
+    right: 4px;
+    top: 2px; /*was2*/
     font-size: 10px !important;
     line-height: 8px !important;
 
@@ -314,8 +331,10 @@
     transform: rotate(45deg) translate(0px, 6px);
 
     pointer-events: none;
+
 }
 
+#scenespanelbuttons .hasSelect::after,
 #dialogpanelbuttons .hasSelect::after,
 :is(.menu, .modal) li.hasSelect::after{
 
@@ -324,10 +343,12 @@
     border-right: 2px solid black;
     border-bottom: 2px solid black;
 
-    transform: rotate(45deg) translate(4px, 10px);
+    transform: rotate(45deg) translate(4px, 10px); /*was 4, 10*/
 
 }
 
+#scenespanelbuttons .hasSelect::before,
+#scenespanelbuttons .hasSelect::after,
 #dialogpanelbuttons .hasSelect::before,
 #dialogpanelbuttons .hasSelect::after{
 
@@ -336,6 +357,8 @@
 
 }
 
+/* #scenespanelbuttons .hasSelect:not(:has(.menuitem))::before,
+#scenespanelbuttons .hasSelect:not(:has(.menuitem))::after, */
 #dialogpanelbuttons .hasSelect:not(:has(.menuitem))::before,
 #dialogpanelbuttons .hasSelect:not(:has(.menuitem))::after{
 
@@ -344,6 +367,8 @@
 }
 
 
+#scenespanelbuttons .hasSelect:hover::before,
+#scenespanelbuttons .hasSelect:hover::after,
 #dialogpanelbuttons .hasSelect:hover::before,
 #dialogpanelbuttons .hasSelect:hover::after,
 :is(.menu, .modal) li.hasSelect:hover::before,

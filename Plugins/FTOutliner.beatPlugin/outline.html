@@ -17,6 +17,7 @@
 	<div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
 	<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
 </div>
+<div id="notepanelOpener" onclick="toggleNotepanel()"></div>
 
 <div id="notepanel" class="">
 	<div id="tabsRow">
@@ -24,8 +25,8 @@
 		</div>
 		<div class="tab dialogtab" onclick="cycleTabs(event.target)">Dialogue
 		</div>
-		<!--div class="tab scenestab" onclick="cycleTabs(event.target)">Scenes
-		</div-->
+		<div class="tab scenestab" onclick="cycleTabs(event.target)">Scenes
+		</div>
 		<div class="closetab" onclick="toggleNotepanel()">×
 		</div>
 	</div>
@@ -33,22 +34,24 @@
 	</div>
 	<div id="dialogpanelbuttons">
 		<div class="hasSelect dropDownSpan">
-			<!-- <select id="allDialogFor" class="colorDropdown" onchange="initiateCharacterBubbles()"> -->
 			<select id="allDialogFor" class="colorDropdown" onchange="showCharacterBubbles()">
-				<option>None</option>
+				<option></option>
 			</select>
 		</div>
 		<div id="dialogSearchIcon" class="dialogSearchIcon"></div>
 		<input id="dialogsearch" class="dialogsearch" type="text" spellcheck="false" placeholder="search for..." oninput="onlyShowMatchingDialogs()" onfocus="toggleCaptureKeypresses(false)" onblur="toggleCaptureKeypresses(true)" onkeydown="searchboxlisten(event)">
 		<div id="clearSearchButton" onclick="clearSearchBox()">×</div>
 	</div>
-	<div id="notepanelcontent">
+	<div id="scenespanelbuttons">
+	</div>
+	<div id="notepanelcontent" onscroll="setScrollShadow()">
 	</div>
 	<div id="dialogpanelcontent">
 	</div>
-	<div id="scenespanelcontent">
+	<div id="scenespanelcontent" class="scenespanelcontent" onclick="deselectAllScenepanelItems()" onscroll="setScrollShadow()">	
+		<div id="dividerline"></div>
 	</div>
-	<div id="drag-bar" onmousedown="resizeNotepanel()"></div>
+	<div id="drag-bar" onmousedown="resizeNotepanel()" ondblclick="toggleNotepanel()"></div>
 </div>
 
 <!-- ================================================== -->
@@ -67,6 +70,13 @@ document.addEventListener("dblclick", function(event){
 })
 
 $id("flexiContainer").addEventListener("contextmenu", function(event){
+	if(event.metaKey && event.altKey) return // so as not to get contextmenu when ctrl+alt+cmd is pressed
+	event.preventDefault()
+	event.stopPropagation()
+	mylog(event)			
+	displayContextMenu(event)
+})
+$id("notepanel").addEventListener("contextmenu", function(event){
 	if(event.metaKey && event.altKey) return // so as not to get contextmenu when ctrl+alt+cmd is pressed
 	event.preventDefault()
 	event.stopPropagation()
@@ -162,13 +172,25 @@ if(!document.createElement('dialog').showModal){
 //	EVENTLISTENER ON LOAD: FETCH DATA FROM PLUGIN, THEN BUILD THE COMPLETE OUTLINE:
 
 window.addEventListener('load', function () {
+
 	flexiContainer.classList.add("focused") //in order to correctly switch focus between main app and plugin right from the start
 	setAllEventlisteners()
-	getSettings()
-	//firstRun()
-		Beat.call("Beat.custom.updateEntireOutline()")
-
+	getSettings(true) //true means startup, which will trigger the showWelcomeWindow function
+	
+	Beat.call("Beat.custom.updateEntireOutline()")
+	
 })
+
+function launchWelcomeDialog(ftoutlinerVersion){
+	
+	//MOVED THE WELCOME WINDOW TO THE HTML CODE in order to hopefully circumvent weirdness where both windows loaded it
+
+	let showWelcome = userDefault["dontShowWelcomeWindowFor" + ftoutlinerVersion?.replace(".", "")]
+		
+ 	if(!showWelcome){
+		Beat.call(`Beat.custom.displaySecondWindow("Welcome", "welcomewindow.html", 800, 650, false)`)
+	}
+}
 
 //	EVENTLISTENERS FOR keypresses and such
 function setAllEventlisteners(){
@@ -368,6 +390,7 @@ function updateEntireOutline(json, location, length, absoluteLength, linesAsJson
 
 	//Building the outline!
 		divMaker() 
+		youAreHere(location, length) 
 		
 	//Post-building the outline: Add data to existing, already painted divs
 		if (characterMenuList.selectedIndex != -1){
@@ -381,7 +404,6 @@ function updateEntireOutline(json, location, length, absoluteLength, linesAsJson
 		updateScenePanel()
 		updateSelectionInfo()
 
-		youAreHere(location, length) 
 		toggleWaitState(false)	
 
 		if(weAreCurrentlyEditingText){ // this is if update takes place when live editing outline text -- can this happen??
@@ -412,7 +434,7 @@ function addSceneEnds(){
 				&& 
 				(hierarchy({...outline[nextSameLevelObject]}) > hierarchy({...outline[i]})
 				||
-				outline[nextSameLevelObject].omitted
+				outline[nextSameLevelObject].omitted //THIS MAKES OMITTED SCENES LIVE INSIDE (AND MOVE WITH) THEIR PREVIOUS SCENES
 				)){
 			nextSameLevelObject++
 		}
@@ -1081,7 +1103,8 @@ function findPageDividers() {
 
 	if(!outline || outline.length == 0) return
 
-	let scenesOnly = outline.filter(scene => {if(scene.typeAsString == "Heading") return scene})
+	// let scenesOnly = outline.filter(scene => {if(scene.typeAsString == "Heading") return scene})
+	let scenesOnly = outline.filter(scene => {scene.typeAsString == "Heading"})
 		pageDividers = []
 
 	for (let i = 0; i < outline.length; i++) {
@@ -1424,6 +1447,9 @@ function youAreHere(location, length, positionChangeOnly){
 	}else{
 		recalculateHeights("from youAreHere")
 	}
+
+	updateDialogPanelSelection()
+
 }
 
 function numberIntoEights(theNumber) {
@@ -1443,7 +1469,7 @@ function numberIntoEights(theNumber) {
 
 function __________UI_RELATED_STUFF (){}
 
-function getSettings(){
+function getSettings(startup = false){
 
 	mylog()
 
@@ -1452,33 +1478,49 @@ function getSettings(){
 
 	//Step 1: getting User Defaults
 	Beat.callAndWait(() => {
-        let ftoutlinerObject = Beat.getUserDefault("ftoutlinerObject")
-        	return(ftoutlinerObject)
+        let ftoutlinerObject = Beat.getUserDefault("ftoutlinerObject") || {}
+        	return ftoutlinerObject
     	})
     	.then(
 			response => { 
 				Object.assign( userDefault, JSON.parse(response) )
 				getDocumentSettings() //brings us to step two
 			},
-        	error => { 
-				console.log("Error retrieving userDefault") 
-			}
+        	error => { console.log("Error retrieving userDefault") }
     )
 
 	//Step 2: getting Document Settings
 		function getDocumentSettings(){	
 			Beat.callAndWait(() => {
-				let ftoutlinerObject = Beat.getDocumentSetting("ftoutlinerObject")
+				let ftoutlinerObject = Beat.getDocumentSetting("ftoutlinerObject") || {}
 				return ftoutlinerObject
 				})
 				.then(
 					response => { 
 						Object.assign( documentSetting, JSON.parse(response))
 						applySettings()
+
+						getVersionNumber()
 					},
 					error => { console.log("Error retrieving documentSetting") }
 			)
 		}
+
+	//Step 3: getting the current version number!
+		function getVersionNumber(){	
+				Beat.callAndWait(() => {
+					let ftoutlinerVersion = Beat.getUserDefault("ftoutlinerVersion") || {}
+					return ftoutlinerVersion
+					})
+					.then(
+						response => { 
+							
+							if(startup){ launchWelcomeDialog(response) }
+						
+						},
+						error => { console.log("Error retrieving version number") }
+				)
+			}
 
 	//no more code can go here because of synchronicity!
 
@@ -1543,7 +1585,6 @@ function applySettings(){
 			width: 0, 
 			height: 0
 		},
-
 	}
 
 	let knownUserDefaults = {
@@ -1553,6 +1594,8 @@ function applySettings(){
 		warningsAreOn: true, 
 		invertTextOnDark: true,
 		excludeVoiceOvers: false,
+
+		timeOfDayObject: knownTimesOfDayObject,
 	}
 
 	Object.keys(knownDocumentSettingDefaults)
@@ -1563,7 +1606,7 @@ function applySettings(){
   		});
 
 	Object.keys(knownUserDefaults)
-		.filter(key => !(key in userDefault))
+		.filter(key => !(key in userDefault) || userDefault[key] == undefined || userDefault[key] == null)
   		.forEach(key => {
 			console.log("Didn't find " + key + " in userDefault, so setting it to default value '" + knownUserDefaults[key] + "'.");
 			userDefault[key] = knownUserDefaults[key];
@@ -1597,6 +1640,11 @@ function applySettings(){
 		$id("flexiContainer").classList.toggle("notepanelIsExpanded", documentSetting.notepanel)
 		$id("notepanel").classList.toggle("expanded", documentSetting.notepanel)
 		theRoot.style.setProperty('--note-panel-width', documentSetting.notepanelWidth + "px")
+			$$("#notepanel .tab").forEach(tab => {
+				// tab.classList.remove("selectedtab")
+				tab.classList.toggle("selectedtab", tab.classList.contains(documentSetting.selectedPanelTab))
+			})
+		if(documentSetting.notepanel) cycleTabs($(`.${documentSetting.selectedPanelTab}`) || false)
 	
 	//HIGH CONTRAST STUFF
 		document.documentElement.setAttribute('data-outdoors', documentSetting.outdoor)
@@ -1626,11 +1674,14 @@ function applySettings(){
 
 			toggleShowRevisions(documentSetting.showRevisions)
 
+		//Zoom
+			zoomSizes(null, documentSetting.currentZoomLevel || 1)
+
 		//TODO: this one is currently unclear -- aren't they set with defaults above?
 			showSceneLengths = documentSetting.showSceneLengths || "inline"
 			showSceneNumbers = documentSetting.showSceneNumbers || "inline"
 			showPageNumbers = documentSetting.showPageNumbers || "inline"
-			currentZoomLevel = documentSetting.currentZoomLevel || 1
+			// currentZoomLevel = documentSetting.currentZoomLevel || 1
 			indexCardHeight = documentSetting.indexCardHeight || 5
 		
 		
@@ -1669,15 +1720,12 @@ function applySettings(){
 
 	//NOW EXECUTING SOM STUFF BASED ON THE DEFAULTS WE GOT!
 
-	
-	document.documentElement.setAttribute('data-theme', userDefault.colorScheme)
-
-
+		document.documentElement.setAttribute('data-theme', userDefault.colorScheme)
 
 		theRoot.style.setProperty('--showSceneLength', showSceneLengths);
 		theRoot.style.setProperty('--showSceneNum', showSceneNumbers);
 		theRoot.style.setProperty('--showPageNum', showPageNumbers);
-		theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
+		// theRoot.style.setProperty('--fontSizeFactor', currentZoomLevel)
 
 		// Beat.call(
 		// 	`Beat.custom.setWindowSize(${documentSetting.windowSize.x}, ${documentSetting.windowSize.y}, ${documentSetting.windowSize.width}, ${documentSetting.windowSize.height})`
@@ -1692,6 +1740,7 @@ function applySettings(){
 }
 
 function saveCurrentState() {
+
 	mylog()
 
 	rememberCardState()
@@ -2844,6 +2893,10 @@ function goto(gotoIndex, theClickedThing, length = theClickedThing?.dataset.leng
 	Beat.call("Beat.scrollTo(" + gotoIndex + ")") 
 
 	if (classes.includes("pageDivider")) return
+	if (classes.includes("location")) {
+		gotoIndex = theClickedThing.dataset.startIndex
+		length = theClickedThing.dataset.endIndex - theClickedThing.dataset.startIndex
+	}
 
 	let elementColor = window.getComputedStyle(theClickedThing).backgroundColor
 	let textColor
@@ -2967,7 +3020,7 @@ function changeIndexCardHeight(key){
 	if (notesAreDisplayed){displayNotes()}
 }
 
-function zoomSizes(key){
+function zoomSizes(key, explicitLevel){
 
 	currentZoomLevel = getComputedStyle(theRoot).getPropertyValue('--fontSizeFactor')
 
@@ -2981,9 +3034,12 @@ function zoomSizes(key){
 		break;
 		case "0":
 			newZoomLevel = 1
+		break;
+		default:
+			newZoomLevel = explicitLevel || 1
 	}
 
-	if(!newZoomLevel) return //this can happen if we press a legal shortcut but with an extra modifier key. 
+	// if(!newZoomLevel) return //this can happen if we press a legal shortcut but with an extra modifier key. 
 
 	theRoot.style.setProperty('--fontSizeFactor', newZoomLevel)
 	currentZoomLevel = newZoomLevel
