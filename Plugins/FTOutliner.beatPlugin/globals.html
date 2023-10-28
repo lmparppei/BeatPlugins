@@ -315,4 +315,49 @@ var editBoxResizeObserver
 var currentCaretPosition
 var currentCaretLength
 
+var knownTimesOfDayObject = {
+        day: [
+            "DAY", "DAWN", "MORNING", "EARLY MORNING", "SUNRISE", "EARLY", "AFTERNOON",
+            "DAG", "GRYNING", "MORGON", "TIDIG MORGON", "SOLUPPGÅNG", "TIDIGT", "EFTERMIDDAG",
+            "TAG", "MORGENGRUEN", "MORGEN", "FRÜHER MORGEN", "SONNENAUFGANG", "FRÜH", "NACHMITTAG",
+            "JOOR", "GRYNING", "MORJEN", "FRÖH MORJEN", "SUNNENUPGANG", "FRÖH", "NOMITTAG",
+            "JOUR", "AUBE", "MATIN", "TÔT LE MATIN", "LEVER DU SOLEIL", "TÔT", "L'APRÈS-MIDI",
+            "DÍA", "ALBA", "MAÑANA", "MAÑANA TEMPRANO", "AMANECER", "TEMPRANO", "TARDE",
+            "PÄIVÄ", "SARASTUS", "AAMU", "VARHAINEN AAMU", "AURINGONNOUSU", "VARHAIS", "ILTAPÄIVÄ",
+            "DAG", "DAGGRY", "MORGEN", "TIDLIG MORGEN", "SOLOPPGANG", "TIDLIG", "ETTERMIDDAG",
+            "DAG", "DÅGNING", "MORGEN", "TIDLIG MORGEN", "SOLØJSENING", "TIDLIG", "EFTERMIDDAG"
+        ],
+        night: [
+            "NIGHT", "DUSK", "EVENING", "LATE EVENING", "SUNSET", "LATE", "MIDNIGHT",
+            "NATT", "SKYMNING", "KVÄLL", "SEN KVÄLL", "SOLNEDGÅNG", "SENT", "MIDNATT",
+            "NACHT", "DÄMMERUNG", "ABEND", "SPÄTER ABEND", "SONNENUNTERGANG", "SPÄT", "MITTERNACHT",
+            "NUIJT", "DÄMMERUNG", "OAVEND", "SPÄTER OAVEND", "SUNNENUNTERGANG", "SPÄT", "MIDDERNOCHT",
+            "NUIT", "CREPUSCULE", "SOIR", "TARD LE SOIR", "COUCHER DE SOLEIL", "TARD", "MINUIT",
+            "NOCHE", "CREPÚSCULO", "TARDE", "TARDE NOCHE", "PUESTA DE SOL", "MUY TARDE", "MEDIANOCHE",
+            "YÖ", "HÄMÄRÄ", "ILTA", "MYÖHÄ ILTA", "AURINGONLASKU", "MYÖHÄ", "KESKIYÖ",
+            "NATT", "SKUMRING", "KVELD", "SEN KVELD", "SOLNEDGANG", "SENT", "MIDNATT",
+            "NAT", "SKUMRING", "AFTEN", "SEN AFTEN", "SOLNEDGANG", "SEN", "MIDNAT"
+        ],
+        same: [
+            "LATER", "MOMENTS LATER", "CONTINUOUS", "SAME", "SIMULTANEOUSLY",
+            "SENARE", "LITE SENARE", "ÖGONBLICKET SENARE", "FORTSÄTTNING", "DIREKT FORTSÄTTNING", "SAMMA", "SAMTIDIGT",
+            "SPÄTER", "EINIGE ZEIT SPÄTER", "KONTINUIERLICH", "DASSELBE", "GLEICHZEITIG",
+            "SPÄTER", "EENIGE TIEDEN SPÄTER", "DURCHGEHEND", "DASSELVE", "GLEIKTIEDIG",
+            "PLUS TARD", "QUELQUES INSTANTS PLUS TARD", "CONTINU", "MÊME", "SIMULTANÉMENT",
+            "MÁS TARDE", "MOMENTOS MÁS TARDE", "CONTINUO", "IGUAL", "SIMULTÁNEAMENTE",
+            "MYÖHEMMIN", "HETKEÄ MYÖHEMMIN", "JATKUVA", "SAMA", "SAMANAIKAINEN",
+            "SENRE", "ØYEBLIKK SENRE", "KONTINUERLIG", "SAMME", "SAMTIDIG",
+            "SENERE", "ØJEBLIKKE SENERE", "KONTINUERLIG", "SAMME", "SAMTIDIG"
+        ]
+    }
+
+var articleArray = ["THE", 
+                    "LE", "LA", 
+                    "EL", "IL", 
+                    "DER", "DIE", "DAS", 
+                    "O", "A", 
+                    "DE", "HET"]
+
+
+
 </script>

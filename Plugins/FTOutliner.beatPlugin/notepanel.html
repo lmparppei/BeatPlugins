@@ -5,6 +5,98 @@
     --note-panel-width: 200px /*25%; /*was 30*/
 }
 
+#notepanelOpener{
+
+    position: absolute;
+    top: 15px;
+    left: 0px;
+    height: calc(100vh - 65px);
+
+    width: 10px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+
+    background: transparent;
+
+    cursor: ew-resize !important ;
+
+    z-index: 100;
+
+    &::after{
+
+        position: absolute;
+        white-space: pre;
+        top: 50%;
+        left: -8.5px;
+        /* width: 100%; */
+        font-size: 8px;
+        color: #444;
+        
+        content: "\25BC   \25BC   \25BC";
+        opacity: 0;
+
+        rotate: -90deg;
+        transform-origin: 50% 50%;
+
+        text-shadow: -0.5px 0px 0px white;
+
+    }
+
+    &:hover{
+
+        border-radius: 0px 6px 6px 0px;
+        background-color: rgba(255,255,255,0.3); /* #999; */
+        
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    
+        box-shadow: 6px 0px 4px -4px rgba(0, 0, 0, 0.6);
+	    height: calc(100vh - 65px);
+
+        transition: background-color 0.2s;
+
+        &::after{
+
+            opacity: 1;
+            transition: opacity 0.2s;
+
+        }
+
+    }
+
+}
+
+:has(#notepanel.expanded) #notepanelOpener{
+
+    opacity: 0;
+    z-index: 999999;
+    /* box-shadow: none; */
+    /* backdrop-filter: none; */
+    /* -webkit-backdrop-filter: none; */
+    border-right: 0.5px solid #999;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+
+    &::after{
+        /* color: #999; */
+        rotate: 90deg;
+        translate: -1.5px;
+        /* text-shadow: -0.5px 0px 0px black; */
+
+        transform-origin: 50% 50%;
+    }
+
+    &:hover{
+        /* background-color: #555; */
+        background-color: transparent;
+        /* width: 30px; */
+        /* background: linear-gradient(to right, #555, #555 20%, transparent 100%); */
+        opacity: 1;
+    }
+
+
+}
+
 #notepanel{
 
     position: absolute !important;
@@ -14,8 +106,8 @@
 	padding: 5px 10px 0px 10px  !important;
 	margin: 0px !important; 
 
-    height: calc(100% - 65px) !important;
-    width: var(--note-panel-width);
+    height: calc(100% - 65px) /*!important*/;
+    width: min(var(--note-panel-width), 90vw);
 	
 	font-size: calc(11px * var(--fontSizeFactor)); 
 	font-weight: normal; 
@@ -185,9 +277,13 @@
 }
 
 #notepanel #notepanelbuttons,
+#notepanel #scenespanelbuttons,
 #notepanel #dialogpanelbuttons{
 
     display: none;
+
+    font-size: 11px !important;
+    line-height: 13px !important;
 
     position: absolute;
     width: calc(100% - 10px);
@@ -199,6 +295,7 @@
 }
 
 #notepanel:has(.notetab.selectedtab) #notepanelbuttons,
+#notepanel:has(.scenestab.selectedtab) #scenespanelbuttons,
 #notepanel:has(.dialogtab.selectedtab) #dialogpanelbuttons{
 
     display: unset;
@@ -300,7 +397,9 @@ right: 8.5px;
     width: 10px;
     height: calc(100% - 20px);
     /* right: 0px; */
-    left: calc(var(--note-panel-width) - 10px);
+    /* left: calc(var(--note-panel-width) - 10px); */
+    left: calc(min(var(--note-panel-width), 90vw) - 10px);
+
     bottom: 0px;
 
     /* margin-top: auto;
@@ -659,26 +758,41 @@ body.notepanelIsBeingResized > * {
 </style>
 <script>
 
-function cycleTabs(clickedElement){
+function cycleTabs(clickedElement, unconditional){
 
     if(!$("#notepanel.expanded")) { 
         toggleNotepanel()
         if(!clickedElement) return 
     }
     
-    if(clickedElement?.classList.contains("selectedtab")) return
+    if(clickedElement?.classList.contains("selectedtab") && !unconditional) return
+
     clickedTab = clickedElement || ($("#notepanel.expanded .selectedtab + .tab") || $("#notepanel .tab")) //|| event.target
 
     $$(".selectedtab").forEach(tab => {tab.classList.remove("selectedtab")})
     clickedTab.classList.add("selectedtab")
 
     if($(".selectedtab").classList.contains("dialogtab")) {
-        initiateCharacterBubbles()
+        initiateCharacterBubbles($id("allDialogFor").selectedOptions[0]?.innerText.trim() || "ALL")
     }else{
         unShowCharacterBubbles()
         reevaluateColorContrast()
     }
-    if( $(".selectedtab").classList.contains("scenestab") ) { updateScenePanel() } 
+
+    if( $(".selectedtab").classList.contains("scenestab") ) { 
+        populateScenesPanelButtons()
+        updateScenePanel() 
+    } 
+
+    if( $(".selectedtab").classList.contains("notetab") ) { 
+
+        if(!globalAllNotes) collectNotes()
+        updateNotepanel()
+    } 
+
+
+    documentSetting.selectedPanelTab = ["dialogtab", "scenestab", "notetab"].find(tabname => $(".selectedtab").classList.contains(tabname))
+    saveCurrentState()
 
 }
 
@@ -787,10 +901,6 @@ function updateNotepanel(){
     $$(".notepanelNote").forEach(note => {note.remove()})
     $$(".notepanelReview").forEach(note => {note.remove()})
 
-    //if((!globalNotesData && !globalReviewsData) || (globalNotesData?.length == 0 && globalReviewsData?.length == 0)) return
-    
-    // if(globalNotesData?.length > 0){
-        mylog("looping notes in panel")
         for(let i = 0; i < allNotes.length; i++){
 
             let elementType = outline[allNotes[i].outlineElementNumber]?.typeAsString
@@ -874,14 +984,22 @@ function toggleNotepanel() {
 
     mylog("toggleNotepanel")
 
-    $id("notepanel").classList.toggle("expanded")
-    $id("flexiContainer").classList.toggle("notepanelIsExpanded", $id("notepanel").classList.contains("expanded"))
+    let isExpanded = !$id("notepanel").classList.contains("expanded")
 
-    collectNotes()
+    
+    $id("notepanel").classList.toggle("expanded", isExpanded)
+    $id("flexiContainer").classList.toggle("notepanelIsExpanded", isExpanded)
+    
+    unShowCharacterBubbles()
 
-    if(!$id("notepanel").classList.contains("expanded")){
-        unShowCharacterBubbles()   
-    }
+    //switch to the currently selected tab (and refresh it)
+        if(isExpanded){
+            setTimeout(() => {
+                cycleTabs($(".selectedtab"), true) //true will unconditionally run the function even if the tab is already selected, essentially updating it
+            }, 600)
+        }
+
+
 
     clearSearchBox()
     saveCurrentState()

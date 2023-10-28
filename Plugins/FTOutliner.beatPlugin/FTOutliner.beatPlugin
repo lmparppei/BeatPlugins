@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.72
+Version: 1.80
 Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
@@ -36,7 +36,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.72"
+var ftoutlinerVersion = "1.80"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -83,8 +83,8 @@ function __________APP_MENUBAR(){}
 
 function createMenu(htmlWindow){
 
-	viewSubMenuItems.push(Beat.menuItem("Flexible", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional('on')") }))
-	viewSubMenuItems.push(Beat.menuItem("Fixed", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional('off')") }))
+	viewSubMenuItems.push(Beat.menuItem("Flexible", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional(true)") }))
+	viewSubMenuItems.push(Beat.menuItem("Fixed", ["alt", "ctrl", "f"], function () { htmlWindow.runJS("toggleProportional(false)") }))
 	viewSubMenuItems.push(Beat.menuItem("Index Cards", ["alt","ctrl", "x"], function () { htmlWindow.runJS("toggleIndexCardMode()") }))
 
 	showSubMenuItems.push(Beat.menuItem("Notes", ["alt", "ctrl", "n"], function () { htmlWindow.runJS("toggleDisplayNotes()") }))
@@ -99,10 +99,10 @@ function createMenu(htmlWindow){
 
 	let sidePanelMenuItem = Beat.menuItem("Toggle Side Panel", ["alt", "ctrl", "§"], function () { htmlWindow.runJS("toggleNotepanel()") })
 	let highlightCharacterMenuItem = Beat.menuItem("Highlight Current Character's scenes", ["ctrl", "alt", "c"], function () { highlightCharacter(false, true) })
-	dialogSubMenuItems.push(Beat.menuItem("Show Current Character in Dialogue Panel", ["ctrl", "alt", "l"], function () { highlightCharacter(false, false, true) }))
+	dialogSubMenuItems.push(Beat.menuItem("Show Current Character in Dialogue Panel", ["ctrl", "alt", "k"], function () { highlightCharacter(false, false, true) }))
 	dialogSubMenuItems.push(Beat.separatorMenuItem())
-	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Backward", ["ctrl", "alt", ","], function () { htmlWindow.runJS("cycleBubbles('-1')") }))
-	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Forward", ["ctrl", "alt", "."], function () { htmlWindow.runJS("cycleBubbles('1')") }))
+	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Backward", ["ctrl", "alt", "j"], function () { htmlWindow.runJS("cycleBubbles('-1')") }))
+	dialogSubMenuItems.push(Beat.menuItem("Cycle Dialogue Panel Forward", ["ctrl", "alt", "l"], function () { htmlWindow.runJS("cycleBubbles('1')") }))
 
 	let settingsMenuItem = Beat.menuItem("FTOutliner settings", ["alt", "ctrl", ","], function () { htmlWindow.runJS("openSettingsWindow()") })
 	//let aboutMenuItem = Beat.menuItem("About FTOutliner", [], function () { htmlWindow.runJS("displayAboutBox()") })
@@ -130,10 +130,10 @@ function createMenu(htmlWindow){
 		menuDivider2,
 		viewSubMenu, 
 		showSubMenu, 
-		sidePanelMenuItem,
 		notesSubMenu, 
 		dialogSubMenu,
 		menuDivider3,
+		sidePanelMenuItem,
 		highlightCharacterMenuItem,
 		menuDivider4,
 		splitScreenMenuItem, 
@@ -170,14 +170,18 @@ Beat.custom.displaySecondWindow = function(name, file, width=800, height=800, se
 	secondWindow = false
 	secondWindow = Beat.htmlWindow("", width, height, function(){}, true);
 
-	let html = Beat.assetAsString(file)
+	let secondHTML = Beat.assetAsString(file)
 	selfCloseString = selfClose ? `
 		window.addEventListener("blur", function (){
+			if (typeof temporarilyDisableClose !== 'undefined' && temporarilyDisableClose == true) {
+				temporarilyDisableClose = false
+				return
+			}
 			Beat.call("Beat.custom.closeSecondWindow()")
 		})` : ``
 
 	secondWindow.setHTML(`
-		<body>${html}
+		<body>${secondHTML}
 			<script>
 				${selfCloseString}
 				var pageData = ${data}
@@ -192,16 +196,6 @@ Beat.custom.displaySecondWindow = function(name, file, width=800, height=800, se
 
 }
 
-function __________welcomeWindow(){} 
-
-//NOTE: This is runtime code NOT INSIDE A FUNCTION, moved down here to circumvent hoisting issues
-let showWelcome = JSON.parse(Beat.getUserDefault("ftoutlinerObject"))["dontShowWelcomeWindowFor" + ftoutlinerVersion.replace(".", "")]
-	if(!showWelcome){
-
-		Beat.custom.displaySecondWindow("Welcome", "welcomewindow.html", 800, 650, false)
-
-	}
-
 Beat.custom.closeSecondWindow = function(){	secondWindow.close() }
 
 Beat.custom.sendToMain = function(key, value, nameOfVariable){
@@ -212,19 +206,24 @@ Beat.custom.sendToMain = function(key, value, nameOfVariable){
 	// 			contents += ((value == true) ? "✅ " : "❌ ") + key + " ----- " + value + "\n"
 	// 		}
 	// 		Beat.alert(`contents of sent variable ${nameOfVariable}:`, contents) 
-
+	Beat.log(typeof value)
 	Beat.log("💜" + "," + key + "," + value + "," + nameOfVariable)
+	
+	if (["object", "array", "string"].includes(typeof value)) value = JSON.stringify(value)
 
-	htmlWindow.runJS(`${nameOfVariable}.${key} = ${value}
+	htmlWindow.runJS(`	console.log("start of sendToMain")
+						${nameOfVariable}.${key} = ${value};
 			
-						Beat.log("${nameOfVariable}" + ", " + "${key}")
-						Beat.log(JSON.stringify(${nameOfVariable}.${key}))
+						console.log("${nameOfVariable}" + ", " + "${key}")
+						console.log(JSON.stringify(${nameOfVariable}.${key}))
 
 						applySettings()
 						saveCurrentState()
 					`)
 
 }
+
+Beat.custom.reApplySettings = function(){ htmlWindow.runJS("applySettings()") }
 
 function __________RELOADERS(){}
 
@@ -355,14 +354,12 @@ Beat.onTextChange(function(location, length) {
 				if(!line) return //try to circumvent error when typing on last line
 
 			// First guard clause: If several lines changed (e.g. copy/paste) make full update
-			console.log("Comparing to see if several lines were changed: ", previousLineObject.length != Beat.lines().length)
 			if((previousLineObject.length != Beat.lines().length)){
 				console.log("Sending to previewFinished b/c multiple lines changed")
 				fullUpdateInProgress = true
 				return 
 			} 
 			// Second guard clause: If the number of omitted lines or headings changed, go to full update
-			console.time("checking for headings and hidden lines")
 			if ((previousLineObject.filter(line => ["Heading", "Section"].includes(line.typeAsString)).map(line => line.typeAsString).join(",") != Beat.outline().map(line => line.typeAsString()).join(","))
 				||
 				(previousLineObject.filter(line => line.omitted).length != Beat.lines().filter(line => line.omitted).length)
@@ -370,11 +367,9 @@ Beat.onTextChange(function(location, length) {
 				(previousLineObject.filter(line => line.typeAsString === "Heading").map(line => line.UUID).join(",") !== Beat.outline().filter(line => line.typeAsString() === "Heading").map(line => line.UUID).join(","))
 				){
 				console.log("Deferring to previewFinished b/c number/order of outline objects, or some sceneheading UUID, changed")
-				console.timeEnd("checking for headings and hidden lines")
 				fullUpdateInProgress = true
 				return
 			}
-			console.timeEnd("checking for headings and hidden lines")
 
 		//determine the printing part of the line that has changed
 			let nonPrintingRanges = line.ranges.notes//.concat(line.ranges.omitted)
@@ -584,9 +579,17 @@ function outlineWithPagination() {
 
 		let data = scene.json()
 
-		data.numberOfPages = pagination.heightForRange({ location: scene.position, length: scene.length }) / Beat.currentPagination().maxPageHeight
+		try{
+			data.numberOfPages = pagination.heightForRange({ location: scene.position, length: scene.length }) / Beat.currentPagination().maxPageHeight
 			//the above replaces the below, because of faulty values in heightForScene. This may or may not have been fixed in Beat already.
 			//data.numberOfPages = pagination.heightForScene(scene) / Beat.currentPagination().maxPageHeight
+		}catch{
+			//this try/catch is here because of a bug in Beat that sometimes claims pagination.heightForRange is undefined
+			Beat.sync(function () {
+				Beat.alert("An error has occured.", "The pagination has returned a faulty value, and FTOutliner cannot continue.\n\nWhen you hit ENTER, FTOutliner will try again. If the error persists, please try to restart FTOutliner. Also, please report the incident to the developer.")
+				Beat.resetPreview()
+			})
+		}
 
 		data.startsOnPage = pagination.pageNumberAt(scene.position)
 		data.positionOnPage = 0.0
@@ -601,6 +604,17 @@ function outlineWithPagination() {
 			// If it's below 0, it's probably an outline element
 			let page = pagination.pages[data.startsOnPage - 1]
 				data.positionOnPage = page?.positionOfBlockForLine(scene.line)
+
+				//hack to find the positionOnPage for a section with length, since its inherent positionOnPage is -1 due to not being printed
+					if(sceneData.length > 0 && scene.typeAsString() == "Section" && data.numberOfPages > 0){
+						let closestPrecedingScene = -1
+						while (sceneData.at(closestPrecedingScene).numberOfPages <= 0 && (sceneData.length + closestPrecedingScene > 0)){
+							closestPrecedingScene --
+						}
+						data.positionOnPage = sceneData.at(closestPrecedingScene)?.positionOnPage + sceneData[outlineCopy.indexOf(scene) - 1]?.numberOfPages
+						console.log("Section with length! This is its positionOnPage: ", data.positionOnPage)
+					} 
+
 				if (data.positionOnPage < 0) data.positionOnPage = 0.0;
 		} 
 
@@ -1264,51 +1278,6 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		warningsAreOn = false
 	}
 
-	// if(warningsAreOn){
-
-	// 	let rangeOfScenes = ""
-	// 	let numberOfScenesToMove = 0
-	// 	for (scenes = firstScene; scenes<lastScene+1; scenes++){
-	// 		if(outline[scenes].typeAsString() == "Synopse"){continue}
-	// 		rangeOfScenes +=
-	// 		((outline[scenes].sceneNumber != undefined) ? 
-	// 			"(" + outline[scenes].sceneNumber + ") " : 
-	// 			"") +
-	// 			outline[scenes].string.toUpperCase() + "\n" +
-	// 			((outline[scenes].sceneNumber == undefined) ? 
-	// 			"\ncontaining\n\n" : 
-	// 			"")
-	// 			numberOfScenesToMove++
-	// 	}
-
-	// 	let reallyMove = Beat.confirm("Verify Move!",
-	// 		"\nYou are about to move " + 
-	// 		((outline[firstScene].typeAsString() != "Section") ?
-	// 			"the scene" 
-	// 			: "the section") +
-	// 		(((outline[firstScene].typeAsString() != "Section") && numberOfScenesToMove > 1) ? 
-	// 			"s" 
-	// 			: "") +
-	// 		"\n\n" + 
-	// 		(((outline[firstScene].typeAsString() != "Section")) ? 
-	// 			rangeOfScenes 
-	// 			: (outline[firstScene].string.toUpperCase()) + "\n") + 
-	// 		((outline[insertBeforeScene]) ? 
-	// 			("\nto immediately before\n\n" + 
-	// 			(outline[insertBeforeScene].omitted == 1 ? "the omitted scene called \n" 
-	// 			: "") +
-	// 		(((outline[insertBeforeScene] && outline[insertBeforeScene].typeAsString() == "Heading") 
-	// 			? ("(" + outline[insertBeforeScene].sceneNumber + ") ") : "") +
-	// 			outline[insertBeforeScene].string.toUpperCase()))
-	// 			: "\nto immediately after the last scene of your script.")
-	// 		+ 
-	// 		"\n\nDo you want to proceed?\n")
-	// 	if (!reallyMove) {
-	// 		htmlWindow.runJS(`onDragEnd(false, true)`)
-	// 		return
-	// 	}
-	// }
-
 	if(warningsAreOn){
 
 		let rangeOfScenes = ""
@@ -1382,12 +1351,9 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 	//catch-all to make end of selection not out-of-range
 	endPosition = Math.min(endPosition, Beat.getText().length)
 
-
-	// Beat.onTextChangeDisabled = true
-	// Beat.onOutlineChangeDisabled = true
-	// Beat.onSelectionChangeDisabled = true
-
 	var theTextToMove
+
+	let movedTextIncludesOmittedScene = Beat.outline().find(scene => scene.omitted == 1 && scene.position >= startPosition && scene.position <= endPosition)
 
 	//first of all all all: synopsismove. Which is its own thing now.
 	if (synopsisMove){
@@ -1412,31 +1378,37 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 
 	}else{ //the rest is for non-synopsis!
 
-		//even before first: check if we are dropping among omitted scenes!
+		//THIS CHECK should be redundant because made in the HTML already
+		//but currently leaving it in for good measure even though it can't happen
 		let sceneBelowDroppedWasOmitted = (outline[insertBeforeScene] && outline[insertBeforeScene].omitted == 1)
-		let theSceneAbove = insertBeforeScene - 1
-		while (outline[theSceneAbove] && outline[theSceneAbove]?.typeAsString() == "Synopse"){theSceneAbove --}
-		let sceneAboveDroppedWasOmitted = (outline[theSceneAbove]?.omitted == 1)
-
-		if (sceneBelowDroppedWasOmitted){
-			this.unOmitScene([insertBeforeScene], true)
-		}
-		if (sceneAboveDroppedWasOmitted){
-			this.unOmitScene([theSceneAbove], true)
-		}
-
-		//first check so that we don't break omitted scenes!
-		//unomitting and reomitting the scene before will make sure it stays intact.
-			if(outline[firstScene - 1] && outline[firstScene - 1].omitted){
-				Beat.custom.unOmitScene([firstScene - 1])
-				Beat.custom.omitScene(0, [firstScene - 1])
+		let sceneAboveDroppedWasOmitted = (outline[insertBeforeScene - 1]?.omitted == 1)
+			if(sceneBelowDroppedWasOmitted || sceneAboveDroppedWasOmitted){
+				Beat.alert("Cannot drop immediately before or after an omitted (hidden) scene", "Due to the fountain logic for hiding scenes, dropping scenes adjacent to hidden ones is a very risky business that may end up hiding text you want to display, or showing text you dont.\n\nPlease manually unhide or delete the hidden scenes before moving scenes around.")
+				htmlWindow.runJS(`onDragEnd(false, true)`)
+				return
 			}
-		//then, we need to unomit the scene after, but re-omit it once the scenes are moved
-			let firstSceneAfterWasOmitted = false
-			if(outline[lastScene + 1] && outline[lastScene + 1].omitted){
-				firstSceneAfterWasOmitted = true
-				Beat.custom.unOmitScene([lastScene+1])
-			}
+
+		// commented out: do not un-omit scenes programatically!
+			// if (sceneBelowDroppedWasOmitted){
+			// 	this.unOmitScene([insertBeforeScene], true)
+			// }
+			// if (sceneAboveDroppedWasOmitted){
+			// 	this.unOmitScene([theSceneAbove], true)
+			// }
+
+		//This un-omitting code has been commented out because it caused serious problems when moving omitted scenes!
+			// //first check so that we don't break omitted scenes!
+			// //unomitting and reomitting the scene before will make sure it stays intact.
+			// 	if(outline[firstScene - 1] && outline[firstScene - 1].omitted){
+			// 		Beat.custom.unOmitScene([firstScene - 1])
+			// 		Beat.custom.omitScene(0, [firstScene - 1])
+			// 	}
+			// //then, we need to unomit the scene after, but re-omit it once the scenes are moved
+			// 	let firstSceneAfterWasOmitted = false
+			// 	if(outline[lastScene + 1] && outline[lastScene + 1].omitted){
+			// 		firstSceneAfterWasOmitted = true
+			// 		Beat.custom.unOmitScene([lastScene+1])
+			// 	}
 		
 		//collect insertion point
 		var insertionPosition = outline[insertBeforeScene] ? outline[insertBeforeScene].position : Beat.getText().length
@@ -1444,11 +1416,12 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 		//copy text from that range
 		var theTextToMove = Beat.getText().substring(startPosition, endPosition)
 
-		//NOW, re-omit the scene after the range.
-		if (firstSceneAfterWasOmitted){
-			Beat.custom.omitScene(0, [lastScene+1], true) 
-			//NOTE: even if doing this BEFORE moving, it should work fine because we retrieved endPosition already
-		}
+		//Further commenting out of omitting-related code
+			// //NOW, re-omit the scene after the range.
+			// if (firstSceneAfterWasOmitted){
+			// 	Beat.custom.omitScene(0, [lastScene+1], true) 
+			// 	//NOTE: even if doing this BEFORE moving, it should work fine because we retrieved endPosition already
+			// }
 
 		//insert and delete, or delete and insert, depending on wheter move was up or down
 
@@ -1480,6 +1453,10 @@ Beat.custom.moveScenes = function(firstScene, lastScene, insertBeforeScene, warn
 			while (outline[theSceneAboveInserted].typeAsString() == "Synopse"){theSceneAboveInserted --}
 			Beat.custom.omitScene(0, [theSceneAboveInserted], true)
 		}
+	}
+
+	if (movedTextIncludesOmittedScene){
+		Beat.alert("Wait, wait, wait — did I just move a hidden (omitted) scene too?", "Yes, you did. Sorry about that. But since a hidden scene just means that there is an omission starting SOMEWHERE in the previous scene, all kinds of weird things could happen if we didn't (including un-omitting the hidden scene, or leaving behind some hidden text that should rather have moved along with the scene).\n\nPlease take a second to check if you need to move any hidden material back to where it was.")
 	}
 	
 	//finally (2) here are some scope-only functions for inserting and deleting.
@@ -1829,33 +1806,29 @@ function highlightCharacter(name, onlyHighlightScenes, straightFromEditorWindow)
 	
 	if(!name){
 
-		if(!["Character", "Dialogue", "Parenthetical"].includes(line.typeAsString())) {
-			//htmlWindow.runJS("unShowCharacterBubbles()")	
-			//return
-			name = "ALL"
-		}else{
-
+		name = "ALL"
+				
+		if(["Character", "Dialogue", "Parenthetical"].includes(line.typeAsString())) {
 			while(line.typeAsString() != "Character" && line.position > 1){
 				pos = line.position - 1
 				line = Beat.lineAtPosition(pos)
 			}
-
-			name = (line.typeAsString() == "Character") ? line.string.replace(/\(.*\)/, "").trim() : "ALL"
+			name = (line.typeAsString() == "Character") ? line.string.replace(/\(.*\)/, "").trim().toUpperCase() : "ALL"
 		}
 
-		if(onlyHighlightScenes){
-			
+		if(onlyHighlightScenes){			
 			let jsToRun = `toggleSoloCharacter(0, "${name}")`
 			htmlWindow.runJS(jsToRun)
 			return
 		}
 
-		htmlWindow.runJS(`
+		htmlWindow.runJS(/*html*/`
 			cycleTabs($(".dialogtab"))
-			$id("allDialogFor").selectedIndex = ([...$id("allDialogFor").options].map(option => option.value.toUpperCase())).indexOf("${name}")
-		`)
+			initiateCharacterBubbles("${name}")
+			updateDialogPanelSelection()
+			`)
+			return
 	}
-	
 
 
 	Beat.dispatch(function(){	

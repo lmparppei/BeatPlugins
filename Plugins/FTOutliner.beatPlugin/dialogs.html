@@ -1113,8 +1113,6 @@ function displayErrorMessage(information){
 			Below are the last up to 100 log entries leading up to the error.%0D%0A%0D%0A 
 			${information.join('%0D%0A').replaceAll('"', '%22').replaceAll("&", "%26").replaceAll(" ", "%20").replaceAll("\n", "%0D%0A")}%0D%0A%0D%0A`
 
-		console.log(hrefText)
-
 	let emergencyLevelText = /*html*/`
 		<p class="errorWindowText"><strong>FIRST OF ALL: </strong><i><b>Your script is most likely okay!</b></i></p>
 		<p class="errorWindowText">Most of the time, FTOutliner does not touch the contents of your script. There is no indication this error occured during one of those few instances.</p>
