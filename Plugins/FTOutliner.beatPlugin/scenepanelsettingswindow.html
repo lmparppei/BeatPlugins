@@ -669,27 +669,34 @@ function saveListToUserDefault(){
         opacity: 1;
 
 		transition: width 0.5s ease-out;
+	} /*added closure when removing &-selectors*/
 
-		&:hover, &.isSelected{
+		/* &:hover, &.isSelected{ */
+		:is(#day, #night, #same) > div:hover, .item:hover,
+		:is(#day, #night, #same) > div.isSelected, .item.isSelected {
+
 
 			background-image: linear-gradient(0deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.6) 100%);
 			color: white
 
 		}
 
-		&::selection{
+		/* &::selection{ */
+		:is(#day, #night, #same) > div::selection, .item::selection {
 
 			background: black;
 			color: white;
 
 		}
 
-		&:focus{
+		/* &:focus{ */
+		:is(#day, #night, #same) > div:focus, .item:focus {
+
 
 			outline: none;
 		}
 
-	}
+	/* } */
 
 	:has(#buttonFor-showOnlyTodInUse:checked) .item:not(.inUse, .isBeingEdited){
 

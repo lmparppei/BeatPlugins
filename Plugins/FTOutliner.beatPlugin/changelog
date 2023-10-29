@@ -1,3 +1,11 @@
+#v 1.81 (October 29, 2023)
+
+Some maintenance fixes post-release of v 1.8:
+
+* Added icon to open the side panel (bottom left) due not least to Sonoma not allowing plugin to register click at absolute edge of screen (making the slide-in opener rather hard to use). Consequently also removed the slide-in opener from 1.8.
+* Reverted nested CSS to regular non-nested CSS for better backwards compatibility (if the scene manager looked broken for you, try it again now!)
+
+
 #v 1.8 (October 25, 2023)
 
 This release introduces the *ALL NEW SCENE MANAGER* tab in the side panel:
