@@ -1023,9 +1023,9 @@ function setScrollShadow(){
 
     flex-grow: 1;
     flex-shrink: 1;
-
+}
     
-    & label{
+    #checkboxSpan label{
     
         position: relative;
         display: inline-block;
@@ -1036,7 +1036,7 @@ function setScrollShadow(){
         white-space: nowrap !important;
     }
 
-}
+
 
 #mergeSimilarLocations, #mergeSimilarLocations + label{
 
@@ -1047,12 +1047,15 @@ function setScrollShadow(){
     display: none;
     font-weight: normal;
     white-space: nowrap !important;
+}
     
-    &:is(:has(#sortDropDown.location) #mergeSimilarLocations),
-    &:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){
+    /* &:is(:has(#sortDropDown.location) #mergeSimilarLocations),
+    &:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){ */
+    #mergeSimilarLocations, #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations),
+    #mergeSimilarLocations, #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){
         display: inline-block;
     }
-}
+
 
 #onlyShowTypos, #onlyShowTypos + label{
 
@@ -1064,10 +1067,6 @@ function setScrollShadow(){
     font-weight: normal;
     white-space: nowrap !important;
 
-    /* &:is(:has(#sortDropDown.location) #onlyShowTypos),
-    &:is(:has(#sortDropDown.location) #onlyShowTypos + label){
-        display: inline-block;
-    } */
 }
 
 #onlyShowTypos{
@@ -1085,10 +1084,6 @@ function setScrollShadow(){
     
     display: inline-block;
     font-weight: normal;
-
-    /* &:is(:has(#sortDropDown.location) #scenepanelSettingsButton){
-        display: inline-block;
-    } */
 
 }
 
@@ -1112,17 +1107,12 @@ function setScrollShadow(){
     color: black;
     background: white;
     opacity: 0.4;
+}
 
-        &:hover{
+        #scenepanelHelpButton:hover{
             opacity: 1;
             cursor: pointer;
         }
-
-    /* &:is(:has(#sortDropDown.location) #scenepanelSettingsButton){
-        display: inline-block;
-    } */
-
-}
 
 #scenespanelcontent{
 
@@ -1151,19 +1141,10 @@ function setScrollShadow(){
 
     /* border-top: 2px groove #555 !important; */
 
-    &::xx.after{
+}
 
-        content: "";
-        position: fixed;
-        top: 0px;
-        left: 0;
-        width: calc(100% - 8px);
-        margin-left: 4px;
-
-        border-top: 2px groove #555 !important;
-    }
-
-    & #dividerline{        
+    /* & #dividerline{         */
+    #scenespanelcontent #dividerline{        
         
         position: fixed;
         top: 60px;
@@ -1175,15 +1156,18 @@ function setScrollShadow(){
         border-right: 2px solid red;
 
         z-index: 999999;
+
+    }
         
-        &:hover{
+        /* &:hover{ */
+        #scenespanelcontent #dividerline:hover{
             opacity: 0;
             cursor: col-resize;
             /* transition: opacity 1s 0.5s; */
         }
-    }
     
-    &:has(#dividerline:hover) .leftColumn{
+    /* &:has(#dividerline:hover) .leftColumn{ */
+    #scenespanelcontent:has(#dividerline:hover) .leftColumn{
         
         border-right: 0.5px solid rgba(0, 0, 0, 0.9);
         transition: border 1s 0.5s;
@@ -1192,12 +1176,14 @@ function setScrollShadow(){
 
     }
 
-    &.dragging *{
+    /* &.dragging *{ */
+    #scenespanelcontent.dragging *{
 
         cursor: col-resize !important;
     }
 
-    & .scenepanelgroup{
+    /* & .scenepanelgroup{ */
+    #scenespanelcontent .scenepanelgroup{
 
         position: relative;
 
@@ -1212,23 +1198,27 @@ function setScrollShadow(){
 
         overflow: hidden;
 
-        &:empty, &:has(.groupHeadline:empty){
+        padding-top: 26px;
+        box-shadow: inset 0 26px 0 0px rgba(255, 255, 255, 0.6);
+    }
+
+        /* &:empty, 
+        &:has(.groupHeadline:empty){ */
+        #scenespanelcontent .scenepanelgroup:empty, 
+        #scenespanelcontent .scenepanelgroup:has(.groupHeadline:empty){
             display: none;
         }
 
-        padding-top: 26px;
-        box-shadow: inset 0 26px 0 0px rgba(255, 255, 255, 0.6);
-
-        &.singlegroup{
+        /* &.singlegroup{ */
+        #scenespanelcontent .scenepanelgroup.singlegroup{
             /* border-color: rgba(220, 100, 100, 0.6) !important;
             box-shadow: inset 0 26px 0 0px rgba(220, 100, 100, 0.6); */
             border-color: var(--singlegroupColor) !important;
             box-shadow: inset 0 26px 0 0px var(--singlegroupColor);
         }
 
-    }
-
-    & .groupHeadline{
+    /* & .groupHeadline{ */
+    #scenespanelcontent .groupHeadline{
 
         text-align: center;
         width: 100%;
@@ -1243,14 +1233,14 @@ function setScrollShadow(){
 
         overflow: hidden;
         text-overflow: ellipsis;
-
-        & strong{
+    }
+        /* & strong{ */
+        #scenespanelcontent .groupHeadline strong{
             font-weight: bold;
         }
 
-    }
-
-    & .leftColumn{
+    /* & .leftColumn{ */
+    #scenespanelcontent .leftColumn{
 
         position: relative;
         left: 0;
@@ -1274,14 +1264,17 @@ function setScrollShadow(){
         } */
 
         transition: height 0.5s !important;
+    }
 
-        &:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .leftColumn){
+        /* &:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .leftColumn){ */
+        #scenespanelcontent .leftColumn:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .leftColumn){
 
             width: var(--scenesPanelLeftColumnWidth) !important;
             white-space: normal;
         }
         
-        & .flexdiv{
+        /* & .flexdiv{ */
+        #scenespanelcontent .leftColumn .flexdiv{
 
             width: var(--scenesPanelLeftColumnWidth);
 
@@ -1290,19 +1283,20 @@ function setScrollShadow(){
             justify-content: flex-start; /* space-between; */
             align-items: stretch;
             /* height: 100%; */
+        }
             
-            &:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .flexdiv){
+            /* &:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .flexdiv){ */
+            #scenespanelcontent .leftColumn .flexdiv:is(:has(#sortDropDown.location):has(#mergeSimilarLocations:checked) .flexdiv){
                 
                 flex-wrap: wrap;
                 justify-content: end !important;
 
             }
 
-        }
-
-    }
+        
     
-    & .item{
+    /* & .item{ */
+    #scenespanelcontent .item{
 
         width: auto;
         height: calc(11px * var(--fontSizeFactor) + 4px);
@@ -1325,37 +1319,46 @@ function setScrollShadow(){
         
     }
 
-    & .item.isSelected:not(.highlighted), & .item:hover{
+    /* & .item.isSelected:not(.highlighted), & .item:hover{ */
+    #scenespanelcontent .item.isSelected:not(.highlighted), 
+    #scenespanelcontent .item:hover{
         background-image: linear-gradient(rgba(0,0,0, 0.7), rgba(0,0,0,0.7)) !important;
         color: white !important;
     }
 
 
-    & .leftItem,
-    & .rightItem {
+    /* & .leftItem,
+    & .rightItem { */
+    #scenespanelcontent .leftItem,
+    #scenespanelcontent .rightItem {
 
         margin-left: 0px;
         margin-right: 0px;
 
     }
 
-    & .leftItem:not(.leftItem:not(.isDouble) + .leftItem),
-    & .rightItem:not(.rightItem:not(.isDouble) + .rightItem) { /* first item */
+    /* & .leftItem:not(.leftItem:not(.isDouble) + .leftItem),
+    & .rightItem:not(.rightItem:not(.isDouble) + .rightItem) { first item */
+    #scenespanelcontent .leftItem:not(.leftItem:not(.isDouble) + .leftItem),
+    #scenespanelcontent .rightItem:not(.rightItem:not(.isDouble) + .rightItem) { /* first item */
 
         border-top-left-radius: 10px;
         border-bottom-left-radius: 10px;
 
     }
 
-    & .leftItem:not(:has( + .leftItem:not(.duplicateSceneNum))),
-    & .rightItem:not(:has( + .rightItem:not(.duplicateSceneNum))) { /* last item */
+    /* & .leftItem:not(:has( + .leftItem:not(.duplicateSceneNum))),
+    & .rightItem:not(:has( + .rightItem:not(.duplicateSceneNum))) { last item */
+    #scenespanelcontent .leftItem:not(:has( + .leftItem:not(.duplicateSceneNum))),
+    #scenespanelcontent .rightItem:not(:has( + .rightItem:not(.duplicateSceneNum))) { /* last item */
 
         border-top-right-radius: 10px;
         border-bottom-right-radius: 10px;
 
     }
 
-    & .sceneNum{
+    /* & .sceneNum{ */
+    #scenespanelcontent .sceneNum{
 
         color: black;
         background-color: lightcoral;
@@ -1367,15 +1370,16 @@ function setScrollShadow(){
         flex-shrink: 0;
 
         transition: border-radius 1.5s, height 0.5s 0s, width 0.5s 0.0s, opacity 0.4s 0.1s !important;
+    }
 
-        &:is(:has(.isDouble):has(#mergeSimilarLocations:checked) .sceneNum){
+        /* &:is(:has(.isDouble):has(#mergeSimilarLocations:checked) .sceneNum){ */
+        #scenespanelcontent .sceneNum:is(:has(.isDouble):has(#mergeSimilarLocations:checked) .sceneNum){
             padding-right: 8px;
             border-radius: 10px !important;
         }
 
-    }
-
-    & .prefix{
+    /* & .prefix{ */
+    #scenespanelcontent .prefix{
 
         color: black;
         background-color: lightcoral;
@@ -1388,7 +1392,8 @@ function setScrollShadow(){
 
     }
 
-    & .timeOfDay{
+    /* & .timeOfDay{ */
+    #scenespanelcontent .timeOfDay{
 
         color: black;
         background-color: lightcoral;
@@ -1407,7 +1412,8 @@ function setScrollShadow(){
 
     }
 
-    & .location{
+    /* & .location{ */
+    #scenespanelcontent .location{
 
         position: relative;
         background-color: hsl(200, 40%, 30%);
@@ -1416,54 +1422,57 @@ function setScrollShadow(){
         text-overflow: ellipsis;
 
         z-index: 9999;
+
+    }
         
-        &:not(.location + .location){ /* first item of class location */
+        /* &:not(.location + .location){ first item of class location */
+        #scenespanelcontent .location:not(.location + .location){ /* first item of class location */
 
             margin-left: 4px;
 
         }
 
-        &.similarLocation:not(.excludedLocation){
+        /* &.similarLocation:not(.excludedLocation){ */
+        #scenespanelcontent .location.similarLocation:not(.excludedLocation){
 
             background-color: hsl(40, 70% , 40%);
             color: white;
             font-weight: bold;
 
-            &.majority{
-                /* background-color: hsl(135, 60%, 40%); */
+        }
+            /* &.majority{ */
+            #scenespanelcontent .location.similarLocation:not(.excludedLocation).majority{
                 background-color: hsl(90, 40%, 30%);
                 color: white;
                 font-weight: bold;
             }
-            &.minority{
-                /* background-color: hsl(135, 60%, 40%); */
+            /* &.minority{ */
+            #scenespanelcontent .location.similarLocation:not(.excludedLocation).minority{
                 background-color: hsl(0, 60%, 30%);
                 color: white;
                 font-weight: bold;
             }
-        }
 
-        &.highlighted{
-            /* background-color: hsl(40, 60%, 50%) !important; */
-            
+        /* &.highlighted{ */
+        #scenespanelcontent .location.highlighted{
             background-color: white !important;
             color: black !important;
             box-shadow: inset 0 0 0 1px black !important;
 
         }
 
-        &.excludedLocation{
-            /* border-bottom: 2px solid hsl(80, 61%, 50%); */
+        /* &.excludedLocation{ */
+        #scenespanelcontent .location.excludedLocation{
+        
             background-image: linear-gradient(to top, yellowgreen 0px, yellowgreen 2.5px, transparent 2.5px) ;
         }
 
-        &.dontCompare{
+        /* &.dontCompare{ */
+        #scenespanelcontent .location.dontCompare{
             
             opacity: 0.4 !important;
-        }
+        } 
 
-    }    
-}
 
 #notepanelcontent::before,
 #scenespanelcontent::before {
@@ -1508,37 +1517,44 @@ function setScrollShadow(){
 
     transition: padding 0.5s, border 0.2s, height 0.5s, opacity 0.5s !important;
 
-    /* &:not(:has(#mergeSimilarLocations:checked) .hideWhenMergeIsChecked):nth-of-type(even){ */
-    /* &:not(.hideWhenMergeIsChecked):nth-of-type(even of :not(.hideWhenMergeIsChecked)){ */
-    &.even{
-        background: rgba(255, 255, 255, 0.45);
+}
         
-        &:not(.even + .even){
+    /* &.even{ */
+    .line.even{
+        background: rgba(255, 255, 255, 0.45);
+    }   
+        /* &:not(.even + .even){ */
+        .line.even:not(.even + .even){
             border-top: 0.5px solid black;
         }
-    }
-    /* &:not(:has(#mergeSimilarLocations:checked) .hideWhenMergeIsChecked):nth-of-type(odd){ */
-    /* &:not(.hideWhenMergeIsChecked):nth-of-type(odd of :not(.hideWhenMargeIsChecked)){ */
-    &.odd{
+    
+    /* &.odd{ */
+    .line.odd{
         background: rgba(255, 255, 255, 0.35);
-
-        &:not(.odd + .odd){
+    }
+        /* &:not(.odd + .odd){ */
+        .line.odd:not(.odd + .odd){
             border-top: 0.5px solid black;
         }
-    }
+    
 
-    &.newgroup,
-    &:first-child{
+    /* &.newgroup,
+    &:first-child{ */
+    .line.newgroup,
+    .line:first-child{
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
     }
-    &:has(+ .newgroup),
-    &:last-child{
+
+    /* &:has(+ .newgroup),
+    &:last-child{ */
+    .line:has(+ .newgroup),
+    .line:last-child{
         /* border-bottom: 1px solid rgba(0, 0, 0, 0.6); */
         border-bottom-left-radius: 10px;
         border-bottom-right-radius: 10px;
     }
-}
+
 
 .pagesForLine {
 
@@ -1614,9 +1630,10 @@ function setScrollShadow(){
     border-radius: 10px !important;
 
     transition: border-width 0.5s 0.5s, width 0.5s 0.0s, height 0.5s 0s, opacity 0.4s 0.1s !important;
+}
 
-
-    &:not(:has(#mergeSimilarLocations:checked):has(#sortDropDown.location) .duplicateSceneNum){
+    /* &:not(:has(#mergeSimilarLocations:checked):has(#sortDropDown.location) .duplicateSceneNum){ */
+    .duplicateSceneNum:not(:has(#mergeSimilarLocations:checked):has(#sortDropDown.location) .duplicateSceneNum){
         
         height: 0px !important;
         width: 0px !important;
@@ -1631,7 +1648,7 @@ function setScrollShadow(){
 
     }
 
-}
+
 
 :has(#mergeSimilarLocations:checked):has(#sortDropDown.location) .hideWhenMergeIsChecked.line{
         
@@ -1653,101 +1670,74 @@ function setScrollShadow(){
 
     }
 
-/* :has(#sortDropDown.location):not(:has(#mergeSimilarLocations:checked)){
-
-        & #scenespanelcontent .duplicateSceneNum{
-            height: 0px !important; 
-            width: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: 0px !important;
-            opacity: 0;
-
-            transition: opacity 0.5s;
-            transition-delay: height 0.5s, width 0.5s, margin 0.5s, padding 0.5s;
-        }
- 
-} */
-
-
 :has(#onlyShowTypos:checked) :is(.line, .scenepanelgroup):not(:has(.similarLocation:not(.excludedLocation))){
 
     display: none;
 
 }
 
-/* :has(#onlyShowTypos:checked) .groupHeadline:is(){
-
-    display: none;
-
-} */
-
-
 html[data-outdoors="1"] #scenespanelbuttons{
 
     color: black !important;
 
-    & *{
+}
+
+    html[data-outdoors="1"] #scenespanelbuttons *{
         color: black !important;
         border-color: black !important;
         fill: black !important;
     }
 
-}
-
 html[data-outdoors="1"] #scenespanelcontent{
 
     background: white !important;
 
-    & .item{
+}
 
-        /* box-shadow: inset 0 0 0 1px black; */
+    /* & .item{ */
+    html[data-outdoors="1"] #scenespanelcontent .item{
+
         border: 1px black solid;
         padding-top: 1px !important;
         box-shadow: none !important;
 
-        /* margin-bottom: 1px; */
-
     }
 
-    & .scenepanelgroup{
+    /* & .scenepanelgroup{ */
+    html[data-outdoors="1"] #scenespanelcontent .scenepanelgroup{
 
-        /* border-color: #ddd; */
         outline: 1px solid black;
         background: #ddd;
         
     }
 
-    & .line{
+    /* & .line{ */
+    html[data-outdoors="1"] #scenespanelcontent .line{
 
         border: 1px 1px 0px 1px solid black !important;
-        /* padding-bottom: 1px; */
 
     }
 
-    & .location{
+    /* & .location{ */
+    html[data-outdoors="1"] #scenespanelcontent .location{
 
         background-color: #fff;
         color: black;
-
-        /* &:hover, &.highlighted{
-            color: white !important;
-        } */
-
-        &.highlighted{
-            background-color: black !important;
-            color: white !important; 
-        }
     }
 
-    & .pagesForLine *{
+        /* &.highlighted{ */
+            html[data-outdoors="1"] #scenespanelcontent .location.highlighted{
+            background-color: black !important;
+            color: white !important; 
+        
+        }
+
+    /* & .pagesForLine *{ */
+    html[data-outdoors="1"] #scenespanelcontent .pagesForLine *{
 
         font-weight: bold;
         color: black !important;
 
     }
-
-
-}
 
 </style>

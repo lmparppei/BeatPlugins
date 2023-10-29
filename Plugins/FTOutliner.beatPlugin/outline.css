@@ -1858,11 +1858,29 @@ MARK: -UI
 
 	transition: 0.5s ease-out;
 	transition-delay: 2s;
+
+	display: flex;
+	justify-content: space-between;
+
+	/* outline: 1px solid lime */
+}
+
+.leftgroup, .rightgroup{
+
+	width: auto;
+
+	display: flex;
+	align-items: center;
+	gap: 20px;
+
+	/* outline: 1px solid red; */
+
+	padding: 0 12px;
 }
 
 .bottomButton{
-	position: fixed !important;
-	bottom:12px !important;
+	/* position: fixed !important; */
+	/* bottom:12px !important; */
 
 	color: white !important;
 	font-size: 48px !important;
@@ -1878,18 +1896,20 @@ MARK: -UI
 
 	transition: 0.5s ease-out;
 	transition-delay: 2s;
+
+	/* outline: 1px solid gold; */
 }
 
 #buttonRow .bottomButton{
 	opacity: 10%;
-
+/* opacity: 40%; tmp */
 	
 }
 
 
 #buttonRow:hover .bottomButton{
 
-	opacity: 30%;
+	opacity: 40%;
 
 	transition-delay: 0s;
 	transition: opacity 0.2s ease-out;
@@ -1902,7 +1922,7 @@ MARK: -UI
 }
 	
 #helpButton{
-	left: 24px;
+	/* left: 24px; */
 	/* right: 12px !important; */
 	font-size: 36px !important; /*48px !important;*/
 	line-height: 24px !important;
@@ -1914,7 +1934,7 @@ MARK: -UI
 }
 
 #printButton{
-	left: 74px !important;
+	/* left: 74px !important; */
 	font-size: 36px !important; /*48px !important;*/
 	line-height: 24px !important;
 	transform: scale(0.95);
@@ -1926,7 +1946,7 @@ MARK: -UI
 }
 		
 #refreshButton{
-	right: 48px !important;
+	/* right: 48px !important; */
 	font-size: 32px !important;
 	line-height: 32px !important;
 	}
@@ -1952,43 +1972,63 @@ MARK: -UI
 #zoomButton{
 	line-height: 22px !important;
 	font-size: 24px !important;
-	right: 24px !important;
-	bottom: 12px !important;
+	/* right: 24px !important;
+	bottom: 12px !important; */
 	fill: white;
 }
 
 #characterButton{
-	right: 74px !important;
-	bottom: 14px !important;
+	/* right: 74px !important;
+	bottom: 14px !important; */
 	
 	font-size: 32px !important;
-	line-height: 30px !important;
-	margin-top: -20px !important;
+	line-height: 26px !important;
+	/* margin-top: -20px !important; */
 	fill: white;
 }
 
 #notesButton{
-	height: 22px !important;
-	right: 124px !important;
+	/* height: 22px !important;
+	right: 124px !important; */
 	font-size: 24px !important;
 	line-height: 24px !important;
-	bottom: 14px !important;
+	/* bottom: 14px !important; */
 	fill: white;
+}
+
+#notesButton svg{
+
+	scale: 0.9
+}
+
+#sidepanelButton{
+	/* right: 174px !important;
+	bottom: 30px !important; */
+	fill: white;
+	line-height: 20px;
+}
+
+#sidepanelButton svg{
+
+	translate: -3px -1px; 
+	scale: 0.80
+
 }
 
 #showStuffButton{
-	right: 174px !important;
-	bottom: 30px !important;
+	/* right: 174px !important;
+	bottom: 30px !important; */
 	fill: white;
+	line-height: 16px;
 }
 
 #indexCardButton{
-	right: 224px !important;
+	/* right: 224px !important; */
 	fill: white !important;
 
 	font-size: 32px !important;
-	line-height: 34px !important;
-	bottom: 15px !important;
+	line-height: 28px !important;
+	/* bottom: 15px !important; */
 }
 
 #indexCardButton:hover{
@@ -2385,11 +2425,11 @@ html[data-outdoors='1'] #notepanel{
 
 	box-shadow: 0 0 0 2px black !important;
 
-	&:not(.expanded){
+}
+
+html[data-outdoors='1'] #notepanel:not(.expanded){
 
 		box-shadow: none!important;
-
-	}
 
 }
 

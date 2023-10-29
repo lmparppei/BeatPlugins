@@ -133,10 +133,11 @@
 
 		text.split("\n").forEach(line => {
 
-			line = line.replaceAll(/\*(\S.+?)\*/g, "<strong>$1</strong>")
-			line = line.replaceAll(/\_(.+?)\_/g, "<i>$1</i>")
+			line = line.replace(/\*(\S.+?)\*/g, "<strong>$1</strong>")
+			line = line.replace(/\_(.+?)\_/g, "<i>$1</i>")
 			// line = line.replaceAll(/\`(.+?)\`/g, "<code>$1</code>")
 			line = line.replaceAll(/(?<!\\)\`(.+?)(?<!\\)\`/g, "<code>$1</code>").replaceAll(/\\`/g, "`")
+			line = line.replace(/(?<!\\)\`(.+?)(?<!\\)\`/g, "<code>$1</code>").replace(/\\`/g, "`")
 
 			if(line.startsWith("#")){
 

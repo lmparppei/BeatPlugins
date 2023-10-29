@@ -7,17 +7,22 @@
 <!-- <pre id="dumpDiv" style="padding: 10px; bottom: 10px; left: 10px; border-radius: 5px; pointer-events: none; position: absolute; white-space: pre-wrap; background-color: rgba(255,255,255,0.7); font-size: 9px"></pre> -->
 
 <div id="buttonRow">
-	<div id="helpButton" class="bottomButton" onclick="mylog('clicked settingsButton'); toggleNewMenu('settingsMenu')"></div>
-	<div id="printButton" class="bottomButton" onclick="mylog('clicked exportButton'); toggleNewMenu('exportMenu')"></div>
-	<div id="infoField"></div>
-	<div id="saturationSlider"><input type="range" min="0" max="100" value="50" class="slider" step="10" style="direction: rtl;" id="saturationRange" oninput="changeSaturation()"></div>
-	<div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
-	<div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
-	<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
-	<div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
-	<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
+	<div class="leftgroup">
+		<div id="sidepanelButton" class="bottomButton" onclick="mylog('clicked sidepanelButton'); toggleNotepanel()"></div>
+		<div id="helpButton" class="bottomButton" onclick="mylog('clicked settingsButton'); toggleNewMenu('settingsMenu')"></div>
+		<div id="printButton" class="bottomButton" onclick="mylog('clicked exportButton'); toggleNewMenu('exportMenu')"></div>
+		<div id="infoField"></div>
+	</div>
+	<div class="rightgroup">
+		<div id="saturationSlider"><input type="range" min="0" max="100" value="50" class="slider" step="10" style="direction: rtl;" id="saturationRange" oninput="changeSaturation()"></div>
+		<div id="indexCardButton" class="bottomButton" onclick="mylog('clicked indexCardButton'); toggleNewMenu('indexCardMenu')"></div>
+		<div id="showStuffButton" class="bottomButton" onclick="mylog('clicked stuffButton'); toggleNewMenu('showStuffMenu')"></div>
+		<div id="notesButton" class="bottomButton" onclick="mylog('clicked notesButton'); toggleNewMenu('notesMenu')"></div>
+		<div id="characterButton" class="bottomButton" onclick="mylog('clicked TrackingButton'); toggleNewMenu('trackingMenu')"></div>
+		<div id="zoomButton" class="bottomButton" onclick="mylog('clicked zoomButton'); toggleNewMenu('zoomMenu')"></div>
+	</div>
 </div>
-<div id="notepanelOpener" onclick="toggleNotepanel()"></div>
+<!--div id="notepanelOpener" onclick="toggleNotepanel()"></div-->
 
 <div id="notepanel" class="">
 	<div id="tabsRow">
@@ -93,6 +98,7 @@ $id("flexiContainer").ondrop = function(event){onDrop(event)}
 $id("flexiContainer").onscroll = function(){flexiContainer.style.setProperty("--flexiScroll", flexiContainer.scrollTop) + "px"}
 $id("flexiContainer").classList.add("positionRelative")
 
+document.getElementById("sidepanelButton").innerHTML = sidebarLeftIcon
 document.getElementById("indexCardButton").innerHTML = outlineIcon
 document.getElementById("characterButton").innerHTML = funnelIcon + `<div id="selectedCharacterName"></div>`
 document.getElementById("showStuffButton").innerHTML = showIcon
@@ -1530,7 +1536,6 @@ function getSettings(startup = false){
 function applySettings(){
 
 	//TODO: Check to see that all defaults are really present here!
-
 
 	let knownDocumentSettingDefaults = {
 		scenesAreProportional: true,
