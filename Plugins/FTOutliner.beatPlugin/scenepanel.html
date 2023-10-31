@@ -1051,8 +1051,8 @@ function setScrollShadow(){
     
     /* &:is(:has(#sortDropDown.location) #mergeSimilarLocations),
     &:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){ */
-    #mergeSimilarLocations, #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations),
-    #mergeSimilarLocations, #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){
+    #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations),
+    #mergeSimilarLocations + label:is(:has(#sortDropDown.location) #mergeSimilarLocations + label){
         display: inline-block;
     }
 

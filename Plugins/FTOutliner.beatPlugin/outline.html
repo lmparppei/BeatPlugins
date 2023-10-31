@@ -177,11 +177,18 @@ if(!document.createElement('dialog').showModal){
 
 //	EVENTLISTENER ON LOAD: FETCH DATA FROM PLUGIN, THEN BUILD THE COMPLETE OUTLINE:
 
+// $id("flexiContainer").onclick = function(event){starthere(event)}
+
+// function starthere(){
 window.addEventListener('load', function () {
 
 	flexiContainer.classList.add("focused") //in order to correctly switch focus between main app and plugin right from the start
+	console.log("setting eventlisteners")
 	setAllEventlisteners()
+	console.log("getting settings")
 	getSettings(true) //true means startup, which will trigger the showWelcomeWindow function
+	
+	console.log("calling update")
 	
 	Beat.call("Beat.custom.updateEntireOutline()")
 	
@@ -1489,10 +1496,14 @@ function getSettings(startup = false){
     	})
     	.then(
 			response => { 
-				Object.assign( userDefault, JSON.parse(response) )
+				if (response.length > 0) {
+					Object.assign( userDefault, JSON.parse(response) )
+				}
 				getDocumentSettings() //brings us to step two
 			},
-        	error => { console.log("Error retrieving userDefault") }
+        	error => { console.log("Error retrieving userDefault, all values will be default") 
+			getDocumentSettings() //brings us to step two anyway
+		}
     )
 
 	//Step 2: getting Document Settings
@@ -1503,12 +1514,16 @@ function getSettings(startup = false){
 				})
 				.then(
 					response => { 
-						Object.assign( documentSetting, JSON.parse(response))
+						if (response.length > 0) {
+							Object.assign( documentSetting, JSON.parse(response))
+						}
 						applySettings()
-
 						getVersionNumber()
 					},
-					error => { console.log("Error retrieving documentSetting") }
+					error => { console.log("Error retrieving documentSetting, all values will be default") 
+				
+						applySettings()
+						getVersionNumber()}
 			)
 		}
 
