@@ -896,7 +896,8 @@ function updateNotepanel(){
 
     mylog("updateNotepanel, which has... " + $id("notepanel").classList || "nothing")
 
-    let allNotes = globalAllNotes.flat()
+    let allNotes = globalAllNotes?.flat()
+    if(!allNotes) return
 
     $$(".notepanelNote").forEach(note => {note.remove()})
     $$(".notepanelReview").forEach(note => {note.remove()})

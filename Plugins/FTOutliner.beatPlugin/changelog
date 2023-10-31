@@ -1,3 +1,11 @@
+#v 1.82 (October 31, 2023)
+
+Another quick maintenance update:
+
+* Fixes an issue where opening FTOutliner from a newly created document would not open with the expected default settings
+* Tries to fix an issue where the changelog text (yes, the one you're reading now) would not display on older MacOS versions.
+* Fixes some cosmetic issues with the new Scene Manager panel
+
 #v 1.81 (October 29, 2023)
 
 Some maintenance fixes post-release of v 1.8:
