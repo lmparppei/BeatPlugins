@@ -20,7 +20,7 @@ echo "Distributing $count plugins..."
 for dir in */
 	do 
 	filename=${dir//\//}
-	zipName=${dir//\//}
+	pluginName=${dir//\//}
 
 	echo "   $filename"
 
@@ -51,7 +51,7 @@ for dir in */
 		cp "./$dir/$image" "../Dist/Images/$image"
 	fi
 	
-	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
+	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
@@ -59,8 +59,8 @@ for dir in */
 			json+=$',\n'
 	fi
 
-	rm "../Dist/$zipName.zip"
-	zip -vrq "../Dist/$zipName.zip" "./$dir" -x ".*" -x "__MACOSX"
+	rm "../Dist/$pluginName.zip"
+	zip -vrq "../Dist/$pluginName.zip" "./$dir" -x ".*" -x "__MACOSX"
 done
 json+="}"
 
