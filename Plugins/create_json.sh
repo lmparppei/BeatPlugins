@@ -48,10 +48,10 @@ for dir in */
 
 	if [[ $image ]]; then
 		echo "     image found"
-		cp "./$dir/$image" "../Dist/Images/$image"
+		cp "./$dir/$image" "../Dist/Images/$pluginName $image"
 	fi
 	
-	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
+	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$pluginName $image\", \"html\": $html }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
