@@ -20,8 +20,16 @@ echo "Distributing $count plugins..."
 for dir in */
 	do 
 	filename=${dir//\//}
+	zipName=${dir//\//}
 
 	echo "   $filename"
+
+	if ! test -f "./$dir$filename"; then
+	  	filename="plugin.js"
+	fi
+	if ! test -f "./$dir$filename"; then
+	  	echo "   !!! No plugin file found"
+	fi
 
 	version=$(find "./$dir$filename" -type f -exec grep "Version:" {} \;);
 	version=${version/Version: /}
@@ -40,7 +48,7 @@ for dir in */
 
 	if [[ $image ]]; then
 		echo "     image found"
-		cp "./$filename/$image" "../Dist/Images/$image"
+		cp "./$dir/$image" "../Dist/Images/$image"
 	fi
 	
 	json+="		\"$filename\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
@@ -51,8 +59,8 @@ for dir in */
 			json+=$',\n'
 	fi
 
-	rm "../Dist/$filename.zip"
-	zip -vrq "../Dist/$filename.zip" "./$dir" -x ".*" -x "__MACOSX"
+	rm "../Dist/$zipName.zip"
+	zip -vrq "../Dist/$zipName.zip" "./$dir" -x ".*" -x "__MACOSX"
 done
 json+="}"
 
