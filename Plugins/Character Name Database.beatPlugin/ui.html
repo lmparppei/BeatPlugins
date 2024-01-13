@@ -45,7 +45,9 @@ Character Name Database
 
 <div id='top'><form action=''>
 	Search <input type='text' id='searchBox' onkeyup="searchName()">
-	<input type='radio' name='gender' value='any' checked>  Any <input type='radio' name='gender' value='women'> Women <input type='radio' name='gender' value='men'> Men 
+	<input type='radio' name='gender' onchange='selectGender(this)' value='any' checked>  Any 
+	<input type='radio' name='gender' onchange='selectGender(this)' value='women'> Women 
+	<input type='radio' name='gender' onchange='selectGender(this)' value='men'> Men 
 </form></div>
 
 <div id='mid'>
@@ -65,6 +67,7 @@ let data = #DATA#
 //let data = ["NTest Culture", "FWoman's Name", "MMan's Name"];
 
 	let names = {};
+	let currentCulture = "";
 	let filteredNames = [];
 	let searchString = "";
 
@@ -116,7 +119,7 @@ let data = #DATA#
 		}
 	}
 
-	function filterNames(cultures, gender) {
+	async function filterNames(cultures, gender) {
 		// If you want to display ALL names.
 		// This should be cached/made async before implementing.
 		// if (!cultures) cultures = Object.keys(names);
@@ -132,8 +135,8 @@ let data = #DATA#
 
 		for (const [key, value] of Object.entries(names)) {
 			if (cultures.includes(key)) {
-				if (gender == "women") filteredNames = filterNames.concat(value.women);
-				else if (gender == "men") filteredNames = filterNames.concat(value.men);
+				if (gender == "women") filteredNames = filteredNames.concat(value.women);
+				else if (gender == "men") filteredNames = filteredNames.concat(value.men);
 				else {
 					filteredNames = filteredNames.concat(value.men);
 					filteredNames = filteredNames.concat(value.women);
@@ -183,6 +186,16 @@ let data = #DATA#
 		let value = datalist.value;
 
 		filterNames([value]);
+	}
+
+	function getSelectedCulture() {
+		let datalist = document.getElementById('cultures');
+		return datalist.value;
+	}
+
+	function selectGender(el) {
+		console.log("value",el.value)
+		filterNames([getSelectedCulture()], el.value)
 	}
 
 	gatherNames(data);
