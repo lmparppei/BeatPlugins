@@ -47,11 +47,13 @@ for dir in */
 	image=${image/Image: /}
 
 	if [[ $image ]]; then
-		echo "     image found"
 		cp "./$dir/$image" "../Dist/Images/$pluginName $image"
+		image="$pluginName $image"
+	else
+		image=""
 	fi
 	
-	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$pluginName $image\", \"html\": $html }"
+	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }\n"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
