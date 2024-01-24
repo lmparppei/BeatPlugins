@@ -1,3 +1,18 @@
+#v 1.83 (January 24, 2024)
+
+*IMPROVEMENTS:*
+* A new *SCENE POPUP* showing a scene's content will appear when hovering the scene in FTOutliner and pressing ALT. Quickly reference a scene without moving there, or click any line inside the popup to scroll the main document to the exact corresponding place.
+* Starting with Beat v. 1.998.2. Beat and FTOutliner are now aware of each other's *BONEYARDS*: In FTOutliner, add a Boneyard section from the bottom Outline Menu. Drag and drop scenes into the boneyard to save them for later. Beat will exclude any material in the boneyard when printing the script.
+* Some first steps towards making FTOutliner work with Beat's *Novel Writing Mode*:
+  - Change to have the outline show number of words rather than lengths in eights when in Novel Mode
+  - Fix to correctly show chapters and subchapters as empty if they are
+
+*FIXES:*
+* Notes, Beats and Markers now show correctly in the outline view also when on lines that are Sceneheadings, Sections or Synopsis.
+* Fixed a bug where dropping scenes at the bottom of the Boneyard would lead to an error.
+* Disabled a shortcut that led to a very experimental mode that no one should need to see. Sorry.
+* And some unspottable cosmetical changes of the kind that would each warrant their own article on an Apple rumor site if made to a new version of iOS. Because yeah.
+
 #v 1.82 (October 31, 2023)
 
 Another quick maintenance update:

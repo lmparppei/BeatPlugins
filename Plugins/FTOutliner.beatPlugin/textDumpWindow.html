@@ -2,7 +2,7 @@
 
     <div id="settings">this is the textDumpWindow.</div>
     
-    <div id="preview">
+    <div id="preview" contenteditable="true">
 
 
     </div>
@@ -66,8 +66,6 @@ window.addEventListener('load', function () {
 
 })
 
-
-
 </script>
 <style>
 
@@ -94,6 +92,11 @@ window.addEventListener('load', function () {
     }
 }
 
+::selection {
+    background: #b3d4fc;
+    color: black;
+}
+
 body{
 
     background-color: var(--menu-background) !important;
@@ -106,13 +109,14 @@ body{
 
     padding: 20px;
 
-    user-select: text;
+    user-select: all;
+    pointer-events: all !important;
 
 }
 
 *{
    
-    user-select: text !important;
+    user-select: all !important;
     
 }
 
@@ -166,7 +170,7 @@ body{
 
 #preview{
     
-    user-select: text !important;
+    /* user-select: text !important; */
     pointer-events: all;
 
     position: absolute;
@@ -196,6 +200,7 @@ body{
     
     overflow-Y: scroll;
     
+    z-index: 99999;
 }
 
 #preview p{
@@ -203,6 +208,7 @@ body{
     text-indent: hanging 40px;
     margin: 0;
     padding: 1px 20px 0px 20px;
+
 
 }
 

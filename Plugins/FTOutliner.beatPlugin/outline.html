@@ -208,6 +208,8 @@ function launchWelcomeDialog(ftoutlinerVersion){
 //	EVENTLISTENERS FOR keypresses and such
 function setAllEventlisteners(){
 
+	console.log("settingEventlisteners")
+
 	window.onerror = function(message, source, lineno, colno, error) {
 		mylog("===== ERROR =====", true)
 		}
@@ -233,6 +235,7 @@ function setAllEventlisteners(){
 		});	
 	document.addEventListener("mouseover", hover)
 	document.addEventListener("mouseleave", unhover) //was moouseout
+	document.addEventListener("mousemove", storeHoveredElement)
 }
 
 function toggleCaptureKeypresses(on){
@@ -245,6 +248,15 @@ function toggleCaptureKeypresses(on){
 		// document.removeEventListener("keydown", checkWhatKeyGotPressed)
 		document.removeEventListener("keydown", keypress)
 		document.removeEventListener("keyup", checkWhatKeyWasReleased)
+	}
+}
+
+function storeHoveredElement(e){
+
+	elementBeingHovered = {
+		element: e.target || null, // newly added global, so as to be able to check if it's still being hovered when ALT is pressed
+		x: e.clientX,
+		y: e.clientY
 	}
 }
 
@@ -293,15 +305,114 @@ function hover() {
 			hiddenSlugPopup(element)
 		}
 
+	//experimental: pop up snapshot of scene if alt is pressed
+		if (altIsBeingPressed){
+			storeHoveredElement(event)
+			snapshotPopup()
+		}
+
 	
-	currentlyHoveredElement = element // keeps it in mind for ALT-pressing
+	// elementBeingHovered = element // keeps it in mind for ALT-pressing
 	
+}
+
+function snapshotPopup(element = elementBeingHovered.element){
+
+	if($id("snapshotPopup") && $id("snapshotPopup").dataset.uuid == element?.closest(".scene")?.dataset.uuid) return
+	if(!element.closest("#snapshotPopup")) closeSnapShotPopup()
+
+	let scene = element.closest(".scene")
+		if(!scene) return
+	//find the next same-level sibling, or if none, the next sibling of its parent
+	// let nextScene = scene.nextElementSibling || scene.parentElement?.nextElementSibling || scene.parentElement?.parentElement?.nextElementSibling || scene.parentElement?.parentElement?.parentElement?.nextElementSibling
+	// let nextScene = scene.querySelector(":scope + .scene") || scene.parentElement?.querySelector(":scope + .section > .scene") || scene.parentElement?.parentElement?.querySelector(":scope + .section > .section > .scene") || scene.parentElement?.parentElement?.parentElement?.querySelector(":scope + .section > .section > .section > .scene")
+	let nextScene = getNextSiblingWithClass(scene, '.scene') || getNextSiblingWithClass(scene.parentElement, '.section') || getNextSiblingWithClass(scene.parentElement?.parentElement, '.section') || getNextSiblingWithClass(scene.parentElement?.parentElement?.parentElement, '.section')//?.querySelector('.scene, .section') || getNextSiblingWithClass(scene.parentElement?.parentElement, 'section')?.querySelector('.scene, .section') || getNextSiblingWithClass(scene.parentElement?.parentElement?.parentElement, 'section')?.querySelector('.scene, .section');
+		//if(!nextScene) return
+
+		//helper to find next sibling with class
+		function getNextSiblingWithClass(element, selector) {
+			let sibling = element.nextElementSibling;
+			while (sibling) {
+				if (sibling.matches(selector)) {
+					return sibling;
+				}
+				sibling = sibling.nextElementSibling;
+			}
+			return null;
+		}
+
+		console.log("siblings done:", scene, nextScene)
+
+	let startingLine = lines.find(line => line.uuid == scene.dataset.uuid)
+		if(!startingLine) return
+	let endingLine = lines.find(line => line.uuid == nextScene?.dataset.uuid) || lines.find(line => line.location > scene.dataset.sceneEnd) || lines[lines.length - 1]
+		if(!endingLine) return
+
+	let sceneLines = lines.slice(lines.indexOf(startingLine), lines.indexOf(endingLine) - 1)
+
+		console.log("now to make div")
+
+	let popup = document.createElement("div")
+		popup.id = "snapshotPopup"
+		popup.dataset.uuid = scene.dataset.uuid
+		popup.classList.add("snapshotPopup")
+		for (let line of sceneLines){
+			let lineDiv = document.createElement("div")
+			let cls = line.typeAsString?.toLowerCase()
+				if (cls.includes(" ")) cls = cls.split(" ")[1]
+				lineDiv.classList.add(cls)
+				lineDiv.textContent = line.stringForDisplay || line.string || ""
+				lineDiv.dataset.line = line.position
+				popup.appendChild(lineDiv)
+		}
+
+		console.log("next up: measures")
+	
+	let color = window.getComputedStyle(element.closest(".scene")).getPropertyValue('--localColor')
+		popup.style.setProperty("--localColor", color) 
+		
+	let x = elementBeingHovered.x || event.clientX
+	let y = elementBeingHovered.y || event.clientY
+	// let width = parseInt(JSON.stringify(element.closest(".scene").getBoundingClientRect().width)) * 1.5 + 20
+	
+	flexiContainer.appendChild(popup)
+	
+	let width = Math.min(flexiContainer.getBoundingClientRect().width * 0.45, popup.getBoundingClientRect().width)
+	let inverseArrow = 0
+		if (x + width > flexiContainer.getBoundingClientRect().width - 40){
+			x = x - width - 20
+			inverseArrow = 1
+		}
+		popup.style.width = width + "px"
+		popup.style.left = (x + 10) + "px"
+	
+	
+	let height = popup.getBoundingClientRect().height
+		popup.style.top = (y - height/2) + "px"
+		if(y - height/2 < 0) popup.style.top = "0px"
+		if(y + height/2 > flexiContainer.offsetHeight - 20) popup.style.top = (flexiContainer.offsetHeight - height - 20) + "px"
+
+	let arrow = document.createElement("div")
+		arrow.id = "snapshotArrow"
+		arrow.style.top = scene.getBoundingClientRect().top + scene.getBoundingClientRect().height/2 + "px"
+		arrow.style.left = elementBeingHovered.x + "px"
+		arrow.style.setProperty("--localColor", color) 
+		arrow.style.setProperty("--inverse", inverseArrow) 
+		flexiContainer.appendChild(arrow)
+
+}
+
+function closeSnapShotPopup(){
+
+	$id("snapshotPopup")?.remove()
+	$id("snapshotArrow")?.remove()
+
 }
 
 function hiddenSlugPopup(element) {
 
 	previouslyHovered = JSON.stringify(element.closest(".scene")?.id)
-	currentlyHoveredElement = false
+	// elementBeingHovered = false
 
 	// let x = parseInt(JSON.stringify(event.clientX))
 	// let y = parseInt(JSON.stringify(event.clientY))
@@ -365,6 +476,8 @@ function unhover(){
 	for (i = elements.length - 1; i>-1; i--) {
 		elements[i].remove()
 	}
+
+	$id("hiddenSceneTitlePopup")?.remove()
 }
 
 // MARK: - ========== UPDATING THE TIMELINE ==========
@@ -384,7 +497,7 @@ function firstRun(location, length){
 
 }
 
-function updateEntireOutline(json, location, length, absoluteLength, linesAsJson) {
+function updateEntireOutline(json, location, length, absoluteLength, linesAsJson, novel = false, screenplay) {
 
 	mylog()
 	$$(".contextMenu").forEach(menu => menu.remove())
@@ -394,6 +507,8 @@ function updateEntireOutline(json, location, length, absoluteLength, linesAsJson
 		outline = json 
 		lines = linesAsJson
 		absoluteTextLength = absoluteLength
+		novelMode = novel
+		entireScreenplay = screenplay
 	
 	if(outline.length < 1){displayEmptyScreenMessage(); return}
 	
@@ -497,7 +612,7 @@ function divMaker(){
 					sectionDiv.classList.add("isExpanded")
 
 					sectionDiv.dataset.line = 0
-					sectionDiv.dataset.lineEnd = Math.max(currentItem.sceneStart - 1, 0)
+					sectionDiv.dataset.lineEnd = Math.max(+currentItem.sceneStart - 1, 0)
 
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = "0"
@@ -555,7 +670,7 @@ function divMaker(){
 					sectionDiv.classList.add("section")
 					sectionDiv.classList.add("level" + currentItem.sectionDepth)
 					sectionDiv.dataset.line = currentItem.sceneStart
-					sectionDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
+					sectionDiv.dataset.lineEnd = +currentItem.sceneStart + +currentItem.line.range.length
 					sectionDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sectionDiv.dataset.inAct = currentAct
 					sectionDiv.dataset.uuid = currentItem.uuid
@@ -617,6 +732,7 @@ function divMaker(){
 					}
 
 					if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.uuid + " -- "}
+					// sectionheaderDiv.innerHTML += (novelMode ? currentItem.numberOfPages + "minus" + currentItem.lineHeight : "") + " "
 					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "").replace(/</g, "&lt;")
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
@@ -631,14 +747,15 @@ function divMaker(){
 						sectionSynConDiv.style.backgroundColor = "transparent"
 					}
 
-					if(currentItem.numberOfPages > 0){
+					let zeroForSections = novelMode ? currentItem.lineHeight : 0
+					if(currentItem.numberOfPages > zeroForSections){
 
 						let orphanDiv = document.createElement("div")
 							orphanDiv.classList.add("orphanText")
 							orphanDiv.id = "orphanInside" + num
 							orphanDiv.dataset.myId = "orphanInside" + num
 							orphanDiv.dataset.line = (currentItem.sceneStart)
-							orphanDiv.dataset.lengthOfScene = currentItem.numberOfPages	
+							orphanDiv.dataset.lengthOfScene = currentItem.numberOfPages	- zeroForSections
 						
 						if(pageDividers[num]) insertDividersIn(orphanDiv)
 						
@@ -689,7 +806,7 @@ function divMaker(){
 					}
 					sceneDiv.dataset.uuid = currentItem.uuid
 					sceneDiv.dataset.line = currentItem.sceneStart
-					sceneDiv.dataset.lineEnd = currentItem.sceneStart + currentItem.line.range.length
+					sceneDiv.dataset.lineEnd = +currentItem.sceneStart + +currentItem.line.range.length
 					sceneDiv.dataset.lengthOfScene = currentItem.numberOfPages
 					sceneDiv.dataset.inAct = currentAct
 					sceneDiv.draggable = true
@@ -734,7 +851,9 @@ function divMaker(){
 					sceneheadingDiv.appendChild(sceneNumberSpan)
 					
 				let pageCountSpan = document.createElement("SPAN")
+				console.log("currentItem.numberOfPages for " + currentItem.string, currentItem.numberOfPages)
 					pageCountSpan.innerHTML = numberIntoEights(currentItem.numberOfPages)
+					if (novelMode) pageCountSpan.innerHTML = numberOfWords(currentItem.sceneStart, currentItem.sceneEnd) + " words"
 					pageCountSpan.classList.add("showSceneLength")
 
 					sceneheadingDiv.appendChild(pageCountSpan)
@@ -968,17 +1087,24 @@ function divMaker(){
 function updateAllSectionPageCounts(){
 
 	let accumulatedPages = 0
+	let accumulatedWords = 0
 	let allSections = Array.from($$(".section"))
 
 	$$(".section").forEach(section =>{
 
 		accumulatedPages = 0
+		accumulatedWords = 0
 
 		section.querySelectorAll(".scene, .orphanText").forEach(element => {
 			accumulatedPages += Number(element.dataset.lengthOfScene) || 0
 		})
-
+		let sectionEntry = outline.find(entry => entry.uuid == section.dataset.uuid)
+		
 		if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
+		if(novelMode){
+			accumulatedWords = numberOfWords(sectionEntry.sceneStart, sectionEntry.sceneEnd)
+			if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${accumulatedWords} words)`
+		}
 	})
 
 	//after the loop, add last accumulation to last section:
@@ -1341,6 +1467,7 @@ function youAreHere(location, length, positionChangeOnly){
 	mylog("...and we are editing text is: " + weAreCurrentlyEditingText)
 
 	if(location == 0 ){location = -999} //hacky way to avoid errors when no location at all, yet process when zero
+		location = Math.min(location, absoluteTextLength)
 
 	if(fullTypeTimer || !location || !outline || outline.length < 1 || weAreCurrentlyEditingText){
 		if(document.getElementById('youAreHere')){document.getElementById('youAreHere').remove()}
@@ -1373,12 +1500,12 @@ function youAreHere(location, length, positionChangeOnly){
 	let whichSceneNumberAreWeIn = outline[whichSceneAreWeIn].sceneNumber
 		
 	let thisScenesBeginning = outline[whichSceneAreWeIn].sceneStart
-		if(outline[whichSceneAreWeIn].sceneNumber.includes("OMITTED")){
+		if(outline[whichSceneAreWeIn].sceneNumber?.includes("OMITTED")){
 			thisScenesBeginning = outline[whichSceneAreWeIn].line.position
 		} //if we need to fix the sceneNumber for later use?
 		
 	let thisScenesEnd = outline[whichSceneAreWeIn].sceneEnd
-		if(outline[whichSceneAreWeIn].sceneNumber.includes("OMITTED") && outline[whichSceneAreWeIn + 1]){
+		if(outline[whichSceneAreWeIn].sceneNumber?.includes("OMITTED") && outline[whichSceneAreWeIn + 1]){
 			thisScenesEnd = outline[whichSceneAreWeIn+1].line.position - 1
 		} //if we need to fix the sceneNumber for later use?
 		if(outline[whichSceneAreWeIn].typeAsString == "Section"){
@@ -1428,7 +1555,7 @@ function youAreHere(location, length, positionChangeOnly){
 			}
 		}
 
-		let weReOnPage = placeToPutIndicator.querySelectorAll(".pageDivider")
+		let weReOnPage = placeToPutIndicator?.querySelectorAll(".pageDivider")
 		//while (!weReOnPage && whichSceneAreWeIn > -1) weReOnPage = 
 		
 		// let theIndicatorHTML = "<div " + 
@@ -1475,6 +1602,12 @@ function numberIntoEights(theNumber) {
 	if (Math.floor(theNumber) > 0){theNumberInEights = 	Math.floor(theNumber)+" " + theNumberInEights};
 	
 	return theNumberInEights;
+
+}
+
+function numberOfWords(startIndex, endIndex){
+
+	return entireScreenplay.slice(startIndex, endIndex).split(/\s+/).length;
 
 }
 
@@ -1907,6 +2040,7 @@ function escapeWasPressed(){
 
 	if(errorHasFired){return}
 
+		if ($id("snapshotPopup")) {$id("snapshotPopup").remove(); return}
 		if ($id("advancedSettings".open)) {$id("advancedSettings").close(); return}
 		if ($id("menu")){closeNewMenu(); return false}
 		// if ($id("dialogpanelcontent") && $id("notepanel").classList.contains("expanded")) {unShowCharacterBubbles(); toggleNotepanel(); return}
@@ -1938,6 +2072,7 @@ function releaseALT(){
 	altIsBeingPressed = false
 	previouslyHovered = false
 	document.getElementById("printButton").innerHTML = printerIcon
+	closeSnapShotPopup()
 
 }
 
@@ -1951,6 +2086,10 @@ function somethingWasClicked() {
 		}
 
 	mylog("flexiContainer classList at time of click: \n" + $id("flexiContainer").classList)
+
+	if(!event?.target?.closest("#snapshotPopup")){
+		closeSnapShotPopup()
+	}
 
 	if(event.target.closest(".bottomButton") 
 		|| event.target.classList.contains("displayNumberOf")
@@ -1989,7 +2128,7 @@ function somethingWasClicked() {
 
 	mylog("before if(event.altKey)")
 
-	if(event.altKey && !event.metaKey){
+	if(event.altKey && !event.metaKey && !event.target.closest("#snapshotPopup")){
 
 		muteColors(theClickedThing, event.shiftKey) 
 		//NOTE: sending literal clicked thing here, so can be either scene or sceneheading!
@@ -2674,6 +2813,8 @@ function toggleDisplayNotes() {
 
 function toggleDisplayMarkers() {
 	mylog()
+
+	console.log("%cTOGGLE DISPLAY MARKERS", "color: red")
 
 	documentSetting.markersAreDisplayed = !documentSetting.markersAreDisplayed
 	markersAreDisplayed = documentSetting.markersAreDisplayed
