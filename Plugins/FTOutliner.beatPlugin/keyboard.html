@@ -7,6 +7,7 @@
 function keypress(event){
 
     if(event.altKey) altIsBeingPressed = true
+    if(altIsBeingPressed && elementBeingHovered?.element?.closest(".scene")) snapshotPopup()
     
     const shortcut = shortcutKeys.find((shortcut) => {
 
@@ -117,10 +118,10 @@ let shortcutKeys = [
         key: ["h"],
         command: (event) => { outdoorMode() }
     },
-    {
-        key: ["Meta", "h"],
-        command: (event) => { flexiContainer.classList.toggle("horizontal") }
-    },
+    // {
+    //     key: ["Meta", "h"],
+    //     command: (event) => { flexiContainer.classList.toggle("horizontal") }
+    // },
     {
         key: ["l"],
         command: (event) => { toggleShowSceneLength() }

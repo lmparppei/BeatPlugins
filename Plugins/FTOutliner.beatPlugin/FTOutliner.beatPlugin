@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.82
+Version: 1.83
 Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
@@ -22,13 +22,14 @@ a {
 	<li>Right click to color, delete or rename scenes or sequences</li>
 	<li>Drag-and-drop to rearrange scenes or entire sequences</li>
 	<li>Track characters by highlighting scenes, or filter by colors</li>
-	<li>Export your outline to PDF
-	<li>Fully editable index card view
-	<li>Slide-over Note Panel with all your notes in one long list
+	<li>Export your outline to PDF</li>
+	<li>Fully editable index card view</li>
+	<li>Slide-over Note Panel all your notes in one long list</li>
 	<li>Boneyard (for storing scenes outside of the script structure)
+	<li><b>NEW!</b> A pre-flight Scene Manager for checking your sceneheadings for errors and inconsistencies</li>
 	<li>and lots more...
 </ul>
-<p>For more info, questions or support visit <a href="https://github.com/ftolsson/ftoutliner/wiki" target="_default">the FTOutliner wiki</a></p>
+<p>For more info, questions or support visit <a href="https://github.com/ftolsson/ftoutliner/wiki" target="_blank">the FTOutliner wiki</a></p>
 </Description>
 
 */
@@ -36,7 +37,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.82"
+var ftoutlinerVersion = "1.83"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -223,7 +224,11 @@ Beat.custom.sendToMain = function(key, value, nameOfVariable){
 
 }
 
-Beat.custom.reApplySettings = function(){ htmlWindow.runJS("applySettings()") }
+Beat.custom.reApplySettings = function(){ 
+	
+	htmlWindow.runJS("applySettings()") 
+
+}
 
 function __________RELOADERS(){}
 
@@ -467,23 +472,27 @@ Beat.custom.updateEntireOutline = function (location, length, skipPagination = f
 		location = Beat.selectedRange().location
 	}
 
+	let outline = Beat.outline()
+	let linesAsJSON = Beat.linesAsJSON()
+	let fullScreenplay = Beat.getText()
+
 	Beat.async(function () {
 		
 		let json
 			// Get the whole JSON, paginated or not
 			if (skipPagination) {
 				Beat.log("Skipping pagination")
-				json = JSON.stringify(outlineWithoutPagination())
+				json = JSON.stringify(outlineWithoutPagination(outline))
 			} else {
 				Beat.log("Doing pagination")
-				json = JSON.stringify(outlineWithPagination())
+				json = JSON.stringify(outlineWithPagination(outline))
 			}
 
-			// Get all lines as JSON
-			let linesAsJSON = Beat.linesAsJSON()
-
-			// Send it to the HTML window
-			let fullScreenplay = Beat.getText()
+			// moved these outside of async 2024-01-22
+				// Get all lines as JSON
+				// let linesAsJSON = Beat.linesAsJSON()
+				// Send it to the HTML window
+				// let fullScreenplay = Beat.getText()
 
 			// will this finally catch incorrectly delivered pagination?
 			// CHECK #1. ERROR because mismatch in number of lines
@@ -517,7 +526,9 @@ Beat.custom.updateEntireOutline = function (location, length, skipPagination = f
 				}
 
 				console.log("SENDING JSON. Skipping pagination: ", skipPagination)
-				htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON})`)
+
+				let novelmode = Beat.getRawDocumentSetting("Stylesheet") == "Novel"
+				htmlWindow.runJS(`updateEntireOutline(${json}, ${location}, ${length}, ${fullScreenplay.length}, ${linesAsJSON}, ${novelmode}, ${JSON.stringify(fullScreenplay)})`)
 			})
 			
 			previousLineObject = JSON.parse(linesAsJSON)
@@ -531,7 +542,7 @@ let sceneData = [] //This is now global in order to be re-useable when no new pa
 let pagination
 const paginationManager = Beat.currentPagination()
 
-function outlineWithoutPagination() {
+function outlineWithoutPagination(outlineCopy) {
 
 	// This name is a bit misleading: The data returned does contain pagination -- but it is the old one.
 	// So "without" refers to no pagination being performed, just copied from last round.
@@ -539,7 +550,7 @@ function outlineWithoutPagination() {
 	console.log("outlineWithoutPagination")	
 
 	let altSceneData = []
-	const outlineCopy = Beat.outline()
+	// const outlineCopy = Beat.outline()
 
 	try{
 		for (const scene of outlineCopy) {
@@ -564,25 +575,51 @@ function outlineWithoutPagination() {
 
 }
 
-function outlineWithPagination() {
+function outlineWithPagination(outlineCopy) {
 
 	console.log("outlineWithPagination")
 	
 	let zeroHeight = []
 		pagination = paginationManager.finishedPagination
 		sceneData = []
-	const outlineCopy = Beat.outline()
+	//const outlineCopy = Beat.outline()
+	const parser = Beat.currentParser
+	let boneyardStartsAtIndex = parser?.boneyardAct?.position
+
+	let inBoneyard = false
+	let maxPageHeight = Beat.currentPagination().maxPageHeight
+	let myHeight
 	
 	for (const scene of outlineCopy) {
 
 		if(emergencyExit) break
 
+		if(scene.position > boneyardStartsAtIndex)	inBoneyard = true
+
 		let data = scene.json()
+		
+		if (inBoneyard) {
+
+			let myPagination = Beat.pagination() //starts a new pagination for this scene only
+			let linesToPaginate = Beat.linesForScene(scene)
+				myPagination.paginateLines(linesToPaginate)
+			 	
+				data.numberOfPages = myPagination.heightForScene(scene) 
+				//the rest of the values have no meaning for objects in boneyard so setting them to zero
+					data.lineHeight = 0
+					data.startsOnPage = 0
+					data.positionOnPage = 0.0
+					data.breakLines = []
+					sceneData.push(data)
+
+				continue
+		}
 
 		try{
 			data.numberOfPages = pagination.heightForRange({ location: scene.position, length: scene.length }) / Beat.currentPagination().maxPageHeight
 			//the above replaces the below, because of faulty values in heightForScene. This may or may not have been fixed in Beat already.
 			//data.numberOfPages = pagination.heightForScene(scene) / Beat.currentPagination().maxPageHeight
+			data.lineHeight = pagination.heightForRange({ location: scene.position, length: scene.line.length}) / Beat.currentPagination().maxPageHeight
 		}catch{
 			//this try/catch is here because of a bug in Beat that sometimes claims pagination.heightForRange is undefined
 			Beat.sync(function () {
@@ -595,7 +632,7 @@ function outlineWithPagination() {
 		data.positionOnPage = 0.0
 
 		//BUG HUNT PART I: Checking for zero-height scenes!
-			if (data.numberOfPages == 0 && data.typeAsString == "Heading" && !data.omitted){ 
+			if (data.numberOfPages == 0 && data.typeAsString == "Heading" && !data.omitted && !inBoneyard){ 
 				zeroHeight.push(data)
 			}
 
@@ -682,37 +719,37 @@ Beat.onSelectionChange(function (location, length) {
 
 function __________HELPERS_____(){}
 
-function numberOfWrappedLines(str, typeAsString) {
+// function numberOfWrappedLines(str, typeAsString) {
 
-	console.time("calculating number of wrapped lines")
+// 	console.time("calculating number of wrapped lines")
 
-	const pageWidths = {
-		Action: 60,
-		Character: 38,
-		Parenthetical: 27,
-		Dialogue: 35,
-		Lyrics: 60,
-		Heading: 60,
-	}
+// 	const pageWidths = {
+// 		Action: 60,
+// 		Character: 38,
+// 		Parenthetical: 27,
+// 		Dialogue: 35,
+// 		Lyrics: 60,
+// 		Heading: 60,
+// 	}
 
-	const pageWidth = pageWidths[typeAsString]
+// 	const pageWidth = pageWidths[typeAsString]
 
-	let words = str.split(' ');
-	let lineLength = 0;
-	let lineCount = 1;
+// 	let words = str.split(' ');
+// 	let lineLength = 0;
+// 	let lineCount = 1;
   
-	for (let word of words) {
-	  if (lineLength + word.length <= pageWidth) {
-		lineLength += word.length + 1; // add 1 for the space
-	  } else {
-		lineCount++;
-		lineLength = word.length + 1; // add 1 for the space
-	  }
-	}
+// 	for (let word of words) {
+// 	  if (lineLength + word.length <= pageWidth) {
+// 		lineLength += word.length + 1; // add 1 for the space
+// 	  } else {
+// 		lineCount++;
+// 		lineLength = word.length + 1; // add 1 for the space
+// 	  }
+// 	}
   
-	console.timeEnd("calculating number of wrapped lines")
-	return lineCount;
-  }
+// 	console.timeEnd("calculating number of wrapped lines")
+// 	return lineCount;
+//   }
 
 function titleCaseThis(str) {
 	let upper = true;

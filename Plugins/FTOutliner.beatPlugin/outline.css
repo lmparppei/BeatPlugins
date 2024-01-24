@@ -191,12 +191,24 @@ ______FLEXICONTAINER{}
 
 	display: flex;
 
-	flex-direction: column !important;
+	/* flex-direction: column !important; */
 	flex-wrap: nowrap !important;
+	flex-direction: row-reverse !important;
 
 	align-items: flex-start !important;
 	height: auto !important;
 	overflow: scroll !important;
+
+	rotate: -90deg;
+	transform-origin: center center;
+
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#flexiContainer.horizontal .indicator{
+	rotate: 180deg;
 }
 
 body:has(.horizontal){
@@ -205,13 +217,23 @@ body:has(.horizontal){
 
 #flexiContainer.horizontal .level1{
 
-rotate: -90deg;
+/* rotate: -90deg; */
+	transform: skew(0, 20deg)
+
+}
+
+#flexiContainer.horizontal .sceneheading,
+#flexiContainer.horizontal .section-heading{
+
+	transform: skew(0, -20deg);
+	rotate: 20deg;
+	transform-origin: top left;
 
 }
 
 #flexiContainer.horizontal .section:not(.level1){
 
-	rotate: 80deg;
+	/* rotate: 80deg; */
 
 }
 
@@ -835,6 +857,13 @@ __________PAGE BREAK REREPRESENTATIONS{}
 .scene:has(.pageDivider:hover){
 
 	background-image: transparent !important;
+
+}
+
+.ghost .pageDivider,
+.boneyard .pageDivider{
+
+	display: none !important;
 
 }
 
@@ -3065,9 +3094,9 @@ MARK: -Boneyard
 
 #flexiContainer:not(.oneColumnOutline):not(.boneyardIsClosed) .level1.boneyard > .section-heading::before{
 
-content: "\25BA";
-
-float: right;
+	content: "\25BA";
+	float: right;
+	margin-left: 12px !important;
 
 }
 
@@ -3124,6 +3153,12 @@ float: right;
 	transition-delay: opacity 0.25 !important;
 }
 
+#flexiContainer:not(.boneyardIsClosed):not(.oneColumnOutline) .level1.boneyard > .section-heading{
+
+	width: calc(100% + 12px) !important;
+
+}
+
 
 .level1.boneyard .showActLength,
 .level1.boneyard + .showActLength,
@@ -3141,6 +3176,7 @@ float: right;
 #flexiContainer.oneColumnOutline .level1.boneyard{
 	
 	margin-top: calc(24px * var(--fontSizeFactor)) !important;
+	
 }
 .boneyard:not(.indexcards .boneyard) .orphanText{
 	display: none
@@ -3208,9 +3244,9 @@ MARK: -Buttons
 
 #infoField{
 
-	position: absolute;
-	left: 125px;
-	top: 7px;
+	/* position: absolute; */
+	/* left: 125px;
+	top: 7px; */
 
 	display: inline-block;
 
@@ -3326,6 +3362,88 @@ input[type=range]:focus::-webkit-slider-thumb {
 
 }
 
+#----- SCENE POPUP ---------------{}
 
+#snapshotPopup{
+
+	position: absolute;
+	background: color-mix(in srgb, var(--localColor) 40%, white 60%);
+	color: black !important;
+	border: 0.5px outset var(--localColor);
+	border-radius: 4px;
+	padding: 8px 20px;
+
+	height: auto;
+
+	max-height: 60%;
+	max-width: calc(60ch + 16px);
+	overflow-x: hidden;
+	overflow-y: auto;
+
+	font-size: calc(12px * var(--fontSizeFactor));
+	font-family: 'Courier Prime','Courier New', Courier, monospace;
+
+	z-index: 99999 !important;
+	box-shadow: 0 0 25px black;
+
+}
+
+#snapshotArrow{
+
+	position: absolute;
+
+	height: 20px;
+	width: 20px;
+	translate: calc(0.5px - 21.5px * var(--inverse)) -10px;
+	rotate: calc(-45deg + 180deg * var(--inverse));
+
+	background: color-mix(in srgb, var(--localColor) 40%, white 60%) !important;
+	border: 0.5px outset var(--localColor) !important;
+
+	pointer-events: none;
+
+	z-index: 999999 !important;
+	box-shadow: 0 0 25px black;
+
+	clip-path: polygon(-100% -100%, 200% -100%, -100% 200%);
+
+}
+
+#snapshotPopup > *{
+	width: 100% !important;
+	white-space: normal !important;
+	word-wrap: normal !important;
+	min-height: 1lh !important;
+	}
+#snapshotPopup > *:hover{
+	background: #0002 !important;
+	}
+#snapshotPopup > :is(.heading, .shot){
+	font-weight: bold !important;
+	text-transform: uppercase !important;
+	}
+#snapshotPopup > :is(.action, .character, .transition, .shot){
+	/* margin-top: 1lh !important; */
+	}
+#snapshotPopup > .character{ 
+	padding-left: 30% !important; 
+	text-transform: uppercase !important;
+	}
+#snapshotPopup > .parenthetical{ 
+	padding-left: 25% !important; 
+	}
+#snapshotPopup > .dialogue{ 	
+	padding-left: 15% !important; 
+	padding-right: 15% !important;
+	}		
+#snapshotPopup > .transition{ 
+	text-align: right; 
+	text-transform: uppercase;
+	}
+#snapshotPopup > .synopse{ 
+	opacity: 60%;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+	font-style: italic !important;
+	}
 
 </style>

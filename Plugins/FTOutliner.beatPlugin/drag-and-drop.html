@@ -1032,7 +1032,7 @@ function onDrop(e){
         insertBeforeScene = $id("dropDiv").getAttribute("data-insert-before-scene") // written into dropdiv at creation: dataset.beforeScene
 
         //check if we are dropping next to an omitted scene, and if so CANCEL! Added 2023-10-25 to avoid fountain logic issues
-            let sceneBelowDroppedWasOmitted = (outline[insertBeforeScene - 1].omitted)
+            let sceneBelowDroppedWasOmitted = (outline[insertBeforeScene - 1]?.omitted)
             let sceneAboveDroppedWasOmitted = (outline[insertBeforeScene]?.omitted)
                 if(sceneBelowDroppedWasOmitted || sceneAboveDroppedWasOmitted){
                     Beat.call(`Beat.alert("Cannot drop immediately before or after an omitted (hidden) scene", "Due to the fountain logic for hiding scenes, dropping scenes adjacent to hidden ones is a very risky business that may end up hiding text you want to display, or showing text you dont.\\n\\nPlease manually unhide or delete the hidden scenes before moving scenes around.")`)
