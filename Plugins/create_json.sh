@@ -53,7 +53,7 @@ for dir in */
 		image=""
 	fi
 	
-	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }\n"
+	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
