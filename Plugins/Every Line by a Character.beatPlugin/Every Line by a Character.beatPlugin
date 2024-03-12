@@ -3,7 +3,7 @@
 Every Line by a Character
 Description: Creates a new document with every line of dialogue said by the selected character
 Copyright: © Lauri-Matti Parppei
-Version: 1.1
+Version: 1.2
 
 */
 
@@ -21,30 +21,45 @@ for (const line of Beat.lines()) {
 
 characters.sort();
 
-// Display prompt to select the character
-const characterName = Beat.dropdownPrompt("Gather Character Dialogue", "Select a character to create a new document:", characters)
-Beat.log(" --> " + characterName)
-if (characterName == "" || characterName == null) return;
+Beat.modal({
+	title: "Gather Character Dialogue",
+	info: "Select a character to create a new document:",
+	items: [
+		{ type: "dropdown", name: "character", label: "Character", items: characters},
+		{ type: "checkbox", name: "includeBoneyard", label: "Include Boneyard", value: false}
+	]
+}, function(response) {
+	if (response) {
+		if (response.character == "") return; // Cancelled by not selecting a character 
+		// NOTE: one could also display an info message to indicate that people forgot to 
+		// select a character. But this is good enough to be released imho.
 
+		const characterName = response.character;
+		const includeBoneyard = response.includeBoneyard || false;
+		// Iterate through the document
+		for (const line of Beat.lines()) {
+			if (line.type == Beat.type.section && line.string == "# Boneyard" && !includeBoneyard) {
+				break;
+			}
+			if ((line.typeAsString() == "Character" || line.typeAsString() == "Dual Dialogue Character") &&
+				line.characterName().toUpperCase() == characterName.toUpperCase())  {
+				dialogue = true
+			}
+			else if (!line.isDialogueElement() && dialogue) {
+				dialogue = false
+				text += "\n\n"
+			}
+			if (dialogue) {
+				text += line.string + "\n"
+			}
+		}
 
+		text = text.replaceAll("\n\n\n", "\n\n")
+		text = text.replaceAll("\n\n\n", "\n\n")
 
-// Iterate through the document
-for (const line of Beat.lines()) {
-	if ((line.typeAsString() == "Character" || line.typeAsString() == "Dual Dialogue Character") &&
-		line.characterName().toUpperCase() == characterName.toUpperCase())  {
-		dialogue = true
+		// Create the new document
+		Beat.newDocument(text)
+	} else {
+		// Cancelled
 	}
-	else if (!line.isDialogueElement() && dialogue) {
-		dialogue = false
-		text += "\n\n"
-	}
-	if (dialogue) {
-		text += line.string + "\n"
-	}
-}
-
-text = text.replaceAll("\n\n\n", "\n\n")
-text = text.replaceAll("\n\n\n", "\n\n")
-
-// Create the new document
-Beat.newDocument(text)
+})
