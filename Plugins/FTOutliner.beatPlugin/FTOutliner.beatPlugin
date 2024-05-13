@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.83
+Version: 1.86
 Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
@@ -37,7 +37,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.83"
+var ftoutlinerVersion = "1.86"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -767,11 +767,32 @@ function titleCaseThis(str) {
 }
 
 
-function ____________________STORING_STUFF___________________(){}
+function ____________________WINDOW_SIZING___________________(){}
+
+let isMinimizedBecauseUnfocused = false
+let sizesBeforeMinimize = htmlWindow.getFrame()
+
+Beat.custom.minimizeFTOutliner = function(){ 
+    isMinimizedBecauseUnfocused = true
+    sizesBeforeMinimize = htmlWindow.getFrame()
+    htmlWindow.setFrame(sizesBeforeMinimize.x || 0, sizesBeforeMinimize.y + sizesBeforeMinimize.height - 28 , 160, 28) 
+
+}
+Beat.custom.maximizeFTOutliner = function(){ 
+    isMinimizedBecauseUnfocused = false
+    htmlWindow.setFrame(sizesBeforeMinimize.x || 0, sizesBeforeMinimize.y || 0, sizesBeforeMinimize.width || 800, sizesBeforeMinimize.height || 800)
+
+}
 
 Beat.custom.saveWindowSize = function() { //DO NOT REMOVE THIS, IT IS CALLED FROM THE HTML WINDOW
 	
 	let winSize = htmlWindow.getFrame()
+
+    if (isMinimizedBecauseUnfocused) {return
+        let windowSizes = Beat.getDocumentSetting('windowSize')
+        winSize.width = windowSizes.width
+        winSize.height = windowSizes.height
+    }
 	
 	Beat.setDocumentSetting('windowSize', {
 

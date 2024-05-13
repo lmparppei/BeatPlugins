@@ -98,6 +98,12 @@ $id("flexiContainer").ondrop = function(event){onDrop(event)}
 $id("flexiContainer").onscroll = function(){flexiContainer.style.setProperty("--flexiScroll", flexiContainer.scrollTop) + "px"}
 $id("flexiContainer").classList.add("positionRelative")
 
+window.addEventListener("blur", minimizeFTOutliner)
+window.addEventListener("focus", maximizeFTOutliner)
+
+function minimizeFTOutliner(){ if(userDefault["hideOnBlur"] == true) Beat.call("Beat.custom.minimizeFTOutliner()") }
+function maximizeFTOutliner(unconditionally){ if(userDefault["hideOnBlur"] == true || unconditionally) Beat.call("Beat.custom.maximizeFTOutliner()") }
+
 document.getElementById("sidepanelButton").innerHTML = sidebarLeftIcon
 document.getElementById("indexCardButton").innerHTML = outlineIcon
 document.getElementById("characterButton").innerHTML = funnelIcon + `<div id="selectedCharacterName"></div>`
@@ -341,7 +347,7 @@ function snapshotPopup(element = elementBeingHovered.element){
 			return null;
 		}
 
-		console.log("siblings done:", scene, nextScene)
+		// console.log("siblings done:", scene, nextScene)
 
 	let startingLine = lines.find(line => line.uuid == scene.dataset.uuid)
 		if(!startingLine) return
@@ -350,7 +356,7 @@ function snapshotPopup(element = elementBeingHovered.element){
 
 	let sceneLines = lines.slice(lines.indexOf(startingLine), lines.indexOf(endingLine) - 1)
 
-		console.log("now to make div")
+		// console.log("now to make div")
 
 	let popup = document.createElement("div")
 		popup.id = "snapshotPopup"
@@ -366,7 +372,7 @@ function snapshotPopup(element = elementBeingHovered.element){
 				popup.appendChild(lineDiv)
 		}
 
-		console.log("next up: measures")
+		// console.log("next up: measures")
 	
 	let color = window.getComputedStyle(element.closest(".scene")).getPropertyValue('--localColor')
 		popup.style.setProperty("--localColor", color) 
@@ -500,7 +506,7 @@ function firstRun(location, length){
 function updateEntireOutline(json, location, length, absoluteLength, linesAsJson, novel = false, screenplay) {
 
 	mylog()
-	$$(".contextMenu").forEach(menu => menu.remove())
+	closeContextMenu()
 	toggleWaitState(true) // probably already turned on elsewhere, but for good measure
 	
 	// making data global:
@@ -733,6 +739,7 @@ function divMaker(){
 
 					if(loggingIsOn){sectionheaderDiv.innerHTML += currentItem.uuid + " -- "}
 					// sectionheaderDiv.innerHTML += (novelMode ? currentItem.numberOfPages + "minus" + currentItem.lineHeight : "") + " "
+					// sectionheaderDiv.innerHTML += currentItem.positionOnPage + " -- "
 					sectionheaderDiv.innerHTML += currentItem.stringForDisplay.replace(/^#+/, "").replace(/</g, "&lt;")
 					if(currentItem.sectionDepth == 1)sectionheaderDiv.innerHTML += `<span class='widerButton'>${pinIcon}</span><span class='widerButtonOn'>${pinPushedIcon}</span>`
 
@@ -851,7 +858,7 @@ function divMaker(){
 					sceneheadingDiv.appendChild(sceneNumberSpan)
 					
 				let pageCountSpan = document.createElement("SPAN")
-				console.log("currentItem.numberOfPages for " + currentItem.string, currentItem.numberOfPages)
+				// console.log("currentItem.numberOfPages for " + currentItem.string, currentItem.numberOfPages)
 					pageCountSpan.innerHTML = numberIntoEights(currentItem.numberOfPages)
 					if (novelMode) pageCountSpan.innerHTML = numberOfWords(currentItem.sceneStart, currentItem.sceneEnd) + " words"
 					pageCountSpan.classList.add("showSceneLength")
@@ -1102,7 +1109,7 @@ function updateAllSectionPageCounts(){
 		
 		if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
 		if(novelMode){
-			accumulatedWords = numberOfWords(sectionEntry.sceneStart, sectionEntry.sceneEnd)
+			accumulatedWords = numberOfWords(sectionEntry?.sceneStart, sectionEntry?.sceneEnd)
 			if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${accumulatedWords} words)`
 		}
 	})
@@ -2049,7 +2056,7 @@ function escapeWasPressed(){
 		if (trackingContainerVisibility == 1) {toggleTrackingContainer(); return false}
 		if ($id('aboutBox')){toggleTrackingContainer(true); return false}
 		if ($id('textContainer')){toggleTrackingContainer(true); return false}
-		if ($(".contextMenu")) { $$(".contextMenu").forEach(menu => menu.remove()) ; return false }
+		if ($(".contextMenu")) { closeContextMenu() ; return false }
 		if ($(".wider")) {$(".wider").classList.remove("wider"); return false}
 		if ($('.expandedReview')) {collapseReviews(); return false}
 		if ($id('expandedNote')) {collapseNote(); return false}

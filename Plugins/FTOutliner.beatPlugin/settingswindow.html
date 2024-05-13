@@ -79,6 +79,11 @@
 		<span class="explanation">When OFF, markers don't display text in non-proportional and index card mode. When ON, marker text is visible, but markers may obscure each other as well as the content of index cards. Use wisely!</span>
 	</li>
 	<br/>
+	<li  onclick="toggleThisUserDefault('hideOnBlur', 'buttonFor-hideOnBlur', false)">
+		<input id="buttonFor-hideOnBlur" type="checkbox">
+		<label for="buttonFor-hideOnBlur"><b>EXPERIMENTAL: </b>Keep FTOutliner minimized when unfocused<span class="shortcut" ></span></label>
+	</li>
+	<br/>
 	<li  onclick="toggleThisUserDefault('warningsAreOn', 'buttonFor-warningsAreOn', true)">
 		<input id="buttonFor-warningsAreOn" type="checkbox">
 		<label for="buttonFor-warningsAreOn">Show Warning Messages when deleting and moving<span class="shortcut" >^P</span></label>
@@ -157,14 +162,16 @@
 
 	function toggleThisUserDefault(settingName, settingButton, invertSelection){
 
-		userDefault[settingName] = document.getElementById("buttonFor-" + settingName).checked
-
+        
+        userDefault[settingName] = document.getElementById("buttonFor-" + settingName).checked
+        
 		let valueAsJSON = JSON.stringify(userDefault[settingName])
-			Beat.call(`	Beat.custom.sendToMain("${settingName}", ${valueAsJSON}, "userDefault") `)
-
-			//note to self: To save me one step, go directly to applySettings in outline.html.
-			//that's where sendToMain will send the setting, so next step is now to add code to apply it.
-
+        Beat.call(`	Beat.custom.sendToMain("${settingName}", ${valueAsJSON}, "userDefault") `)
+        
+        //note to self: To save me one step, go directly to applySettings in outline.html.
+        //that's where sendToMain will send the setting, so next step is now to add code to apply it.
+        
+        if (settingName == "hideOnBlur" && !document.getElementById("buttonFor-hideOnBlur").checked) { maximizeFTOutliner(true) }
 	}
 
 

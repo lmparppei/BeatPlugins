@@ -191,7 +191,7 @@
                 if (!col) return "Can't Highlight Custom Colors"
                 return this.invisiblyChecked(item) ? `Un-highlight ${col} Scenes`: `Highlight ${col} Scenes`},
             shortcut: ["Alt", "LeftClick"],
-            icon: funnelIcon,
+            icon: svgCircle, /*funnelIcon,*/
             iconColor: "",
             hoverColor: "",
             iconSpecialColor: function(item) {return (this.invisiblyChecked(item)) ? availableColors.find(col => item?.classList?.contains(col.toLowerCase())) : "" }, 
@@ -209,7 +209,7 @@
             //     if (!col) return "Can Only Highlight Standard Colors"
             //     return this.checkedIf(item) ? `Un-highlight ${col} Scenes`: `Highlight ${col} Scenes`},
             shortcut: ["Alt", "LeftClick"],
-            icon: funnelIcon,
+            icon: svgCircle /*funnelIcon*/,
             iconColor: "",
             hoverColor: "",
             iconSpecialColor: function(item) {return ((!!document.querySelector("#flexiContainer.uncolorAllScenesBut")) && availableColors.some(col => flexiContainer.classList.contains(col.toLowerCase()) && item.classList.contains(col.toLowerCase()))) ? 
@@ -671,6 +671,11 @@ function displayContextMenu(event, element){
     event?.stopPropagation()
     closeNewMenu()
 
+    if(typeof fto !== "undefined"){
+        fto.contextMenu(event)
+        // return
+    }
+
     element = element || event.target //the element is sent when triggering menu with keys
     let item = element.closest(".synopsis, .scene, .section, .flexiContainer, .location, .timeOfDay, #scenespanelcontent, #scenepanelSettingsButton, #notepanel")
         if (!item) return
@@ -679,7 +684,7 @@ function displayContextMenu(event, element){
     if (!event?.shiftKey && !event?.metaKey && !item.classList.contains('isSelected')) {deselectAllElements()}
         item.classList.add("isSelected")
 
-    document.querySelectorAll(".contextMenu").forEach( menu => {menu.remove()})
+    closeContextMenu()
         if (!item) return
 
 
@@ -708,7 +713,7 @@ function displayContextMenu(event, element){
             let items = Array.from(contextMenu.querySelectorAll("li:not(.greyedOut)"))
                 if(!items.length) return
             let currentlySelected = items.indexOf(contextMenu.querySelector(".keySelected"))
-            if (event.key == "Escape") contextMenu.remove()
+            if (event.key == "Escape") closeContextMenu()
             if (event.key == "ArrowDown") {
                     if (currentlySelected === undefined || currentlySelected == items.length -1) currentlySelected = -1
                     items.forEach(item => item.classList.toggle("keySelected", false))
@@ -728,7 +733,7 @@ function displayContextMenu(event, element){
     document.body.appendChild(contextMenu)
 
         contextMenu.focus()
-        contextMenu.onblur = function(){ contextMenu.remove() }
+        contextMenu.onblur = function(){ closeContextMenu() }
 
     let list = document.createElement("ul")
     for (contentLine of contextMenuContents){
@@ -788,7 +793,16 @@ function displayContextMenu(event, element){
                     event.stopPropagation()
                     event.preventDefault()
                     command(item);
-                    contextMenu.remove()
+                    closeContextMenu()
+                    // document.querySelectorAll(".contextMenu").forEach((menu, index) => {
+                    //     try {
+                    //         console.log(`Before remove: menu ${index} is in DOM:`, document.body.contains(menu));
+                    //         menu.remove();
+                    //         console.log(`After remove: menu ${index} is in DOM:`, document.body.contains(menu));
+                    //     } catch (e) {
+                    //         console.error(`Error removing menu ${index}:`, e);
+                    //     }
+                    //     });
                 }
             })(contentLine.command);
             listItem.oncontextmenu = listItem.onclick
@@ -804,6 +818,8 @@ function displayContextMenu(event, element){
                     iconChecked = true
                 }
             let menuName = contentLine.menuItem
+            console.log("menuName", menuName)
+            console.log("about to display this icon:", contentLine.icon)
                 if (contentLine.menuName) menuName = contentLine.menuName(item)
                 if (contentLine.spanText) menuName += `<span style='float: right; font-size: 10px; opacity: 0.6; padding-left: 10px;'>${contentLine.spanText(item)}</span>`
             listItem.innerHTML = `<span class='contextmenuicon ${iconChecked ? "checkedIcon" : ""}' style='--mycolor: var(--${iconColor})'>${contentLine.icon || ""}</span>${menuName}<span class='shortcut'>${shortcutKeys.join("")}</span>`;
@@ -818,14 +834,14 @@ function displayContextMenu(event, element){
     if (xpos + contextMenu.offsetWidth > window.innerWidth) contextMenu.style.left = window.innerWidth - contextMenu.offsetWidth + "px"
     if (ypos + contextMenu.offsetHeight > window.innerHeight) contextMenu.style.top = window.innerHeight - contextMenu.offsetHeight + "px"
 
-    if (list.textContent == "") contextMenu.remove()
+    if (list.textContent == "") closeContextMenu()
 
 }
 
 function setItemColor(item, color){
 
     toggleWaitState(true)
-    $$(".contextMenu").forEach(menu => {menu.remove()})
+    closeContextMenu()
 
     if (color.toLowerCase() == "remove color") {color = "none"}
 
@@ -1060,7 +1076,16 @@ function closeContextMenu(){
 
     mylog()
 
-    $$(".contextMenu").forEach(menu => {menu.remove()})
+    document.querySelectorAll(".contextMenu")?.forEach(menu => {
+        if(document.body.contains(menu)) {
+            try{
+                menu?.remove()
+            }
+            catch(e){
+                console.log("Error removing context menu:", e)
+            }
+        }
+    })
     contextMenuIsOpen = false
     
     mylog("exiting")

@@ -52,7 +52,7 @@ function addElement(theClickedThing, whatToAdd, beforeInsteadOfAfter){
 
         case "section":
                 
-            let numberOfHashtags = outline[theClickedThing.closest(".section").dataset.myId].line.string.match(/^(#*)/)        
+            let numberOfHashtags = outline[theClickedThing.closest(".section")?.dataset.myId]?.line.string.match(/^(#*)/) || ["#"]
                 addString = `${"#".repeat(numberOfHashtags[0].length)}NEW SECTION\\n`
     
             break;

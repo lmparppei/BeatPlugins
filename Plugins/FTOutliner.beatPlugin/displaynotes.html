@@ -714,7 +714,7 @@ function collectNotes(wherefrom){
                                     while (!copyOfLines[copyOfLines.indexOf(line) + numberOfExtraLines].string.includes("\]\]")){
 
                                         numberOfExtraLines ++
-                                        note.range.length += copyOfLines[copyOfLines.indexOf(line) + numberOfExtraLines].notes[0].range.length + 1 //+1 for the newline character
+                                        note.range.length += (copyOfLines[copyOfLines.indexOf(line) + numberOfExtraLines].notes[0]?.range?.length + 1) || 0//+1 for the newline character
 
                                     }
                                 }
