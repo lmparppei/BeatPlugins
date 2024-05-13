@@ -1249,6 +1249,11 @@ function settingsMenu(){
                     <span class="shortcut" style="float:right"></span></p>
                 </li>
             <hr>
+            <li onclick='toggleNovelMode()'>
+                <input id='buttonForNovelMode' type='checkbox'>
+                    <div class='switch'></div>  
+                        <label for='buttonForNovelMode'>Novel Mode<!--span class='shortcut' style='float:right'>N</span--></label>
+            <hr>
             <li onclick='toggleConsole()'>
                 <input id='buttonForLogging' type='checkbox'>
                     <div class='switch'></div>  
@@ -1326,6 +1331,7 @@ function settingsMenu(){
 
     $id("menu").innerHTML = ""
     $id("menu").appendChild(innerMenu)
+    if($id("buttonForNovelMode")) $id("buttonForNovelMode").checked = novelMode
 
 }
 
@@ -1516,6 +1522,20 @@ function cycleMenus(shift){
 
     showNewMenu(theClickedThing, whichOne)
 
+}
+
+function toggleNovelMode() {
+
+    novelMode = !novelMode
+
+    if(novelMode){
+        Beat.call(`Beat.setRawDocumentSetting("Stylesheet", "Novel")`)
+    }else{
+        Beat.call(`Beat.setRawDocumentSetting("Stylesheet", "")`)
+    }
+
+    if($id("buttonForNovelMode")){$id("buttonForNovelMode").checked = novelMode}
+    
 }
 
 </script>

@@ -1,3 +1,18 @@
+#v 1.86 (May 13, 2024)
+
+* Experimental setting to minimize FTOutliner when unfocused. 
+* Little bugfixes here and there.
+
+#v 1.85 (March 6, 2024)
+
+*BUG FIXES:*
+* Fixed a bug where adding a section header from the context menu if no section present above it would cause a crash
+
+#v 1.84 (February 5, 2024)
+
+*BUG FIXES:*
+* Fixed a bug in Novel Mode where placing an orphan scene or lower-level ##SECTION before the first #ACT would cause a crash
+
 #v 1.83 (January 24, 2024)
 
 *IMPROVEMENTS:*
