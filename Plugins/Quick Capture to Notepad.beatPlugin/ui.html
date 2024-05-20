@@ -1,0 +1,189 @@
+<style>
+    :root {
+        --background-color: #f5f5f5;
+        --text-color: #333;
+        --textarea-background-color: #fff;
+        --textarea-border-color: #ccc;
+        --button-text-color: #333;
+        --button-hover-background-color: rgba(0, 0, 0, 0.1);
+        --keycap-border-color: #ccc;
+        --keycap-text-color: #333;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background-color: #222;
+            --text-color: #fff;
+            --textarea-background-color: #333;
+            --textarea-border-color: #555;
+            --button-text-color: #fff;
+            --button-hover-background-color: rgba(255, 255, 255, 0.1);
+            --keycap-border-color: #555;
+            --keycap-text-color: #fff;
+        }
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        box-sizing: border-box;
+    }
+    
+    .content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    
+    textarea {
+        resize: none;
+        padding: 10px;
+        border: 1px solid var(--textarea-border-color);
+        border-radius: 4px;
+        font-size: 16px;
+        box-sizing: border-box;
+        flex: 1;
+        margin-bottom: 8px;
+        background-color: var(--textarea-background-color);
+        color: var(--text-color);
+    }
+    
+    .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        font-size: 13px;
+    }
+
+    .instructions {
+        color: var(--text-color);
+        opacity: 0.5;
+        margin-right: 8px;
+        font-size: 11px;
+    }
+    
+    .footer button {
+        background-color: transparent;
+        color: var(--button-text-color);
+        border: none;
+        padding: 2px 4px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-left: 4px;
+    }
+    
+    .footer button:hover {
+        background-color: var(--button-hover-background-color);
+        border-radius: 4px;
+    }
+
+    .keycap {
+        display: inline-block;
+        background-color: transparent;
+        border: 1px solid var(--keycap-border-color);
+        border-radius: 3px;
+        padding: 1px 3px;
+        font-size: 12px;
+        font-weight: bold;
+        margin: 0 1px;
+        color: var(--keycap-text-color);
+    }
+
+    .color-palette {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .color-circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 5px;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .color-circle.selected {
+        border-color: var(--text-color);
+    }
+</style>
+
+<div class="content">
+    <textarea id="ideaTextarea" placeholder="Type your note here..." onkeydown="handleKeyDown(event)"></textarea>
+    <div class="color-palette">
+        <div class="color-circle" style="background-color: #ffffff;" onclick="selectColor('default')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #EF0048;" onclick="selectColor('red')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #00DF7A;" onclick="selectColor('green')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #0281F0;" onclick="selectColor('blue')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #FE84DF;" onclick="selectColor('pink')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #A96A08;" onclick="selectColor('brown')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #03BDEB;" onclick="selectColor('cyan')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #FEA112;" onclick="selectColor('orange')" tabindex="0"></div>
+        <div class="color-circle" style="background-color: #EB028C;" onclick="selectColor('magenta')" tabindex="0"></div>
+    </div>
+</div>
+<div class="footer">
+    <div class="instructions">
+        ⌘ ⌥ 2 to open plugin
+    </div>
+    <div>
+        <button onclick="capture()">Send <span class="keycap">⌘</span><span class="keycap">⏎</span></button>
+        <button onclick="close()">Cancel <span class="keycap">Esc</span></button>
+    </div>
+</div>
+
+<script>
+    let selectedColor = 'default';
+
+    function handleKeyDown(event) {
+        if (event.metaKey && event.key === "Enter") {
+            event.preventDefault();
+            let idea = document.getElementById("ideaTextarea").value;
+
+            Beat.call((arg, arg2) => {
+                Beat.custom.captureIdea(arg, arg2);
+            }, idea, selectedColor);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            close();
+        }
+    }
+
+    function selectColor(color) {
+        selectedColor = color;
+        const colorCircles = document.querySelectorAll('.color-circle');
+        colorCircles.forEach(circle => {
+            circle.classList.remove('selected');
+        });
+        event.target.classList.add('selected');
+        document.getElementById("ideaTextarea").focus();
+    }
+
+    function capture() {
+        let idea = document.getElementById("ideaTextarea").value;
+
+        Beat.call((arg, arg2) => {
+            Beat.custom.captureIdea(arg, arg2);
+        }, idea, selectedColor);
+    }
+
+    function close() {
+        Beat.call(() => {
+            Beat.custom.close();
+        });
+    }
+
+    function clear() {
+        const textField = document.getElementById("ideaTextarea");
+        textField.value = "";
+    }
+</script>
