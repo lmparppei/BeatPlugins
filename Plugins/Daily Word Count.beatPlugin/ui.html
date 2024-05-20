@@ -1,0 +1,284 @@
+<style>
+    :root {
+        --background-color: #f5f5f5;
+        --text-color: #333;
+        --button-background-color: #fff;
+        --button-text-color: #333;
+        --button-hover-background-color: #007AFF;
+        --button-hover-text-color: #fff;
+        --input-background-color: #fff;
+        --input-text-color: #333;
+        --input-border-color: #ccc;
+        --goal-reached-color: #007AFF;
+        --tooltip-background-color: rgba(0, 0, 0, 0.8);
+        --tooltip-text-color: #fff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background-color: #222;
+            --text-color: #fff;
+            --button-background-color: #333;
+            --button-text-color: #fff;
+            --button-hover-background-color: #007AFF;
+            --button-hover-text-color: #fff;
+            --input-background-color: #333;
+            --input-text-color: #fff;
+            --input-border-color: #555;
+            --goal-reached-color: #007AFF;
+            --tooltip-background-color: rgba(255, 255, 255, 0.8);
+            --tooltip-text-color: #000;
+        }
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        height: 100vh;
+        position: relative;
+    }
+    
+    .counter-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        position: relative;
+    }
+    
+    #count {
+        font-size: 24px;
+        font-weight: bold;
+        transition: font-size 0.3s, filter 0.3s;
+    }
+    
+    body:hover #count {
+        filter: blur(2px);
+    }
+    
+    #count.medium {
+        font-size: 36px;
+    }
+    
+    #count.large {
+        font-size: 48px;
+    }
+    
+    #count.goal-reached {
+        color: var(--goal-reached-color);
+    }
+    
+    #count.goal-reached.animate {
+        animation: glow 3s ease-in-out 2;
+    }
+    
+    @keyframes glow {
+        0% {
+            text-shadow: 0 0 2px var(--goal-reached-color);
+        }
+        50% {
+            text-shadow: 0 0 10px var(--goal-reached-color);
+        }
+        100% {
+            text-shadow: 0 0 2px var(--goal-reached-color);
+        }
+    }
+    
+    .controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    
+    body:hover .controls {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .button {
+        background-color: var(--button-background-color);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        border-radius: 50%;
+        position: relative;
+    }
+    
+    .button:hover {
+        background-color: var(--button-hover-background-color);
+    }
+    
+    .button:hover .icon {
+        fill: var(--button-hover-text-color);
+    }
+    
+    .tooltip {
+        position: absolute;
+        left: -120px;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: var(--tooltip-background-color);
+        color: var(--tooltip-text-color);
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 8px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+    
+    .button:hover .tooltip {
+        opacity: 1;
+    }
+    
+    #goal-input {
+        font-size: 10px;
+        padding: 2px;
+        width: 40px;
+        background-color: var(--input-background-color);
+        color: var(--input-text-color);
+        border: 1px solid var(--input-border-color);
+        border-radius: 3px;
+        text-align: center;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    
+    body:hover #goal-input {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    #goal-input::-webkit-outer-spin-button,
+    #goal-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .icon {
+        width: 10px;
+        height: 10px;
+        fill: var(--button-text-color);
+        transition: fill 0.3s;
+    }
+    
+    .size-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    
+    body:hover .size-button {
+        opacity: 1;
+        pointer-events: auto;
+    }
+</style>
+
+<div class="counter-container">
+    <div id="count">0</div>
+    <div class="controls">
+        <button id="reset-button" class="button reset-button" onclick="resetCount()">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M440.65 12.57l4 82.77A247.16 247.16 0 0 0 255.83 8C134.73 8 33.91 94.92 12.29 209.82A12 12 0 0 0 24.09 224h49.05a12 12 0 0 0 11.67-9.26 175.91 175.91 0 0 1 317-56.94l-101.46-4.86a12 12 0 0 0-12.57 12v47.41a12 12 0 0 0 12 12H500a12 12 0 0 0 12-12V12a12 12 0 0 0-12-12h-47.37a12 12 0 0 0-11.98 12.57zM255.83 432a175.61 175.61 0 0 1-146-77.8l101.8 4.87a12 12 0 0 0 12.57-12v-47.4a12 12 0 0 0-12-12H12a12 12 0 0 0-12 12V500a12 12 0 0 0 12 12h47.35a12 12 0 0 0 12-12.6l-4.15-82.57A247.17 247.17 0 0 0 255.83 504c121.11 0 221.93-86.92 243.55-201.82a12 12 0 0 0-11.8-14.18h-49.05a12 12 0 0 0-11.67 9.26A175.86 175.86 0 0 1 255.83 432z"/>
+            </svg>
+        </button>
+        <button id="eye-button" class="button eye-button" onclick="toggleCountingMode()">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/>
+            </svg>
+            <span class="tooltip">view total or daily counts</span>
+        </button>
+    </div>
+    <input type="number" id="goal-input" placeholder="goal" oninput="setWordCountGoal()">
+    <button id="size-button" class="button size-button" onclick="toggleCounterSize()">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/>
+        </svg>
+    </button>
+</div>
+
+<script>
+    let counterSize = 'small';
+    let countingMode = 'up';
+
+    function updateCount(newCount, totalCount, goal, countingMode) {
+        const countElement = document.getElementById("count");
+        countElement.textContent = countingMode === 'up' ? newCount : totalCount;
+        
+        if (goal !== null && newCount >= goal) {
+            countElement.classList.add("goal-reached");
+            countElement.classList.add("animate");
+            setTimeout(() => {
+                countElement.classList.remove("animate");
+            }, 6000);
+        } else {
+            countElement.classList.remove("goal-reached");
+            countElement.classList.remove("animate");
+        }
+    }
+
+    function resetCount() {
+        Beat.call(() => {
+            Beat.custom.resetCount();
+        });
+    }
+    
+    function setWordCountGoal() {
+        const goalInput = document.getElementById("goal-input");
+        const goal = parseInt(goalInput.value);
+        
+        Beat.call((goal) => {
+            Beat.custom.setWordCountGoal(goal);
+        }, goal);
+    }
+    
+    function toggleCountingMode() {
+        countingMode = countingMode === 'up' ? 'down' : 'up';
+        Beat.call((mode) => {
+            Beat.custom.toggleCountingMode();
+        }, countingMode);
+    }
+    
+    function toggleCounterSize() {
+        const countElement = document.getElementById("count");
+        
+        if (counterSize === 'small') {
+            countElement.classList.add("medium");
+            countElement.classList.remove("large");
+            counterSize = 'medium';
+        } else if (counterSize === 'medium') {
+            countElement.classList.remove("medium");
+            countElement.classList.add("large");
+            counterSize = 'large';
+        } else {
+            countElement.classList.remove("medium");
+            countElement.classList.remove("large");
+            counterSize = 'small';
+        }
+    }
+</script>
