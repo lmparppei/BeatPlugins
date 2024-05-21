@@ -1,7 +1,7 @@
 /*
 
 Import Markdown
-Version: 1.0
+Version: 1.1
 Description: Import Markdown files and convert them to Fountain
 Copyright: Lauri-Matti Parppei 2021
 Type: Import
@@ -11,8 +11,6 @@ Type: Import
 </Description>
 
 */
-
-Beat.openConsole()
 
 Beat.importHandler(["md"], function (path) {
 	if (path) {
@@ -30,8 +28,8 @@ function importMd(contents) {
 	let text = contents
 	text = text.replace(noteRegex, "[[$1]]")
 	text = text.replace(omitRegex, "/*$1*/")
-	text = text.replace(boldRegex, "/**$1**/")
-	text = text.replace(italicRegex, "/*$1*/")
+	text = text.replace(boldRegex, "**$1**")
+	text = text.replace(italicRegex, "*$1*")
 
 	Beat.newDocument(text)
 }
