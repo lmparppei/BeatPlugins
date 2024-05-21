@@ -33,7 +33,9 @@ let countingMode = 'up';
 // Set up the panel
 let panel = Beat.htmlWindow(html, 155, 65);
 panel.stayInMemory = true;
-panel.disableMaximize = true; // Disable window maximization
+panel.disableFullScreen = true; // Disable full-screen mode
+panel.disableMinimize = true;
+panel.disableMaximize = true;
 
 // Function to count words, excluding inline notes, text with equal signs, and headings
 function countWords(text) {
