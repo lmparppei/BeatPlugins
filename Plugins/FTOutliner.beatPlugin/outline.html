@@ -99,10 +99,10 @@ $id("flexiContainer").onscroll = function(){flexiContainer.style.setProperty("--
 $id("flexiContainer").classList.add("positionRelative")
 
 window.addEventListener("blur", minimizeFTOutliner)
-window.addEventListener("focus", maximizeFTOutliner)
+window.addEventListener("focus", () => maximizeFTOutliner(false))
 
 function minimizeFTOutliner(){ if(userDefault["hideOnBlur"] == true) Beat.call("Beat.custom.minimizeFTOutliner()") }
-function maximizeFTOutliner(unconditionally){ if(userDefault["hideOnBlur"] == true || unconditionally) Beat.call("Beat.custom.maximizeFTOutliner()") }
+function maximizeFTOutliner(unconditionally){ if(unconditionally || userDefault["hideOnBlur"] == true) Beat.call("Beat.custom.maximizeFTOutliner()") }
 
 document.getElementById("sidepanelButton").innerHTML = sidebarLeftIcon
 document.getElementById("indexCardButton").innerHTML = outlineIcon

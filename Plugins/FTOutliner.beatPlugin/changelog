@@ -1,3 +1,7 @@
+#v 1.87 (July 8, 2024)
+
+* Hotfix to bug caused by experimental minimize setting, where FTOutliner would change sizes when focused.
+
 #v 1.86 (May 13, 2024)
 
 * Experimental setting to minimize FTOutliner when unfocused. 
