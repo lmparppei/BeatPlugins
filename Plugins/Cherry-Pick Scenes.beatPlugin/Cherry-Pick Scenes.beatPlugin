@@ -30,7 +30,6 @@ ui = ui.replace("##DATA##", data);
 
 Beat.makeResident()
 Beat.htmlPanel(ui, 600,500, function(data) {
-	Beat.log("!!!")
 	let text = ""
 	const scenes = Beat.scenes()
 	const script = Beat.getText()
