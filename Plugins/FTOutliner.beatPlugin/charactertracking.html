@@ -338,6 +338,8 @@ function collectCharacters(preselectedCharacter) {
                 outlineElementsWithCharactersInSynopsisOnly[outlineElementNumber] = []
                 scenesWithDialog2023[outlineElementNumber] = []
             }
+
+            if (outlineElementNumber < 0) continue
             
             if (line.typeAsString == "Character" && !line.omitted){
                 trimmedName = line.string.replace(/^@/, "").toUpperCase().replace(removal, "").replace(/\'/, "’").trim() 
