@@ -921,7 +921,8 @@ function divMaker(){
 							divider.innerHTML = Math.trunc(currentItem.startsOnPage + 1 + p - reduceWhenFromTop)
 							divider.dataset.line = approxBreakPos
 
-							divider.style.top = 100 * pageDividers[num][p]/currentItem.numberOfPages + "%"
+                        let percentage = 100 * pageDividers[num][p]/currentItem.numberOfPages
+                        if (percentage < 100) divider.style.top = percentage + "%" //avoid drawing double pages when scenes end exactly on pagebreak
 
 						whereToAdd.appendChild(divider)
 

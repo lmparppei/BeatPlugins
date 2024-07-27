@@ -1,3 +1,7 @@
+#v 1.88 (July 26, 2024)
+
+* Hotfix to a bug in the dialog tracker, where if a speaking character was mentioned before the first SceneHeading or #Section (including on the title page, unfortunately) the dialog tracking feature would throw an error and crash. Thaaat wasn't ideal now, was it. 
+
 #v 1.87 (July 8, 2024)
 
 * Hotfix to bug caused by experimental minimize setting, where FTOutliner would change sizes when focused.
