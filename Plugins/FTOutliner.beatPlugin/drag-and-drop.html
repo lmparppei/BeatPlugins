@@ -954,7 +954,7 @@ function onDragOverForScenes(e, draggedOver){
                     insertBeforeScene ++
                 }
     }
-    
+
     mylog("we are here" + draggedOver.classList)
     //now adjusting everything if draggedOver was level1 (fri 13)
     if(draggedOver.classList.contains("level1")){
@@ -1065,6 +1065,8 @@ function onDrop(e){
     if(firstScene.includes("_")) firstScene = firstScene.replace(/_.*/, "").replace(/^s/, "")
     if(lastScene.includes("_")) lastScene = lastScene.replace(/_.*/, "").replace(/^s/, "")
     if(insertBeforeScene.includes("_")) insertBeforeScene = insertBeforeScene.replace(/_.*/, "").replace(/^s/, "")
+
+    if(!+insertBeforeScene) insertBeforeScene = null
     
     //new method of sending data: sending explicit range. Still sending "scenes" as a security measure though, in case used in the plugin code.
     //even newer, since 1.977: sending explicit drop-position for synopsis 
