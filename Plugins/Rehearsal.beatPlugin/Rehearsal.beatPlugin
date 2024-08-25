@@ -1,0 +1,122 @@
+/*
+
+Rehearsal
+Description: A plugin that selectively reveals the document to aid rehearsal.
+Copyright: © Benedikt Grundmann 
+Version: 1.0
+
+Note: I often have scripts where two characters are saying exactly the same
+lines. And instead of using dual dialogue I like to use & between the
+character names like this:
+
+BENE & DAVID
+What's going on?
+
+So this script handles that special case.
+*/
+
+
+function buildSelectHtml(characters) {
+	// This is fragile in the presence of character names containing 
+	// weird characters (e.g. '"'). Patches welcome.
+	// Ideally beat should have a htmlescape function as part of its api
+	const header = "<h2>Whose lines do you want to rehearse</h2>\
+<form>\
+<select name=\"character\" id=\"character\">\
+<option value=\"\">-/-</option>";
+
+  const footer =  "</select>\
+<button onclick='startRehearsal()'>Start rehearsal</button>\
+</form>\
+<script>\
+function startRehearsal() {\
+  const c = document.getElementById(\"character\").value;\
+	Beat.call((c) => { Beat.custom.startRehearsal(c) }, c);\
+}\
+</script>";
+
+	return header + characters.map((c) => "<option value=\"" + c + "\">" + c + "</option>").join("\n") + footer;
+}
+
+function gatherCharacters() {
+	const characters = [];
+	for (const line of Beat.lines()) {
+		if (line.typeAsString() == "Character") {
+			const names = line.characterName().toUpperCase().split(" & ");
+			for (const c of names) {
+				if (!characters.includes(c)) characters.push(c)
+			}
+		}
+	}
+	characters.sort();
+	return characters;
+}
+
+const controlWindow = Beat.htmlWindow(buildSelectHtml(gatherCharacters()), 250, 100, () => {
+	Beat.custom.restoreEverythingAtFinish();
+	Beat.end();
+});
+
+const rehearseHtml = "<h2>Time to rehearse</h2>\
+<p>\
+<button onclick='callNextLine()'>Next</button>\
+<button onclick='startAgain()'>Restart</button>\
+</p>\
+<script>\
+function callNextLine() {\
+  Beat.call(() => {Beat.custom.nextLine()});\
+}\
+function startAgain() {\
+	Beat.call(() => { Beat.custom.startRehearsal(Beat.custom.characterName) });\
+}\
+</script>";
+
+Beat.custom = {
+	start: -1,
+
+	startRehearsal: function(character) {
+		Beat.custom.characterName = character;
+		Beat.custom.start = -1;
+		controlWindow.setHTML(rehearseHtml);
+		Beat.custom.nextLine();
+	},
+	
+	nextLine: function() {
+		// TODO: Is there a more efficient version of this?
+		let len = Beat.getText().length;
+
+		// Similarly I really would like to only get lines starting
+		// from where I left of last...
+		
+		for (const line of Beat.lines()) {
+			if (Beat.custom.start < line.range.location && line.typeAsString() == "Character" 
+				&& (line.characterName().toUpperCase() == Beat.custom.characterName ||
+					line.characterName().toUpperCase().includes(Beat.custom.characterName + " & ")
+				|| line.characterName().toUpperCase().includes(" & " + Beat.custom.characterName)
+			)
+				) {
+					let newStart = line.range.location + line.range.length;
+					if (Beat.custom.start == -1) {
+						// first time let's hide everything from the first quote
+						Beat.textBackgroundHighlight("#000000", newStart, len - newStart);
+						Beat.textHighlight("#000000", newStart, len - newStart);
+					} else {
+						Beat.reformatRange(Beat.custom.start, newStart - Beat.custom.start);
+					}
+					Beat.custom.start = newStart;
+					return;
+			}
+		}
+		// We only get here if we reached the end, that is rehearsal
+		// is finished, otherwise the return above will have terminated
+		// the function
+		Beat.reformatRange(0, len - 1);
+	},
+
+	restoreEverythingAtFinish: function() {
+		// reformat clears highlighting.
+		Beat.reformatRange(0, Beat.getText().length - 1);
+	}
+}
+
+
