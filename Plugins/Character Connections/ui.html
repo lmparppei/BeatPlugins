@@ -1,0 +1,73 @@
+
+<style>
+    #network {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%; height: 100%;
+
+        background-color: #222;
+    }
+</style>
+<div id="network"></div>
+
+<script type="text/javascript">
+    const data = {{data}};
+
+    let items = []
+    let connections = []
+    for (const [name, mutuals] of Object.entries(data)) {
+        items.push({ 
+            id: name, 
+            label: name,
+            font: {
+                color: "#FFF"
+            }
+        })
+
+        for (const mutual of mutuals) {
+            let connection = { from: name, to: mutual }
+            let reverseConnection = { from: mutual, to: name }
+
+            let i = connections.indexOf(connection)
+            let j = connections.indexOf(reverseConnection)
+            
+            if (i == -1 && j == -1) {
+                connections.push(connection)
+            }
+        }
+    }
+
+    
+
+
+    var nodes = new vis.DataSet(items)
+    var edges = new vis.DataSet(connections)
+
+    // create a network
+    var container = document.getElementById("network");
+    var nodes = {
+        nodes: nodes,
+        edges: edges,
+    }
+    
+    var options = {
+        nodes: {
+            shape: "dot",
+            size: 10,
+            color: "#999",
+            mass: 1.5
+        },
+        edges: {
+            color: {
+                color: "#555",
+                highlight: "#00eeff"
+            }
+        },
+        layout: {
+            improvedLayout: true,
+            clusterThreshold: 100
+        },
+    }
+    var network = new vis.Network(container, nodes, options)
+
+</script>

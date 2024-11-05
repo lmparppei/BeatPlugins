@@ -28,7 +28,6 @@ let data = JSON.stringify(scenes)
 
 ui = ui.replace("##DATA##", data);
 
-Beat.makeResident()
 Beat.htmlPanel(ui, 600,500, function(data) {
 	let text = ""
 	const scenes = Beat.scenes()
