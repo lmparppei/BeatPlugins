@@ -15,13 +15,23 @@
 
     let items = []
     let connections = []
-    for (const [name, mutuals] of Object.entries(data)) {
+
+    let mostLines = 0
+    Beat.log(JSON.stringify(data.lines))
+    for (const [name, lines] of Object.entries(data.lines)) {
+        if (mostLines < lines) mostLines = lines;
+    }
+
+    for (const [name, mutuals] of Object.entries(data.connections)) {
+        let relativeSize = 30 * (data.lines[name] / mostLines)
+        //Beat.log("Relative size: " + name + " " + relativeSize)
         items.push({ 
             id: name, 
             label: name,
             font: {
                 color: "#FFF"
-            }
+            },
+            value: relativeSize
         })
 
         for (const mutual of mutuals) {
@@ -55,7 +65,11 @@
             shape: "dot",
             size: 10,
             color: "#999",
-            mass: 1.5
+            mass: 1.5,
+            scaling: {
+                min: 5,
+                max: 30
+            }
         },
         edges: {
             color: {
@@ -68,6 +82,7 @@
             clusterThreshold: 100
         },
     }
-    var network = new vis.Network(container, nodes, options)
+    
+    let network = new vis.Network(container, nodes, options)
 
 </script>

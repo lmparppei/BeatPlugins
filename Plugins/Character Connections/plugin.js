@@ -1,7 +1,7 @@
 /*
 
 Name: Character Connections
-Version: 1.0
+Version: 1.1
 
 Copyright: Lauri-Matti Parppei 2024
 Description: Displays a rough overview of characters who interact with each other (in dialogue)
@@ -10,6 +10,14 @@ Image: Character_Connections.jpg
 */
 
 let charactersToScenes = {}
+let connections = {}
+let lines = {}
+
+let characterData = Beat.characterData()
+let characters = characterData.allCharactersAndLines()
+for (const [name, character] of Object.entries(characters)) {
+	lines[name] = character.lines
+}
 
 // First map characters against scenes
 for (const scene of Beat.scenes()) {
@@ -22,8 +30,6 @@ for (const scene of Beat.scenes()) {
 
 // Then go through characters and map characters from scenes
 /// character: String, scenes: [OutlineScene]
-let connections = {}
-
 for (const [character, scenes] of Object.entries(charactersToScenes)) {
 	for (const scene of scenes) {
 		let names = scene.characters
@@ -44,7 +50,11 @@ for (const [character, scenes] of Object.entries(charactersToScenes)) {
 	}
 }
 
-let data = JSON.stringify(connections)
+let data = JSON.stringify({
+	connections: connections,
+	lines: lines
+})
+
 let ui = Beat.assetAsString("ui.html")
 let header = "<script type='text/javascript' src='vis-network.js'></script>"
 ui = ui.replace("{{data}}", data)
