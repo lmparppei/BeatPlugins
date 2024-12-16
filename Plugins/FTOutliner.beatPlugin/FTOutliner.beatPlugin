@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.90
+Version: 1.91
 Compatibility: 1.996.0
 Type: Tool
 Image: screenshot.jpg
@@ -37,7 +37,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.90"
+var ftoutlinerVersion = "1.91"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -1766,6 +1766,7 @@ let timeIn = Date.now()
         //Beat.log(reviewAsJSON)
 
 		htmlWindow.runJS(`
+            console.log("${JSON.stringify(indexObject)}")
 			paintRevisions('${indexAsJSON}', '${reviewAsJSON}')
 		`)
 
