@@ -1,3 +1,7 @@
+#v 1.91 (December 16, 2024)
+
+* Hotfix to crash when turning on revision marks in FTOutliner. Now also conforms correctly to Beat's new revision colors.
+
 #v 1.90 (October 11, 2024)
 
 * Hotfix to eliminate issue with FTOutliner displaying an error and/or going into an infinite loop when working in Novel Mode and a scene had no printable content. 

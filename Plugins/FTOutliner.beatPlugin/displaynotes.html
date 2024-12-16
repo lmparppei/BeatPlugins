@@ -1676,9 +1676,13 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
 
     if(!outline) return
 
+    mylog("************************************************")
+    mylog(changedAsJSON)
+    mylog(reviewAsJSON)
+
     mylog()
 
-    let changedObject = JSON.parse(changedAsJSON)
+    // let changedObject = JSON.parse(changedAsJSON)
     let reviewObject = JSON.parse(reviewAsJSON)
 
     // let currentDivs = $$(".revision")
@@ -1690,13 +1694,17 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
 
     $$(".revision").forEach(element => element.remove())
 
+    let revisionColors = ["blue", "pink", "yellow", "green", "goldenrod", "brown", "salmon", "purple"]
+
     for (line of reviewObject.Addition){
         
-        // mylog(line)
+        mylog(line)
     
         let changeStart = line[0]
         let changeLength = line[1]
-        let changeColor = line[2]
+        // let changeColor = line[2]
+        let changeColor = revisionColors[line[2]]
+        mylog(changeColor)
 
         let outlineNumber
 
@@ -1733,7 +1741,6 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
             revisionDiv.dataset.length = changeLength
 
             if($id(outlineNumber))$id(outlineNumber).appendChild(revisionDiv)
-    
     }
 }
 
@@ -1765,6 +1772,30 @@ function paintRevisions(changedAsJSON, reviewAsJSON){
     .revision.blue{
         background-color: rgba(51, 129, 239, var(--background-opacity));
         border-color: rgba(51, 129, 239, 1);
+    }
+    .revision.pink{
+        background-color: rgba(255, 0, 255, var(--background-opacity));
+        border-color: rgba(255, 0, 255, 1)
+    }
+    .revision.yellow{
+        background-color: rgba(255, 255, 0, var(--background-opacity));
+        border-color: rgba(255, 255, 0, 1)
+    }
+    .revision.goldenrod{
+        background-color: rgba(218, 165, 32, var(--background-opacity));
+        border-color: rgba(218, 165, 32, 1)
+    }
+    .revision.brown{
+        background-color: rgba(139, 69, 19, var(--background-opacity));
+        border-color: rgba(139, 69, 19, 1)
+    }
+    .revision.salmon{
+        background-color: rgba(250, 128, 114, var(--background-opacity));
+        border-color: rgba(250, 128, 114, 1)
+    }
+    .revision.purple{
+        background-color: rgba(181, 33, 218, var(--background-opacity));
+        border-color: rgba(181, 33, 218, 1)
     }
     .revision.orange{
         background-color: rgba(250, 161, 15, var(--background-opacity));
