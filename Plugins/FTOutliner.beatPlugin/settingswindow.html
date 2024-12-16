@@ -138,7 +138,7 @@
 					for ([key, value] of Object.entries(documentSetting)){					
 						let button = document.getElementById("buttonFor-" + key)
 							if(button){ 
-								if(value == true) button.setAttribute("checked", true) 
+								if(value == true) button?.setAttribute("checked", true) 
 							}
 					}
 			},
@@ -150,7 +150,7 @@
 
 	function toggleThis(settingName, settingButton, invertSelection){
 
-		documentSetting[settingName] = document.getElementById("buttonFor-" + settingName).checked
+		documentSetting[settingName] = document.getElementById("buttonFor-" + settingName)?.checked
 
 		let valueAsJSON = JSON.stringify(documentSetting[settingName])
 			Beat.call(`	Beat.custom.sendToMain("${settingName}", ${valueAsJSON}, "documentSetting") `)
@@ -163,7 +163,7 @@
 	function toggleThisUserDefault(settingName, settingButton, invertSelection){
 
         
-        userDefault[settingName] = document.getElementById("buttonFor-" + settingName).checked
+        userDefault[settingName] = document.getElementById("buttonFor-" + settingName)?.checked
         
 		let valueAsJSON = JSON.stringify(userDefault[settingName])
         Beat.call(`	Beat.custom.sendToMain("${settingName}", ${valueAsJSON}, "userDefault") `)
@@ -171,7 +171,7 @@
         //note to self: To save me one step, go directly to applySettings in outline.html.
         //that's where sendToMain will send the setting, so next step is now to add code to apply it.
         
-        if (settingName == "hideOnBlur" && !document.getElementById("buttonFor-hideOnBlur").checked) { maximizeFTOutliner(true) }
+        if (settingName == "hideOnBlur" && !document.getElementById("buttonFor-hideOnBlur")?.checked) { maximizeFTOutliner(true) }
 	}
 
 
