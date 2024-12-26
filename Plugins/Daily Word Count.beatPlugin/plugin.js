@@ -20,7 +20,7 @@ Copyright: Bode Pickman
   <p>With "Daily Word Count," you can stay motivated and focused on your writing goals. Keep an eye on your output and strive to improve your productivity over time.</p>
 </Description>
 Image: daily_word_count.jpg
-Version: 1.1
+Version: 1.2
 */
 const html = Beat.assetAsString("ui.html")
 let wordCount = 0;
