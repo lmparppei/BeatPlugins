@@ -37,14 +37,19 @@ panel.disableFullScreen = true; // Disable full-screen mode
 panel.disableMinimize = true;
 panel.disableMaximize = true;
 
-// Function to count words, excluding inline notes, text with equal signs, and headings
 function countWords(text) {
-    // Remove inline notes, text with equal signs, and headings
-    const cleanedText = text.replace(/\[\[.*?\]\]/g, '').replace(/^=.*$/gm, '').replace(/^#.*$/gm, '');
-    
+    // Remove inline notes, synopsis, headings, sections, and omits.
+    const cleanedText = text
+        .replace(/\[\[.*?\]\]/g, '') // Remove inline notes
+        .replace(/^=.*$/gm, '') // Remove synopsis
+        .replace(/^#.*$/gm, '') // Remove sections
+        .replace(/\/\*.*?\*\//gs, '') // Remove omits
+        .replace(/^\.[^\.\n].*$/gm, ''); // Remove headings
+        
+
     // Split the cleaned text into words and count them
     const words = cleanedText.trim().split(/\s+/).length;
-    
+
     return words;
 }
 
