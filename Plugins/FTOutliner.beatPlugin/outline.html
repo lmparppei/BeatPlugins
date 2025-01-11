@@ -860,7 +860,7 @@ function divMaker(){
 				let pageCountSpan = document.createElement("SPAN")
 				// console.log("currentItem.numberOfPages for " + currentItem.string, currentItem.numberOfPages)
 					pageCountSpan.innerHTML = numberIntoEights(currentItem.numberOfPages)
-					if (novelMode) pageCountSpan.innerHTML = numberOfWords(currentItem.sceneStart, currentItem.sceneEnd) + " words"
+					if (novelMode || documentSetting.countWords) pageCountSpan.innerHTML = numberOfWords(currentItem.sceneStart, currentItem.sceneEnd) + " words"
 					pageCountSpan.classList.add("showSceneLength")
 
 					sceneheadingDiv.appendChild(pageCountSpan)
@@ -1109,14 +1109,14 @@ function updateAllSectionPageCounts(){
 		let sectionEntry = outline.find(entry => entry.uuid == section.dataset.uuid)
 		
 		if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
-		if(novelMode){
-			accumulatedWords = numberOfWords(sectionEntry?.sceneStart, sectionEntry?.sceneEnd)
+        if(novelMode || documentSetting.countWords){
+			accumulatedWords = numberOfWords(sectionEntry?.sceneStart + (sectionEntry?.line?.string?.length || 0), sectionEntry?.sceneEnd)
 			if(section.querySelector(".sectionLengths")) section.querySelector(".sectionLengths").innerHTML = `<br/> (${accumulatedWords} words)`
 		}
 	})
 
 	//after the loop, add last accumulation to last section:
-	if (allSections.at(-1).querySelector(".sectionLengths")) {
+	if (!novelMode && !documentSetting.countWords && allSections.at(-1).querySelector(".sectionLengths")) {
 		allSections.at(-1).querySelector(".sectionLengths").innerHTML = `<br/> (${numberIntoEights(accumulatedPages)})`
 	}
 
@@ -1615,7 +1615,22 @@ function numberIntoEights(theNumber) {
 
 function numberOfWords(startIndex, endIndex){
 
-	return entireScreenplay.slice(startIndex, endIndex).split(/\s+/).length;
+    // let chunkToCount = entireScreenplay.slice(startIndex, endIndex)
+    // let chunkWithoutHidden = chunkToCount.replace(/\/\*.*?\*\//gm, "")
+    // let chunkWithoutNotes = chunkWithoutHidden.replace(/\[\[.*?\]\]/gm, "")
+    // let chunkWithoutSynopsis = chunkWithoutNotes.replace(/^=.*$/gm, "")
+
+    let chunkToCount = entireScreenplay.slice(startIndex, endIndex);
+    let chunkWithoutHidden = chunkToCount.replace(/\/\*[\s\S]*?\*\//g, ""); // Use [\s\S] to match any character including newlines
+    let chunkWithoutNotes = chunkWithoutHidden.replace(/\[\[(?:(?!\n\n)[\s\S])*?\]\]/g, ""); // Disallow empty lines within the range
+    let chunkWithoutSynopsis = chunkWithoutNotes.replace(/^=.*$/gm, ""); 
+    let chunkWithoutSections = chunkWithoutSynopsis.replace(/^#.*$/gm, ""); 
+    
+    let separateWords = chunkWithoutSections.split(/\s+/)
+    
+    return separateWords.filter(word => word != "" ).length
+
+    //return entireScreenplay.slice(startIndex, endIndex).split(/\s+/).length;
 
 }
 

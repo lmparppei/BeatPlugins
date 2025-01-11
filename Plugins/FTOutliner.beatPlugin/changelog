@@ -1,3 +1,9 @@
+#v 1.92 (January 10, 2025)
+
+* Added setting in Advanced Settings to show word count instead of lengths in eights in non-novel mode. (For novel mode, word count is always shown.)
+* Non-printing text (notes, hidden, synopsis etc) will is now excluded from word count.
+* Fixed a bug where the last section in a document would always display the page count even when not supposed to.
+
 #v 1.91 (December 16, 2024)
 
 * Hotfix to crash when turning on revision marks in FTOutliner. Now also conforms correctly to Beat's new revision colors.
