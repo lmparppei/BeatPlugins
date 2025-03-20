@@ -12,7 +12,7 @@ Inspired by AI Writer’s Syntax Highlighting and Strunk & White’s classic <em
     <br><br><strong>Disclaimer:</strong> Please note that this plugin relies on automated heuristics to identify nominalizations and may occasionally produce false positives or miss some instances. We encourage you to use your own discretion when interpreting the highlights and making revisions.
 </Description>
 Image: ElementsOfStyle.png
-Version: 1.0
+Version: 1.1
 */
   
 (function() {
