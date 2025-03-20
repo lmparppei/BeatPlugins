@@ -2,19 +2,20 @@
 Title: The Elements of Style
 <Description>
 Inspired by AI Writer’s Syntax Highlighting and Strunk & White’s classic <em>The Elements of Style</em>, 
-    this tool helps you apply timeless writing principles. It highlights adverbs, adjectives, nominalizations, 
-    weak verbs, passive voice, conjunctions, fillers, redundancies, and clichés—making it easier to spot areas 
+    this tool helps you apply timeless writing principles. It highlights adverbs, adjectives, nominalizations, weak verbs, passive voice, conjunctions, fillers, redundancies, and clichés—making it easier to spot areas 
     for potential revision. While highlighted words and phrases aren’t necessarily incorrect, 
     this tool empowers you to clarify, tighten, and strengthen your writing—giving you greater control and 
     confidence in your text. 
     
     <br><br>Use CTRL+CMD+S to toggle plugin visibility.
+
+    <br><br><strong>Disclaimer:</strong> Please note that this plugin relies on automated heuristics to identify nominalizations and may occasionally produce false positives or miss some instances. We encourage you to use your own discretion when interpreting the highlights and making revisions.
 </Description>
 Image: ElementsOfStyle.png
 Version: 1.0
 */
   
-  (function() {
+(function() {
   // Ensure Beat.custom exists.
   if (!Beat.custom) {
     Beat.custom = {};
@@ -26,8 +27,8 @@ Version: 1.0
 
   let adverbs = [];
   let adjectives = [];
-  let allNouns = [];  // for collecting noun tokens (to later filter)
-  let nouns = [];     // repeating nouns only
+  let allNominalizations = [];  // for collecting nominalization tokens (to later filter)
+  let nominalizations = [];     // repeating nominalizations only
   let verbs = [];
   let passiveVoice = [];
   let conjunctions = [];
@@ -37,7 +38,7 @@ Version: 1.0
 
   let adverbHighlights = [];
   let adjectiveHighlights = [];
-  let nounHighlights = [];
+  let nominalizationHighlights = [];
   let verbHighlights = [];
   let passiveVoiceHighlights = [];
   let conjunctionHighlights = [];
@@ -47,7 +48,7 @@ Version: 1.0
 
   let showAdverbs = (Beat.getUserDefault("syntax_showAdverbs") !== undefined) ? Beat.getUserDefault("syntax_showAdverbs") : true;
   let showAdjectives = (Beat.getUserDefault("syntax_showAdjectives") !== undefined) ? Beat.getUserDefault("syntax_showAdjectives") : true;
-  let showNouns = (Beat.getUserDefault("syntax_showNouns") !== undefined) ? Beat.getUserDefault("syntax_showNouns") : true;
+  let showNominalizations = (Beat.getUserDefault("syntax_showNominalizations") !== undefined) ? Beat.getUserDefault("syntax_showNominalizations") : true;
   let showVerbs = (Beat.getUserDefault("syntax_showVerbs") !== undefined) ? Beat.getUserDefault("syntax_showVerbs") : true;
   let showPassiveVoice = (Beat.getUserDefault("syntax_showPassiveVoice") !== undefined) ? Beat.getUserDefault("syntax_showPassiveVoice") : true;
   let showConjunctions = (Beat.getUserDefault("syntax_showConjunctions") !== undefined) ? Beat.getUserDefault("syntax_showConjunctions") : true;
@@ -70,7 +71,7 @@ Version: 1.0
     const allHighlights = [
       ...adverbHighlights, 
       ...adjectiveHighlights, 
-      ...nounHighlights, 
+      ...nominalizationHighlights, 
       ...verbHighlights, 
       ...passiveVoiceHighlights, 
       ...conjunctionHighlights, 
@@ -83,7 +84,7 @@ Version: 1.0
     });
     adverbHighlights = [];
     adjectiveHighlights = [];
-    nounHighlights = [];
+    nominalizationHighlights = [];
     verbHighlights = [];
     passiveVoiceHighlights = [];
     conjunctionHighlights = [];
@@ -153,7 +154,7 @@ Version: 1.0
     switch (category) {
       case 'adverbs': return "#b84f50";
       case 'adjectives': return "#837a40";
-      case 'nouns': return "#96601d";
+      case 'nominalizations': return "#96601d";
       case 'verbs': return "#44785c";
       case 'passiveVoice': return "#4a838f";
       case 'conjunctions': return "#78674c";
@@ -175,8 +176,8 @@ Version: 1.0
   function gatherTokens() {
     adverbs = [];
     adjectives = [];
-    allNouns = [];
-    nouns = [];
+    allNominalizations = [];
+    nominalizations = [];
     verbs = [];
     passiveVoice = [];
     conjunctions = [];
@@ -187,7 +188,7 @@ Version: 1.0
     const patterns = {
       adverbs:       { regex: /\b\w+ly\b/gi, target: adverbs },
       adjectives:    { regex: /\b\w+(ous|ful|able|ible|ic|ive|al)\b/gi, target: adjectives },
-      nouns:         { regex: /\b\w+(tion|ment|ness|ity|age|ance|ence)\b/gi, target: allNouns },
+      nominalizations: { regex: /\b\w+(?:able|ation|ment|ness|ity|age|ance|ence|ency|ian|ion|ism)s?\b/gi, target: allNominalizations },
       verbs:         { regex: /\b(?:is|are|was|were|be|been|being|have|has|had|do|does|did|seem|seems|seemed|appear|appears|appeared)\b/gi, target: verbs },
       passive:       { regex: /\b(?:is|are|was|were|be|been|being)\b\s+\b\w+(?:ed|en|n|t|wn|ne)\b/gi, target: passiveVoice },
       conjunctions:  { regex: /\b(?:and|but|or|nor|for|yet|so)\b/gi, target: conjunctions },
@@ -214,13 +215,8 @@ Version: 1.0
       }
     }
 
-    // Filter repeating nouns
-    let freq = {};
-    allNouns.forEach(token => {
-      let lower = token.word.toLowerCase();
-      freq[lower] = (freq[lower] || 0) + 1;
-    });
-    nouns = allNouns.filter(token => freq[token.word.toLowerCase()] > 1);
+    // Highlight all nominalizations without filtering for repetition
+    nominalizations = allNominalizations;
   }
 
   /**
@@ -234,27 +230,27 @@ Version: 1.0
     removeAllHighlights();
 
     // Highlight each category depending on toggles
-    if (showAdverbs)       highlightTokens(adverbs,        "#b84f50", adverbHighlights);
-    if (showAdjectives)    highlightTokens(adjectives,     "#837a40", adjectiveHighlights);
-    if (showNouns)         highlightTokens(nouns,          "#96601d", nounHighlights);
-    if (showVerbs)         highlightTokens(verbs,          "#44785c", verbHighlights);
-    if (showPassiveVoice)  highlightTokens(passiveVoice,   "#4a838f", passiveVoiceHighlights);
-    if (showConjunctions)  highlightTokens(conjunctions,   "#78674c", conjunctionHighlights);
-    if (showFillers)       highlightTokens(fillers,        "#7b54a4", fillerHighlights);
-    if (showRedundancies)  highlightTokens(redundancies,   "#a3668d", redundancyHighlights);
-    if (showCliches)       highlightTokens(cliches,        "#527099", clicheHighlights);
+    if (showAdverbs)             highlightTokens(adverbs,        "#b84f50", adverbHighlights);
+    if (showAdjectives)          highlightTokens(adjectives,     "#837a40", adjectiveHighlights);
+    if (showNominalizations)     highlightTokens(nominalizations,  "#96601d", nominalizationHighlights);
+    if (showVerbs)               highlightTokens(verbs,          "#44785c", verbHighlights);
+    if (showPassiveVoice)        highlightTokens(passiveVoice,   "#4a838f", passiveVoiceHighlights);
+    if (showConjunctions)        highlightTokens(conjunctions,   "#78674c", conjunctionHighlights);
+    if (showFillers)             highlightTokens(fillers,        "#7b54a4", fillerHighlights);
+    if (showRedundancies)        highlightTokens(redundancies,   "#a3668d", redundancyHighlights);
+    if (showCliches)             highlightTokens(cliches,        "#527099", clicheHighlights);
     
     // Combine tokens from all enabled categories for nav
     let combinedTokens = [];
-    if (showAdverbs)       combinedTokens = combinedTokens.concat(adverbs.map(t => Object.assign({ category: 'adverbs' }, t)));
-    if (showAdjectives)    combinedTokens = combinedTokens.concat(adjectives.map(t => Object.assign({ category: 'adjectives' }, t)));
-    if (showNouns)         combinedTokens = combinedTokens.concat(nouns.map(t => Object.assign({ category: 'nouns' }, t)));
-    if (showVerbs)         combinedTokens = combinedTokens.concat(verbs.map(t => Object.assign({ category: 'verbs' }, t)));
-    if (showPassiveVoice)  combinedTokens = combinedTokens.concat(passiveVoice.map(t => Object.assign({ category: 'passiveVoice' }, t)));
-    if (showConjunctions)  combinedTokens = combinedTokens.concat(conjunctions.map(t => Object.assign({ category: 'conjunctions' }, t)));
-    if (showFillers)       combinedTokens = combinedTokens.concat(fillers.map(t => Object.assign({ category: 'fillers' }, t)));
-    if (showRedundancies)  combinedTokens = combinedTokens.concat(redundancies.map(t => Object.assign({ category: 'redundancies' }, t)));
-    if (showCliches)       combinedTokens = combinedTokens.concat(cliches.map(t => Object.assign({ category: 'cliches' }, t)));
+    if (showAdverbs)             combinedTokens = combinedTokens.concat(adverbs.map(t => Object.assign({ category: 'adverbs' }, t)));
+    if (showAdjectives)          combinedTokens = combinedTokens.concat(adjectives.map(t => Object.assign({ category: 'adjectives' }, t)));
+    if (showNominalizations)     combinedTokens = combinedTokens.concat(nominalizations.map(t => Object.assign({ category: 'nominalizations' }, t)));
+    if (showVerbs)               combinedTokens = combinedTokens.concat(verbs.map(t => Object.assign({ category: 'verbs' }, t)));
+    if (showPassiveVoice)        combinedTokens = combinedTokens.concat(passiveVoice.map(t => Object.assign({ category: 'passiveVoice' }, t)));
+    if (showConjunctions)        combinedTokens = combinedTokens.concat(conjunctions.map(t => Object.assign({ category: 'conjunctions' }, t)));
+    if (showFillers)             combinedTokens = combinedTokens.concat(fillers.map(t => Object.assign({ category: 'fillers' }, t)));
+    if (showRedundancies)        combinedTokens = combinedTokens.concat(redundancies.map(t => Object.assign({ category: 'redundancies' }, t)));
+    if (showCliches)             combinedTokens = combinedTokens.concat(cliches.map(t => Object.assign({ category: 'cliches' }, t)));
     
     // Compute absolute positions
     const lines = Beat.lines();
@@ -371,9 +367,9 @@ Version: 1.0
         showAdjectives = !showAdjectives;
         Beat.setUserDefault("syntax_showAdjectives", showAdjectives);
         break;
-      case 'nouns':
-        showNouns = !showNouns;
-        Beat.setUserDefault("syntax_showNouns", showNouns);
+      case 'nominalizations':
+        showNominalizations = !showNominalizations;
+        Beat.setUserDefault("syntax_showNominalizations", showNominalizations);
         break;
       case 'verbs':
         showVerbs = !showVerbs;
@@ -489,7 +485,7 @@ Version: 1.0
           <input type="checkbox" ${showAdjectives ? "checked" : ""} onclick="Beat.call('Beat.custom.toggleCategory(\\'adjectives\\')')"> Adjectives
         </label>
         <label style="background-color:#96601d; padding:2px 4px; border-radius:3px;">
-          <input type="checkbox" ${showNouns ? "checked" : ""} onclick="Beat.call('Beat.custom.toggleCategory(\\'nouns\\')')"> Repeating Nouns
+          <input type="checkbox" ${showNominalizations ? "checked" : ""} onclick="Beat.call('Beat.custom.toggleCategory(\\'nominalizations\\')')"> Nominalizations
         </label>
         <label style="background-color:#44785c; padding:2px 4px; border-radius:3px;">
           <input type="checkbox" ${showVerbs ? "checked" : ""} onclick="Beat.call('Beat.custom.toggleCategory(\\'verbs\\')')"> Weak Verbs
@@ -577,4 +573,4 @@ Version: 1.0
   // Add a menu item to toggle the window
   const toggleMenuItem = Beat.menuItem("The Elements of Style", ["cmd", "ctrl", "s"], toggleControlWindow);
   Beat.menu("The Elements of Style", [toggleMenuItem]);
-})(); 
+})();
