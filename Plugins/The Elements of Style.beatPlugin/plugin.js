@@ -13,7 +13,7 @@ Inspired by iA Writer’s Syntax Highlighting and Strunk & White’s classic <em
     <br><br><strong>Disclaimer:</strong> Please note that this plugin relies on automated heuristics to identify various linguistic elements and may occasionally produce false positives or miss some instances. We encourage you to use your own discretion when interpreting the highlights and making revisions.
 </Description>
 Image: ElementsOfStyle.png
-Version: 1.2
+Version: 1.3
 */
   
 (function() {
@@ -569,11 +569,15 @@ Version: 1.2
     removeAllHighlights();
     Beat.end();
   });
+  
+  controlWindow.disableMaximize = true;
+  controlWindow.disableFullScreen = true;
+  controlWindow.disableMinimize = true;
+  
   let frame = controlWindow.getFrame ? controlWindow.getFrame() : { width: 400, height: 200 };
   let centerX = (controlWindow.innerWidth ? controlWindow.innerWidth : 800) / 2 - frame.width / 2;
   let centerY = (controlWindow.innerHeight ? controlWindow.innerHeight : 600) / 2 - frame.height / 2;
   controlWindow.setFrame(centerX, centerY, frame.width, frame.height);
-
   // On plugin launch, do a full parse/highlight
   fullUpdateHighlights();
   Beat.custom.allTokens = Beat.custom.allTokens || [];
