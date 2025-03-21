@@ -1,18 +1,19 @@
 /*
 Title: The Elements of Style
 <Description>
-Inspired by AI Writer’s Syntax Highlighting and Strunk & White’s classic <em>The Elements of Style</em>, 
+Inspired by iA Writer’s Syntax Highlighting and Strunk & White’s classic <em>The Elements of Style</em>, 
     this tool helps you apply timeless writing principles. It highlights adverbs, adjectives, nominalizations, weak verbs, passive voice, conjunctions, fillers, redundancies, and clichés—making it easier to spot areas 
     for potential revision. While highlighted words and phrases aren’t necessarily incorrect, 
     this tool empowers you to clarify, tighten, and strengthen your writing—giving you greater control and 
     confidence in your text. 
     
-    <br><br>Use CTRL+CMD+S to toggle plugin visibility.
+    <br><br>Use CTRL+CMD+S to toggle plugin window.
+        <br>Use CTRL+CMD+H to toggle plugin window and highlights.
 
-    <br><br><strong>Disclaimer:</strong> Please note that this plugin relies on automated heuristics to identify nominalizations and may occasionally produce false positives or miss some instances. We encourage you to use your own discretion when interpreting the highlights and making revisions.
+    <br><br><strong>Disclaimer:</strong> Please note that this plugin relies on automated heuristics to identify various linguistic elements and may occasionally produce false positives or miss some instances. We encourage you to use your own discretion when interpreting the highlights and making revisions.
 </Description>
 Image: ElementsOfStyle.png
-Version: 1.1
+Version: 1.2
 */
   
 (function() {
@@ -58,6 +59,8 @@ Version: 1.1
 
   Beat.custom.currentTokenIndex = 0;
   let isControlWindowVisible = true;
+  // Global flag for whether highlights are enabled.
+  let highlightsOn = true;
 
   /* ----------------------------------------------------------------
      HELPER FUNCTIONS
@@ -229,16 +232,18 @@ Version: 1.1
     // Remove old highlights
     removeAllHighlights();
 
-    // Highlight each category depending on toggles
-    if (showAdverbs)             highlightTokens(adverbs,        "#b84f50", adverbHighlights);
-    if (showAdjectives)          highlightTokens(adjectives,     "#837a40", adjectiveHighlights);
-    if (showNominalizations)     highlightTokens(nominalizations,  "#96601d", nominalizationHighlights);
-    if (showVerbs)               highlightTokens(verbs,          "#44785c", verbHighlights);
-    if (showPassiveVoice)        highlightTokens(passiveVoice,   "#4a838f", passiveVoiceHighlights);
-    if (showConjunctions)        highlightTokens(conjunctions,   "#78674c", conjunctionHighlights);
-    if (showFillers)             highlightTokens(fillers,        "#7b54a4", fillerHighlights);
-    if (showRedundancies)        highlightTokens(redundancies,   "#a3668d", redundancyHighlights);
-    if (showCliches)             highlightTokens(cliches,        "#527099", clicheHighlights);
+    // Only apply highlights if they are enabled
+    if (highlightsOn) {
+      if (showAdverbs)             highlightTokens(adverbs,        "#b84f50", adverbHighlights);
+      if (showAdjectives)          highlightTokens(adjectives,     "#837a40", adjectiveHighlights);
+      if (showNominalizations)     highlightTokens(nominalizations,  "#96601d", nominalizationHighlights);
+      if (showVerbs)               highlightTokens(verbs,          "#44785c", verbHighlights);
+      if (showPassiveVoice)        highlightTokens(passiveVoice,   "#4a838f", passiveVoiceHighlights);
+      if (showConjunctions)        highlightTokens(conjunctions,   "#78674c", conjunctionHighlights);
+      if (showFillers)             highlightTokens(fillers,        "#7b54a4", fillerHighlights);
+      if (showRedundancies)        highlightTokens(redundancies,   "#a3668d", redundancyHighlights);
+      if (showCliches)             highlightTokens(cliches,        "#527099", clicheHighlights);
+    }
     
     // Combine tokens from all enabled categories for nav
     let combinedTokens = [];
@@ -281,7 +286,7 @@ Version: 1.1
 
   /**
    * A small helper for code that calls "updateHighlights" 
-   * Instead we define it here as an alias for fullUpdateHighlights 
+   * Instead we define it here as an alias for fullUpdateHighlights
    */
   function updateHighlights() {
     fullUpdateHighlights();
@@ -402,6 +407,39 @@ Version: 1.1
     }
   };
 
+  // Toggle highlights on/off.
+  Beat.custom.toggleHighlights = function() {
+    highlightsOn = !highlightsOn;
+    if (highlightsOn) {
+      fullUpdateHighlights();
+    } else {
+      removeAllHighlights();
+    }
+    if (controlWindow) {
+      controlWindow.setHTML(createControlPanelHTML());
+    }
+  };
+
+  // NEW: Toggle both plugin visibility and highlights.
+  function toggleVisibilityAndHighlights() {
+    if (isControlWindowVisible) {
+      // Hide control panel and turn off highlights.
+      controlWindow.hide();
+      isControlWindowVisible = false;
+      highlightsOn = false;
+      removeAllHighlights();
+    } else {
+      // Show control panel and turn on highlights.
+      controlWindow.show();
+      isControlWindowVisible = true;
+      highlightsOn = true;
+      fullUpdateHighlights();
+    }
+    if (controlWindow) {
+      controlWindow.setHTML(createControlPanelHTML());
+    }
+  }
+
   /* ----------------------------------------------------------------
      CONTROL PANEL
   ---------------------------------------------------------------- */
@@ -509,6 +547,9 @@ Version: 1.1
       <hr style="margin:8px 0;">
     `;
     
+    // Button to toggle highlights on/off
+    let toggleHighlightsButton = `<button onclick="Beat.call('Beat.custom.toggleHighlights()');">Highlights (${highlightsOn ? "On" : "Off"})</button>`;
+    
     let tokensCount = `<p style="margin: 8px 0;">Occurrence: ${total > 0 ? (current + 1) + " / " + total : "0 / 0"}</p>`;
     let navButtonsHTML = `
       <button onclick="Beat.call('Beat.custom.showPreviousToken()');">Previous</button>
@@ -516,7 +557,7 @@ Version: 1.1
       ${tokensCount}
     `;
     
-    return styleBlock + `<div class="control-panel">` + checkboxHTML + navButtonsHTML + `</div>`;
+    return styleBlock + `<div class="control-panel">` + checkboxHTML + toggleHighlightsButton + navButtonsHTML + `</div>`;
   }
 
   /* ----------------------------------------------------------------
@@ -545,7 +586,7 @@ Version: 1.1
 
   /**
    * toggleControlWindow
-   * Toggles the control panel
+   * Toggles the control panel only
    */
   function toggleControlWindow() {
     if (controlWindow) {
@@ -570,7 +611,12 @@ Version: 1.1
     }
   }
 
-  // Add a menu item to toggle the window
-  const toggleMenuItem = Beat.menuItem("The Elements of Style", ["cmd", "ctrl", "s"], toggleControlWindow);
-  Beat.menu("The Elements of Style", [toggleMenuItem]);
+  //  "The Elements of Style" menu items
+  const toggleWindowMenuItem = Beat.menuItem("Toggle Window", ["cmd", "ctrl", "s"], toggleControlWindow);
+  const toggleVisibilityAndHighlightsMenuItem = Beat.menuItem("Toggle Window & Highlights", ["cmd", "ctrl", "h"], toggleVisibilityAndHighlights);
+
+  Beat.menu("The Elements of Style", [
+    toggleWindowMenuItem,
+    toggleVisibilityAndHighlightsMenuItem
+  ]);
 })();
