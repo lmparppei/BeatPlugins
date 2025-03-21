@@ -6,7 +6,7 @@ Organize your ideas and easily navigate to specific notes in your document using
 Add a hashtag to any inline note: [[This will create a #tag]]
 </Description>
 Image: Keywords.png
-Version: 1.0
+Version: 1.1
 */
 
 // --- Global plugin state --- //
@@ -205,19 +205,26 @@ Beat.custom = {
 
 function main() {
   gatherAllTags();
+
   if (!Object.keys(tagsByName).length) {
     Beat.alert("No Tags Found", "Try adding a hashtag within an inline note (e.g., [[This is a #tag]]).");
     Beat.end();
     return;
   }
+
   Beat.onTextChange(() => {
     timer?.stop();
     timer = Beat.timer(1.5, () => {
       Beat.custom.refreshUI();
     });
   });
+
   const ui = buildUIHtml();
   myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed);
+
+  myWindow.disableMaximize = true;
+  myWindow.disableMinimize = true;
+
   centerWindow(myWindow);
 }
 
