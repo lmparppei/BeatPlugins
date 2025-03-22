@@ -6,7 +6,7 @@ Organize your ideas and easily navigate to specific notes in your document using
 Add a hashtag to any inline note: [[This will create a #tag]]
 </Description>
 Image: Keywords.png
-Version: 1.1
+Version: 1.2
 */
 
 // --- Global plugin state --- //
@@ -222,7 +222,9 @@ function main() {
   const ui = buildUIHtml();
   myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed);
 
+  // Disable maximize, full-screen, and minimize immediately
   myWindow.disableMaximize = true;
+  myWindow.disableFullScreen = true;
   myWindow.disableMinimize = true;
 
   centerWindow(myWindow);
@@ -564,6 +566,7 @@ function reapplyAllHighlights() {
   }
 }
 
+// --- Modified togglePluginVisibility function using myWindow consistently ---
 function togglePluginVisibility() {
   Beat.log("togglePluginVisibility triggered");
   if (myWindow) {
@@ -572,6 +575,10 @@ function togglePluginVisibility() {
       isPluginVisible = false;
     } else {
       myWindow.show();
+      // Reapply disable flags when showing the window again
+      myWindow.disableMaximize = true;
+      myWindow.disableFullScreen = true;
+      myWindow.disableMinimize = true;
       isPluginVisible = true;
     }
   } else {
@@ -583,23 +590,31 @@ function togglePluginVisibility() {
 const toggleMenuItem = Beat.menuItem("Keywords", ["cmd", "ctrl", "k"], togglePluginVisibility);
 Beat.menu("Keywords", [toggleMenuItem]);
 
+// --- Modified onKeyDown block using myWindow ---
 if (typeof Beat.onKeyDown === "function") {
   Beat.onKeyDown(function(e) {
     if (e.ctrlKey && e.metaKey && e.key && e.key.toLowerCase() === "s") {
       e.preventDefault();
-      if (!controlWindow) {
-        let controlHTML = createControlPanelHTML();
-        controlWindow = Beat.htmlWindow(controlHTML, 400, 180, function() {
-          removeAllHighlights();
-          Beat.end();
+      if (!myWindow) {
+        const ui = buildUIHtml();
+        myWindow = Beat.htmlWindow({
+          html: ui,
+          width: 600,
+          height: 500,
+          disableMaximize: true,
+          disableFullScreen: true,
+          disableMinimize: true,
+          onClose: function() {
+            removeAllHighlights();
+            Beat.end();
+          }
         });
-        let frame = controlWindow.getFrame ? controlWindow.getFrame() : { width: 400, height: 180 };
-        let centerX = (controlWindow.innerWidth ? controlWindow.innerWidth : 800) / 2 - frame.width / 2;
-        let centerY = (controlWindow.innerHeight ? controlWindow.innerHeight : 600) / 2 - frame.height / 2;
-        controlWindow.setFrame(centerX, centerY, frame.width, frame.height);
+        centerWindow(myWindow);
+        isPluginVisible = true;
       } else {
-        controlWindow.close();
-        controlWindow = null;
+        myWindow.close();
+        myWindow = null;
+        isPluginVisible = false;
       }
     }
   });
