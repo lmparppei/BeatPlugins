@@ -65,9 +65,9 @@ function addElement(theClickedThing, whatToAdd, beforeInsteadOfAfter){
     }
 
     actualChangesToScriptInProgress = true //this is for the errorhandler to know what was happening
-    
+  
     let doThis =`
-        Beat.addString("\\n${addString}\\n", ${locationAfter})
+        Beat.addString("\\n${addString}\\n", Math.min(${locationAfter}, Beat.getText().length))
         Beat.custom.checkBlankLines(${locationAfter + 3})
         Beat.scrollTo(${locationAfter})
         Beat.custom.blinkTheLine(${locationAfter})

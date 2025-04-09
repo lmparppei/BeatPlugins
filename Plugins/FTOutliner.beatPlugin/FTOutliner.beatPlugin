@@ -3,7 +3,7 @@
 Plugin name: FTOutliner
 Description: A Flexible Time Outliner for navigating, structuring and editing your screenplay.
 Copyright: Fredrik T Olsson 2021-2023
-Version: 1.92
+Version: 1.93
 Compatibility: 1.99.0
 Type: Tool
 Image: screenshot.jpg
@@ -37,7 +37,7 @@ a {
 function __________VARIABLES(){}
 
 //VERSION NUMBER checking -- also change in the download description above!
-var ftoutlinerVersion = "1.92"
+var ftoutlinerVersion = "1.93"
 Beat.setUserDefault("ftoutlinerVersion", ftoutlinerVersion) 
 
 if (!Beat.compatibleWith(1.996)){
@@ -1315,16 +1315,20 @@ Beat.custom.checkBlankLines = function(position){
 function checkForDoubleBlankLines(position){
 
 	let parser = Beat.currentParser
+    let docLength = Beat.getText().length
 	let rangeToCheck = 15 //this is how many lines back and forwards to look
 
 	for (dbl = 0; dbl < rangeToCheck; dbl ++){
 
-		let indexOfLineAbove = JSON.parse(JSON.stringify(parser.lineAtPosition(position - 1)?.position || 0))
+        //position = Math.min(position, docLength - 1)
+		
+        let indexOfLineAbove = JSON.parse(JSON.stringify(parser.lineAtPosition(position - 1)?.position || 0))
+
 
 		let lineAbove = parser.lineAtPosition(indexOfLineAbove)?.typeAsString()
 		let line = parser.lineAtPosition(position)?.typeAsString()
 
-		if (line == "Empty" && lineAbove == "Empty" && position < Beat.getText().length){
+		if (line == "Empty" && lineAbove == "Empty" && position < docLength - 1){
 			Beat.replaceRange(position, 1, "")
 		}
 
