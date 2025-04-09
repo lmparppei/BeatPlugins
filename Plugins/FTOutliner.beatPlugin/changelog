@@ -1,3 +1,7 @@
+#v 1.93 (April 9, 2025)
+
+* HOTFIX to a bug where FTOutliner would crash Beat if using context menu to add scene at the end of the outline
+
 #v 1.92 (January 10, 2025)
 
 * Added setting in Advanced Settings to show word count instead of lengths in eights in non-novel mode. (For novel mode, word count is always shown.)
