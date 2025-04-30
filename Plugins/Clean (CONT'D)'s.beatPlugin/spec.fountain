@@ -1,0 +1,298 @@
+.It adds "CONT'D" on successive dialogues by the same character
+
+ADAM
+dialogue
+
+ADAM
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+ADAM (CONT'D)
+dialogue
+
+
+.It adds "CONT'D" when intercut with A NON-SCENE HEADING LINE
+
+ADAM
+dialogue
+
+action
+
+ADAM
+dialogue
+
+>TRANSITION
+
+ADAM
+dialogue
+
+[[Comment]]
+
+ADAM
+dialogue
+
+= Synopsis
+ADAM
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+action
+
+ADAM (CONT'D)
+dialogue
+
+>TRANSITION
+
+ADAM (CONT'D)
+dialogue
+
+[[Comment]]
+
+ADAM (CONT'D)
+dialogue
+
+= Synopsis
+ADAM (CONT'D)
+dialogue
+
+.It will not add "CONT'D" in between scenes
+
+ADAM
+dialogue
+
+INT. SCENE
+
+ADAM
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+INT. SCENE
+
+ADAM
+dialogue
+
+
+.It will not add "CONT'D" when succeeded by another character's dialogue
+
+ADAM
+dialogue
+
+BIANCA
+dialogue
+
+ADAM
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+BIANCA
+dialogue
+
+ADAM
+dialogue
+
+.IT DOES NOT ADD CONT'D TO AND ACROSS DUAL DIALOGUES
+
+ADAM
+dialogue
+
+ADAM
+dual dialogue
+
+BIANCA^
+dual dialogue
+
+ADAM
+dialogue
+
+.EXPECTED:
+
+ADAM
+dialogue
+
+ADAM
+dual dialogue
+
+BIANCA^
+dual dialogue
+
+ADAM
+dialogue
+
+.It treats characters with parentheses as a separate character
+
+ADAM (V.O.)
+dialogue
+
+ADAM (V.O.)
+dialogue
+
+ADAM
+dialogue
+
+
+.EXPECTED:
+
+ADAM (V.O.)
+dialogue
+
+ADAM (V.O.) (CONT'D)
+dialogue
+
+ADAM
+dialogue
+
+.It cleans up whitespace both between the character and (CONT'D) and after the line
+
+ADAM
+dialogue
+
+ADAM     (CONT'D)    
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+ADAM (CONT'D)
+dialogue
+
+.It capitalizes CONT'Ds
+
+ADAM
+dialogue
+
+ADAM (cont'd)
+dialogue
+
+.EXPECTED:
+
+
+ADAM
+dialogue
+
+ADAM (CONT'D)
+dialogue
+
+
+.IT'S COMMENT-SENSITIVE
+
+ADAM
+dialogue
+
+ADAM [[TEST]]
+dialogue
+
+.Expected:
+
+ADAM
+dialogue
+
+ADAM [[TEST]] 
+dialogue
+
+
+.NON STRICT MODE: IT RESPECTS EXISTING (CONT'D)s while formatting it
+
+ADAM       (cont'd)  
+dialogue
+
+ADAM
+dialogue
+
+.EXPECTED:
+
+ADAM (CONT'D)
+dialogue
+
+ADAM (CONT'D)
+dialogue
+
+.NON STRICT MODE: IT FORMATS THE (CONT'D)s IN DUAL DIALOGUES
+
+ADAM
+dialogue
+
+ADAM
+dual dialogue
+
+BIANCA       (cont'd)   ^
+dual dialogue
+
+BIANCA
+dialogue
+
+.EXPECTED:
+
+ADAM
+dialogue
+
+ADAM
+dual dialogue
+
+BIANCA (CONT'D)^
+dual dialogue
+
+BIANCA
+dialogue
+
+.STRICT MODE: IT REMOVES EXISTING INVALID (CONT'D)s
+
+ADAM       (cont'd)
+dialogue
+
+ADAM 
+dialogue
+
+.EXPECTED:
+
+ADAM
+dialogue
+
+ADAM (CONT'D)
+dialogue
+
+.STRICT MODE: IT REMOVES ALL (CONT'D)s IN DUAL DIALOGUES
+
+ADAM
+dialogue
+
+ADAM     (CONT'D)
+dual dialogue
+
+BIANCA       (cont'd)   ^
+dual dialogue
+
+BIANCA
+dialogue
+
+.EXPECTED:
+
+ADAM
+dialogue
+
+ADAM
+dual dialogue
+
+BIANCA^
+dual dialogue
+
+BIANCA
+dialogue
+/* If you're seeing this, you can remove the following stuff - BEAT: {"Review Ranges":[],"Window Width":1438,"Caret Position":1953,"Heading UUIDs":[{"string":".It adds \"CONT'D\" on successive dialogues by the same character","uuid":"5C033F72-EB86-444F-8C31-E9FF29F96B5A"},{"string":".Expected:","uuid":"84F61705-95D5-444D-B40B-4603D424F9CA"},{"string":".It adds \"CONT'D\" when intercut with A NON-SCENE HEADING LINE","uuid":"9F1D22FD-EDF1-429B-98A9-6C85A1EC22A7"},{"string":".Expected:","uuid":"C780F397-ECAC-47C3-911B-E073532DF55C"},{"string":".It will not add \"CONT'D\" in between scenes","uuid":"E8EBB895-4A0E-442F-B2F6-021BF9C583C5"},{"string":"INT. SCENE","uuid":"2DF8AA70-7CF7-4C40-861A-48F0CDB5B36D"},{"string":".Expected:","uuid":"7B5E029C-5383-4975-A34F-E64F320437CC"},{"string":"INT. SCENE","uuid":"10ECCD4A-91C5-42F3-98F2-311D105B3FC9"},{"string":".It will not add \"CONT'D\" when succeeded by another character's dialogue","uuid":"77B65AA0-1FB5-4548-997A-B057D70A19C1"},{"string":".Expected:","uuid":"48D39E2E-B8A5-4105-B08A-1B78DA55E4FE"},{"string":".IT DOES NOT ADD CONT'D TO AND ACROSS DUAL DIALOGUES","uuid":"6727D66C-BB16-48B1-8E85-6764B5574C4A"},{"string":".EXPECTED:","uuid":"F2E5F2C1-FEEE-4CD3-BF53-76A7DFB6A89E"},{"string":".It treats characters with parentheses as a separate character","uuid":"B592B80B-E7DE-453D-893D-D67760573810"},{"string":".EXPECTED:","uuid":"9FC20E73-1FF8-4F5B-9491-95A5A66D8F5E"},{"string":".It cleans up whitespace both between the character and (CONT'D) and after the line","uuid":"6918F377-8E5C-439D-9205-D8C31E4F124B"},{"string":".Expected:","uuid":"5AEC6FB9-384B-4247-865D-8036530385C0"},{"string":".It capitalizes CONT'Ds","uuid":"F95749E4-5478-48AA-A178-94095513106E"},{"string":".EXPECTED:","uuid":"34094EC6-60D4-48D4-84F0-7A38A175838F"},{"string":".IT'S COMMENT-SENSITIVE","uuid":"3F23B70F-FCE1-4919-9542-9DA3D90292DA"},{"string":".Expected:","uuid":"2EAD2509-A256-4D93-A7A9-315C266229C1"},{"string":".NON STRICT MODE: IT RESPECTS EXISTING (CONT'D)s while formatting it","uuid":"8AB66883-E185-45DF-B396-EEB8DD794845"},{"string":".EXPECTED:","uuid":"55AAA694-E6A6-4991-9189-2FC7B272634B"},{"string":".NON STRICT MODE: IT FORMATS THE (CONT'D)s IN DUAL DIALOGUES","uuid":"B0058A95-D820-45E9-90DA-A595F8B9EDF6"},{"string":".EXPECTED:","uuid":"2880F7D6-B0D9-4792-B578-43FFD120AE0E"},{"string":".STRICT MODE: IT REMOVES EXISTING INVALID (CONT'D)s","uuid":"E53FDA19-9205-439E-9DF8-D739D6352E5B"},{"string":".EXPECTED:","uuid":"D26F224E-A2AA-4510-85A9-EAD3BA4B0D3A"},{"string":".STRICT MODE: IT REMOVES ALL (CONT'D)s IN DUAL DIALOGUES","uuid":"4D2520F2-C801-459A-9FCA-BB4159008CF7"},{"string":".EXPECTED:","uuid":"B3987A28-3D63-4F12-8BCE-1A8BDA4BB373"}],"Sidebar Visible":true,"Revision":{"Removed":[],"RemovalSuggestion":[],"Addition":[]},"Active Plugins":[],"Revision Level":0,"Window Height":856} END_BEAT */
