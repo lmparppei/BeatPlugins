@@ -511,6 +511,99 @@ Version: 1.3
           border: none;
           border-top: 1px solid var(--button-border);
         }
+        
+        .toggle-switch {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          cursor: pointer;
+          user-select: none;
+          margin: 8px 0;
+        }
+        
+        .toggle-switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        
+        .slider {
+          position: relative;
+          width: 40px;
+          height: 20px;
+          background-color: #ccc;
+          border-radius: 20px;
+          transition: background-color 0.3s;
+          margin-left: 4px;
+        }
+        
+        .slider::before {
+          content: "";
+          position: absolute;
+          height: 16px;
+          width: 16px;
+          left: 2px;
+          top: 2px;
+          background-color: white;
+          border-radius: 50%;
+          transition: transform 0.3s;
+        }
+        
+        .toggle-switch input:checked + .slider {
+          background-color: #0a84ff;
+        }
+        
+        .toggle-switch input:checked + .slider::before {
+          transform: translateX(20px);
+        }
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  margin: 8px 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 20px;
+  transition: background-color 0.3s;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+        .toggle-switch input:checked + .slider {
+          background-color: #0a84ff;
+        }
+
+        .toggle-switch input:checked + .slider::before {
+          transform: translateX(20px);
+        }
+        .toggle-switch span {
+          color: var(--panel-text);
+        }
+        }
       </style>
     `;
     
@@ -547,17 +640,20 @@ Version: 1.3
       <hr style="margin:8px 0;">
     `;
     
-    // Button to toggle highlights on/off
-    let toggleHighlightsButton = `<button onclick="Beat.call('Beat.custom.toggleHighlights()');">Highlights (${highlightsOn ? "On" : "Off"})</button>`;
-    
-    let tokensCount = `<p style="margin: 8px 0;">Occurrence: ${total > 0 ? (current + 1) + " / " + total : "0 / 0"}</p>`;
-    let navButtonsHTML = `
-      <button onclick="Beat.call('Beat.custom.showPreviousToken()');">Previous</button>
-      <button onclick="Beat.call('Beat.custom.showNextToken()');">Next</button>
-      ${tokensCount}
+    // Button to toggle highlights on/off, and navigation, in a flex container with gap
+    let toggleHighlightsAndNav = `
+      <div style="display: flex; align-items: center; margin-top: 4px; gap: 10px;">
+        <label class="toggle-switch" style="margin: 0;">
+          <span style="margin-right: 8px;">Highlights</span>
+          <input type="checkbox" ${highlightsOn ? "checked" : ""} onchange="Beat.call('Beat.custom.toggleHighlights()')" />
+          <span class="slider"></span>
+        </label>
+        <button onclick="Beat.call('Beat.custom.showPreviousToken()');">Previous</button>
+        <button onclick="Beat.call('Beat.custom.showNextToken()');">Next</button>
+      </div>
+      <p style="margin: 8px 0;">Occurrence: ${total > 0 ? (current + 1) + " / " + total : "0 / 0"}</p>
     `;
-    
-    return styleBlock + `<div class="control-panel">` + checkboxHTML + toggleHighlightsButton + navButtonsHTML + `</div>`;
+    return styleBlock + `<div class="control-panel">` + checkboxHTML + toggleHighlightsAndNav + `</div>`;
   }
 
   /* ----------------------------------------------------------------
