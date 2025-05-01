@@ -40,11 +40,8 @@ let timer = null;
 let myWindow = null;
 let isPluginVisible = true;
 
-// Global theme variable: true for dark mode, false for light mode.  
-// Using a custom toggle instead of system appearance, as some tag color choices  
-// are only visible in either dark or light mode, requiring manual background selection.
-// Load saved preference if available; otherwise, default to true.
-let isDarkTheme = (Beat.getUserDefault("themePreference") !== undefined) ? Beat.getUserDefault("themePreference") : true;
+// Theme mode: "light", "dark", or "system" (default uses system preference)
+let themeMode = Beat.getUserDefault("themePreference") || "system";
 
 /**
  * Darkens a given hex color by a specified factor (0.0 to 1.0).
@@ -200,7 +197,22 @@ Beat.custom = {
     isDarkTheme = !isDarkTheme;
     Beat.setUserDefault("themePreference", isDarkTheme);
     updateWindowUI();
-  }
+  },
+  setLightMode() {
+    themeMode = "light";
+    Beat.setUserDefault("themePreference", themeMode);
+    updateWindowUI();
+  },
+  setDarkMode() {
+    themeMode = "dark";
+    Beat.setUserDefault("themePreference", themeMode);
+    updateWindowUI();
+  },
+  setSystemMode() {
+    themeMode = "system";
+    Beat.setUserDefault("themePreference", themeMode);
+    updateWindowUI();
+  },
 };
 
 function main() {
@@ -250,7 +262,7 @@ function gatherAllTags() {
       let hashMatch;
       while ((hashMatch = regexHash.exec(noteContent)) !== null) {
         const tagName = hashMatch[1];
-        if (/^\d{6}$/.test(tagName)) continue;
+        if (/^[a-fA-F0-9]{6}$/.test(tagName)) continue;
         const absPos = lineObj.position + noteMatch.index + 2 + hashMatch.index;
         const matchLen = hashMatch[0].length;
         if (!alreadyHaveOccurrence(absPos, matchLen)) {
@@ -324,31 +336,65 @@ function buildUIHtml() {
     `;
     colorInputValue = pickColorForTag(tagNameForColorPicker);
   }
-  
-  const bodyBg = isDarkTheme ? "#333" : "#eee";
-  const bodyColor = isDarkTheme ? "#fff" : "#000";
-  const headerColor = isDarkTheme ? "#ccc" : "#666";
-  const helpBg = isDarkTheme ? "#222" : "#f1f1f1";
-  const helpColor = isDarkTheme ? "#fff" : "#000";
-  
+
+  // --- CSS variable theme block ---
+  let css;
+  if (themeMode === "system") {
+    css = `
+    :root {
+      --bodyBg: #fff;
+      --bodyColor: #000;
+      --headerColor: #666;
+      --helpBg: #f1f1f1;
+      --helpColor: #000;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bodyBg: #333;
+        --bodyColor: #fff;
+        --headerColor: #ccc;
+        --helpBg: #222;
+        --helpColor: #fff;
+      }
+    }`;
+  } else if (themeMode === "light") {
+    css = `
+    :root {
+      --bodyBg: #fff;
+      --bodyColor: #000;
+      --headerColor: #666;
+      --helpBg: #f1f1f1;
+      --helpColor: #000;
+    }`;
+  } else {
+    css = `
+    :root {
+      --bodyBg: #333;
+      --bodyColor: #fff;
+      --headerColor: #ccc;
+      --helpBg: #222;
+      --helpColor: #fff;
+    }`;
+  }
+
   let html = `
 <html>
 <head>
   <style>
-    body {
+    ${css}
+    html, body {
       margin: 0;
-      padding: 10px;
-      background: ${bodyBg};
-      color: ${bodyColor};
+      padding: 5px;
+      background: var(--bodyBg);
+      color: var(--bodyColor);
       font-family: sans-serif;
-      position: relative;
       min-height: 100vh;
     }
     h2 {
       margin: 0.5em 0 0.25em 0;
       font-size: 1em;
       font-weight: normal;
-      color: ${headerColor};
+      color: var(--headerColor);
     }
     .container {
       margin-bottom: 1em;
@@ -396,22 +442,13 @@ function buildUIHtml() {
       color: #aaa;
       z-index: 1002;
     }
-    #themeIcon {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      cursor: pointer;
-      font-size: 1.5em;
-      color: #aaa;
-      z-index: 1002;
-    }
     #helpPopover {
       display: none;
       position: fixed;
       bottom: 40px;
       left: 10px;
-      background: ${helpBg};
-      color: ${helpColor};
+      background: var(--helpBg);
+      color: var(--helpColor);
       padding: 10px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
@@ -423,6 +460,30 @@ function buildUIHtml() {
     #helpPopover button {
       margin-top: 10px;
       display: block;
+    }
+    #themeTabs {
+      position: fixed;
+      bottom: 10px;
+      right: 5px;
+      width: auto;
+      text-align: right;
+      z-index: 1002;
+    }
+    .themeTab {
+      margin: 0 2px;
+      cursor: pointer;
+      padding: 2px 8px;
+      font-size: 0.8em;
+      background: transparent;
+      color: var(--helpColor);
+      border-bottom: 1px solid transparent;
+      user-select: none;
+      opacity: 0.6;
+    }
+    .themeTab.active {
+      border-bottom: 2px solid var(--headerColor);
+      color: var(--headerColor);
+      opacity: 1;
     }
   </style>
   <script>
@@ -528,7 +589,12 @@ function buildUIHtml() {
     <p>Close the window to remove highlights from the document.</p>
     <button onclick="document.getElementById('helpPopover').style.display='none';">Close</button>
   </div>
-  <div id="themeIcon" onclick="Beat.call('Beat.custom.toggleTheme()')">◐</div>
+</div>
+<div id="themeTabs">
+  <span class="themeTab ${themeMode==='light'?'active':''}" onclick="Beat.call('Beat.custom.setLightMode()')">Light</span>
+  <span class="themeTab ${themeMode==='dark'?'active':''}" onclick="Beat.call('Beat.custom.setDarkMode()')">Dark</span>
+  <span class="themeTab ${themeMode==='system'?'active':''}" onclick="Beat.call('Beat.custom.setSystemMode()')">System</span>
+</div>
 </body>
 </html>
 `;
