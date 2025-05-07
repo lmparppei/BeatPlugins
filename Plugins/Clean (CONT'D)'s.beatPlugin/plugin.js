@@ -1,58 +1,100 @@
 /*
 
 Plugin name: Clean (CONT'D)'s
-Description: Tidies up all (CONT'D)'s in a screenplay
+Description: Tidies up all (CONT'D)'s in a screenplay.
 Image: Clean (CONT'D)'s.png
 
-Version: 1.0
+Version: 1.1
 Copyright: 2025 gfrancine
 
 */
 
 const promptResult = Beat.dropdownPrompt(
   "Clean (CONT'D)'s: Select mode",
-  `Strict mode is best when cleaning up large scripts. (CONT'D)'s are only added on successive dialogue lines (uninterrupted by scene headings) and removed in all dual dialogue lines. 
-  
-  In non-strict mode, existing (CONT'D)'s are respected and simply formatted.`,
-  ["Strict (format all CONT'Ds)", "Non-strict (respect existing CONT'Ds)"],
+  `Strict mode is best when cleaning up large scripts. All (CONT'D)'s will be checked (and removed in dual dialogue). 
+
+  In non-strict mode, existing (CONT'D)'s are respected and simply formatted.
+
+  To tidy up only a few lines, select the text in the editor.`,
+  ["Strict (check all CONT'Ds)", "Non-strict (respect existing CONT'Ds)"]
 );
 
 if (promptResult) {
-  const STRICT_MODE = promptResult === "Strict (format all CONT'Ds)";
+  const STRICT_MODE = promptResult === "Strict (check all CONT'Ds)";
+
+  const selectedRange = Beat.selectedRange();
+  let lines = Beat.lines();
+
+  // get selected lines
+  if (selectedRange.length > 0) {
+    const selectionStart = selectedRange.location;
+    const selectionEnd = selectedRange.location + selectedRange.length;
+    const selectedLines = [];
+    let startLine;
+
+    for (const line of lines) {
+      if (startLine) {
+        selectedLines.push(line);
+
+        if (
+          selectionEnd >= line.textRange.location &&
+          selectionEnd <= line.textRange.location + line.textRange.length
+        ) {
+          break; // last selected line
+        }
+      } else if (
+        selectionStart >= line.textRange.location &&
+        selectionStart <= line.textRange.location + line.textRange.length
+      ) {
+        startLine = line;
+        selectedLines.push(line);
+      }
+    }
+
+    lines = selectedLines;
+  }
+
+  // every character/dual dialogue character line in the script
   const characterLines = [];
 
   // first pass
   let previousCharacter = null;
 
-  for (const line of Beat.lines()) {
+  for (const line of lines) {
     switch (line.type) {
       case Beat.type.character:
       case Beat.type.dualDialogueCharacter: {
         const trimmedString = line.string.trim();
         let changed = false;
         let newString;
-        let hasContd;
+        let inputHasContd;
         let character;
 
         if (line.type === Beat.type.character) {
-          hasContd = trimmedString.toUpperCase().endsWith("(CONT'D)");
-          character = trimmedString.slice(0, hasContd ? -8 : undefined).trim();
+          inputHasContd = trimmedString.toUpperCase().endsWith("(CONT'D)");
+          character = trimmedString
+            .slice(0, inputHasContd ? -8 : undefined)
+            .trim();
 
           // respect existing CONT'Ds in nonstrict mode
-          if (previousCharacter === character || !STRICT_MODE && hasContd) {
+          if (
+            previousCharacter === character ||
+            (!STRICT_MODE && inputHasContd)
+          ) {
             newString = character + " (CONT'D)";
             changed = true;
           }
 
           // replace all invalid CONT'Ds in strict mode
-          if (STRICT_MODE && hasContd && previousCharacter !== character) {
+          if (STRICT_MODE && inputHasContd && previousCharacter !== character) {
             newString = character;
             changed = true;
           }
 
           previousCharacter = character; // store for next line
-        } else { // dual dialogue
-          hasContd = trimmedString
+        } else {
+          // dual dialogue
+          inputHasContd = trimmedString
             .toUpperCase()
             .slice(0, -1) // "^"
             .trim()
@@ -61,15 +103,15 @@ if (promptResult) {
           character = trimmedString
             .slice(0, -1)
             .trim()
-            .slice(0, hasContd ? -8 : undefined)
+            .slice(0, inputHasContd ? -8 : undefined)
             .trim();
 
-          if (hasContd) {
+          if (inputHasContd) {
             if (STRICT_MODE) {
               // in strict mode, remove all CONT'Ds in dual dialogue
               newString = character + "^";
             } else {
-              // in nonstrict mode, remove all CONT'Ds in dual dialogue
+              // in nonstrict mode, respect all CONT'Ds in dual dialogue
               newString = character + " (CONT'D)^";
             }
             changed = true;
@@ -82,7 +124,7 @@ if (promptResult) {
           line,
           changed,
           newString,
-          hasContd,
+          inputHasContd,
           character,
           isDualDialogue: line.type === Beat.type.dualDialogueCharacter,
         });
@@ -98,14 +140,15 @@ if (promptResult) {
   // second pass: handle left-side dual dialogues
   for (const [i, characterLine] of characterLines.entries()) {
     const nextCharacterLine = characterLines[i + 1];
+
     if (
-      nextCharacterLine && nextCharacterLine.isDualDialogue && // left-side dual dialogue
-      characterLine.changed
+      characterLine.changed &&
+      nextCharacterLine &&
+      nextCharacterLine.isDualDialogue // left-side dual dialogue
     ) {
-      if (STRICT_MODE || !characterLine.hasContd) {
+      // again, respect input CONT'Ds in nonstrict mode
+      if (STRICT_MODE || !characterLine.inputHasContd) {
         characterLine.newString = characterLine.character;
-      } else {
-        characterLine.newString = characterLine.character + " (CONT'D)";
       }
     }
   }
@@ -115,7 +158,7 @@ if (promptResult) {
       Beat.replaceRange(
         characterLine.line.position,
         characterLine.line.string.length,
-        characterLine.newString,
+        characterLine.newString
       );
     }
   }
