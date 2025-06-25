@@ -4,9 +4,13 @@ Copyright: Bode Pickman
 <Description>
 Organize your ideas and easily navigate to specific notes in your document using hashtags (like #theme or #plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
 Add a hashtag to any inline note: [[This will create a #tag]]
+<br>
+<br>
+
+The  Notes + Synopsis tab pulls every note, synopsis, and omitted scene into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document. 
 </Description>
 Image: Keywords.png
-Version: 1.2
+Version: 2.0
 */
 
 // --- Global plugin state --- //
@@ -23,6 +27,15 @@ let occurrenceIndex = {};
 
 // Per-tag color dictionary, persisted in user defaults.
 let tagColors = Beat.getUserDefault("tagColors") || {};
+
+// Lightweight inline markdown parser for bold, italic, underline, and code
+function parseInlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/__(.*?)__/g, '<u>$1</u>')
+    .replace(/`(.*?)`/g, '<code>$1</code>');
+}
 
 // Array of favorite tag names, persisted in document-specific settings.
 let favoriteTags = Beat.getDocumentSetting("favoriteTags") || [];
@@ -42,6 +55,22 @@ let isPluginVisible = true;
 
 // Theme mode: "light", "dark", or "system" (default uses system preference)
 let themeMode = Beat.getUserDefault("themePreference") || "system";
+
+// --- Notes/Synopsis global state ---
+// Initialize filter and tab preferences from persistent document settings
+let activeTab = Beat.getDocumentSetting("activeTab") || 'keywords';
+let showNotes = Beat.getDocumentSetting("showNotes");
+if (showNotes === undefined) showNotes = true;
+let showSynopsis = Beat.getDocumentSetting("showSynopsis");
+if (showSynopsis === undefined) showSynopsis = true;
+let showCompleted = Beat.getDocumentSetting("showCompleted");
+if (showCompleted === undefined) showCompleted = true;
+let showOmitted = Beat.getDocumentSetting("showOmitted");
+if (showOmitted === undefined) showOmitted = true;
+let notesAndSynopsis = [];
+// Set of dismissed notes/synopsis entry keys (type:absPos)
+let savedDismissed = Beat.getDocumentSetting("dismissedEntries") || [];
+let dismissedEntries = new Set(savedDismissed);
 
 /**
  * Darkens a given hex color by a specified factor (0.0 to 1.0).
@@ -100,6 +129,38 @@ function flashHighlight(color, start, length, cycles) {
 }
 
 /**
+ * Blink a text range by alternating highlight on and off.
+ * @param {number} start - Start position
+ * @param {number} length - Length of range
+ * @param {string} color - Highlight color
+ * @param {number} numberOfTimes - Number of blinks (on/off pairs)
+ * @param {number} interval - Interval in seconds between blinks
+ * @param {boolean} persistent - If true, do not reformat (remove) highlight at end (for persistent highlights, e.g. keywords)
+ */
+function blinkRange(start, length, color, numberOfTimes, interval, persistent = false){
+  let remove = false;
+
+  doBlink();
+
+  function doBlink(){
+    if(remove) {
+      if (!persistent) {
+        Beat.reformatRange(start, length);
+      }
+      numberOfTimes--;
+    } else {
+      Beat.textBackgroundHighlight(color, start, length);
+    }
+
+    remove = !remove;
+
+    if(numberOfTimes){
+      Beat.timer(interval, doBlink);
+    }
+  }
+}
+
+/**
  * Plugin methods callable from HTML.
  */
 Beat.custom = {
@@ -132,7 +193,7 @@ Beat.custom = {
       Beat.scrollTo(lines[occ.lineIndex].position);
     }
     occurrenceIndex[tagName]++;
-    // Trigger the flashing effect for this occurrence.
+    // Trigger the blinking effect for this occurrence.
     flashHighlight(occ.color, occ.absPos, occ.matchLen, 3);
     updateWindowUI();
   },
@@ -193,10 +254,70 @@ Beat.custom = {
     }
   },
 
+  switchTab(tab) {
+    activeTab = tab;
+    if (tab === 'keywords') {
+      reapplyAllHighlights();
+    }
+    Beat.setDocumentSetting("activeTab", tab);
+    updateWindowUI();
+  },
+
+  toggleFilter(type) {
+    if (type === 'notes') {
+      showNotes = !showNotes;
+      Beat.setDocumentSetting("showNotes", showNotes);
+    }
+    if (type === 'synopsis') {
+      showSynopsis = !showSynopsis;
+      Beat.setDocumentSetting("showSynopsis", showSynopsis);
+    }
+    if (type === 'omitted') {
+      showOmitted = !showOmitted;
+      Beat.setDocumentSetting("showOmitted", showOmitted);
+    }
+    updateWindowUI();
+  },
+
+  toggleShowCompleted() {
+    showCompleted = !showCompleted;
+    Beat.setDocumentSetting("showCompleted", showCompleted);
+    updateWindowUI();
+  },
+
   toggleTheme() {
     isDarkTheme = !isDarkTheme;
     Beat.setUserDefault("themePreference", isDarkTheme);
     updateWindowUI();
+  },
+  toggleDismissed(key) {
+    if (dismissedEntries.has(key)) {
+      dismissedEntries.delete(key);
+    } else {
+      dismissedEntries.add(key);
+    }
+    Beat.setDocumentSetting("dismissedEntries", Array.from(dismissedEntries));
+    updateWindowUI();
+  },
+  scrollToMetaEntry(posStr) {
+    const position = parseInt(posStr, 10);
+    if (isNaN(position)) return;
+
+    const lines = Beat.lines();
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineStart = line.position;
+      const lineEnd = i < lines.length - 1 ? lines[i + 1].position : Infinity;
+
+      if (position >= lineStart && position < lineEnd) {
+        // Use line length minus 1 to avoid overlapping into next KW
+        const rangeLength = Math.max(1, line.string.length - 1);
+        blinkRange(lineStart, rangeLength, "#aad8ff", 3, 0.25, false);
+        Beat.scrollTo(lineStart);
+        // No Beat.reformatRange here to avoid interfering with persistent highlights
+        break;
+      }
+    }
   },
   setLightMode() {
     themeMode = "light";
@@ -254,6 +375,7 @@ function gatherAllTags() {
   const regexNote = /\[\[(.*?)\]\]/g;
   const regexHash = /#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
   const lines = Beat.lines();
+  // Gather tags
   for (let i = 0; i < lines.length; i++) {
     const lineObj = lines[i];
     let noteMatch;
@@ -282,6 +404,71 @@ function gatherAllTags() {
       }
     }
   }
+  // Gather notes and synopsis lines
+  notesAndSynopsis = [];
+  for (let i = 0; i < lines.length; i++) {
+    const lineObj = lines[i];
+    const line = lineObj.string;
+    let noteMatch;
+    while ((noteMatch = regexNote.exec(line)) !== null) {
+      const content = noteMatch[1];
+      // Filter out hex color codes like #377BCD
+      if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
+      const absPos = lineObj.position + noteMatch.index;
+      // Skip if the entire inline note content is a hashtag (for Notes/Synopsis tab)
+      const trimmed = content.trim();
+      if (!/^#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed)) {
+        notesAndSynopsis.push({ type: 'note', content, absPos, lineIndex: i });
+      }
+    }
+    // Inserted logic to rename manual page breaks
+    if (line.trim().toLowerCase() === "manual page break") {
+      notesAndSynopsis.push({ type: 'synopsis', content: '**Forced Page Break**', absPos: lineObj.position, lineIndex: i });
+      continue;
+    }
+    // Omitted scene block detection: treat all /* ... */ blocks as omitted scenes
+    if (line.includes("/*")) {
+      let j = i;
+      let blockLines = [line];
+      let foundEnd = line.includes("*/");
+
+      while (!foundEnd && j + 1 < lines.length) {
+        j++;
+        blockLines.push(lines[j].string);
+        if (lines[j].string.includes("*/")) {
+          foundEnd = true;
+        }
+      }
+
+      const fullBlock = blockLines.join("\n").trim();
+
+      const previewText = fullBlock
+        .replace(/^\/\*/, "")
+        .replace(/\*\/$/, "")
+        .trim()
+        .slice(0, 100);
+
+      notesAndSynopsis.push({
+        type: 'omitted',
+        content: '**Omitted Scene:** ' + previewText,
+        absPos: lineObj.position,
+        lineIndex: i,
+        key: `omitted:${i}`
+      });
+
+      i = j; // Skip to the end of the omitted block
+      continue;
+    }
+    const synMatch = line.match(/^=\s?(.*)/);
+    if (synMatch) {
+      let content = synMatch[1];
+      if (content.trim() === "==") content = "*Forced Page Break*";
+      // Filter out hex color codes like #377BCD
+      if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
+      const absPos = lineObj.position + line.indexOf('=');
+      notesAndSynopsis.push({ type: 'synopsis', content, absPos, lineIndex: i });
+    }
+  }
 }
 
 function addOccurrence(tagName, lineIndex, absPos, matchLen, special = false) {
@@ -304,7 +491,7 @@ function alreadyHaveOccurrence(absPos, matchLen) {
  */
 function pickColorForTag(tagName) {
   if (tagColors[tagName]) return tagColors[tagName];
-  return "#fefbc0";
+  return "#687d9d";
 }
 
 /**
@@ -347,6 +534,9 @@ function buildUIHtml() {
       --headerColor: #666;
       --helpBg: #f1f1f1;
       --helpColor: #000;
+      --searchBg: #fff;
+      --searchColor: #000;
+      --searchBorder: #ccc;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -355,6 +545,9 @@ function buildUIHtml() {
         --headerColor: #ccc;
         --helpBg: #222;
         --helpColor: #fff;
+        --searchBg: #222;
+        --searchColor: #eee;
+        --searchBorder: #555;
       }
     }`;
   } else if (themeMode === "light") {
@@ -365,6 +558,9 @@ function buildUIHtml() {
       --headerColor: #666;
       --helpBg: #f1f1f1;
       --helpColor: #000;
+      --searchBg: #fff;
+      --searchColor: #000;
+      --searchBorder: #ccc;
     }`;
   } else {
     css = `
@@ -374,6 +570,9 @@ function buildUIHtml() {
       --headerColor: #ccc;
       --helpBg: #222;
       --helpColor: #fff;
+      --searchBg: #222;
+      --searchColor: #eee;
+      --searchBorder: #555;
     }`;
   }
 
@@ -382,6 +581,15 @@ function buildUIHtml() {
 <head>
   <style>
     ${css}
+    #noteSearchInput {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 0.95em;
+      border-radius: 6px;
+      border: 1px solid var(--searchBorder, #ccc);
+      background-color: var(--searchBg, #fff);
+      color: var(--searchColor, #000);
+    }
     html, body {
       margin: 0;
       padding: 5px;
@@ -485,6 +693,27 @@ function buildUIHtml() {
       color: var(--headerColor);
       opacity: 1;
     }
+    .tab-bar {
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .meta-block {
+      background: var(--helpBg);
+      color: var(--bodyColor);
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin: 6px 0;
+      font-size: 0.95em;
+      word-break: break-word;
+    }
+    .filter-toggles {
+      margin-bottom: 10px;
+    }
+    .filter-toggles label {
+      margin-right: 18px;
+      font-size: 0.98em;
+      cursor: pointer;
+    }
   </style>
   <script>
     function finalizeColorButtonClick() {
@@ -494,6 +723,88 @@ function buildUIHtml() {
   </script>
 </head>
 <body>
+  <div class="tab-bar">
+    <button class="themeTab ${activeTab==='keywords'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
+    <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
+  </div>
+`;
+
+  // --- Tabbed UI: Notes/Synopsis ---
+  if (activeTab === 'notes') {
+    // Add the search input field above the filter-toggles block
+    html += `
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="noteSearchInput" placeholder="Search notes and synopsis..." 
+               oninput="window.filterNotes(this.value)">
+      </div>
+      <div class="filter-toggles">
+        <label><input type="checkbox" ${showNotes ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notes\\')')"> Notes</label>
+        <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'synopsis\\')')"> Synopsis</label>
+        <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omitted scenes</label>
+        <label><input type="checkbox" ${showCompleted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleShowCompleted()')"> Show completed</label>
+      </div>
+    `;
+    // Helper: render inline hashtags as pills
+    function renderInlineTags(text) {
+      // Match hashtags like #theme, #plot, etc. (Unicode letters/numbers)
+      const regex = /#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
+      return text.replace(regex, (matchedText, tagName) => {
+        // Filter out color codes like #377BCD
+        if (/^[a-fA-F0-9]{6}$/.test(tagName)) return matchedText;
+        const color = pickColorForTag(tagName);
+        // Use same pill style as in the Keywords tab (pill shape with more padding and rounded)
+        const tagHtml = `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${matchedText}</span>`;
+        return tagHtml;
+      });
+    }
+    for (const entry of notesAndSynopsis) {
+      const entryKey = entry.key || (entry.type + ':' + entry.absPos);
+      const isOmitted = entry.type === 'omitted';
+      if (
+        ((entry.type === 'note' && showNotes) ||
+        (entry.type === 'synopsis' && showSynopsis) ||
+        (entry.type === 'omitted' && showOmitted)) &&
+        (showCompleted || !dismissedEntries.has(entryKey)) &&
+        (showOmitted || !isOmitted)
+      ) {
+        const isDismissed = dismissedEntries.has(entryKey);
+        const checked = isDismissed ? 'checked' : '';
+        const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
+        // Combine markdown and inline tags
+        let parsed = parseInlineMarkdown(entry.content.replace(/[\[\]]/g, ''));
+        parsed = renderInlineTags(parsed);
+        html += `
+          <div class="meta-block" style="display: flex; align-items: center;">
+            <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
+            <span style="cursor:pointer; ${style}" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</span>
+          </div>
+        `;
+      }
+    }
+    // Add the filterNotes script at the end of the HTML, before </body>
+    html += `
+<script>
+  window.filterNotes = function(query) {
+    const blocks = document.querySelectorAll('.meta-block');
+    query = query.toLowerCase();
+    blocks.forEach(block => {
+      const text = block.innerText.toLowerCase();
+      block.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+  }
+</script>
+</body></html>
+`;
+    return html;
+  }
+
+  // --- Keyword search input above Favorites ---
+  html += `
+  <div style="margin-bottom: 10px;">
+    <input type="text" id="keywordSearchInput" placeholder="Search keywords..." 
+           oninput="window.filterKeywords(this.value)"
+           style="width: 100%; padding: 6px 10px; font-size: 0.95em; border-radius: 6px; border: 1px solid var(--searchBorder, #ccc); background-color: var(--searchBg, #fff); color: var(--searchColor, #000);">
+  </div>
   <h2>Favorites</h2>
   <div id="favoritesContainer" class="container"
        ondragover="event.preventDefault(); this.classList.add('drag-over');"
@@ -540,7 +851,7 @@ function buildUIHtml() {
   const allTagNames = Object.keys(tagsByName);
   const otherTags = allTagNames.filter(t => !favoriteTags.includes(t));
   if (!otherTags.length) {
-    html += `<p style="color:#999;">No other tags found.</p>`;
+    html += `<p style="color:#999;">No other keywords found.</p>`;
   } else {
     for (const tagName of otherTags) {
       const occurrences = tagsByName[tagName];
@@ -595,6 +906,16 @@ function buildUIHtml() {
   <span class="themeTab ${themeMode==='dark'?'active':''}" onclick="Beat.call('Beat.custom.setDarkMode()')">Dark</span>
   <span class="themeTab ${themeMode==='system'?'active':''}" onclick="Beat.call('Beat.custom.setSystemMode()')">System</span>
 </div>
+<script>
+  window.filterKeywords = function(query) {
+    const pills = document.querySelectorAll('.tag-pill');
+    query = query.toLowerCase();
+    pills.forEach(pill => {
+      const text = pill.innerText.toLowerCase();
+      pill.style.display = text.includes(query) ? 'inline-block' : 'none';
+    });
+  };
+</script>
 </body>
 </html>
 `;
@@ -637,6 +958,7 @@ function togglePluginVisibility() {
   Beat.log("togglePluginVisibility triggered");
   if (myWindow) {
     if (isPluginVisible) {
+      removeAllHighlights();
       myWindow.hide();
       isPluginVisible = false;
     } else {
