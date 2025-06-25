@@ -2,7 +2,7 @@
 
 Location List
 Description: Quick and dirty list of shooting locations
-Version: 1.1
+Version: 1.2
 Copyright: Lauri-Matti Parppei
 
 */
@@ -59,10 +59,12 @@ for (let scene of scenes) {
 
 let html = "<h1>Locations</h1>\
 			<button id='saveCSV' onclick='saveCSV()'>Save CSV</button>\
-			<table cellspacing=0>"
+			<table cellspacing=0>\
+				<tr><td><b>Location</b></td><td>Scene Numbers</td><td>No. Scenes</td></tr>"
+
 
 for (let location in locations) {
-	html += "<tr><td>" + location + "</td><td>" + locations[location].join(", ") + "</td></tr>"
+	html += "<tr><td>" + location + "</td><td>" + locations[location].join(", ") + "</td><td>" + locations[location].length +"</td></tr>"
 }
 html += "<script>function saveCSV() { Beat.data = { saveCSV: 'yes' }; sendBeatData() }</script>"
 html += "</html>"
