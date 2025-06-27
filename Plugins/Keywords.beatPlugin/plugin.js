@@ -4,13 +4,32 @@ Copyright: Bode Pickman
 <Description>
 Organize your ideas and easily navigate to specific notes in your document using hashtags (like #theme or #plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
 Add a hashtag to any inline note: [[This will create a #tag]]
-<br>
-<br>
+<br><br>
 
-The  Notes + Synopsis tab pulls every note, synopsis, and omitted scene into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document. 
+The Notes + Synopsis tab pulls every inline note, synopsis, omitted text, and Notepad entry into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document.<br><br>
+
+
+Use `---` to group lines in Notepad or BONEYARD blocks. Everything between `---` markers is displayed as a single entry in the plugin. Ungrouped lines will appear as individual entries.
+
+For example, this in the Notepad or the Boneyard:
+<br>
+---
+<br>
+Line 1.
+<br> 
+<br>  
+Line 2.  
+<br>
+<br> 
+Line 3.
+<br>
+---
+<br>
+…will appear as one grouped entry in the Notes + Synopsis list.
 </Description>
+
 Image: Keywords.png
-Version: 2.0
+Version: 2.2
 */
 
 // --- Global plugin state --- //
@@ -28,9 +47,18 @@ let occurrenceIndex = {};
 // Per-tag color dictionary, persisted in user defaults.
 let tagColors = Beat.getUserDefault("tagColors") || {};
 
-// Lightweight inline markdown parser for bold, italic, underline, and code
+// Lightweight inline markdown parser for bold, italic, underline, code, and headers (h1-h3 only)
+// Process input line by line to ensure headers only apply to lines starting with #, and do not affect surrounding lines.
 function parseInlineMarkdown(text) {
-  return text
+  const lines = text.split("<br>");
+  const parsedLines = lines.map(line => {
+    if (/^###\s?[^\n#]/.test(line)) return line.replace(/^###\s?/, '<h3>') + '</h3>';
+    if (/^##\s?[^\n#]/.test(line)) return line.replace(/^##\s?/, '<h2>') + '</h2>';
+    if (/^#\s?[^\n#]/.test(line)) return line.replace(/^#\s?/, '<h1>') + '</h1>';
+    return line;
+  });
+  const joined = parsedLines.join("<br>");
+  return joined
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/__(.*?)__/g, '<u>$1</u>')
@@ -67,6 +95,8 @@ let showCompleted = Beat.getDocumentSetting("showCompleted");
 if (showCompleted === undefined) showCompleted = true;
 let showOmitted = Beat.getDocumentSetting("showOmitted");
 if (showOmitted === undefined) showOmitted = true;
+let showNotepad = Beat.getDocumentSetting("showNotepad");
+if (showNotepad === undefined) showNotepad = true;
 let notesAndSynopsis = [];
 // Set of dismissed notes/synopsis entry keys (type:absPos)
 let savedDismissed = Beat.getDocumentSetting("dismissedEntries") || [];
@@ -170,6 +200,7 @@ Beat.custom = {
     occurrenceIndex = {};
     removeAllHighlights();
     gatherAllTags();
+    gatherNotepadNotes();
     for (let i = favoriteTags.length - 1; i >= 0; i--) {
       const ftag = favoriteTags[i];
       if (!tagsByName[ftag]) {
@@ -276,6 +307,10 @@ Beat.custom = {
       showOmitted = !showOmitted;
       Beat.setDocumentSetting("showOmitted", showOmitted);
     }
+    if (type === 'notepad') {
+      showNotepad = !showNotepad;
+      Beat.setDocumentSetting("showNotepad", showNotepad);
+    }
     updateWindowUI();
   },
 
@@ -338,6 +373,12 @@ Beat.custom = {
 
 function main() {
   gatherAllTags();
+  gatherNotepadNotes();
+
+  // --- Listen for Notepad changes and refresh UI in real time ---
+  Beat.onNotepadChange(() => {
+    Beat.custom.refreshUI();
+  });
 
   if (!Object.keys(tagsByName).length) {
     Beat.alert("No Tags Found", "Try adding a hashtag within an inline note (e.g., [[This is a #tag]]).");
@@ -361,6 +402,59 @@ function main() {
   myWindow.disableMinimize = true;
 
   centerWindow(myWindow);
+}
+
+function gatherNotepadNotes() {
+  // Remove any prior Notepad-based entries to prevent duplication or stale dismissal states
+  notesAndSynopsis = notesAndSynopsis.filter(entry => !entry.key?.startsWith("notepad:"));
+
+  const np = Beat.notepad?.string || '';
+  if (!np) return;
+
+  const lines = np.split(/\n/);
+  let notes = [];
+  let block = '';
+  let blockStartIndex = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.trim() === '') {
+      if (block.trim() !== '') {
+        notes.push({ block, startIndex: blockStartIndex });
+        block = '';
+      }
+      continue;
+    }
+
+    if (block === '') {
+      blockStartIndex = i;
+      block = line;
+    } else {
+      block += '\n' + line;
+    }
+  }
+
+  if (block.trim() !== '') {
+    notes.push({ block, startIndex: blockStartIndex });
+  }
+
+  for (let j = 0; j < notes.length; j++) {
+    const { block, startIndex } = notes[j];
+    const absPos = 90000000 + j;
+    const key = `notepad:${j}`;
+    notesAndSynopsis.push({
+      type: 'note',
+      content: block
+        .split('\n')
+        .filter(l => l.trim() !== '---')
+        .join('<br>')
+        .trim(),
+      absPos,
+      lineIndex: startIndex,
+      key
+    });
+  }
 }
 
 function onWindowClosed() {
@@ -460,6 +554,111 @@ function gatherAllTags() {
       continue;
     }
     const synMatch = line.match(/^=\s?(.*)/);
+    // Detect BONEYARD block
+    if (line.trim().toUpperCase().startsWith("#BONEYARD")) {
+      let j = i + 1;
+      let insideBlock = false;
+      let block = '';
+      let blockStartIndex = j;
+      let blockStartPos = lines[j]?.position || 0;
+      // --- Start of new grouping logic ---
+      let ungrouped = '';
+      let ungroupedStartIndex = null;
+      let ungroupedStartPos = null;
+
+      function pushBlock() {
+        if (block.trim() !== '') {
+          const cleaned = block
+            .split('\n')
+            .filter(l => l.trim() !== '---')
+            .join('\n')
+            .trim();
+
+          notesAndSynopsis.push({
+            type: 'omitted',
+            content: cleaned
+              .slice(0, 300)
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/\n/g, '<br>'),
+            absPos: blockStartPos,
+            lineIndex: blockStartIndex,
+            key: `boneyard:${blockStartIndex}`
+          });
+          block = '';
+        }
+      }
+
+      while (j < lines.length) {
+        const lineStr = lines[j].string;
+        const trimmed = lineStr.trim();
+
+        if (trimmed.startsWith("#") && !trimmed.startsWith("##")) break; // Stop at next top-level header
+
+        if (trimmed === "---") {
+          if (insideBlock) {
+            block += lineStr + '\n';
+            pushBlock();
+            insideBlock = false;
+          } else {
+            insideBlock = true;
+            blockStartIndex = j;
+            blockStartPos = lines[j].position;
+            block = lineStr + '\n';
+          }
+          // If we encounter --- and there is accumulated ungrouped, push it
+          if (ungrouped !== '') {
+            notesAndSynopsis.push({
+              type: 'omitted',
+              content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
+              absPos: ungroupedStartPos,
+              lineIndex: ungroupedStartIndex,
+              key: `boneyard:${ungroupedStartIndex}`
+            });
+            ungrouped = '';
+          }
+        } else if (insideBlock) {
+          block += lineStr + '\n';
+        } else if (
+          trimmed !== '' &&
+          !trimmed.startsWith("##") &&
+          !/^[=@]/.test(trimmed)
+        ) {
+          // Group consecutive non-blank, non-##, non-meta lines until blank line
+          if (ungrouped === '') {
+            ungroupedStartIndex = j;
+            ungroupedStartPos = lines[j].position;
+          }
+          ungrouped += lineStr + '\n';
+        } else if (ungrouped !== '') {
+          // On blank or meta line, push accumulated ungrouped
+          notesAndSynopsis.push({
+            type: 'omitted',
+            content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
+            absPos: ungroupedStartPos,
+            lineIndex: ungroupedStartIndex,
+            key: `boneyard:${ungroupedStartIndex}`
+          });
+          ungrouped = '';
+        }
+
+        j++;
+      }
+
+      // After the loop, push any remaining ungrouped content
+      if (ungrouped !== '') {
+        notesAndSynopsis.push({
+          type: 'omitted',
+          content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
+          absPos: ungroupedStartPos,
+          lineIndex: ungroupedStartIndex,
+          key: `boneyard:${ungroupedStartIndex}`
+        });
+      }
+
+      pushBlock();
+      continue;
+    }
     if (synMatch) {
       let content = synMatch[1];
       if (content.trim() === "==") content = "*Forced Page Break*";
@@ -598,11 +797,20 @@ function buildUIHtml() {
       font-family: sans-serif;
       min-height: 100vh;
     }
+    h1 {
+      margin: 0.4em 0 0.2em 0;
+      font-size: 2em;
+      font-weight: bold;
+    }
     h2 {
-      margin: 0.5em 0 0.25em 0;
+      margin: 0.35em 0 0.2em 0;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    h3 {
+      margin: 0.3em 0 0.2em 0;
       font-size: 1em;
-      font-weight: normal;
-      color: var(--headerColor);
+      font-weight: bold;
     }
     .container {
       margin-bottom: 1em;
@@ -739,50 +947,77 @@ function buildUIHtml() {
       </div>
       <div class="filter-toggles">
         <label><input type="checkbox" ${showNotes ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notes\\')')"> Notes</label>
+        <label><input type="checkbox" ${showNotepad ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notepad\\')')"> Notepad</label>
         <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'synopsis\\')')"> Synopsis</label>
-        <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omitted scenes</label>
+        <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omits</label>
         <label><input type="checkbox" ${showCompleted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleShowCompleted()')"> Show completed</label>
       </div>
     `;
-    // Helper: render inline hashtags as pills
+    // Helper: render inline hashtags as pills, but only for [[#tag]] syntax
     function renderInlineTags(text) {
-      // Match hashtags like #theme, #plot, etc. (Unicode letters/numbers)
-      const regex = /#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
+      // Match only [[#tag]] syntax
+      const regex = /\[\[#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)\]\]/gu;
       return text.replace(regex, (matchedText, tagName) => {
-        // Filter out color codes like #377BCD
         if (/^[a-fA-F0-9]{6}$/.test(tagName)) return matchedText;
         const color = pickColorForTag(tagName);
-        // Use same pill style as in the Keywords tab (pill shape with more padding and rounded)
-        const tagHtml = `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${matchedText}</span>`;
-        return tagHtml;
+        return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tagName}</span>`;
       });
     }
-    for (const entry of notesAndSynopsis) {
+    let notepadNoteIndex = 0;
+    for (const [index, entry] of notesAndSynopsis.entries()) {
       const entryKey = entry.key || (entry.type + ':' + entry.absPos);
       const isOmitted = entry.type === 'omitted';
+      const isNotepadNote = (
+        entry.type === 'note' &&
+        (entry.lineIndex === undefined || entry.absPos >= 90000000 || entry.key?.startsWith('notepad:')) &&
+        (entry.sceneIndex === undefined && entry.range === undefined)
+      );
       if (
-        ((entry.type === 'note' && showNotes) ||
-        (entry.type === 'synopsis' && showSynopsis) ||
-        (entry.type === 'omitted' && showOmitted)) &&
+        (
+          (entry.type === 'note' && ((isNotepadNote && showNotepad) || (!isNotepadNote && showNotes))) ||
+          (entry.type === 'synopsis' && showSynopsis) ||
+          (entry.type === 'omitted' && showOmitted)
+        ) &&
         (showCompleted || !dismissedEntries.has(entryKey)) &&
         (showOmitted || !isOmitted)
       ) {
         const isDismissed = dismissedEntries.has(entryKey);
         const checked = isDismissed ? 'checked' : '';
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
-        // Combine markdown and inline tags
-        let parsed = parseInlineMarkdown(entry.content.replace(/[\[\]]/g, ''));
-        parsed = renderInlineTags(parsed);
-        html += `
-          <div class="meta-block" style="display: flex; align-items: center;">
-            <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
-            <span style="cursor:pointer; ${style}" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</span>
-          </div>
-        `;
+        // Combine inline tags and markdown (tags first, then markdown)
+        let parsed = renderInlineTags(entry.content);
+        parsed = parseInlineMarkdown(parsed);
+        if (isNotepadNote) {
+          const hintId = `hint-${notepadNoteIndex++}`;
+          html += `
+            <div class="meta-block" style="display: flex; align-items: center; cursor: pointer;" onclick="(function(el){ el.style.display='block'; setTimeout(() => el.style.display='none', 2000); })(document.getElementById('${hintId}'))">
+              <input type="checkbox" ${checked} onclick="event.stopPropagation(); Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
+              <span style="${style}">${parsed}</span>
+              <div id="${hintId}" class="note-hint" style="display:none; margin-left:8px; color:#888; font-size:0.85em; font-style:italic; user-select:none; margin-top:4px;">Note in Notepad</div>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="meta-block" style="display: flex; align-items: center;">
+              <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
+              <span style="cursor:pointer; ${style}" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</span>
+            </div>
+          `;
+        }
       }
     }
     // Add the filterNotes script at the end of the HTML, before </body>
     html += `
+<style>
+  .note-hint {
+    margin-left: 8px;
+    color: #888;
+    font-size: 0.85em;
+    font-style: italic;
+    user-select: none;
+    transition: display 0.2s;
+  }
+</style>
 <script>
   window.filterNotes = function(query) {
     const blocks = document.querySelectorAll('.meta-block');
@@ -924,7 +1159,25 @@ function buildUIHtml() {
 
 function updateWindowUI() {
   if (!myWindow) return;
-  const newHTML = buildUIHtml();
+
+  const newHTML = `
+    <script>
+      // Save scroll position before unload
+      window.addEventListener('beforeunload', function() {
+        sessionStorage.setItem('scrollY', window.scrollY);
+      });
+      // Restore scroll position on load
+      window.addEventListener('DOMContentLoaded', function() {
+        const y = sessionStorage.getItem('scrollY') || 0;
+        window.scrollTo(0, parseInt(y, 10));
+      });
+      // Proactively save scroll position on scroll events
+      window.addEventListener('scroll', function() {
+        sessionStorage.setItem('scrollY', window.scrollY);
+      });
+    </script>
+  ` + buildUIHtml();
+
   myWindow.setHTML(newHTML);
 }
 
@@ -958,7 +1211,6 @@ function togglePluginVisibility() {
   Beat.log("togglePluginVisibility triggered");
   if (myWindow) {
     if (isPluginVisible) {
-      removeAllHighlights();
       myWindow.hide();
       isPluginVisible = false;
     } else {
@@ -980,32 +1232,7 @@ Beat.menu("Keywords", [toggleMenuItem]);
 
 // --- Modified onKeyDown block using myWindow ---
 if (typeof Beat.onKeyDown === "function") {
-  Beat.onKeyDown(function(e) {
-    if (e.ctrlKey && e.metaKey && e.key && e.key.toLowerCase() === "s") {
-      e.preventDefault();
-      if (!myWindow) {
-        const ui = buildUIHtml();
-        myWindow = Beat.htmlWindow({
-          html: ui,
-          width: 600,
-          height: 500,
-          disableMaximize: true,
-          disableFullScreen: true,
-          disableMinimize: true,
-          onClose: function() {
-            removeAllHighlights();
-            Beat.end();
-          }
-        });
-        centerWindow(myWindow);
-        isPluginVisible = true;
-      } else {
-        myWindow.close();
-        myWindow = null;
-        isPluginVisible = false;
-      }
-    }
-  });
+ 
 }
 
 main();
