@@ -29,7 +29,7 @@ Line 3.
 </Description>
 
 Image: Keywords.png
-Version: 2.2
+Version: 2.18
 */
 
 // --- Global plugin state --- //
@@ -46,6 +46,12 @@ let occurrenceIndex = {};
 
 // Per-tag color dictionary, persisted in user defaults.
 let tagColors = Beat.getUserDefault("tagColors") || {};
+
+
+// Normalize a string for stable keying/dismissal
+function normalize(str) {
+  return str.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 
 // Lightweight inline markdown parser for bold, italic, underline, code, and headers (h1-h3 only)
 // Process input line by line to ensure headers only apply to lines starting with #, and do not affect surrounding lines.
@@ -80,9 +86,11 @@ let timer = null;
 // Reference to plugin window
 let myWindow = null;
 let isPluginVisible = true;
+let sizesBeforeMinimize = null;
 
 // Theme mode: "light", "dark", or "system" (default uses system preference)
 let themeMode = Beat.getUserDefault("themePreference") || "system";
+let hideOnBlur = Beat.getUserDefault("hideOnBlur") || false;
 
 // --- Notes/Synopsis global state ---
 // Initialize filter and tab preferences from persistent document settings
@@ -97,6 +105,10 @@ let showOmitted = Beat.getDocumentSetting("showOmitted");
 if (showOmitted === undefined) showOmitted = true;
 let showNotepad = Beat.getDocumentSetting("showNotepad");
 if (showNotepad === undefined) showNotepad = true;
+let showBoneyard = Beat.getDocumentSetting("showBoneyard");
+if (showBoneyard === undefined) showBoneyard = true;
+let hideBackgroundTags = Beat.getDocumentSetting("hideBackgroundTags");
+if (hideBackgroundTags === undefined) hideBackgroundTags = false;
 let notesAndSynopsis = [];
 // Set of dismissed notes/synopsis entry keys (type:absPos)
 let savedDismissed = Beat.getDocumentSetting("dismissedEntries") || [];
@@ -194,6 +206,11 @@ function blinkRange(start, length, color, numberOfTimes, interval, persistent = 
  * Plugin methods callable from HTML.
  */
 Beat.custom = {
+  toggleHideBackgroundTags() {
+    hideBackgroundTags = !hideBackgroundTags;
+    Beat.setDocumentSetting("hideBackgroundTags", hideBackgroundTags);
+    updateWindowUI();
+  },
   refreshUI() {
     tagsByName = {};
     allOccurrences = [];
@@ -213,20 +230,27 @@ Beat.custom = {
 
   scrollToNextOccurrence(tagName) {
     if (!tagsByName[tagName] || !tagsByName[tagName].length) return;
-    if (occurrenceIndex[tagName] == null) {
-      occurrenceIndex[tagName] = 0;
+
+    const all = tagsByName[tagName];
+    const docHits = all.filter(o => o.lineIndex != null && o.lineIndex >= 0);
+    const noteHits = all.filter(o => o.lineIndex == null || o.lineIndex < 0);
+
+    if (!occurrenceIndex[tagName]) occurrenceIndex[tagName] = 0;
+
+    const index = occurrenceIndex[tagName] % docHits.length;
+    const occ = docHits[index];
+
+    if (occ) {
+      const lines = Beat.lines();
+      if (lines[occ.lineIndex]) {
+        Beat.scrollTo(lines[occ.lineIndex].position);
+        flashHighlight(occ.color, occ.absPos, occ.matchLen, 3);
+      }
+      occurrenceIndex[tagName]++;
+      updateWindowUI();
+    } else if (noteHits.length > 0) {
+      Beat.alert("Note in Notepad", "This keyword was found in your Notepad.");
     }
-    const occurrences = tagsByName[tagName];
-    const index = occurrenceIndex[tagName] % occurrences.length;
-    const occ = occurrences[index];
-    const lines = Beat.lines();
-    if (occ.lineIndex < lines.length) {
-      Beat.scrollTo(lines[occ.lineIndex].position);
-    }
-    occurrenceIndex[tagName]++;
-    // Trigger the blinking effect for this occurrence.
-    flashHighlight(occ.color, occ.absPos, occ.matchLen, 3);
-    updateWindowUI();
   },
 
   // Left-click: jump to next occurrence and persist tooltip until mouse leaves.
@@ -311,6 +335,10 @@ Beat.custom = {
       showNotepad = !showNotepad;
       Beat.setDocumentSetting("showNotepad", showNotepad);
     }
+    if (type === 'boneyard') {
+      showBoneyard = !showBoneyard;
+      Beat.setDocumentSetting("showBoneyard", showBoneyard);
+    }
     updateWindowUI();
   },
 
@@ -369,6 +397,39 @@ Beat.custom = {
     Beat.setUserDefault("themePreference", themeMode);
     updateWindowUI();
   },
+  toggleHideOnBlur() {
+    hideOnBlur = !hideOnBlur;
+    Beat.setUserDefault("hideOnBlur", hideOnBlur);
+    updateWindowUI();
+  },
+  minimizeFTOutliner() {
+    if (hideOnBlur && myWindow) {
+      // Store original frame if not already stored
+      if (!sizesBeforeMinimize) {
+        sizesBeforeMinimize = myWindow.getFrame();
+      }
+      // Compute minimized dimensions: quarter the original width, and standard title-bar height
+      const { x: origX, y: origY, width: origW, height: origH } = sizesBeforeMinimize;
+      const newWidth = Math.floor(origW * 0.25);
+      // Determine collapse position based on which half of the screen the window is on
+      const screenW = typeof Beat.screenWidth === "function" ? Beat.screenWidth() : origX + origW;
+      const centerX = origX + origW / 2;
+      // Collapse to screen edge: left edge if on left half, right edge if on right half
+      const newX = centerX > screenW / 2
+        ? screenW - newWidth
+        : 0;
+      const newY = origY + origH - 28;
+      myWindow.setFrame(newX, newY, newWidth, 28);
+    }
+  },
+  maximizeFTOutliner(unconditionally) {
+    if ((unconditionally || hideOnBlur) && myWindow && sizesBeforeMinimize) {
+      // Restore original frame
+      const { x, y, width, height } = sizesBeforeMinimize;
+      myWindow.setFrame(x, y, width, height);
+      sizesBeforeMinimize = null;
+    }
+  },
 };
 
 function main() {
@@ -380,8 +441,8 @@ function main() {
     Beat.custom.refreshUI();
   });
 
-  if (!Object.keys(tagsByName).length) {
-    Beat.alert("No Tags Found", "Try adding a hashtag within an inline note (e.g., [[This is a #tag]]).");
+  if (!Object.keys(tagsByName).length && notesAndSynopsis.length === 0) {
+    Beat.alert("No Keywords or Notes Found", "Try adding a hashtag within an inline note (e.g., [[This is a #keyword]]).");
     Beat.end();
     return;
   }
@@ -413,25 +474,43 @@ function gatherNotepadNotes() {
 
   const lines = np.split(/\n/);
   let notes = [];
+  let insideBlock = false;
   let block = '';
   let blockStartIndex = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (line.trim() === '') {
-      if (block.trim() !== '') {
+    if (line.trim() === '---') {
+      if (insideBlock) {
+        block += '\n' + line;
         notes.push({ block, startIndex: blockStartIndex });
         block = '';
+        insideBlock = false;
+      } else {
+        insideBlock = true;
+        blockStartIndex = i;
+        block = line;
       }
       continue;
     }
 
-    if (block === '') {
-      blockStartIndex = i;
-      block = line;
-    } else {
+    if (insideBlock) {
       block += '\n' + line;
+    } else {
+      if (line.trim() === '') {
+        if (block.trim() !== '') {
+          notes.push({ block, startIndex: blockStartIndex });
+          block = '';
+        }
+      } else {
+        if (block === '') {
+          blockStartIndex = i;
+          block = line;
+        } else {
+          block += '\n' + line;
+        }
+      }
     }
   }
 
@@ -443,17 +522,22 @@ function gatherNotepadNotes() {
     const { block, startIndex } = notes[j];
     const absPos = 90000000 + j;
     const key = `notepad:${j}`;
-    notesAndSynopsis.push({
-      type: 'note',
-      content: block
-        .split('\n')
-        .filter(l => l.trim() !== '---')
-        .join('<br>')
-        .trim(),
-      absPos,
-      lineIndex: startIndex,
-      key
-    });
+    const content = block
+      .split('\n')
+      .filter(l => l.trim() !== '---')
+      .join('<br>')
+      .trim();
+    // Exclude blocks that are just a keyword tag like [[#tag]] or [[beat: ...]]
+    const isKeywordOnly = /^\s*\[\[\s*(#\w+|(beat|storyline)\b[:\s])[^]*?\]\]\s*$/i.test(content);
+    if (!isKeywordOnly) {
+      notesAndSynopsis.push({
+        type: 'note',
+        content,
+        absPos,
+        lineIndex: startIndex,
+        key
+      });
+    }
   }
 }
 
@@ -500,24 +584,31 @@ function gatherAllTags() {
   }
   // Gather notes and synopsis lines
   notesAndSynopsis = [];
+  let insideBoneyard = false;
+  let insideBoneyardSection = false;
   for (let i = 0; i < lines.length; i++) {
     const lineObj = lines[i];
     const line = lineObj.string;
     let noteMatch;
     while ((noteMatch = regexNote.exec(line)) !== null) {
+      if (insideBoneyardSection) continue;
       const content = noteMatch[1];
-      // Filter out hex color codes like #377BCD
       if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
       const absPos = lineObj.position + noteMatch.index;
-      // Skip if the entire inline note content is a hashtag (for Notes/Synopsis tab)
       const trimmed = content.trim();
-      if (!/^#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed)) {
-        notesAndSynopsis.push({ type: 'note', content, absPos, lineIndex: i });
+      const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
+      if (
+        !/^#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed) &&
+        !isSpecialTag &&
+        !line.trim().startsWith('=')
+      ) {
+        notesAndSynopsis.push({ type: 'note', content, absPos, lineIndex: i, key: `note:${normalize(content)}` });
       }
     }
-    // Inserted logic to rename manual page breaks
-    if (line.trim().toLowerCase() === "manual page break") {
-      notesAndSynopsis.push({ type: 'synopsis', content: '**Forced Page Break**', absPos: lineObj.position, lineIndex: i });
+    // Inserted logic to rename manual page breaks and recognize === as forced page break
+    const trimmedLine = line.trim().toLowerCase();
+    if (trimmedLine === "manual page break" || trimmedLine === "===") {
+      notesAndSynopsis.push({ type: 'synopsis', content: '**Forced Page Break**', absPos: lineObj.position, lineIndex: i, key: `synopsis:${normalize('**Forced Page Break**')}` });
       continue;
     }
     // Omitted scene block detection: treat all /* ... */ blocks as omitted scenes
@@ -553,9 +644,11 @@ function gatherAllTags() {
       i = j; // Skip to the end of the omitted block
       continue;
     }
-    const synMatch = line.match(/^=\s?(.*)/);
-    // Detect BONEYARD block
-    if (line.trim().toUpperCase().startsWith("#BONEYARD")) {
+    // --- Track if we are inside a BONEYARD block for main loop ---
+    const trimmed = line.trim();
+    if (/^#\s*BONEYARD/i.test(trimmed)) {
+      insideBoneyard = true;
+      insideBoneyardSection = true;
       let j = i + 1;
       let insideBlock = false;
       let block = '';
@@ -575,7 +668,7 @@ function gatherAllTags() {
             .trim();
 
           notesAndSynopsis.push({
-            type: 'omitted',
+            type: 'boneyard',
             content: cleaned
               .slice(0, 300)
               .replace(/</g, '&lt;')
@@ -591,11 +684,54 @@ function gatherAllTags() {
 
       while (j < lines.length) {
         const lineStr = lines[j].string;
-        const trimmed = lineStr.trim();
+        const trimmedJ = lineStr.trim();
+        const synMatch = trimmedJ.match(/^=\s?(.*)/);
 
-        if (trimmed.startsWith("#") && !trimmed.startsWith("##")) break; // Stop at next top-level header
+        // Handle synopsis lines inside BONEYARD - always treat as boneyard, never as synopsis
+        if (synMatch) {
+          const raw = synMatch[1] || '';
+          const trimmedContent = raw.trim();
+          if (trimmedContent === '==' || trimmedContent === '===') {
+            j++;
+            continue;
+          }
+          notesAndSynopsis.push({
+            type: 'boneyard',
+            content: trimmedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+            absPos: lines[j].position,
+            lineIndex: j,
+            key: `boneyard:${j}`
+          });
+          j++;
+          continue;
+        }
 
-        if (trimmed === "---") {
+        // Handle standalone inline note lines ([[...]]) inside BONEYARD as boneyard entries
+        const inlineNoteMatch = trimmedJ.match(/^\[\[(.*?)\]\]$/);
+        if (inlineNoteMatch) {
+          const raw = inlineNoteMatch[1] || '';
+          const trimmedContent = raw.trim();
+          // Exclude keyword-style notes (starting with #) and special-tag-like entries (beat, storyline)
+          if (
+            trimmedContent !== '' &&
+            !/^#/.test(trimmedContent) &&
+            !/^(beat|storyline)\b[:\s]/i.test(trimmedContent)
+          ) {
+            notesAndSynopsis.push({
+              type: 'boneyard',
+              content: trimmedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+              absPos: lines[j].position,
+              lineIndex: j,
+              key: `boneyard:${j}`
+            });
+          }
+          j++;
+          continue;
+        }
+
+        if (trimmedJ.startsWith("#") && !trimmedJ.startsWith("##")) break; // Stop at next top-level header
+
+        if (trimmedJ === "---") {
           if (insideBlock) {
             block += lineStr + '\n';
             pushBlock();
@@ -609,7 +745,7 @@ function gatherAllTags() {
           // If we encounter --- and there is accumulated ungrouped, push it
           if (ungrouped !== '') {
             notesAndSynopsis.push({
-              type: 'omitted',
+              type: 'boneyard',
               content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
               absPos: ungroupedStartPos,
               lineIndex: ungroupedStartIndex,
@@ -620,9 +756,9 @@ function gatherAllTags() {
         } else if (insideBlock) {
           block += lineStr + '\n';
         } else if (
-          trimmed !== '' &&
-          !trimmed.startsWith("##") &&
-          !/^[=@]/.test(trimmed)
+          trimmedJ !== '' &&
+          !trimmedJ.startsWith("##") &&
+          !/^[=@]/.test(trimmedJ)
         ) {
           // Group consecutive non-blank, non-##, non-meta lines until blank line
           if (ungrouped === '') {
@@ -633,7 +769,7 @@ function gatherAllTags() {
         } else if (ungrouped !== '') {
           // On blank or meta line, push accumulated ungrouped
           notesAndSynopsis.push({
-            type: 'omitted',
+            type: 'boneyard',
             content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
             absPos: ungroupedStartPos,
             lineIndex: ungroupedStartIndex,
@@ -648,7 +784,7 @@ function gatherAllTags() {
       // After the loop, push any remaining ungrouped content
       if (ungrouped !== '') {
         notesAndSynopsis.push({
-          type: 'omitted',
+          type: 'boneyard',
           content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
           absPos: ungroupedStartPos,
           lineIndex: ungroupedStartIndex,
@@ -657,16 +793,68 @@ function gatherAllTags() {
       }
 
       pushBlock();
+      insideBoneyard = false;
       continue;
     }
-    if (synMatch) {
-      let content = synMatch[1];
-      if (content.trim() === "==") content = "*Forced Page Break*";
-      // Filter out hex color codes like #377BCD
-      if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
-      const absPos = lineObj.position + line.indexOf('=');
-      notesAndSynopsis.push({ type: 'synopsis', content, absPos, lineIndex: i });
+    // Update insideBoneyard flag when a top-level header is encountered (not BONEYARD)
+    if (/^#\s+/.test(trimmed) && !/^#\s*BONEYARD/i.test(trimmed)) {
+      insideBoneyard = false;
+      insideBoneyardSection = false;
     }
+    // If we are inside a BONEYARD block, skip synopsis detection for this line
+    // (Synopsis detection is moved below, after BONEYARD block handling)
+
+    // Guard clause: skip lines that are just == or ===
+    if (line.trim() === "==" || line.trim() === "===") continue;
+    // More explicit: Only add synopsis if NOT inside BONEYARD section (exclude = ... lines inside BONEYARD)
+    const isSynopsisLine = /^=\s?(.*)/.test(line);
+    if (isSynopsisLine && !insideBoneyardSection) {
+      const content = line.replace(/^=\s?/, '');
+      const absPos = lineObj.position + line.indexOf('=');
+      const specialTagOnly = /^\s*(new\s*)?\[\[\s*(beat|storyline)\s*:?\s+[^\]]+\]\]\s*$/i.test(content.trim());
+      if (specialTagOnly) continue;
+      if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
+      notesAndSynopsis.push({ type: 'synopsis', content, absPos, lineIndex: i, key: `synopsis:${normalize(content)}` });
+    }
+  }
+  // --- Add Notepad tags as tag occurrences and to notesAndSynopsis ---
+  // This must come after the main notepadNotes are gathered in gatherNotepadNotes
+  const np = Beat.notepad?.string || '';
+  if (np) {
+    const notepadLines = np.split(/\n/);
+    // Add Notepad entries to notesAndSynopsis (done in gatherNotepadNotes)
+    // Now, scan all Notepad lines for tag patterns and add them as tags
+    const tagRegex = /\[\[\s*(#?[^\]\s]+(?:\s+[^\]\s]+)*)\s*\]\]/g;
+    notepadLines.forEach(line => {
+      const stripped = line.trim();
+      let tagMatch;
+      while ((tagMatch = tagRegex.exec(stripped)) !== null) {
+        const fullMatch = tagMatch[1].trim();
+        if (/^(beat|storyline)\b[:\s]/i.test(fullMatch)) {
+          const tagName = fullMatch.replace(/^(beat|storyline)\b[:\s]*/i, '').trim();
+          if (tagName) {
+            addTag(tagName, pickColorForTag(tagName), { lineIndex: -1, absPos: -1, matchLen: tagName.length, special: true });
+          }
+        } else {
+          const tagName = fullMatch.replace(/^#/, '').trim();
+          if (tagName) {
+            addTag(tagName, pickColorForTag(tagName), { lineIndex: -1, absPos: -1, matchLen: tagName.length, special: false });
+          }
+        }
+      }
+    });
+  }
+  // Sort notesAndSynopsis by absPos ascending
+  notesAndSynopsis.sort((a, b) => a.absPos - b.absPos);
+}
+
+// Helper to add a tag for Notepad-based tags (does not highlight in doc)
+function addTag(tagName, color, occurrence) {
+  if (!tagsByName[tagName]) tagsByName[tagName] = [];
+  // Avoid duplicates: only add if not already present with same -1/-1
+  if (!tagsByName[tagName].some(o => o.lineIndex === occurrence.lineIndex && o.absPos === occurrence.absPos && o.matchLen === occurrence.matchLen && o.special === occurrence.special)) {
+    tagsByName[tagName].push({ tag: tagName, ...occurrence, color });
+    allOccurrences.push({ tag: tagName, ...occurrence, color });
   }
 }
 
@@ -922,51 +1110,94 @@ function buildUIHtml() {
       font-size: 0.98em;
       cursor: pointer;
     }
+    /* --- Sticky Header Styles --- */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      background: var(--bodyBg);
+      z-index: 10;
+      padding-top: 8px;
+    }
+    .sticky-header input,
+    .sticky-header .tab-bar,
+    .sticky-header .filter-toggles {
+      margin-bottom: 8px;
+    }
+    /* If dark mode, override sticky-header background */
+    @media (prefers-color-scheme: dark) {
+      .sticky-header {
+        background: var(--bodyBg);
+      }
+    }
   </style>
+</style>
   <script>
     function finalizeColorButtonClick() {
       var val = document.getElementById('colorPickerInput').value;
       Beat.call('Beat.custom.finalizeTagColor(\'' + val + '\')');
     }
   </script>
+  <script>
+    const hideOnBlurSetting = ${hideOnBlur};
+    function minimizeFTOutliner() {
+      if (hideOnBlurSetting) {
+        Beat.call('Beat.custom.minimizeFTOutliner()');
+      }
+    }
+    function maximizeFTOutliner(unconditionally) {
+      if (unconditionally || hideOnBlurSetting) {
+        Beat.call('Beat.custom.maximizeFTOutliner()');
+      }
+    }
+    window.addEventListener('blur', minimizeFTOutliner);
+    window.addEventListener('focus', () => maximizeFTOutliner(false));
+  </script>
 </head>
 <body>
-  <div class="tab-bar">
-    <button class="themeTab ${activeTab==='keywords'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
-    <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
-  </div>
+  <div class="sticky-header">
+    <div class="tab-bar">
+      <button class="themeTab ${activeTab==='keywords'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
+      <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
+    </div>
 `;
 
   // --- Tabbed UI: Notes/Synopsis ---
   if (activeTab === 'notes') {
-    // Add the search input field above the filter-toggles block
+    // Add the search input field and filter toggles inside sticky-header
     html += `
-      <div style="margin-bottom: 10px;">
-        <input type="text" id="noteSearchInput" placeholder="Search notes and synopsis..." 
-               oninput="window.filterNotes(this.value)">
-      </div>
-      <div class="filter-toggles">
+      <input type="text" id="noteSearchInput" placeholder="Search notes and synopsis..." 
+             oninput="window.filterNotes(this.value)">
+      <div class="filter-toggles toggles">
         <label><input type="checkbox" ${showNotes ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notes\\')')"> Notes</label>
-        <label><input type="checkbox" ${showNotepad ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notepad\\')')"> Notepad</label>
         <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'synopsis\\')')"> Synopsis</label>
         <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omits</label>
+        <label><input type="checkbox" ${showBoneyard ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'boneyard\\')')"> Boneyard</label>
+        <label><input type="checkbox" ${showNotepad ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notepad\\')')"> Notepad</label>
         <label><input type="checkbox" ${showCompleted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleShowCompleted()')"> Show completed</label>
       </div>
+    </div> <!-- end sticky-header -->
     `;
-    // Helper: render inline hashtags as pills, but only for [[#tag]] syntax
+    // Helper: render inline hashtags as pills, for both [[#tag]] and #tag syntax
     function renderInlineTags(text) {
-      // Match only [[#tag]] syntax
-      const regex = /\[\[#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)\]\]/gu;
-      return text.replace(regex, (matchedText, tagName) => {
-        if (/^[a-fA-F0-9]{6}$/.test(tagName)) return matchedText;
-        const color = pickColorForTag(tagName);
-        return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tagName}</span>`;
+      // Style [[#tag]] using color
+      text = text.replace(/\[\[\s*#([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
+        const color = pickColorForTag(tag);
+        return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tag}</span>`;
       });
+
+      // Style #tag elsewhere using the same color logic
+      text = text.replace(/(^|\s)#([a-zA-Z0-9_]+)/g, (_, prefix, tag) => {
+        const color = pickColorForTag(tag);
+        return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tag}</span>`;
+      });
+
+      return text;
     }
     let notepadNoteIndex = 0;
     for (const [index, entry] of notesAndSynopsis.entries()) {
-      const entryKey = entry.key || (entry.type + ':' + entry.absPos);
+      const entryKey = entry.key || `${entry.type}:${entry.lineIndex ?? entry.absPos}`;
       const isOmitted = entry.type === 'omitted';
+      const isBoneyard = entry.type === 'boneyard';
       const isNotepadNote = (
         entry.type === 'note' &&
         (entry.lineIndex === undefined || entry.absPos >= 90000000 || entry.key?.startsWith('notepad:')) &&
@@ -976,7 +1207,8 @@ function buildUIHtml() {
         (
           (entry.type === 'note' && ((isNotepadNote && showNotepad) || (!isNotepadNote && showNotes))) ||
           (entry.type === 'synopsis' && showSynopsis) ||
-          (entry.type === 'omitted' && showOmitted)
+          (entry.type === 'omitted' && showOmitted) ||
+          (entry.type === 'boneyard' && showBoneyard)
         ) &&
         (showCompleted || !dismissedEntries.has(entryKey)) &&
         (showOmitted || !isOmitted)
@@ -986,7 +1218,19 @@ function buildUIHtml() {
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
         // Combine inline tags and markdown (tags first, then markdown)
         let parsed = renderInlineTags(entry.content);
+        // Wrap [[beat ...]] or [[storyline ...]] as special pill, only if first word after prefix does not start with #
+        parsed = parsed.replace(/\[\[\s*(beat|storyline)\s*:?\s+([^\]]+?)\s*\]\]/gi, (_, _prefix, rest) => {
+          const tokens = rest.trim().split(/\s+/);
+          const first = tokens[0] || '';
+          if (first.startsWith('#')) return `[[${_prefix}: ${rest}]]`; // leave unprocessed
+          const clean = first;
+          return `<span class="pill special">${clean}</span>`;
+        });
+        // Remove any surrounding double brackets from the line (e.g., [[new5 dd]] -> new5 dd)
+        parsed = parsed.replace(/\[\[(.*?)\]\]/g, '$1');
         parsed = parseInlineMarkdown(parsed);
+        // Add a data attribute for Boneyard entries (styling suspended)
+        let boneyardAttr = isBoneyard ? ' data-is-boneyard="true"' : '';
         if (isNotepadNote) {
           const hintId = `hint-${notepadNoteIndex++}`;
           html += `
@@ -998,7 +1242,7 @@ function buildUIHtml() {
           `;
         } else {
           html += `
-            <div class="meta-block" style="display: flex; align-items: center;">
+            <div class="meta-block"${boneyardAttr} style="display: flex; align-items: center;">
               <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
               <span style="cursor:pointer; ${style}" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</span>
             </div>
@@ -1016,6 +1260,18 @@ function buildUIHtml() {
     font-style: italic;
     user-select: none;
     transition: display 0.2s;
+  }
+  .pill.special {
+    display: inline-block;
+    margin: 0 3px 0 0;
+    padding: 2px 8px;
+    border-radius: 16px;
+    background: transparent;
+    border: 2px solid #687d9d;
+    color: #687d9d;
+    font-size: 0.9em;
+    font-weight: 600;
+    vertical-align: middle;
   }
 </style>
 <script>
@@ -1035,25 +1291,38 @@ function buildUIHtml() {
 
   // --- Keyword search input above Favorites ---
   html += `
-  <div style="margin-bottom: 10px;">
+  <div class="sticky-header">
     <input type="text" id="keywordSearchInput" placeholder="Search keywords..." 
            oninput="window.filterKeywords(this.value)"
            style="width: 100%; padding: 6px 10px; font-size: 0.95em; border-radius: 6px; border: 1px solid var(--searchBorder, #ccc); background-color: var(--searchBg, #fff); color: var(--searchColor, #000);">
+    <label style="margin-top: 6px; display:block;" title="Hide keywords found in Notepad, Boneyard, or Omitted text.">
+      <input type="checkbox" ${hideBackgroundTags ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideBackgroundTags()')">
+      Keywords in document only
+    </label>
+    <h2>Favorites</h2>
   </div>
-  <h2>Favorites</h2>
   <div id="favoritesContainer" class="container"
        ondragover="event.preventDefault(); this.classList.add('drag-over');"
        ondragleave="this.classList.remove('drag-over');"
        ondrop="(function(e){ e.preventDefault(); this.classList.remove('drag-over'); var tag = e.dataTransfer.getData('text/plain'); Beat.call('Beat.custom.dropToFavorites(\\'' + tag + '\\')'); }).call(this, event)">
   `;
-  
+
   for (const ftag of favoriteTags) {
+    if (hideBackgroundTags) {
+      const occs = tagsByName[ftag];
+      if (!occs || occs.every(o => {
+        const entry = notesAndSynopsis.find(n => n.lineIndex === o.lineIndex);
+        return o.lineIndex === -1 || (entry && ['omitted', 'boneyard'].includes(entry.type));
+      })) continue;
+    }
     const occurrences = tagsByName[ftag] || [];
     const isSpecial = occurrences.some(o => o.special === true);
     const color = pickColorForTag(ftag);
     const borderColor = darkenHexColor(color, 0.2);
-    const total = occurrences.length;
-    const pos = (occurrenceIndex[ftag] != null ? (occurrenceIndex[ftag] % total) : 0) + 1;
+    const notepadCount = occurrences.filter(o => o.lineIndex < 0).length;
+    const docCount = occurrences.filter(o => o.lineIndex >= 0).length;
+    // Tooltip position and count relative to document entries only
+    const pos = (occurrenceIndex[ftag] != null && docCount > 0 ? (occurrenceIndex[ftag] % docCount) : 0) + 1;
     const pillClass = (activeTooltipTag === ftag) ? "tag-pill active" : "tag-pill";
     let pillStyle;
     if (isSpecial) {
@@ -1061,20 +1330,26 @@ function buildUIHtml() {
     } else {
       pillStyle = `background-color:${color}; border:1px solid ${borderColor}; color:${getContrastColor(color)};`;
     }
+    // Extract only the first word for display
+    let tagLabel = ftag.split(/\s+/)[0];
+    // Determine if all occurrences are notepad-only
+    const notepadOnly = occurrences.every(o => o.lineIndex === -1);
     html += `
     <div class="${pillClass}"
          style="${pillStyle}"
          draggable="true"
          ondragstart="event.dataTransfer.setData('text/plain','${ftag}');"
-         onclick="Beat.call('Beat.custom.handlePillClick(\\'${ftag}\\')')"
+         ${notepadOnly ? '' : `onclick="Beat.call('Beat.custom.handlePillClick(\\'${ftag}\\')')"`}
          onmouseleave="Beat.call('Beat.custom.onPillMouseLeave(\\'${ftag}\\')')"
          oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${ftag}\\', ' + event.clientX + ', ' + event.clientY + ')');">
-      ${ftag}
-      <span class="tooltip">${pos}/${total}</span>
+      ${tagLabel}
+      <span class="tooltip">
+        ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (more in Notepad)' : 'in document')}
+      </span>
     </div>
     `;
   }
-  
+
   html += `
   </div>
   <div id="othersContainer" class="container" style="border:none; background:transparent;"
@@ -1082,9 +1357,17 @@ function buildUIHtml() {
        ondragleave="this.classList.remove('drag-over');"
        ondrop="(function(e){ e.preventDefault(); this.classList.remove('drag-over'); var tag = e.dataTransfer.getData('text/plain'); Beat.call('Beat.custom.dropToOthers(\\'' + tag + '\\')'); }).call(this, event)">
   `;
-  
+
   const allTagNames = Object.keys(tagsByName);
-  const otherTags = allTagNames.filter(t => !favoriteTags.includes(t));
+  const otherTags = allTagNames.filter(t => {
+    if (favoriteTags.includes(t)) return false;
+    if (!hideBackgroundTags) return true;
+    const occs = tagsByName[t];
+    return occs.some(o => {
+      const entry = notesAndSynopsis.find(n => n.lineIndex === o.lineIndex);
+      return o.lineIndex !== -1 && (!entry || !['omitted', 'boneyard'].includes(entry.type));
+    });
+  });
   if (!otherTags.length) {
     html += `<p style="color:#999;">No other keywords found.</p>`;
   } else {
@@ -1093,8 +1376,10 @@ function buildUIHtml() {
       const isSpecial = occurrences.some(o => o.special === true);
       const color = pickColorForTag(tagName);
       const borderColor = darkenHexColor(color, 0.2);
-      const total = occurrences.length;
-      const pos = (occurrenceIndex[tagName] != null ? (occurrenceIndex[tagName] % total) : 0) + 1;
+      const notepadCount = occurrences.filter(o => o.lineIndex < 0).length;
+      const docCount = occurrences.filter(o => o.lineIndex >= 0).length;
+      // Tooltip position and count relative to document entries only
+      const pos = (occurrenceIndex[tagName] != null && docCount > 0 ? (occurrenceIndex[tagName] % docCount) : 0) + 1;
       const pillClass = (activeTooltipTag === tagName) ? "tag-pill active" : "tag-pill";
       let pillStyle;
       if (isSpecial) {
@@ -1102,21 +1387,27 @@ function buildUIHtml() {
       } else {
         pillStyle = `background-color:${color}; border:1px solid ${borderColor}; color:${getContrastColor(color)};`;
       }
+      // Extract only the first word for display
+      let tagLabel = tagName.split(/\s+/)[0];
+      // Determine if all occurrences are notepad-only
+      const notepadOnly = occurrences.every(o => o.lineIndex === -1);
       html += `
       <div class="${pillClass}"
            style="${pillStyle}"
            draggable="true"
            ondragstart="event.dataTransfer.setData('text/plain','${tagName}');"
-           onclick="Beat.call('Beat.custom.handlePillClick(\\'${tagName}\\')')"
+           ${notepadOnly ? '' : `onclick="Beat.call('Beat.custom.handlePillClick(\\'${tagName}\\')')"`}
            onmouseleave="Beat.call('Beat.custom.onPillMouseLeave(\\'${tagName}\\')')"
            oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${tagName}\\', ' + event.clientX + ', ' + event.clientY + ')');">
-        ${tagName}
-        <span class="tooltip">${pos}/${total}</span>
+        ${tagLabel}
+        <span class="tooltip">
+          ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (more in Notepad)' : 'in document')}
+        </span>
       </div>
       `;
     }
   }
-  
+
   html += `
   </div>
   <div id="colorPopup" style="${popupStyle}">
@@ -1136,11 +1427,14 @@ function buildUIHtml() {
     <button onclick="document.getElementById('helpPopover').style.display='none';">Close</button>
   </div>
 </div>
-<div id="themeTabs">
-  <span class="themeTab ${themeMode==='light'?'active':''}" onclick="Beat.call('Beat.custom.setLightMode()')">Light</span>
-  <span class="themeTab ${themeMode==='dark'?'active':''}" onclick="Beat.call('Beat.custom.setDarkMode()')">Dark</span>
-  <span class="themeTab ${themeMode==='system'?'active':''}" onclick="Beat.call('Beat.custom.setSystemMode()')">System</span>
-</div>
+  <div id="themeTabs">
+    <label style="display:inline-flex;align-items:center;vertical-align:middle;margin-right:8px;">
+      <input type="checkbox" ${hideOnBlur ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideOnBlur()')" style="opacity:1;margin-right:2px;vertical-align:middle;"><span class="themeTab" style="padding:2px 4px;margin:0;">Auto-Collapse</span>
+    </label>
+    <span class="themeTab ${themeMode==='light'?'active':''}" onclick="Beat.call('Beat.custom.setLightMode()')">Light</span>
+    <span class="themeTab ${themeMode==='dark'?'active':''}" onclick="Beat.call('Beat.custom.setDarkMode()')">Dark</span>
+    <span class="themeTab ${themeMode==='system'?'active':''}" onclick="Beat.call('Beat.custom.setSystemMode()')">System</span>
+  </div>
 <script>
   window.filterKeywords = function(query) {
     const pills = document.querySelectorAll('.tag-pill');
