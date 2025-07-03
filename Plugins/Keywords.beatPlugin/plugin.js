@@ -2,7 +2,7 @@
 Title: Keywords
 Copyright: Bode Pickman
 <Description>
-Organize your ideas and easily navigate to specific notes in your document using hashtags (like #theme or #plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
+Organize your ideas and easily navigate to specific notes in your document using hashtags or the "at" symbol (like #theme or @plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
 Add a hashtag to any inline note: [[This will create a #tag]]
 <br><br>
 
@@ -29,7 +29,7 @@ Line 3.
 </Description>
 
 Image: Keywords.png
-Version: 2.19
+Version: 2.22
 */
 
 // --- Global plugin state --- //
@@ -558,7 +558,7 @@ function onWindowClosed() {
  */
 function gatherAllTags() {
   const regexNote = /\[\[(.*?)\]\]/g;
-  const regexHash = /#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
+  const regexHash = /[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
   const lines = Beat.lines();
   // Gather tags
   for (let i = 0; i < lines.length; i++) {
