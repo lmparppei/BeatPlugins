@@ -29,7 +29,7 @@ Line 3.
 </Description>
 
 Image: Keywords.png
-Version: 2.18
+Version: 2.19
 */
 
 // --- Global plugin state --- //
@@ -90,7 +90,14 @@ let sizesBeforeMinimize = null;
 
 // Theme mode: "light", "dark", or "system" (default uses system preference)
 let themeMode = Beat.getUserDefault("themePreference") || "system";
-let hideOnBlur = Beat.getUserDefault("hideOnBlur") || false;
+let collapseMode = Beat.getUserDefault("collapseMode") || "off";
+
+// Attempt to import Cocoa for multi-screen support; fall back gracefully if unavailable
+try {
+  ObjC.import('Cocoa');
+} catch (e) {
+  // ObjC not available in this environment
+}
 
 // --- Notes/Synopsis global state ---
 // Initialize filter and tab preferences from persistent document settings
@@ -397,34 +404,34 @@ Beat.custom = {
     Beat.setUserDefault("themePreference", themeMode);
     updateWindowUI();
   },
-  toggleHideOnBlur() {
-    hideOnBlur = !hideOnBlur;
-    Beat.setUserDefault("hideOnBlur", hideOnBlur);
+  setThemeMode(mode) {
+    themeMode = mode;
+    Beat.setUserDefault("themePreference", mode);
+    updateWindowUI();
+  },
+  setCollapseMode(mode) {
+    collapseMode = mode;
+    Beat.setUserDefault("collapseMode", mode);
     updateWindowUI();
   },
   minimizeFTOutliner() {
-    if (hideOnBlur && myWindow) {
-      // Store original frame if not already stored
+    if (collapseMode !== "off" && myWindow) {
+      // Store the original frame once
       if (!sizesBeforeMinimize) {
         sizesBeforeMinimize = myWindow.getFrame();
       }
-      // Compute minimized dimensions: quarter the original width, and standard title-bar height
       const { x: origX, y: origY, width: origW, height: origH } = sizesBeforeMinimize;
       const newWidth = Math.floor(origW * 0.25);
-      // Determine collapse position based on which half of the screen the window is on
-      const screenW = typeof Beat.screenWidth === "function" ? Beat.screenWidth() : origX + origW;
-      const centerX = origX + origW / 2;
-      // Collapse to screen edge: left edge if on left half, right edge if on right half
-      const newX = centerX > screenW / 2
-        ? screenW - newWidth
-        : 0;
+      const newX = (collapseMode === "right")
+                 ? (origX + origW - newWidth)
+                 : origX;
       const newY = origY + origH - 28;
       myWindow.setFrame(newX, newY, newWidth, 28);
     }
   },
-  maximizeFTOutliner(unconditionally) {
-    if ((unconditionally || hideOnBlur) && myWindow && sizesBeforeMinimize) {
-      // Restore original frame
+  maximizeFTOutliner() {
+    if (myWindow && sizesBeforeMinimize) {
+      // Restore original frame regardless of hideOnBlur
       const { x, y, width, height } = sizesBeforeMinimize;
       myWindow.setFrame(x, y, width, height);
       sizesBeforeMinimize = null;
@@ -927,16 +934,34 @@ function buildUIHtml() {
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bodyBg: #333;
-        --bodyColor: #fff;
-        --headerColor: #ccc;
-        --helpBg: #222;
+        --bodyBg: #1e1e1e;
+        --bodyColor: #eee;
+        --headerColor: #aaa;
+        --helpBg: #2a2a2a;
         --helpColor: #fff;
-        --searchBg: #222;
-        --searchColor: #eee;
-        --searchBorder: #555;
+        --searchBg: #2a2a2a;
+        --searchColor: #fff;
+        --searchBorder: #444;
       }
-    }`;
+    }
+    /* Darken dropdown chevrons in light mode only */
+    @media (prefers-color-scheme: light) {
+      select {
+        color-scheme: light;
+      }
+
+      select::-ms-expand,
+      select::after {
+        filter: brightness(0.2);
+      }
+
+      select::-webkit-inner-spin-button,
+      select::-webkit-outer-spin-button,
+      select::-webkit-dropdown-arrow {
+        filter: brightness(0.2);
+      }
+    }
+    `;
   } else if (themeMode === "light") {
     css = `
     :root {
@@ -948,26 +973,88 @@ function buildUIHtml() {
       --searchBg: #fff;
       --searchColor: #000;
       --searchBorder: #ccc;
-    }`;
+    }
+    /* Darken dropdown chevrons in light mode only */
+    @media (prefers-color-scheme: light) {
+      select {
+        color-scheme: light;
+      }
+
+      select::-ms-expand,
+      select::after {
+        filter: brightness(0.2);
+      }
+
+      select::-webkit-inner-spin-button,
+      select::-webkit-outer-spin-button,
+      select::-webkit-dropdown-arrow {
+        filter: brightness(0.2);
+      }
+    }
+    `;
   } else {
     css = `
     :root {
-      --bodyBg: #333;
-      --bodyColor: #fff;
-      --headerColor: #ccc;
-      --helpBg: #222;
+      --bodyBg: #1e1e1e;
+      --bodyColor: #eee;
+      --headerColor: #aaa;
+      --helpBg: #2a2a2a;
       --helpColor: #fff;
-      --searchBg: #222;
-      --searchColor: #eee;
-      --searchBorder: #555;
+      --searchBg: #2a2a2a;
+      --searchColor: #fff;
+      --searchBorder: #444;
     }`;
   }
 
+  const collapseMode = Beat.getUserDefault("collapseMode") || "off";
   let html = `
 <html>
 <head>
   <style>
     ${css}
+    /* Base style for all select elements */
+    select {
+      font-family: inherit;
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+    /* Style dropdowns for Auto-collapse and Theme selectors */
+    #themeTabs select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+
+      background-color: var(--helpBg);
+      color: var(--helpColor);
+      border: 1px solid var(--searchBorder);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.85em;
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 12px 16px;
+      padding-right: 24px;
+    }
+    @media (prefers-color-scheme: dark) {
+      #themeTabs select {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="16" viewBox="0 0 12 16"><path d="M3.5 6l2.5-2 2.5 2" stroke="%23ccc" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M3.5 10l2.5 2 2.5-2" stroke="%23ccc" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>');
+      }
+    }
+    @media (prefers-color-scheme: light) {
+      #themeTabs select {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="16" viewBox="0 0 12 16"><path d="M3.5 6l2.5-2 2.5 2" stroke="%23333" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M3.5 10l2.5 2 2.5-2" stroke="%23333" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>');
+      }
+    }
+    #themeTabs select:hover,
+    #themeTabs select:focus {
+      border-color: var(--headerColor);
+      background-color: var(--searchBg);
+    }
+    #themeTabs select option {
+      background: var(--bodyBg);
+      color: var(--bodyColor);
+    }
     #noteSearchInput {
       width: 100%;
       padding: 6px 10px;
@@ -1074,20 +1161,25 @@ function buildUIHtml() {
       z-index: 1002;
     }
     .themeTab {
-      margin: 0 2px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      padding: 6px 12px;
+      font-size: 0.9em;
+      font-weight: 500;
+      color: var(--bodyColor);
       cursor: pointer;
-      padding: 2px 8px;
-      font-size: 0.8em;
-      background: transparent;
-      color: var(--helpColor);
-      border-bottom: 1px solid transparent;
-      user-select: none;
-      opacity: 0.6;
+      transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
+
+    .themeTab:hover {
+      border-bottom: 2px solid var(--headerColor);
+    }
+
     .themeTab.active {
       border-bottom: 2px solid var(--headerColor);
-      color: var(--headerColor);
-      opacity: 1;
+      font-weight: 600;
     }
     .tab-bar {
       margin-bottom: 10px;
@@ -1110,6 +1202,14 @@ function buildUIHtml() {
       font-size: 0.98em;
       cursor: pointer;
     }
+    /* Native checkbox accent color styling */
+    input[type="checkbox"] {
+      accent-color: var(--headerColor);
+      color-scheme: light dark;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
     /* --- Sticky Header Styles --- */
     .sticky-header {
       position: sticky;
@@ -1130,7 +1230,6 @@ function buildUIHtml() {
       }
     }
   </style>
-</style>
   <script>
     function finalizeColorButtonClick() {
       var val = document.getElementById('colorPickerInput').value;
@@ -1138,19 +1237,14 @@ function buildUIHtml() {
     }
   </script>
   <script>
-    const hideOnBlurSetting = ${hideOnBlur};
     function minimizeFTOutliner() {
-      if (hideOnBlurSetting) {
-        Beat.call('Beat.custom.minimizeFTOutliner()');
-      }
+      Beat.call('Beat.custom.minimizeFTOutliner()');
     }
-    function maximizeFTOutliner(unconditionally) {
-      if (unconditionally || hideOnBlurSetting) {
-        Beat.call('Beat.custom.maximizeFTOutliner()');
-      }
+    function maximizeFTOutliner() {
+      Beat.call('Beat.custom.maximizeFTOutliner()');
     }
     window.addEventListener('blur', minimizeFTOutliner);
-    window.addEventListener('focus', () => maximizeFTOutliner(false));
+    window.addEventListener('focus', maximizeFTOutliner);
   </script>
 </head>
 <body>
@@ -1428,12 +1522,23 @@ function buildUIHtml() {
   </div>
 </div>
   <div id="themeTabs">
-    <label style="display:inline-flex;align-items:center;vertical-align:middle;margin-right:8px;">
-      <input type="checkbox" ${hideOnBlur ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideOnBlur()')" style="opacity:1;margin-right:2px;vertical-align:middle;"><span class="themeTab" style="padding:2px 4px;margin:0;">Auto-Collapse</span>
+    <label style="margin-right:12px;">
+      Auto-collapse:
+      <select onchange="Beat.call('Beat.custom.setCollapseMode(\\'' + this.value + '\\')')">
+        <option value="off"   ${collapseMode==='off'   ? 'selected' : ''}>Off</option>
+        <option value="left"  ${collapseMode==='left'  ? 'selected' : ''}>Left</option>
+        <option value="right" ${collapseMode==='right' ? 'selected' : ''}>Right</option>
+      </select>
     </label>
-    <span class="themeTab ${themeMode==='light'?'active':''}" onclick="Beat.call('Beat.custom.setLightMode()')">Light</span>
-    <span class="themeTab ${themeMode==='dark'?'active':''}" onclick="Beat.call('Beat.custom.setDarkMode()')">Dark</span>
-    <span class="themeTab ${themeMode==='system'?'active':''}" onclick="Beat.call('Beat.custom.setSystemMode()')">System</span>
+    <label style="margin-right:12px;">
+      Theme:
+      <select onchange="Beat.call('Beat.custom.setThemeMode(\\'' + this.value + '\\')')">
+        <option value="off"   disabled>Type</option>
+        <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
+        <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
+        <option value="system" ${themeMode==='system' ? 'selected' : ''}>System</option>
+      </select>
+    </label>
   </div>
 <script>
   window.filterKeywords = function(query) {
@@ -1525,8 +1630,6 @@ const toggleMenuItem = Beat.menuItem("Keywords", ["cmd", "ctrl", "k"], togglePlu
 Beat.menu("Keywords", [toggleMenuItem]);
 
 // --- Modified onKeyDown block using myWindow ---
-if (typeof Beat.onKeyDown === "function") {
- 
-}
+
 
 main();
