@@ -3,7 +3,7 @@
 Plugin name: Notes Bin
 Version: 0.1.0
 Copyright: 2025 gfrancine
-Image: images/Notes Bin.png
+Image: Notes Bin.png
 
 <Description>
   <p>A Highland 2-like container for storing and organizing your notes in snippets.</p>
