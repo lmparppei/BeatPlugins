@@ -4,7 +4,7 @@ Plugin name: Clean (CONT'D)'s
 Description: Tidies up all (CONT'D)'s in a screenplay.
 Image: Clean (CONT'D)'s.png
 
-Version: 1.1
+Version: 1.2
 Copyright: 2025 gfrancine
 
 */
@@ -16,10 +16,15 @@ const promptResult = Beat.dropdownPrompt(
   In non-strict mode, existing (CONT'D)'s are respected and simply formatted.
 
   To tidy up only a few lines, select the text in the editor.`,
-  ["Strict (check all CONT'Ds)", "Non-strict (respect existing CONT'Ds)"]
+  [
+    "Strict (check all CONT'Ds)",
+    "Non-strict (respect existing CONT'Ds)",
+    "Remove all (CONT'D)'s",
+  ],
 );
 
 if (promptResult) {
+  const REMOVE_CONTDS = promptResult === "Remove all (CONT'D)'s";
   const STRICT_MODE = promptResult === "Strict (check all CONT'Ds)";
 
   const selectedRange = Beat.selectedRange();
@@ -86,7 +91,10 @@ if (promptResult) {
           }
 
           // replace all invalid CONT'Ds in strict mode
-          if (STRICT_MODE && inputHasContd && previousCharacter !== character) {
+          if (
+            REMOVE_CONTDS ||
+            (STRICT_MODE && inputHasContd && previousCharacter !== character)
+          ) {
             newString = character;
             changed = true;
           }
@@ -107,7 +115,7 @@ if (promptResult) {
             .trim();
 
           if (inputHasContd) {
-            if (STRICT_MODE) {
+            if (STRICT_MODE || REMOVE_CONTDS) {
               // in strict mode, remove all CONT'Ds in dual dialogue
               newString = character + "^";
             } else {
@@ -158,7 +166,7 @@ if (promptResult) {
       Beat.replaceRange(
         characterLine.line.position,
         characterLine.line.string.length,
-        characterLine.newString
+        characterLine.newString,
       );
     }
   }
