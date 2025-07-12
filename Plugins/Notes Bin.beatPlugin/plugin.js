@@ -1,7 +1,7 @@
 /*
 
 Plugin name: Notes Bin
-Version: 0.1.0
+Version: 0.2.0
 Copyright: 2025 gfrancine
 Image: Notes Bin.png
 
@@ -13,6 +13,8 @@ Image: Notes Bin.png
     <li>Import and export to text (<code>.txt</code>) files</li>
     <li>Text search</li>
     <li>Cut or copy directly from selection</li>
+    <li>Edit notes in Markdown</li>
+    <li>Adjust UI text size</li>
   </ul>
   <h2>Shortcuts</h2>
   <ul>
@@ -24,7 +26,7 @@ Image: Notes Bin.png
 
 */
 
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 
 // Window
 
@@ -104,10 +106,20 @@ Beat.custom = {
   promptImportFile: () => {
     Beat.openFile(["txt"], (path) => {
       if (!path || path.length <= 0) return;
-      const contents = Beat.fileToString(path);
-      htmlWindow.runJS(
-        `PluginGlobals.onPromptImportFileResult(${JSON.stringify(contents)})`,
+
+      // irreversible, there's no way access to the Beat undo history
+      // TODO: move this to a dialog on the UI side / within the App component
+      const confirmation = Beat.confirm(
+        "Notes Bin: Import file",
+        "WARNING: The current bin will be overwritten. This action cannot be undone. Would you like to continue?",
       );
+
+      if (confirmation) {
+        const contents = Beat.fileToString(path);
+        htmlWindow.runJS(
+          `PluginGlobals.onPromptImportFileResult(${JSON.stringify(contents)})`,
+        );
+      }
     });
   },
 };
