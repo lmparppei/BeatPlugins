@@ -8,28 +8,20 @@ Add a hashtag to any inline note: [[This will create a #tag]]
 
 The Notes + Synopsis tab pulls every inline note, synopsis, omitted text, and Notepad entry into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document.<br><br>
 
+In the Boneyard, notes are grouped automatically based on section headers and scene headings:
+<br>
+	•	A section header (#, ##, or ###) starts a new group and includes everything below it, even multiple scene headings, until the next section header.
+	<br><br>
+  •	If no section header is active, a scene heading (like INT. or EXT.) starts a group and includes all lines until the next scene heading or section header.
+	<br><br>
+  •	Text before the first section or scene heading is grouped by scene (if possible) or treated as individual entries.
+<br><br>
+This grouping behavior only applies to the Boneyard. The Notepad handles each paragraph as its own entry.
 
-Use `---` to group lines in Notepad or BONEYARD blocks. Everything between `---` markers is displayed as a single entry in the plugin. Ungrouped lines will appear as individual entries.
-
-For example, this in the Notepad or the Boneyard:
-<br>
----
-<br>
-Line 1.
-<br> 
-<br>  
-Line 2.  
-<br>
-<br> 
-Line 3.
-<br>
----
-<br>
-…will appear as one grouped entry in the Notes + Synopsis list.
 </Description>
 
 Image: Keywords.png
-Version: 2.22
+Version: 2.35
 */
 
 // --- Global plugin state --- //
@@ -50,17 +42,33 @@ let tagColors = Beat.getUserDefault("tagColors") || {};
 
 // Normalize a string for stable keying/dismissal
 function normalize(str) {
-  return str.trim().replace(/\s+/g, ' ').toLowerCase();
+  return str
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-zA-Z0-9\s-_]/g, '') // remove punctuation like ', ", etc.
+    .toLowerCase();
 }
 
-// Lightweight inline markdown parser for bold, italic, underline, code, and headers (h1-h3 only)
+// Lightweight inline markdown parser for bold, italic, underline, code, and styled headers (h1-h3 only)
 // Process input line by line to ensure headers only apply to lines starting with #, and do not affect surrounding lines.
 function parseInlineMarkdown(text) {
   const lines = text.split("<br>");
   const parsedLines = lines.map(line => {
-    if (/^###\s?[^\n#]/.test(line)) return line.replace(/^###\s?/, '<h3>') + '</h3>';
-    if (/^##\s?[^\n#]/.test(line)) return line.replace(/^##\s?/, '<h2>') + '</h2>';
-    if (/^#\s?[^\n#]/.test(line)) return line.replace(/^#\s?/, '<h1>') + '</h1>';
+    if (/^###\s*[^\n#]/.test(line)) {
+      // Subheading
+      const text = line.replace(/^###\s*/, '');
+      return `<span style="font-size:1em; font-weight:bold;">${text}</span>`;
+    }
+    if (/^##\s*[^\n#]/.test(line)) {
+      // Secondary heading
+      const text = line.replace(/^##\s*/, '');
+      return `<span style="font-size:1.5em; font-weight:bold;">${text}</span>`;
+    }
+    if (/^#\s*[^\n#]/.test(line)) {
+      // Primary heading
+      const text = line.replace(/^#\s*/, '');
+      return `<span style="font-size:2em; font-weight:bold;">${text}</span>`;
+    }
     return line;
   });
   const joined = parsedLines.join("<br>");
@@ -69,6 +77,29 @@ function parseInlineMarkdown(text) {
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/__(.*?)__/g, '<u>$1</u>')
     .replace(/`(.*?)`/g, '<code>$1</code>');
+}
+
+// Helper: render inline hashtags as pills, for both [[#tag]] and #tag syntax
+function renderInlineTags(text) {
+  // Style [[#tag]] using color
+  text = text.replace(/\[\[\s*#([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
+    const color = pickColorForTag(tag);
+    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag}</span>`;
+  });
+
+  // Style [[@tag]] using same color logic (treat as @tag)
+  text = text.replace(/\[\[\s*@([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
+    const color = pickColorForTag(tag);
+    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag}</span>`;
+  });
+
+  // Also catch raw inline #tag and @tag (non-wrapped)
+  text = text.replace(/(^|\s)([#@][a-zA-Z0-9_]+)/g, (_, prefix, tag) => {
+    const color = pickColorForTag(tag.slice(1));
+    return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.slice(1)}</span>`;
+  });
+
+  return text;
 }
 
 // Array of favorite tag names, persisted in document-specific settings.
@@ -216,7 +247,7 @@ Beat.custom = {
   toggleHideBackgroundTags() {
     hideBackgroundTags = !hideBackgroundTags;
     Beat.setDocumentSetting("hideBackgroundTags", hideBackgroundTags);
-    updateWindowUI();
+    Beat.custom.refreshUI();
   },
   refreshUI() {
     tagsByName = {};
@@ -476,76 +507,54 @@ function gatherNotepadNotes() {
   // Remove any prior Notepad-based entries to prevent duplication or stale dismissal states
   notesAndSynopsis = notesAndSynopsis.filter(entry => !entry.key?.startsWith("notepad:"));
 
+  // Load raw Notepad text and return if empty
   const np = Beat.notepad?.string || '';
   if (!np) return;
 
-  const lines = np.split(/\n/);
-  let notes = [];
-  let insideBlock = false;
-  let block = '';
-  let blockStartIndex = 0;
-
+  // Split into blocks by blank lines (paragraphs)
+  // A block is a sequence of non-blank lines separated by one or more blank lines
+  const lines = np.split('\n');
+  let blocks = [];
+  let currentBlock = [];
+  let blockStartIdx = 0;
+  let blockIdx = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
-    if (line.trim() === '---') {
-      if (insideBlock) {
-        block += '\n' + line;
-        notes.push({ block, startIndex: blockStartIndex });
-        block = '';
-        insideBlock = false;
-      } else {
-        insideBlock = true;
-        blockStartIndex = i;
-        block = line;
+    if (line.trim() === '') {
+      if (currentBlock.length > 0) {
+        blocks.push({ lines: [...currentBlock], startIndex: blockStartIdx });
+        currentBlock = [];
       }
-      continue;
-    }
-
-    if (insideBlock) {
-      block += '\n' + line;
+      blockStartIdx = i + 1;
     } else {
-      if (line.trim() === '') {
-        if (block.trim() !== '') {
-          notes.push({ block, startIndex: blockStartIndex });
-          block = '';
-        }
-      } else {
-        if (block === '') {
-          blockStartIndex = i;
-          block = line;
-        } else {
-          block += '\n' + line;
-        }
-      }
+      if (currentBlock.length === 0) blockStartIdx = i;
+      currentBlock.push(line);
     }
   }
-
-  if (block.trim() !== '') {
-    notes.push({ block, startIndex: blockStartIndex });
+  if (currentBlock.length > 0) {
+    blocks.push({ lines: [...currentBlock], startIndex: blockStartIdx });
   }
 
-  for (let j = 0; j < notes.length; j++) {
-    const { block, startIndex } = notes[j];
+  // If no non-blank blocks, but Notepad has content, create a single block for all content
+  if (blocks.length === 0 && np.trim() !== '') {
+    blocks = [{ lines: lines, startIndex: 0 }];
+  }
+
+  // Convert each block into a Notepad entry
+  blocks.forEach((blk, j) => {
+    let content = blk.lines.join('<br>').trim();
+    // If block is empty after trimming, skip
+    if (!content) return;
     const absPos = 90000000 + j;
     const key = `notepad:${j}`;
-    const content = block
-      .split('\n')
-      .filter(l => l.trim() !== '---')
-      .join('<br>')
-      .trim();
-    // Exclude blocks that are just a keyword tag like [[#tag]] or [[beat: ...]]
-    const isKeywordOnly = /^\s*\[\[\s*(#\w+|(beat|storyline)\b[:\s])[^]*?\]\]\s*$/i.test(content);
-    if (!isKeywordOnly) {
-      notesAndSynopsis.push({
-        type: 'note',
-        content,
-        absPos,
-        lineIndex: startIndex,
-        key
-      });
-    }
-  }
+    notesAndSynopsis.push({
+      type: 'note',
+      content,
+      absPos,
+      lineIndex: blk.startIndex,
+      key
+    });
+  });
 }
 
 function onWindowClosed() {
@@ -557,18 +566,31 @@ function onWindowClosed() {
  * Gather all tags from the document.
  */
 function gatherAllTags() {
+  let insideBoneyardSection = false;
+  const boneyardHeaderRegex = /^#\s*BONEYARD/i;
   const regexNote = /\[\[(.*?)\]\]/g;
   const regexHash = /[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
   const lines = Beat.lines();
   // Gather tags
   for (let i = 0; i < lines.length; i++) {
+    // --- Boneyard section skip logic ---
+    const trimmedLine = lines[i].string.trim();
+    if (boneyardHeaderRegex.test(trimmedLine)) {
+      insideBoneyardSection = true;
+    }
+    if (/^#\s+/.test(trimmedLine) && !boneyardHeaderRegex.test(trimmedLine)) {
+      insideBoneyardSection = false;
+    }
+    if (insideBoneyardSection && hideBackgroundTags) {
+      continue;
+    }
     const lineObj = lines[i];
     let noteMatch;
     while ((noteMatch = regexNote.exec(lineObj.string)) !== null) {
       const noteContent = noteMatch[1];
       let hashMatch;
       while ((hashMatch = regexHash.exec(noteContent)) !== null) {
-        const tagName = hashMatch[1];
+        const tagName = hashMatch[1].toLowerCase();
         if (/^[a-fA-F0-9]{6}$/.test(tagName)) continue;
         const absPos = lineObj.position + noteMatch.index + 2 + hashMatch.index;
         const matchLen = hashMatch[0].length;
@@ -579,8 +601,8 @@ function gatherAllTags() {
       const specialRegex = /^\s*(beat|storyline)\b\s*[:]?\s+(.*)$/i;
       const specialMatch = noteContent.match(specialRegex);
       if (specialMatch) {
-        const tName = specialMatch[2].trim();
-        const offsetInNote = noteContent.indexOf(tName);
+        const tName = specialMatch[2].trim().toLowerCase();
+        const offsetInNote = noteContent.indexOf(specialMatch[2]);
         const absPos = lineObj.position + noteMatch.index + 2 + offsetInNote;
         const matchLen = tName.length;
         if (!alreadyHaveOccurrence(absPos, matchLen)) {
@@ -592,7 +614,7 @@ function gatherAllTags() {
   // Gather notes and synopsis lines
   notesAndSynopsis = [];
   let insideBoneyard = false;
-  let insideBoneyardSection = false;
+  insideBoneyardSection = false;
   for (let i = 0; i < lines.length; i++) {
     const lineObj = lines[i];
     const line = lineObj.string;
@@ -605,7 +627,7 @@ function gatherAllTags() {
       const trimmed = content.trim();
       const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
       if (
-        !/^#([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed) &&
+        !/^[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed) &&
         !isSpecialTag &&
         !line.trim().startsWith('=')
       ) {
@@ -642,7 +664,7 @@ function gatherAllTags() {
 
       notesAndSynopsis.push({
         type: 'omitted',
-        content: '**Omitted Scene:** ' + previewText,
+        content: '**🚫 Omitted:** ' + previewText,
         absPos: lineObj.position,
         lineIndex: i,
         key: `omitted:${i}`
@@ -654,154 +676,91 @@ function gatherAllTags() {
     // --- Track if we are inside a BONEYARD block for main loop ---
     const trimmed = line.trim();
     if (/^#\s*BONEYARD/i.test(trimmed)) {
-      insideBoneyard = true;
-      insideBoneyardSection = true;
-      let j = i + 1;
-      let insideBlock = false;
-      let block = '';
-      let blockStartIndex = j;
-      let blockStartPos = lines[j]?.position || 0;
-      // --- Start of new grouping logic ---
-      let ungrouped = '';
-      let ungroupedStartIndex = null;
-      let ungroupedStartPos = null;
-
-      function pushBlock() {
-        if (block.trim() !== '') {
-          const cleaned = block
-            .split('\n')
-            .filter(l => l.trim() !== '---')
-            .join('\n')
-            .trim();
-
-          notesAndSynopsis.push({
-            type: 'boneyard',
-            content: cleaned
-              .slice(0, 300)
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/\n/g, '<br>'),
-            absPos: blockStartPos,
-            lineIndex: blockStartIndex,
-            key: `boneyard:${blockStartIndex}`
-          });
-          block = '';
-        }
+      // New grouping rules for BONEYARD content
+      // 1. A section header (#, ##, ###) starts a group and collects every line
+      //   —including multiple scene headings—until the next section header.
+      // 2. If no section header is active, a scene heading
+      //    (INT., EXT., INT/EXT., I/E., EST., INT-EXT.) starts a group
+      //    and collects lines until the next scene heading or a section header.
+      // 3. Text before the first header is grouped by rule 2 (scene‑by‑scene).
+      const bLines = [];
+      for (let k = i + 1; k < lines.length; k++) {
+        bLines.push({ text: lines[k].string, position: lines[k].position, index: k });
       }
 
-      while (j < lines.length) {
-        const lineStr = lines[j].string;
-        const trimmedJ = lineStr.trim();
-        const synMatch = trimmedJ.match(/^=\s?(.*)/);
+      const sectionRegex = /^#\s*(.*)$/;
+      const sceneRegex   = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EST\.|INT-EXT\.)/i;
 
-        // Handle synopsis lines inside BONEYARD - always treat as boneyard, never as synopsis
-        if (synMatch) {
-          const raw = synMatch[1] || '';
-          const trimmedContent = raw.trim();
-          if (trimmedContent === '==' || trimmedContent === '===') {
-            j++;
-            continue;
-          }
-          notesAndSynopsis.push({
-            type: 'boneyard',
-            content: trimmedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-            absPos: lines[j].position,
-            lineIndex: j,
-            key: `boneyard:${j}`
-          });
-          j++;
-          continue;
+      const bBlocks     = [];
+      let currentBlock  = null; // active section‑ or scene‑level block
+
+      bLines.forEach(({ text: bText, position: bPos, index: bIdx }) => {
+        const trimmed = bText.trim();
+
+        // --- Section header -------------------------------------------------
+        const sectionMatch = trimmed.match(sectionRegex);
+        if (sectionMatch) {
+          if (currentBlock) bBlocks.push(currentBlock);          // close prior block
+          currentBlock = {                                        // start new section
+            header: sectionMatch[1].trim(),
+            lines: [],
+            startIndex: bIdx,
+            startPos: bPos
+          };
+          return; // header handled
         }
 
-        // Handle standalone inline note lines ([[...]]) inside BONEYARD as boneyard entries
-        const inlineNoteMatch = trimmedJ.match(/^\[\[(.*?)\]\]$/);
-        if (inlineNoteMatch) {
-          const raw = inlineNoteMatch[1] || '';
-          const trimmedContent = raw.trim();
-          // Exclude keyword-style notes (starting with #) and special-tag-like entries (beat, storyline)
-          if (
-            trimmedContent !== '' &&
-            !/^#/.test(trimmedContent) &&
-            !/^(beat|storyline)\b[:\s]/i.test(trimmedContent)
-          ) {
-            notesAndSynopsis.push({
-              type: 'boneyard',
-              content: trimmedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-              absPos: lines[j].position,
-              lineIndex: j,
-              key: `boneyard:${j}`
-            });
-          }
-          j++;
-          continue;
+        // --- Inside a section header: just accumulate -----------------------
+        if (currentBlock && currentBlock.header) {
+          currentBlock.lines.push(bText);
+          return;
         }
 
-        if (trimmedJ.startsWith("#") && !trimmedJ.startsWith("##")) break; // Stop at next top-level header
+        // --- Scene‑heading logic (only when NOT in a section) ---------------
+        const isSceneHeading = sceneRegex.test(trimmed);
 
-        if (trimmedJ === "---") {
-          if (insideBlock) {
-            block += lineStr + '\n';
-            pushBlock();
-            insideBlock = false;
+        if (isSceneHeading) {
+          if (currentBlock) bBlocks.push(currentBlock);          // close prior scene
+          currentBlock = {                                        // start new scene group
+            header: null,               // scene groups have no explicit header
+            lines: [bText],             // include the heading line itself
+            startIndex: bIdx,
+            startPos: bPos
+          };
+        } else if (trimmed !== '' || (currentBlock && currentBlock.lines.length)) {
+          // Non‑blank line (or blank line inside a group) => accumulate
+          if (!currentBlock) {
+            currentBlock = {
+              header: null,
+              lines: [bText],
+              startIndex: bIdx,
+              startPos: bPos
+            };
           } else {
-            insideBlock = true;
-            blockStartIndex = j;
-            blockStartPos = lines[j].position;
-            block = lineStr + '\n';
+            currentBlock.lines.push(bText);
           }
-          // If we encounter --- and there is accumulated ungrouped, push it
-          if (ungrouped !== '') {
-            notesAndSynopsis.push({
-              type: 'boneyard',
-              content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
-              absPos: ungroupedStartPos,
-              lineIndex: ungroupedStartIndex,
-              key: `boneyard:${ungroupedStartIndex}`
-            });
-            ungrouped = '';
-          }
-        } else if (insideBlock) {
-          block += lineStr + '\n';
-        } else if (
-          trimmedJ !== '' &&
-          !trimmedJ.startsWith("##") &&
-          !/^[=@]/.test(trimmedJ)
-        ) {
-          // Group consecutive non-blank, non-##, non-meta lines until blank line
-          if (ungrouped === '') {
-            ungroupedStartIndex = j;
-            ungroupedStartPos = lines[j].position;
-          }
-          ungrouped += lineStr + '\n';
-        } else if (ungrouped !== '') {
-          // On blank or meta line, push accumulated ungrouped
-          notesAndSynopsis.push({
-            type: 'boneyard',
-            content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
-            absPos: ungroupedStartPos,
-            lineIndex: ungroupedStartIndex,
-            key: `boneyard:${ungroupedStartIndex}`
-          });
-          ungrouped = '';
         }
+        // Completely blank lines before any group are ignored.
+      });
 
-        j++;
-      }
+      // Close the last open block, if any.
+      if (currentBlock) bBlocks.push(currentBlock);
 
-      // After the loop, push any remaining ungrouped content
-      if (ungrouped !== '') {
+      // Emit all BONEYARD snippets
+      bBlocks.forEach(blk => {
+        const contentLines = [];
+        if (blk.header) contentLines.push('# ' + blk.header);
+        contentLines.push(...blk.lines);
         notesAndSynopsis.push({
           type: 'boneyard',
-          content: ungrouped.trim().slice(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
-          absPos: ungroupedStartPos,
-          lineIndex: ungroupedStartIndex,
-          key: `boneyard:${ungroupedStartIndex}`
+          content: contentLines.join('<br>').trim(),
+          absPos: blk.startPos,
+          lineIndex: blk.startIndex,
+          key: `boneyard:${blk.startIndex}`
         });
-      }
-
-      pushBlock();
-      insideBoneyard = false;
-      continue;
+      });
+      // Stop processing further lines
+      break;
     }
     // Update insideBoneyard flag when a top-level header is encountered (not BONEYARD)
     if (/^#\s+/.test(trimmed) && !/^#\s*BONEYARD/i.test(trimmed)) {
@@ -838,12 +797,12 @@ function gatherAllTags() {
       while ((tagMatch = tagRegex.exec(stripped)) !== null) {
         const fullMatch = tagMatch[1].trim();
         if (/^(beat|storyline)\b[:\s]/i.test(fullMatch)) {
-          const tagName = fullMatch.replace(/^(beat|storyline)\b[:\s]*/i, '').trim();
+          const tagName = fullMatch.replace(/^(beat|storyline)\b[:\s]*/i, '').trim().toLowerCase();
           if (tagName) {
             addTag(tagName, pickColorForTag(tagName), { lineIndex: -1, absPos: -1, matchLen: tagName.length, special: true });
           }
         } else {
-          const tagName = fullMatch.replace(/^#/, '').trim();
+          const tagName = fullMatch.replace(/^#/, '').trim().toLowerCase();
           if (tagName) {
             addTag(tagName, pickColorForTag(tagName), { lineIndex: -1, absPos: -1, matchLen: tagName.length, special: false });
           }
@@ -931,6 +890,9 @@ function buildUIHtml() {
       --searchBg: #fff;
       --searchColor: #000;
       --searchBorder: #ccc;
+      --notepadBg: rgba(232, 241, 255, 0.5);
+      --boneyardBg: rgba(255, 236, 236, 0.5);
+      --synopsisBg: rgba(248, 250, 255, 0.5);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -942,6 +904,9 @@ function buildUIHtml() {
         --searchBg: #2a2a2a;
         --searchColor: #fff;
         --searchBorder: #444;
+        --notepadBg: rgba(34, 48, 63, 0.5);
+        --boneyardBg: rgba(68, 38, 38, 0.5);
+        --synopsisBg: rgba(37, 42, 51, 0.5);
       }
     }
     /* Darken dropdown chevrons in light mode only */
@@ -973,6 +938,9 @@ function buildUIHtml() {
       --searchBg: #fff;
       --searchColor: #000;
       --searchBorder: #ccc;
+      --notepadBg: rgba(232, 241, 255, 0.5);
+      --boneyardBg: rgba(255, 236, 236, 0.5);
+      --synopsisBg: rgba(248, 250, 255, 0.55);
     }
     /* Darken dropdown chevrons in light mode only */
     @media (prefers-color-scheme: light) {
@@ -1003,6 +971,9 @@ function buildUIHtml() {
       --searchBg: #2a2a2a;
       --searchColor: #fff;
       --searchBorder: #444;
+      --notepadBg: rgba(34, 48, 63, 0.5);
+      --boneyardBg: rgba(68, 38, 38, 0.5);
+      --synopsisBg: rgba(37, 42, 51, 0.5);
     }`;
   }
 
@@ -1194,6 +1165,19 @@ function buildUIHtml() {
       font-size: 0.95em;
       word-break: break-word;
     }
+    .meta-block.notepad-note {
+      background: var(--notepadBg);
+    }
+    .meta-block.boneyard-note {
+      background: var(--boneyardBg);
+    }
+    .meta-block.synopsis-note {
+      background: var(--helpBg);
+    }
+    /* Slightly darker background for inline notes */
+    .meta-block:not(.notepad-note):not(.boneyard-note):not(.synopsis-note) {
+      background: color-mix(in srgb, var(--helpBg) 90%, black 10%);
+    }
     .filter-toggles {
       margin-bottom: 10px;
     }
@@ -1271,22 +1255,6 @@ function buildUIHtml() {
       </div>
     </div> <!-- end sticky-header -->
     `;
-    // Helper: render inline hashtags as pills, for both [[#tag]] and #tag syntax
-    function renderInlineTags(text) {
-      // Style [[#tag]] using color
-      text = text.replace(/\[\[\s*#([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
-        const color = pickColorForTag(tag);
-        return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tag}</span>`;
-      });
-
-      // Style #tag elsewhere using the same color logic
-      text = text.replace(/(^|\s)#([a-zA-Z0-9_]+)/g, (_, prefix, tag) => {
-        const color = pickColorForTag(tag);
-        return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">#${tag}</span>`;
-      });
-
-      return text;
-    }
     let notepadNoteIndex = 0;
     for (const [index, entry] of notesAndSynopsis.entries()) {
       const entryKey = entry.key || `${entry.type}:${entry.lineIndex ?? entry.absPos}`;
@@ -1297,6 +1265,7 @@ function buildUIHtml() {
         (entry.lineIndex === undefined || entry.absPos >= 90000000 || entry.key?.startsWith('notepad:')) &&
         (entry.sceneIndex === undefined && entry.range === undefined)
       );
+      const isSynopsis = entry.type === 'synopsis';
       if (
         (
           (entry.type === 'note' && ((isNotepadNote && showNotepad) || (!isNotepadNote && showNotes))) ||
@@ -1310,9 +1279,16 @@ function buildUIHtml() {
         const isDismissed = dismissedEntries.has(entryKey);
         const checked = isDismissed ? 'checked' : '';
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
-        // Combine inline tags and markdown (tags first, then markdown)
-        let parsed = renderInlineTags(entry.content);
-        // Wrap [[beat ...]] or [[storyline ...]] as special pill, only if first word after prefix does not start with #
+        // Truncate content to 1000 characters for display
+        let displayContent = entry.content;
+        if (displayContent.length > 1000) {
+          displayContent = displayContent.slice(0, 1000) + '…';
+        }
+        // First, apply markdown for headers, bold, italic, underline, code
+        let parsed = parseInlineMarkdown(displayContent);
+        // Next, render inline tags for [[#tag]], [[@tag]], and raw #tag/@tag
+        parsed = renderInlineTags(parsed);
+        // Wrap [[beat ...]] or [[storyline ...]] as special pill...
         parsed = parsed.replace(/\[\[\s*(beat|storyline)\s*:?\s+([^\]]+?)\s*\]\]/gi, (_, _prefix, rest) => {
           const tokens = rest.trim().split(/\s+/);
           const first = tokens[0] || '';
@@ -1320,31 +1296,61 @@ function buildUIHtml() {
           const clean = first;
           return `<span class="pill special">${clean}</span>`;
         });
-        // Remove any surrounding double brackets from the line (e.g., [[new5 dd]] -> new5 dd)
+        // Remove any remaining [[...]] wrappers
         parsed = parsed.replace(/\[\[(.*?)\]\]/g, '$1');
-        parsed = parseInlineMarkdown(parsed);
         // Add a data attribute for Boneyard entries (styling suspended)
         let boneyardAttr = isBoneyard ? ' data-is-boneyard="true"' : '';
+        // Escape double quotes for data-original attribute
+        const dataOriginal = entry.content.replace(/"/g, '&quot;');
         if (isNotepadNote) {
+          // Render tag preview below notepad note using only tag tokens ([[#tag]], [[@tag]])
+          const tagOnlyContent = (entry.content.match(/\[\[\s*[@#][a-zA-Z0-9_]+\s*\]\]/g) || []).join(' ');
+          const renderedTagsHTML = renderInlineTags(tagOnlyContent);
           const hintId = `hint-${notepadNoteIndex++}`;
           html += `
-            <div class="meta-block" style="display: flex; align-items: center; cursor: pointer;" onclick="(function(el){ el.style.display='block'; setTimeout(() => el.style.display='none', 2000); })(document.getElementById('${hintId}'))">
-              <input type="checkbox" ${checked} onclick="event.stopPropagation(); Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
-              <span style="${style}">${parsed}</span>
-              <div id="${hintId}" class="note-hint" style="display:none; margin-left:8px; color:#888; font-size:0.85em; font-style:italic; user-select:none; margin-top:4px;">Note in Notepad</div>
+            <div class="meta-block notepad-note" style="display: flex; flex-direction: column; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed #ddd;">
+              <div style="display: flex; align-items: center;">
+                <input type="checkbox" ${checked} onclick="event.stopPropagation(); Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
+                <div
+                  class="editable-note"
+                  contenteditable="true"
+                  onkeydown="if (event.key === 'Enter') event.preventDefault();"
+                  onblur="(function(el){
+                    const newContent = el.innerText;
+                    Beat.call((newVal) => {
+                      const lines = Beat.notepad.string.split('\\n');
+                      const index = ${entry.lineIndex !== undefined ? entry.lineIndex : 0};
+                      const newLines = newVal.split('\\n');
+                      lines.splice(index, newLines.length, ...newLines);
+                      Beat.notepad.string = lines.join('\\n');
+                      Beat.custom.refreshUI();
+                    }, newContent);
+                  })(this)"
+                  style="white-space: pre-wrap; flex: 1; ${style};"
+                >${parseInlineMarkdown(entry.content)}</div>
+                <button onclick="Beat.call(() => {
+      const lines = Beat.notepad.string.split('\\n');
+      lines.splice(${entry.lineIndex}, 1);
+      Beat.notepad.string = lines.join('\\n');
+      Beat.custom.refreshUI();
+    })"
+                style="margin-left: 8px; background: transparent; border: none; color: #888; font-size: 1.2em; cursor: pointer;">×</button>
+                <div id="${hintId}" class="note-hint" style="display:none; margin-left:8px; color:#888; font-size:0.85em; font-style:italic; user-select:none; margin-top:4px;">Note in Notepad</div>
+              </div>
+              ${renderedTagsHTML.trim() ? `<div class="rendered-tags" style="margin-top:4px; font-size:0.85em; color:#999; opacity:0.8;">${renderedTagsHTML}</div>` : ''}
             </div>
           `;
         } else {
           html += `
-            <div class="meta-block"${boneyardAttr} style="display: flex; align-items: center;">
+            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="display: flex; align-items: center;">
               <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
-              <span style="cursor:pointer; ${style}" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</span>
+              <div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</div>
             </div>
           `;
         }
       }
     }
-    // Add the filterNotes script at the end of the HTML, before </body>
+    // Add the floating plus button for Notes + Synopsis tab
     html += `
 <style>
   .note-hint {
@@ -1367,13 +1373,45 @@ function buildUIHtml() {
     font-weight: 600;
     vertical-align: middle;
   }
+  .floating-add-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #687d9d;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .floating-add-btn:hover {
+    background-color: #506082;
+  }
 </style>
+<button class="floating-add-btn" title="Add note to Notepad"
+  onmouseenter="window._hoverScroll = setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50)"
+  onmouseleave="clearTimeout(window._hoverScroll)"
+  onclick="Beat.call(() => {
+    let np = Beat.notepad.string;
+    if (np.length > 0 && !np.endsWith('\\n')) np += '\\n';
+    Beat.notepad.string = np + '\\nTypeYourNote';
+    Beat.custom.refreshUI();
+  })">+</button>
 <script>
   window.filterNotes = function(query) {
     const blocks = document.querySelectorAll('.meta-block');
     query = query.toLowerCase();
     blocks.forEach(block => {
-      const text = block.innerText.toLowerCase();
+      let text = block.getAttribute('data-original') || block.innerText;
+      text = text.replace(/<br\\s*\\/?>/gi, ' ').toLowerCase();
       block.style.display = text.includes(query) ? 'flex' : 'none';
     });
   }
@@ -1389,9 +1427,9 @@ function buildUIHtml() {
     <input type="text" id="keywordSearchInput" placeholder="Search keywords..." 
            oninput="window.filterKeywords(this.value)"
            style="width: 100%; padding: 6px 10px; font-size: 0.95em; border-radius: 6px; border: 1px solid var(--searchBorder, #ccc); background-color: var(--searchBg, #fff); color: var(--searchColor, #000);">
-    <label style="margin-top: 6px; display:block;" title="Hide keywords found in Notepad, Boneyard, or Omitted text.">
+    <label style="margin-top: 6px; display:block;" title="Hide Keywords in Notepad, Boneyard, and Omits.">
       <input type="checkbox" ${hideBackgroundTags ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideBackgroundTags()')">
-      Keywords in document only
+      Hide Keywords in Notepad, Boneyard, & Omits
     </label>
     <h2>Favorites</h2>
   </div>
@@ -1438,7 +1476,7 @@ function buildUIHtml() {
          oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${ftag}\\', ' + event.clientX + ', ' + event.clientY + ')');">
       ${tagLabel}
       <span class="tooltip">
-        ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (more in Notepad)' : 'in document')}
+        ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (also in Notepad)' : 'in document')}
       </span>
     </div>
     `;
@@ -1495,7 +1533,7 @@ function buildUIHtml() {
            oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${tagName}\\', ' + event.clientX + ', ' + event.clientY + ')');">
         ${tagLabel}
         <span class="tooltip">
-          ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (more in Notepad)' : 'in document')}
+          ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (also in Notepad)' : 'in document')}
         </span>
       </div>
       `;
@@ -1512,7 +1550,7 @@ function buildUIHtml() {
   </div>
   <div id="helpIcon" onclick="document.getElementById('helpPopover').style.display = (document.getElementById('helpPopover').style.display=='block'?'none':'block');">?</div>
   <div id="helpPopover">
-    <p>Add a hashtag inside an inline note in your document to create a tag: [[This creates a #tag]].</p>
+    <p>Add a hashtag (#) or at-sign (@) inside an inline note in your document to create a tag. For example: [[This creates a #tag]] and [[This creates an @tag]].</p>
     <p>You can also tag Storylines/Beats: [[Storyline: #tag]] or [[Beat #tag]].</p>
     <p>Click a tag in the plugin to jump to its location in the document.</p>
     <p>Left click to change the color of a tag.</p>
