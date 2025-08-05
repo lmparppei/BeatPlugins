@@ -83,20 +83,20 @@ function parseInlineMarkdown(text) {
 function renderInlineTags(text) {
   // Style [[#tag]] using color
   text = text.replace(/\[\[\s*#([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
-    const color = pickColorForTag(tag);
-    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag}</span>`;
+    const color = pickColorForTag(tag.toLowerCase());
+    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.toLowerCase()}</span>`;
   });
 
   // Style [[@tag]] using same color logic (treat as @tag)
   text = text.replace(/\[\[\s*@([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
-    const color = pickColorForTag(tag);
-    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag}</span>`;
+    const color = pickColorForTag(tag.toLowerCase());
+    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.toLowerCase()}</span>`;
   });
 
   // Also catch raw inline #tag and @tag (non-wrapped)
   text = text.replace(/(^|\s)([#@][a-zA-Z0-9_]+)/g, (_, prefix, tag) => {
-    const color = pickColorForTag(tag.slice(1));
-    return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.slice(1)}</span>`;
+    const color = pickColorForTag(tag.slice(1).toLowerCase());
+    return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.slice(1).toLowerCase()}</span>`;
   });
 
   return text;
@@ -1294,7 +1294,7 @@ function buildUIHtml() {
           const first = tokens[0] || '';
           if (first.startsWith('#')) return `[[${_prefix}: ${rest}]]`; // leave unprocessed
           const clean = first;
-          return `<span class="pill special">${clean}</span>`;
+          return `<span class="pill special">${clean.toLowerCase()}</span>`;
         });
         // Remove any remaining [[...]] wrappers
         parsed = parsed.replace(/\[\[(.*?)\]\]/g, '$1');
