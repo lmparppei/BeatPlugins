@@ -1,0 +1,70 @@
+<style>
+	body { background: #ccc; margin: 0 !important; padding: 1.25em 0.5em 0.5em 0.5em !important; } table { width: 100%; } td { padding: 0.4em 0 0.4em 0 !important; border-color: #aaa; } .item { width: 75%; } .keys { width: 25%; } .heading.depth-0 { padding-top: 2em !important; } .depth-1 { padding-left: 1em !important; } .depth-2 { padding-left: 2em !important; } .depth-2 { padding-left: 3em !important; } 
+	tr.hidden {
+		display: none !important;
+	}
+	.searching td, .searching td.depth-1, .searching td.depth-2, .searching td.depth-3 {
+		padding-left: 0 !important;
+	}
+	.searching {
+		padding-top: 2em;
+	}
+	#search {
+		position: fixed;
+		left: 0; right: 0; top: 0;
+		border-bottom: solid 1px #333;
+		background-color: #222;
+		padding: 0.3em;
+	}
+	#search input {
+		width: 100%;
+		border-radius: 5px;
+		padding: 0.2em 0.5em 0.2em 0.5em;
+		border: solid 1px #333;
+	}
+	.keys {
+		font-weight: bold;
+	}
+</style>
+<div id='search'>
+	<input id='searchField' placeholder="Search...">
+</div>
+
+<div id='items'>
+	%items%
+</div>
+
+<script>
+	const container = document.getElementById("items")
+	const searchField = document.getElementById("searchField")
+	searchField.addEventListener('input', search);
+
+	function search() {
+		const searchField = document.getElementById("searchField")
+		const term = searchField.value.toLowerCase()
+		const rows = document.querySelectorAll("tr")
+
+		let showAll = (term == "")
+		container.className = showAll ? "" : "searching"
+
+		for (const row of rows) {
+			let item = row.querySelector(".item")
+			if (showAll) {
+				row.classList.remove("hidden");
+				continue
+			}
+			
+			let hide = true
+
+			if (item != null && item.innerText.toLowerCase().indexOf(term) != -1) {
+				hide = false
+			} else if (item == null) {
+				hide = true
+			}
+
+			if (hide) row.classList.add("hidden");
+			else row.classList.remove("hidden");
+		}
+
+	}
+</script>
