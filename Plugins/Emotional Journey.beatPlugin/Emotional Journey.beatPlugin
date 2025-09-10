@@ -6,6 +6,7 @@ Plugin Type: Tool
 Version: 1.3
 
 Description: This plugin creates interactive emotion charts showing emotional journeys of characters or storylines throughout your script. Track emotional highs and lows, compare multiple characters, storylines, and visualize dramatic arcs with precision.
+Screenshot: screenshot.jpg
 */
 
 let myWindow = null;
