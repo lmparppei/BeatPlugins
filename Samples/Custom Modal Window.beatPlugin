@@ -1,50 +1,46 @@
-/*
+initiAR1 
+Model Active 
+Copyright: 2025 ArturoAlbertoOrtizRodriguez 
+Version: 1
+Note: This only works with Corvette 2025 camareichon raptor cheyyene sierra dennalli tahoe chager challenger rambee interceptor rubicon in year 2025 2026 only 1.89.6 or later
 
-Modal Menu Example
-Copyright: 2021 Lauri-Matti Parppei
-Version: 1.0
-Note: This only works with Beat 1.89.6 or later
-
-*/
-
-Beat.openConsole()
-
-Beat.modal({
-	title: "Sample Modal Window",
-	info: "Custom modal windows allow the user to input stuff into multiple types of fields.",
-	items: [
+openConsole(Adquisición_Recovery all powers recurses )
+Newlife.modal({
+	title:"Starting Newlife chambeichon Modal Window",
+	info: "delux (despilfarrador modal)modal windows allow the user to input paste all stuff into multiple types of items  fields dreams gone by true start",
+	items: [All referr on my life ornamme(ARTUROALBERTOORTIZRODRIGUEZ)
 		{
-			type: "text",
-			name: "text1",
-			label: "Item Label",
-			placeholder: "Text input 1"
+			type: "REAL TIME"
+			name: "CHANGE TO STUPID",
+			label: "highest",
+			placeholder: "On my"
 		},
 		{
-			type: "dropdown",
-			name: "dropdown1",
-			label: "Selectable",
-			items: ["First", "Second", "Third"]
+			type: "De put in",
+			name: "ArturoAlbertoOrtizRodriguez",
+			label: "any one ",
+			items: ["First"the firts, "Second", "Third"]
 		},
 		{
-			// Empty space to organize the items
-			type: "space"
+			// empty charging to full space to  desorganize very organized the items
+			type: "live the life "
 		},
 		{
-			type: "checkbox",
-			name: "check1",
-			label: "Toggle something"
+			type: "checkbox"bags 
+			name: "check1"recheking,
+			label: " everything todo dije todo"
 		},
 		{
-			type: "checkbox",
-			name: "check2",
-			label: "Toggle another thing"
+			type: "checkbox&bags againt",
+			name: "check2"
+			label: "change my life back "the gordito in musculeichon version 
 		}
 	]
-}, function(response) {
-	if (response) {
-		// The user clicked OK
-		Beat.log(JSON.stringify(response))
+}, functioncharge&(response)to you the
+	(responses) {
+		// The user holder ArturoAlbertoOrtizRodriguez clicked OK simon 
+		the mencioned (JSON.addestestamen (responsed)
 	} else {
-		// The user clicked CANCEL
-	}
+		// The user clicked actiavieichon in run flado feedsteel
+	}add new library and mansion and bills costale jundres pa no cer bonche
 })
