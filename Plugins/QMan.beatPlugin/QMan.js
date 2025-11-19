@@ -1210,6 +1210,33 @@ function setupDocumentChangeListener() {
 /**
  * Applies highlighting to cues in the document based on preferences
  */
+
+// Compute a readable foreground color (black or white) for a given background hex
+function readableTextColor(hex) {
+  try {
+    if (!hex) return "#000000";
+    hex = String(hex).replace("#", "").trim();
+    if (hex.length === 3) {
+      hex = hex
+        .split("")
+        .map(function (c) {
+          return c + c;
+        })
+        .join("");
+    }
+    if (hex.length !== 6) return "#000000";
+    var r = parseInt(hex.substr(0, 2), 16) / 255;
+    var g = parseInt(hex.substr(2, 2), 16) / 255;
+    var b = parseInt(hex.substr(4, 2), 16) / 255;
+    // Relative luminance
+    var L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    // Threshold chosen for readable contrast; return black for light backgrounds
+    return L > 0.6 ? "#000000" : "#FFFFFF";
+  } catch (e) {
+    return "#000000";
+  }
+}
+
 function applyHighlighting() {
   try {
     // Temporarily disable text change listener to avoid infinite loop
@@ -1258,6 +1285,18 @@ function applyHighlighting() {
                     line.position + offset,
                     cueTypeLength
                   );
+                  try {
+                    var fg = readableTextColor(prefs.color);
+                    if (typeof Beat.textHighlight === "function") {
+                      Beat.textHighlight(
+                        fg,
+                        line.position + offset,
+                        cueTypeLength
+                      );
+                    }
+                  } catch (e) {
+                    // ignore if textHighlight is not supported
+                  }
                 }
               } else if (wrappedMatch) {
                 // Wrapped cue
@@ -1270,6 +1309,18 @@ function applyHighlighting() {
                     line.position + offset,
                     cueTypeLength
                   );
+                  try {
+                    var fg = readableTextColor(prefs.color);
+                    if (typeof Beat.textHighlight === "function") {
+                      Beat.textHighlight(
+                        fg,
+                        line.position + offset,
+                        cueTypeLength
+                      );
+                    }
+                  } catch (e) {
+                    // ignore if textHighlight is not supported
+                  }
                 }
               }
               break;
