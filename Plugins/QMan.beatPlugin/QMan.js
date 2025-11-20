@@ -1090,7 +1090,27 @@ Beat.custom.exportToAppleScript = function (filterType) {
 
       try {
         // Map cue types to QLab cue types
-        function getQLabCueType(cueType) {
+        function getQLabCueType(cueOrType) {
+          // Accept either a cue object or a cue type string
+          let cueType = null;
+          let cueText = null;
+          if (typeof cueOrType === "string") {
+            cueType = cueOrType;
+          } else if (cueOrType && typeof cueOrType === "object") {
+            cueType = cueOrType.type;
+            cueText = String(cueOrType.name || "").toLowerCase();
+          }
+
+          // If the cue text explicitly contains stop/fade variants, prefer QLab Fade type
+          if (
+            cueText &&
+            /\b(?:stop|fade(?:-?in|-?out)?|fadein|fadeout|fade\s+in|fade\s+out|crossfade)\b/.test(
+              cueText
+            )
+          ) {
+            return "Fade";
+          }
+
           const mapping = {
             SOUND: "Audio",
             MUSIC: "Audio",
@@ -1111,7 +1131,7 @@ Beat.custom.exportToAppleScript = function (filterType) {
         scriptContent += "\t\t-- Create cues\n";
 
         cuesToExport.forEach(function (cue) {
-          const qLabType = getQLabCueType(cue.type);
+          const qLabType = getQLabCueType(cue);
           const cueNumber = String(cue.number)
             .replace(/\\/g, "\\\\")
             .replace(/"/g, '\\"');
