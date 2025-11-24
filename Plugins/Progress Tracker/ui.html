@@ -1,0 +1,266 @@
+// Load the UI markup from ui.html
+const html = `
+<style>
+:root {
+    --background-color: #ffffff;
+    --text-color: #333333;
+    --primary-color: #007aff;
+    --secondary-color: #555555;
+    --input-border-color: #cccccc;
+    --daily-donut-color: #008080;
+}
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.counter-container {
+    width: 360px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 16px;
+    background: var(--background-color);
+}
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    justify-content: space-between;
+}
+.controls label {
+    font-size: 12px;
+    color: var(--secondary-color);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 80px;
+}
+.controls input,
+.controls select {
+    margin-top: 4px;
+    padding: 4px;
+    font-size: 14px;
+    border: 1px solid var(--input-border-color);
+    border-radius: 4px;
+}
+.metrics {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+}
+.metrics canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+}
+#projectDonut {
+    width: 200px;
+    height: 200px;
+}
+#dailyDonut {
+    width: 140px;
+    height: 140px;
+}
+.info {
+    margin-top: 16px;
+    text-align: center;
+}
+.info div {
+    margin: 4px 0;
+    font-size: 14px;
+}
+  .success-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 10;
+  }
+</style>
+
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --daily-donut-color: #008080;
+  }
+}
+</style>
+
+<div class="counter-container">
+  <div class="controls">
+    <label>Count Type
+      <select id="countTypeSelect">
+        <option value="page">Pages</option>
+        <option value="word">Words</option>
+      </select>
+    </label>
+    <label>Daily Goal
+      <input type="number" id="daily-goal" placeholder="0" />
+    </label>
+    <label>Project Goal
+      <input type="number" id="project-goal" placeholder="0" />
+    </label>
+    <label>Deadline
+      <input type="date" id="deadline-input" />
+    </label>
+  </div>
+
+  <div class="metrics">
+    <canvas id="projectDonut"></canvas>
+    <canvas id="dailyDonut"></canvas>
+    <div id="centerCounter" style="
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 64px;
+        font-weight: bold;
+        cursor: pointer;
+        pointer-events: auto;
+    ">0</div>
+  </div>
+
+</div>
+  <div class="info">
+    <div id="days-left"></div>
+    <div id="pages-per-day"></div>
+  </div>
+  <div id="successOverlay" class="success-overlay">🎉 Goal achieved!</div>
+</div>
+
+<script>
+// Load and apply persisted settings
+const settings = new PluginSettings('goals');
+settings.load();
+const savedCountType = settings.get('countType', 'page');
+const savedDailyGoal = settings.get('dailyGoal', '');
+const savedProjectGoal = settings.get('projectGoal', '');
+const savedDeadline = settings.get('deadlineDate', '');
+// Apply to inputs
+document.getElementById('countTypeSelect').value = savedCountType;
+document.getElementById('daily-goal').value = savedDailyGoal;
+document.getElementById('project-goal').value = savedProjectGoal;
+document.getElementById('deadline-input').value = savedDeadline;
+
+// Resolve CSS variables
+const root = getComputedStyle(document.documentElement);
+const borderColor = root.getPropertyValue('--input-border-color').trim();
+const primaryColor = root.getPropertyValue('--primary-color').trim();
+const secondaryColor = root.getPropertyValue('--secondary-color').trim();
+
+// High-DPI canvas setup
+function setupCanvas(canvas) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+
+// Draw arc helper
+function drawArc(ctx, radius, thickness, progress, color) {
+  const center = ctx.canvas.width / 2;
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, 2 * Math.PI);
+  ctx.lineWidth = thickness;
+  ctx.strokeStyle = borderColor;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(center, center, radius, -Math.PI/2, -Math.PI/2 + 2 * Math.PI * Math.min(progress,1));
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+// Combined double donut
+function updateDonuts(projProg, dailyProg) {
+  const projCanvas = document.getElementById('projectDonut');
+  const dailyCanvas = document.getElementById('dailyDonut');
+  const projCtx = setupCanvas(projCanvas);
+  const dailyCtx = setupCanvas(dailyCanvas);
+  drawArc(projCtx, 90, 20, projProg, primaryColor);
+  const dailyColor = root.getPropertyValue('--daily-donut-color').trim();
+  drawArc(dailyCtx, 60, 20, dailyProg, dailyColor);
+}
+
+// Update info text
+function updateInfo(daysLeft, pagesPerDay) {
+  document.getElementById('days-left').textContent = `${daysLeft} day${daysLeft===1?'':'s'} left`;
+  document.getElementById('pages-per-day').textContent = `${pagesPerDay} per day`;
+}
+
+function showSuccess(message) {
+  const ov = document.getElementById('successOverlay');
+  if (!ov) return;
+  ov.textContent = message;
+  ov.style.display = 'flex';
+  setTimeout(() => { ov.style.display = 'none'; }, 2000);
+}
+
+// Entry point called by plugin.js
+window.updateProgress = function(dailyCount, dailyGoal, projCount, projGoal, deadlineStr) {
+  const projProg = projGoal? projCount / projGoal : 0;
+  const dailyProg = dailyGoal? dailyCount / dailyGoal : 0;
+  updateDonuts(projProg, dailyProg);
+  document.getElementById('centerCounter').textContent = dailyCount;
+
+  let days = '';
+  if (deadlineStr) {
+    const dl = new Date(deadlineStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = dl - today;
+    days = Math.ceil(diff / (1000*60*60*24));
+  }
+  const pagesPerDay = days>0 && projGoal? Math.ceil((projGoal - projCount)/days) : 0;
+  updateInfo(days, pagesPerDay);
+
+  // Celebrate if goals met
+  if (dailyGoal > 0 && dailyCount >= dailyGoal) {
+    showSuccess('🎉 Daily goal achieved!');
+  } else if (projGoal > 0 && projCount >= projGoal) {
+    showSuccess('🏆 Project goal achieved!');
+  }
+};
+
+// UI event listeners
+document.getElementById('countTypeSelect').addEventListener('change', (e) => {
+  Beat.call((type) => Beat.custom.setCountType(type), e.target.value);
+  settings.set('countType', e.target.value);
+  settings.save();
+});
+document.getElementById('daily-goal').addEventListener('input', (e) => {
+  Beat.call((val) => Beat.custom.setDailyGoal(val), parseInt(e.target.value));
+  settings.set('dailyGoal', parseInt(e.target.value) || 0);
+  settings.save();
+});
+document.getElementById('project-goal').addEventListener('input', (e) => {
+  Beat.call((val) => Beat.custom.setProjectGoal(val), parseInt(e.target.value));
+  settings.set('projectGoal', parseInt(e.target.value) || 0);
+  settings.save();
+});
+document.getElementById('deadline-input').addEventListener('change', (e) => {
+  Beat.call((val) => Beat.custom.setDeadline(val), e.target.value);
+  settings.set('deadlineDate', e.target.value);
+  settings.save();
+});
+
+// Draw initial empty donuts
+updateDonuts(0, 0);
+</script>
+`;
