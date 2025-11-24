@@ -375,6 +375,12 @@ function updateCuesListInWindow(cues) {
         Beat.log("Error updating preferences window: " + err);
       }
     }
+    // Ensure main window redraws after updating the cues list
+    try {
+      htmlWindow.runJS("refreshDisplay()");
+    } catch (e) {
+      /* ignore if not available */
+    }
   } catch (e) {
     Beat.log("Error updating cues list in window: " + e);
   }
@@ -917,7 +923,45 @@ Beat.custom.renumber = function (filterType) {
  */
 Beat.custom.goTo = function (lineIndex) {
   try {
-    Beat.scrollTo(lineIndex);
+    // Set selection first so the editor focuses the line, then scroll.
+    try {
+      if (typeof Beat.setSelectedRange === "function") {
+        Beat.setSelectedRange(lineIndex, 0);
+      }
+    } catch (e) {}
+
+    if (typeof Beat.timer === "function") {
+      // schedule small timer to allow editor layout to settle
+      try {
+        Beat.timer(0.02, function () {
+          try {
+            Beat.scrollTo(lineIndex);
+          } catch (e) {}
+          try {
+            Beat.timer(0.06, function () {
+              try {
+                Beat.scrollTo(lineIndex);
+              } catch (e) {}
+            });
+          } catch (e) {}
+        });
+      } catch (e) {
+        try {
+          Beat.scrollTo(lineIndex);
+        } catch (e) {}
+      }
+    } else {
+      try {
+        Beat.scrollTo(lineIndex);
+      } catch (e) {}
+      try {
+        setTimeout(function () {
+          try {
+            Beat.scrollTo(lineIndex);
+          } catch (e) {}
+        }, 80);
+      } catch (e) {}
+    }
   } catch (e) {
     Beat.log("Error scrolling to cue: " + e);
   }
@@ -1354,6 +1398,35 @@ function applyHighlighting() {
   } finally {
     // Re-enable text change listener
     Beat.onTextChangeDisabled = false;
+    // Force a small scroll to current selection to trigger editor redraw (fixes stale rendering on some Beat builds)
+    try {
+      if (
+        typeof Beat.selectedRange === "function" &&
+        typeof Beat.scrollTo === "function"
+      ) {
+        const sel = Beat.selectedRange();
+        const loc = sel && typeof sel.location === "number" ? sel.location : 0;
+        // Use a tiny timer to avoid interfering with immediate text-change handling
+        try {
+          Beat.timer(0.05, function () {
+            try {
+              Beat.scrollTo(loc);
+            } catch (e) {
+              /* ignore */
+            }
+          });
+        } catch (e) {
+          // fallback to immediate scroll if timer unavailable
+          try {
+            Beat.scrollTo(loc);
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      }
+    } catch (e) {
+      /* ignore */
+    }
   }
 }
 
@@ -1984,6 +2057,47 @@ function main() {
       try {
         applyHighlighting();
         Beat.log("Initial highlighting applied");
+
+        // Force a small focus/scroll to ensure the script window repaints on startup
+        try {
+          if (typeof Beat.selectedRange === "function") {
+            const sel = Beat.selectedRange();
+            const loc =
+              sel && typeof sel.location === "number" ? sel.location : 0;
+            try {
+              if (typeof Beat.setSelectedRange === "function") {
+                Beat.setSelectedRange(loc, 0);
+              }
+            } catch (e) {}
+            try {
+              if (typeof Beat.timer === "function") {
+                Beat.timer(0.02, function () {
+                  try {
+                    Beat.scrollTo(loc);
+                  } catch (e) {}
+                  try {
+                    Beat.timer(0.06, function () {
+                      try {
+                        Beat.scrollTo(loc);
+                      } catch (e) {}
+                    });
+                  } catch (e) {}
+                });
+              } else {
+                try {
+                  Beat.scrollTo(loc);
+                } catch (e) {}
+                try {
+                  setTimeout(function () {
+                    try {
+                      Beat.scrollTo(loc);
+                    } catch (e) {}
+                  }, 80);
+                } catch (e) {}
+              }
+            } catch (e) {}
+          }
+        } catch (e) {}
       } catch (e) {
         Beat.log("Error applying initial highlighting: " + e);
       }
