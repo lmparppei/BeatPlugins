@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 2.35
+Version: 2.36
 */
 
 // --- Global plugin state --- //
@@ -147,6 +147,8 @@ let showBoneyard = Beat.getDocumentSetting("showBoneyard");
 if (showBoneyard === undefined) showBoneyard = true;
 let hideBackgroundTags = Beat.getDocumentSetting("hideBackgroundTags");
 if (hideBackgroundTags === undefined) hideBackgroundTags = false;
+let enforceContrast = Beat.getUserDefault("enforceContrast");
+if (enforceContrast === undefined) enforceContrast = true;
 let notesAndSynopsis = [];
 // Set of dismissed notes/synopsis entry keys (type:absPos)
 let savedDismissed = Beat.getDocumentSetting("dismissedEntries") || [];
@@ -185,6 +187,155 @@ function getContrastColor(hex) {
   const b = parseInt(hex.substr(4, 2), 16);
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness > 128 ? '#000' : '#fff';
+}
+
+// === WCAG Contrast (Hue-Preserving) Utilities ===
+function _hex(h){return h.replace(/^#/,'');}
+function _clamp01(x){return Math.max(0,Math.min(1,x));}
+function _rgbFromHex(hex){
+  const h=_hex(hex);
+  return {
+    r: parseInt(h.slice(0,2),16),
+    g: parseInt(h.slice(2,4),16),
+    b: parseInt(h.slice(4,6),16)
+  };
+}
+function _hexFromRgb(r,g,b){
+  const to2=n=>n.toString(16).padStart(2,'0');
+  return `#${to2(r)}${to2(g)}${to2(b)}`;
+}
+function _rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){ h=s=0; }
+  else{
+    const d=max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d + (g<b?6:0); break;
+      case g: h=(b-r)/d + 2; break;
+      case b: h=(r-g)/d + 4; break;
+    }
+    h/=6;
+  }
+  return {h,s,l};
+}
+function _hslToRgb(h,s,l){
+  function hue2rgb(p,q,t){
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p + (q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p + (q-p)*(2/3 - t)*6;
+    return p;
+  }
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const q = l<0.5 ? l*(1+s) : l + s - l*s;
+    const p = 2*l - q;
+    r = hue2rgb(p,q,h+1/3);
+    g = hue2rgb(p,q,h);
+    b = hue2rgb(p,q,h-1/3);
+  }
+  return { r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255) };
+}
+// Relative luminance + contrast ratio (WCAG)
+function _relLum(hex){
+  const {r,g,b}=_rgbFromHex(hex);
+  const f=c=>{ c/=255; return (c<=0.03928)? c/12.92 : Math.pow((c+0.055)/1.055,2.4); };
+  const R=f(r), G=f(g), B=f(b);
+  return 0.2126*R + 0.7152*G + 0.0722*B;
+}
+function _contrastRatio(a,b){
+  const L1=_relLum(a), L2=_relLum(b);
+  const hi=Math.max(L1,L2), lo=Math.min(L1,L2);
+  return (hi+0.05)/(lo+0.05);
+}
+function _editorTextColor(){
+  // Heuristic: Beat doesn’t expose the actual editor text color.
+  // These values match typical Beat themes closely.
+  return (themeMode === 'dark') ? '#E4E4E4' : '#1B1D1E';
+}
+
+// Perceived brightness (0..255) helper
+function _brightness255(hex){
+  const h=_hex(hex); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  return (r*299 + g*587 + b*114) / 1000; // 0..255
+}
+
+/**
+ * Adjust only LIGHTNESS (keep hue & saturation) to hit a target WCAG contrast,
+ * and enforce a minimum perceived brightness gap from the editor text color for visibility.
+ */
+function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
+  const text=_editorTextColor();
+  if (!enforceContrast) return baseHex;
+  const BRIGHTNESS_GAP = 64; // ~25% of 255 — push further from text luminance
+  const STEP = 0.08;         // 8% lightness steps for bolder shifts
+
+  // If already passes AAA and looks separated enough, keep as is
+  if (_contrastRatio(text, baseHex) >= minRatio && Math.abs(_brightness255(text) - _brightness255(baseHex)) >= BRIGHTNESS_GAP) {
+    return baseHex;
+  }
+
+  // Convert to HSL once
+  const {r,g,b}=_rgbFromHex(baseHex);
+  const {h,s,l}= _rgbToHsl(r,g,b);
+
+  let best = null; // {hex, deltaL, dir: 'lighter'|'darker'}
+
+  // Search toward lighter and darker, prefer smallest lightness change that satisfies contrast first
+  function testDir(sign){
+    for (let k=STEP; k<=1.0; k+=STEP){
+      const L = _clamp01(l + sign*k);
+      const rgb=_hslToRgb(h,s,L);
+      const hex=_hexFromRgb(rgb.r,rgb.g,rgb.b);
+      if (_contrastRatio(text, hex) >= minRatio){
+        best = {hex, deltaL: Math.abs(L-l), dir: (sign>0?'lighter':'darker')};
+        break;
+      }
+      if ((sign>0 && L>=1.0) || (sign<0 && L<=0.0)) break;
+    }
+  }
+  testDir(+1); // try lighter
+  const lighter = best; // stash
+  best = null;
+  testDir(-1); // try darker
+  const darker = best;
+
+  // Choose the smaller deltaL; tie-break by higher contrast
+  let chosen = null;
+  if (lighter && darker){
+    chosen = (lighter.deltaL < darker.deltaL) ? lighter : (darker.deltaL < lighter.deltaL ? darker : (_contrastRatio(text, lighter.hex) >= _contrastRatio(text, darker.hex) ? lighter : darker));
+  } else {
+    chosen = lighter || darker;
+  }
+
+  // If nothing found (extreme edge case), keep base
+  if (!chosen) return baseHex;
+
+  // Ensure a minimum perceived brightness gap vs text for better visibility, continuing in the chosen direction
+  let out = chosen.hex;
+  let outL = _rgbToHsl(...Object.values(_rgbFromHex(out))).l;
+  while (Math.abs(_brightness255(text) - _brightness255(out)) < BRIGHTNESS_GAP || _contrastRatio(text, out) < minRatio){
+    outL = _clamp01(outL + (chosen.dir==='lighter' ? STEP : -STEP));
+    const rgb=_hslToRgb(h,s,outL);
+    out = _hexFromRgb(rgb.r,rgb.g,rgb.b);
+    // Stop if we hit bounds or the contrast is already quite strong
+    if (outL === 0 || outL === 1 || _contrastRatio(text, out) >= (minRatio + 0.5)) break;
+  }
+  // Soft clamp toward extremes if still too close after stepping
+  const outHsl = _rgbToHsl(...Object.values(_rgbFromHex(out)));
+  if (Math.abs(_brightness255(text) - _brightness255(out)) < BRIGHTNESS_GAP) {
+    let targetL = (chosen.dir === 'lighter') ? 0.9 : 0.1;
+    const rgb=_hslToRgb(h, s, targetL);
+    const hexTarget=_hexFromRgb(rgb.r, rgb.g, rgb.b);
+    if (_contrastRatio(text, hexTarget) >= minRatio) out = hexTarget;
+  }
+  // Debug: log before/after contrast
+  try { Beat.log(`[KW] Contrast adjust: base=${baseHex} → result=${out} (min=${minRatio}, gap≥${BRIGHTNESS_GAP})`); } catch {}
+  return out;
 }
 
 /**
@@ -248,6 +399,23 @@ Beat.custom = {
     hideBackgroundTags = !hideBackgroundTags;
     Beat.setDocumentSetting("hideBackgroundTags", hideBackgroundTags);
     Beat.custom.refreshUI();
+  },
+  toggleContrastEnforcement() {
+    enforceContrast = !enforceContrast;
+    Beat.setUserDefault("enforceContrast", enforceContrast);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    updateWindowUI();
+  },
+  setEnforceContrast(mode) {
+    // mode: 'on' | 'off'
+    const next = (mode === 'on');
+    if (next === enforceContrast) return;
+    enforceContrast = next;
+    Beat.setUserDefault("enforceContrast", enforceContrast);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    updateWindowUI();
   },
   refreshUI() {
     tagsByName = {};
@@ -492,13 +660,10 @@ function main() {
     });
   });
 
-  const ui = buildUIHtml();
-  myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed);
-
-  // Disable maximize, full-screen, and minimize immediately
-  myWindow.disableMaximize = true;
-  myWindow.disableFullScreen = true;
-  myWindow.disableMinimize = true;
+const ui = buildUIHtml();
+myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed,
+  { utility: false }
+);
 
   centerWindow(myWindow);
 }
@@ -825,9 +990,10 @@ function addTag(tagName, color, occurrence) {
 }
 
 function addOccurrence(tagName, lineIndex, absPos, matchLen, special = false) {
-  const color = pickColorForTag(tagName);
-  Beat.textBackgroundHighlight(color, absPos, matchLen);
-  const occurrence = { tag: tagName, lineIndex, absPos, matchLen, color, special };
+  const baseColor = pickColorForTag(tagName);
+  const hl = ensureBgContrastHuePreserving(baseColor, 8.0); // push visibility further
+  Beat.textBackgroundHighlight(hl, absPos, matchLen);
+  const occurrence = { tag: tagName, lineIndex, absPos, matchLen, color: hl, special };
   if (!tagsByName[tagName]) {
     tagsByName[tagName] = [];
   }
@@ -852,9 +1018,10 @@ function pickColorForTag(tagName) {
  */
 function reapplyAllHighlights() {
   for (const occ of allOccurrences) {
-    const color = pickColorForTag(occ.tag);
-    Beat.textBackgroundHighlight(color, occ.absPos, occ.matchLen);
-    occ.color = color;
+    const baseColor = pickColorForTag(occ.tag);
+    const hl = ensureBgContrastHuePreserving(baseColor, 8.0);
+    Beat.textBackgroundHighlight(hl, occ.absPos, occ.matchLen);
+    occ.color = hl;
   }
 }
 
@@ -1123,6 +1290,7 @@ function buildUIHtml() {
       margin-top: 10px;
       display: block;
     }
+    /* --- Begin: themeTabs visibility --- */
     #themeTabs {
       position: fixed;
       bottom: 10px;
@@ -1130,7 +1298,24 @@ function buildUIHtml() {
       width: auto;
       text-align: right;
       z-index: 1002;
+
+      /* Hide by default; reveal on hover or when body has .show-controls */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
     }
+    /* Show when hovering the controls themselves or when keyboard focusing inside */
+    #themeTabs:hover,
+    #themeTabs:focus-within {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Also show when the body has .show-controls (toggled by hovering the ? help icon) */
+    body.show-controls #themeTabs {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* --- End: themeTabs visibility --- */
     .themeTab {
       background: none;
       border: none;
@@ -1229,6 +1414,40 @@ function buildUIHtml() {
     }
     window.addEventListener('blur', minimizeFTOutliner);
     window.addEventListener('focus', maximizeFTOutliner);
+  </script>
+  <style>
+    #footerBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      z-index: 1002;
+      pointer-events: none;
+    }
+    #footerBar > * {
+      pointer-events: auto;
+    }
+  </style>
+  <script>
+    // Reveal bottom controls when hovering the entire footerBar (help icon + tabs)
+    document.addEventListener('DOMContentLoaded', function () {
+      var footer = document.getElementById('footerBar');
+      function show() { document.body.classList.add('show-controls'); }
+      function hideSoon() {
+        setTimeout(function () {
+          if (!(footer && footer.matches(':hover'))) {
+            document.body.classList.remove('show-controls');
+          }
+        }, 120);
+      }
+      if (footer) {
+        footer.addEventListener('mouseenter', show);
+        footer.addEventListener('mouseleave', hideSoon);
+        footer.addEventListener('focusin', show);
+        footer.addEventListener('focusout', hideSoon);
+      }
+    });
   </script>
 </head>
 <body>
@@ -1548,35 +1767,43 @@ function buildUIHtml() {
            onblur="Beat.call('Beat.custom.finalizeTagColor(\\'' + this.value + '\\')')">
     <button onclick="finalizeColorButtonClick()">OK</button>
   </div>
-  <div id="helpIcon" onclick="document.getElementById('helpPopover').style.display = (document.getElementById('helpPopover').style.display=='block'?'none':'block');">?</div>
-  <div id="helpPopover">
-    <p>Add a hashtag (#) or at-sign (@) inside an inline note in your document to create a tag. For example: [[This creates a #tag]] and [[This creates an @tag]].</p>
-    <p>You can also tag Storylines/Beats: [[Storyline: #tag]] or [[Beat #tag]].</p>
-    <p>Click a tag in the plugin to jump to its location in the document.</p>
-    <p>Left click to change the color of a tag.</p>
-    <p>Use Ctrl+Cmd+K to toggle the plugin.</p>
-    <p>Close the window to remove highlights from the document.</p>
-    <button onclick="document.getElementById('helpPopover').style.display='none';">Close</button>
-  </div>
-</div>
-  <div id="themeTabs">
-    <label style="margin-right:12px;">
-      Auto-collapse:
-      <select onchange="Beat.call('Beat.custom.setCollapseMode(\\'' + this.value + '\\')')">
-        <option value="off"   ${collapseMode==='off'   ? 'selected' : ''}>Off</option>
-        <option value="left"  ${collapseMode==='left'  ? 'selected' : ''}>Left</option>
-        <option value="right" ${collapseMode==='right' ? 'selected' : ''}>Right</option>
-      </select>
-    </label>
-    <label style="margin-right:12px;">
-      Theme:
-      <select onchange="Beat.call('Beat.custom.setThemeMode(\\'' + this.value + '\\')')">
-        <option value="off"   disabled>Type</option>
-        <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
-        <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
-        <option value="system" ${themeMode==='system' ? 'selected' : ''}>System</option>
-      </select>
-    </label>
+  <div id="footerBar">
+    <div id="helpIcon" onclick="document.getElementById('helpPopover').style.display = (document.getElementById('helpPopover').style.display=='block'?'none':'block');">?</div>
+    <div id="helpPopover">
+      <p>Add a hashtag (#) or at-sign (@) inside an inline note in your document to create a tag. For example: [[This creates a #tag]] and [[This creates an @tag]].</p>
+      <p>You can also tag Storylines/Beats: [[Storyline: #tag]] or [[Beat #tag]].</p>
+      <p>Click a tag in the plugin to jump to its location in the document.</p>
+      <p>Left click to change the color of a tag.</p>
+      <p>Use Ctrl+Cmd+K to toggle the plugin.</p>
+      <p>Close the window to remove highlights from the document.</p>
+      <button onclick="document.getElementById('helpPopover').style.display='none';">Close</button>
+    </div>
+    <div id="themeTabs">
+      <label style="margin-right:12px;">
+        Auto-collapse:
+        <select onchange="Beat.call('Beat.custom.setCollapseMode(\\'' + this.value + '\\')')">
+          <option value="off"   ${collapseMode==='off'   ? 'selected' : ''}>Off</option>
+          <option value="left"  ${collapseMode==='left'  ? 'selected' : ''}>Left</option>
+          <option value="right" ${collapseMode==='right' ? 'selected' : ''}>Right</option>
+        </select>
+      </label>
+      <label style="margin-right:12px;">
+        Highlight Contrast:
+        <select onchange="Beat.call('Beat.custom.setEnforceContrast(\\'' + this.value + '\\')')">
+          <option value="on"  ${enforceContrast ? 'selected' : ''}>On</option>
+          <option value="off" ${!enforceContrast ? 'selected' : ''}>Off</option>
+        </select>
+      </label>
+      <label style="margin-right:12px;">
+        Theme:
+        <select onchange="Beat.call('Beat.custom.setThemeMode(\\'' + this.value + '\\')')">
+          <option value="off"   disabled>Type</option>
+          <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
+          <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
+          <option value="system" ${themeMode==='system' ? 'selected' : ''}>System</option>
+        </select>
+      </label>
+    </div>
   </div>
 <script>
   window.filterKeywords = function(query) {
@@ -1637,9 +1864,10 @@ function centerWindow(winObj) {
 
 function reapplyAllHighlights() {
   for (const occ of allOccurrences) {
-    const color = pickColorForTag(occ.tag);
-    Beat.textBackgroundHighlight(color, occ.absPos, occ.matchLen);
-    occ.color = color;
+    const baseColor = pickColorForTag(occ.tag);
+    const hl = ensureBgContrastHuePreserving(baseColor, 8.0);
+    Beat.textBackgroundHighlight(hl, occ.absPos, occ.matchLen);
+    occ.color = hl;
   }
 }
 
@@ -1652,11 +1880,6 @@ function togglePluginVisibility() {
       isPluginVisible = false;
     } else {
       myWindow.show();
-      // Reapply disable flags when showing the window again
-      myWindow.disableMaximize = true;
-      myWindow.disableFullScreen = true;
-      myWindow.disableMinimize = true;
-      isPluginVisible = true;
     }
   } else {
     main();
