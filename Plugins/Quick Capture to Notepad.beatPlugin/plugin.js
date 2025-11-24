@@ -18,22 +18,19 @@ Copyright: Bode Pickman
 </Description>
 Image: capture_to_notepad.png
 Compatibility: 1.999.10
-Version: 1.0
+Version: 1.1
 */
 
 const html = Beat.assetAsString("ui.html")
 const notepad = Beat.notepad
 
 // Set up the panel
-let panel = Beat.htmlWindow(html, 400, 200);
+let panel = Beat.htmlWindow(html, 400, 200, null, { utility: false });
 panel.stayInMemory = true; // Keep the panel in memory even when closed
 let frame = panel.getFrame()
 panel.setFrame(frame.x, frame.y - 200, frame.width, frame.height)
 
-// Disable full-screen, minimize, and maximize for the panel
-panel.disableFullScreen = true;
-panel.disableMinimize = true;
-panel.disableMaximize = true;
+// panel.disableFullScreen = true;
 
 // Create a menu item to bring this panel up when needed
 const menuItem = Beat.menuItem("Capture to Notepad", ["cmd", "alt", "2"], () => {
