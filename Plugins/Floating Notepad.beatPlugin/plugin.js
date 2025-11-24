@@ -18,22 +18,20 @@ Copyright: Bode Pickman
 </Description>
 Image: floating_notepad.png
 Compatibility: 1.999.10
-Version: 1.3
+Version: 1.4
 */
 
 const html = Beat.assetAsString("ui.html");
 const notepad = Beat.notepad;
 
 // Set up the panel
-const panel = Beat.htmlWindow(html, 2000, 600);
+const panel = Beat.htmlWindow(html, 2000, 600, null, { utility: false });
 panel.stayInMemory = true; // Keep the panel in memory even when closed
 const frame = panel.getFrame();
 panel.setFrame(frame.x, frame.y - 300, frame.width, frame.height);
 
-// Disable full-screen, minimize, and maximize for the panel
-panel.disableFullScreen = true;
-panel.disableMinimize = true;
-panel.disableMaximize = true;
+// Optional: disable fullscreen if you want green button to not toggle fullscreen
+// panel.disableFullScreen = true;
 
 // Variable to track the panel's visibility state
 let isPanelVisible = true;
