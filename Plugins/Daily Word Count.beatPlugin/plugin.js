@@ -20,7 +20,7 @@ Copyright: Bode Pickman
   <p>With "Daily Word Count," you can stay motivated and focused on your writing goals. Keep an eye on your output and strive to improve your productivity over time.</p>
 </Description>
 Image: daily_word_count.jpg
-Version: 1.2
+Version: 1.3
 */
 const html = Beat.assetAsString("ui.html")
 let wordCount = 0;
@@ -31,11 +31,11 @@ let isPluginWindowOpen = false; // Track the state of the plugin window
 let countingMode = 'up';
 
 // Set up the panel
-let panel = Beat.htmlWindow(html, 155, 65);
-panel.stayInMemory = true;
-panel.disableFullScreen = true; // Disable full-screen mode
-panel.disableMinimize = true;
-panel.disableMaximize = true;
+let panel = Beat.htmlWindow(html, 155, 65, null, { utility: false });
+panel.stayInMemory = true; // Keep the panel in memory even when closed
+
+// Optional: disable fullscreen if you want green button to not toggle fullscreen
+// panel.disableFullScreen = true;
 
 function countWords(text) {
     // Remove inline notes, synopsis, headings, sections, and omits.
