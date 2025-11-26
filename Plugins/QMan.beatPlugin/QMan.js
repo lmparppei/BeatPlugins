@@ -763,6 +763,7 @@ function exportToQLab() {
 
 function goTo(idx) { Beat.call((i) => { Beat.custom.goTo(i); }, idx); }
 function openPreferences() { Beat.call(() => { Beat.custom.openPreferences(); }); }
+function openManual() { Beat.call(() => { Beat.custom.openManual(); }); }
 </script>
 </body>
 </html>`;
@@ -1241,6 +1242,39 @@ Beat.custom.exportToAppleScript = function (filterType) {
   } catch (e) {
     Beat.log("Error exporting to AppleScript: " + e);
     Beat.alert("Error", "Failed to export to AppleScript: " + e.message);
+  }
+};
+
+/**
+ * Opens the plugin README/manual in a new HTML window
+ */
+Beat.custom.openManual = function () {
+  try {
+    // Load README.html bundled with the plugin
+    const manualHtml = Beat.assetAsString("README.html");
+    if (!manualHtml) {
+      Beat.alert("Error", "Manual not found in plugin assets (README.html).");
+      return;
+    }
+
+    // Open a resizable window for the manual
+    let manualWindow = null;
+    try {
+      manualWindow = Beat.htmlWindow(manualHtml, 700, 560, function () {
+        // noop on close
+      });
+    } catch (e) {
+      Beat.log("Error creating manual window: " + e);
+      // Fallback: try smaller size
+      try {
+        manualWindow = Beat.htmlWindow(manualHtml, 600, 480);
+      } catch (e2) {
+        Beat.alert("Error", "Failed to open manual window: " + e2.message);
+      }
+    }
+  } catch (e) {
+    Beat.log("openManual error: " + e);
+    Beat.alert("Error", "Failed to open manual: " + e.message);
   }
 };
 
