@@ -62,7 +62,7 @@
     <header>
       <h1 id="qman">QMan</h1>
       <div class="meta">
-        <strong>Version:</strong> 1.2 &nbsp;|&nbsp; © Nicola Marra de Scisciolo
+        <strong>Version:</strong> 1.3 &nbsp;|&nbsp; © Nicola Marra de Scisciolo
         2025<br /><strong>Compatibility:</strong> Beat 2.1.2+
       </div>
     </header>
@@ -186,13 +186,22 @@ PROJECTION (cue 5): Show title card
       <li>
         <strong>Renumber Button</strong> - Sequentially renumber cues (Ctrl+R)
       </li>
-      <li><strong>Export Menu</strong> - Export to CSV or HTML (Ctrl+E)</li>
+      <li>
+        <strong>Export Menu</strong> - Export to CSV or HTML (<strong
+          >Ctrl+E</strong
+        >
+        triggers CSV export)
+      </li>
       <li><strong>Tabs</strong> - Filter by cue type or view all</li>
       <li>
         <strong>Cue List</strong> - Click any cue to jump to its location in the
         screenplay
       </li>
       <li><strong>Preferences Icon</strong> - Access customization options</li>
+      <li>
+        <strong>Manual Icon</strong> - Open this plugin manual from the plugin
+        window footer
+      </li>
     </ul>
 
     <h3>Preferences</h3>
@@ -267,11 +276,25 @@ PROJECTION (cue 5): Show title card
     </ul>
 
     <h3>HTML Export</h3>
-    <p>
-      Generates a formatted HTML table with color-coded cue types, professional
-      styling, printable format, and sortable columns.
-    </p>
+    <p>Generates a formatted HTML table.</p>
 
+    <h3>QLab Export</h3>
+    <p>
+      QMan can export cues to QLab by creating an AppleScript
+      (<code>.scpt</code>) that imports cues into QLab. To import the generated
+      script:
+    </p>
+    <ol>
+      <li>Make sure QLab is running.</li>
+      <li>
+        Double-click the generated <code>.scpt</code> file or open it in Script
+        Editor.
+      </li>
+      <li>
+        Press Run in Script Editor to import cues into the frontmost QLab
+        workspace.
+      </li>
+    </ol>
     <h2 id="use-cases">Use Cases</h2>
     <h3>Theater Production</h3>
     <ul>
@@ -351,6 +374,29 @@ PROJECTION (cue 5): Show title card
     </ul>
 
     <h2 id="version-history">Version History</h2>
+    <h3>1.3 (November 26, 2025)</h3>
+    <p><strong>Maintenance &amp; Visual Fixes:</strong></p>
+    <ul>
+      <li>Updated plugin and dev package version to <code>1.3</code>.</li>
+      <li>
+        Theme-aware SVG icons: Export and Preferences icons now use
+        <code>currentColor</code> so they adapt to light/dark themes.
+      </li>
+      <li>
+        Added the plugin manual (<code>README.html</code>) to the distribution
+        and documentation.
+      </li>
+      <li>
+        Export glyph geometrically adjusted and centered for consistent visual
+        weight in the toolbar.
+      </li>
+      <li>
+        Toolbar icon sizing fixed to 26×26; padding and corner radius tuned for
+        macOS-style appearance.
+      </li>
+      <li>Minor UI and packaging cleanups.</li>
+    </ul>
+
     <h3>1.2.0 (November 18, 2025)</h3>
     <p><strong>Maintenance &amp; Compatibility Fixes:</strong></p>
     <ul>
