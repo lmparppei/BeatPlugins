@@ -26,6 +26,9 @@ for dir in */
 
 	if ! test -f "./$dir$filename"; then
 	  	filename="plugin.js"
+	  	if ! test -f "./$dir$filename"; then
+	  	     filename=${pluginName/"beatPlugin"/"js"}
+	  	fi
 	fi
 	if ! test -f "./$dir$filename"; then
 	  	echo "   !!! No plugin file found"
