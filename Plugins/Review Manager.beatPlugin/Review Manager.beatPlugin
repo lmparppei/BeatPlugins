@@ -1,20 +1,20 @@
-/*:
+ /*:
 Review Manager
 Copyright: Jürgen Heimüller 2026
-Version: 0.91
+Version: 0.93
 Description: Manage and organize your reviews with tags
 */
 
 // ============================================
-// REVIEW MANAGER v0.91 - Strukturierte Version
+// REVIEW MANAGER v0.93 - Strukturierte Version
 // ============================================
 
-Beat.log("=== REVIEW MANAGER v0.91 ===");
+Beat.log("=== REVIEW MANAGER v0.93 ===");
 
 // ---------- 1. KONFIGURATION & CONSTANTS ----------
 const CONFIG = {
-    version: "0.91",
-    windowDefaults: { width: 600, height: 700, minWidth: 365, minHeight: 400 },
+    version: "0.93",
+    windowDefaults: { width: 572, height: 700, minWidth: 365, minHeight: 400 },
     debug: false
 };
 
@@ -41,6 +41,10 @@ const State = {
     followCursor: true,
     lastCursorPosition: -1,
     lastSelectionLength: 0,
+    hasSelection: false,
+    selectionLocation: -1,
+    selectionLength: 0,
+    currentHighlightId: -1,
     
     // Batch-Operationen
     pendingDeleteIds: null,
@@ -48,6 +52,11 @@ const State = {
     
     // Suppress Flags
     suppressTextChange: false,
+    suppressSelectionChange: false,
+    
+    // Move 
+    cursorIsReview: false,
+    cursorIsReviewId: -1,
     
     // Setter
     setFilter(tag, invert) {
@@ -66,6 +75,51 @@ const State = {
         this.selectedReviews.clear();
     },
     
+    // NEU: Pending refresh reason
+    pendingRefreshReason: null,
+    
+    // NEU: Debounce Timer für Refresh
+    refreshTimer: null,
+    
+    // Setter für Filter mit automatischem Refresh
+    setFilterAndRefresh(tag, invert, reason) {
+        this.currentFilterTag = tag;
+        this.invertFilter = invert;
+        this.saveToDocument();
+        
+        // Reason für späteren Refresh merken
+        this.pendingRefreshReason = reason;
+        
+        // Refresh auslösen (debounced)
+        this.scheduleRefresh();
+    },
+    
+    // Debounced Refresh
+    scheduleRefresh() {
+        if (this.refreshTimer) {
+            this.refreshTimer.invalidate();
+        }
+        
+        this.refreshTimer = Beat.timer(0.1, () => {
+            if (this.pendingRefreshReason) {
+                const reason = this.pendingRefreshReason;
+                this.pendingRefreshReason = null;
+                UI.refresh(reason, undefined, undefined, true);
+            }
+            this.refreshTimer = null;
+        }, false);
+    },
+    
+    // Direkter Refresh ohne Debounce (für wichtige Aktionen)
+    refreshNow(reason) {
+        if (this.refreshTimer) {
+            this.refreshTimer.invalidate();
+            this.refreshTimer = null;
+        }
+        this.pendingRefreshReason = null;
+        UI.refresh(reason, undefined, undefined, true);
+    },    
+    
     // Persistenz
     saveToDocument() {
         try {
@@ -81,16 +135,68 @@ const State = {
             let savedFilterTag = Beat.getDocumentSetting("reviewManagerFilterTag");
             if (savedFilterTag && savedFilterTag !== "") {
                 this.currentFilterTag = savedFilterTag;
-                Logger.log("Filter wiederhergestellt: " + this.currentFilterTag);
             }
             
             let savedInvertFilter = Beat.getDocumentSetting("reviewManagerInvertFilter");
             if (savedInvertFilter !== undefined) {
                 this.invertFilter = savedInvertFilter;
-                Logger.log("Invert wiederhergestellt: " + this.invertFilter);
             }
         } catch(e) {
             Logger.error("Fehler beim Laden", e);
+        }
+    }
+};
+
+// ---------- 2.5. TEXT HIGHLIGHT HELPER (BLINK VERSION) ----------
+const TextHighlight = {
+    /**
+     * Lässt den Text kurz aufblinken (Textfarbe ändern)
+     * @param {number} location - Startposition des Texts
+     * @param {number} length - Länge des Texts
+     */
+    setHighlight(location, length, instantBlink = false) {
+        if (location < 0 || length <= 0) return;
+        
+        try {
+            // Timer 1: Nach 0.2 Sekunden Highlight setzen
+            const timer1 = Beat.timer(instantBlink ? 0 : 0.3, () => {
+                try {
+                    Beat.textHighlight("#999999", location, length);
+                    
+                    // Timer 2: Nach weiteren 0.2 Sekunden Highlight entfernen
+                    const timer2 = Beat.timer(0.15, () => {
+                        try {
+                            Beat.removeTextHighlight(location, length);
+                        } catch(e) {
+                            Logger.error("Fehler beim Entfernen der Text-Highlights", e);
+                        }
+                        timer2.invalidate();
+                    }, false);
+                    
+                } catch(e) {
+                    Logger.error("Fehler beim Setzen des Text-Highlights", e);
+                }
+                timer1.invalidate();
+            }, false);
+            
+        } catch(e) {
+            Logger.error("Fehler beim Blink-Highlight", e);
+        }
+    },
+    
+    /**
+     * Löscht alle Text-Highlights (falls nötig)
+     * @param {number} location - Startposition
+     * @param {number} length - Länge
+     */
+    clearHighlight(location, length) {
+        if (location >= 0 && length > 0) {
+            try {
+                Beat.removeTextHighlight(location, length);
+                Logger.debug(`Text-Highlight gelöscht: location=${location}, length=${length}`);
+            } catch(e) {
+                Logger.error("Fehler beim Löschen des Text-Highlights", e);
+            }
         }
     }
 };
@@ -142,7 +248,6 @@ const Data = {
                         tags: tags,
                         location: reviewLocation,
                         length: reviewLength,
-                        selected: State.selectedReviews.has(index)
                     });
                 }
             });
@@ -220,7 +325,10 @@ const Data = {
             if (!this.tagExists(review.string, formattedTag)) {
                 review.string = (review.string + " " + formattedTag).trim();
                 rm.saveReview(review);
-                if (!skipRefresh) UI.refresh("tag_added");
+                if (!skipRefresh) {
+                    UI.checkAndResetFilter();  // Prüfe ob Filter noch gültig ist
+                    UI.refresh("tag_added", undefined, undefined, true);
+                }
             }
         } finally {
             State.suppressTextChange = false;
@@ -242,10 +350,13 @@ removeTag(id, tagToRemove, skipRefresh = false) {
         
         // Präziserer Ausdruck: Tag muss entweder am Anfang stehen oder von Leerzeichen/Zeilenumbrüchen umgeben sein
         const regex = new RegExp('(^|\\s)' + escapedTag + '(?=\\s|$)', 'gi');
-        review.string = review.string.replace(regex, '$1').replace(/\s+/g, ' ').trim();
+        review.string = review.string.replace(regex, ' ').replace(/  +/g, ' ').trim();
         
         rm.saveReview(review);
-        if (!skipRefresh) UI.refresh("tag_removed");
+        if (!skipRefresh) {
+            UI.checkAndResetFilter();
+            UI.refresh("tag_removed", undefined, undefined, true);
+        }
     } finally {
         State.suppressTextChange = false;
     }
@@ -265,10 +376,15 @@ removeTag(id, tagToRemove, skipRefresh = false) {
             }
             
             const parsedId = parseInt(id);
-            State.selectedReviews.delete(parsedId);
             State.expandedReviews.delete(parsedId);
             if (State.selectedReviewId === parsedId) State.selectedReviewId = -1;
-            if (!skipRefresh) UI.refresh("review_deleted");
+            
+            State.selectedReviews.clear(); // Bei Löschen alle Selektionen löschen (da sich IDs ändern können)
+            
+            if (!skipRefresh) {
+                UI.checkAndResetFilter();
+                UI.refresh("review_deleted", undefined, undefined, true);
+            }
         } finally {
             State.suppressTextChange = false;
         }
@@ -299,17 +415,28 @@ const WindowManager = {
                 }
             }
         }
+        if (initialHighlightId !== -1) {
+            State.selectedReviewId = initialHighlightId;
+        }        
         
         const html = UI.buildHTML(data, -1, initialHighlightId);
-        this.window = Beat.htmlWindow(html, 600, 700, this.onClose.bind(this));
+        this.window = Beat.htmlWindow(html, 572, 700, this.onClose.bind(this));
         this.restorePosition();
-        UI.initializeWithCurrentPosition();
+        
+        
+        const range = Beat.selectedRange();
+        UI.refresh("initial_start", range.location, range.length, true, false);
+
+        // NEU: Fenster hat sofort Fokus
+        State.windowHasFocus = true;   
+
         Logger.log("Review Manager gestartet");
     },
     
     onClose() {
         this.savePosition();
         State.saveToDocument();
+        TextHighlight.clearHighlight();        
         this.window = null;
         State.selectedReviews.clear();
         State.selectedReviewId = -1;
@@ -371,6 +498,7 @@ const WindowManager = {
     }
 };
 
+
 // ---------- 6. EDIT MODUS ----------
 const EditMode = {
     start(id) {
@@ -404,18 +532,27 @@ const EditMode = {
             this.save(State.pendingEdit.id, State.pendingEdit.text);
             State.pendingEdit = null;
         }
-        
+
         if (State.editingReviewId !== -1) {
             State.editingReviewId = -1;
+
+            // Icons zurücksetzen und contenteditable entfernen
             WindowManager.runJS(`
+                document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
+                    el.classList.remove('undo');
+                    el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>';
+                    el.title = 'Edit review [Cmd-E]';
+                });
                 document.querySelectorAll('.review-text.editing').forEach(el => {
                     el.classList.remove('editing');
                     el.removeAttribute('contenteditable');
                 });
             `);
         }
+        UI._cachedData = null;
+        UI.refresh("edit_exit", undefined, undefined, true);
     },
-    
+
     save(id, newText) {
         try {
             State.suppressTextChange = true;
@@ -427,12 +564,16 @@ const EditMode = {
                 const oldTags = originalReview.string.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
                 const allTags = [...new Set([...oldTags, ...newTags])];
                 const tagsString = allTags.length > 0 ? ' ' + allTags.join(' ') : '';
-                
+
                 const cleanedNewText = newText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
                 const finalText = cleanedNewText + tagsString;
-                
+
                 originalReview.string = finalText;
                 rm.saveReview(originalReview);
+
+                // Cache invalidieren und merken, dass Daten geändert wurden
+                UI._cachedData = null;
+                State.dataChanged = true;
             }
         } finally {
             State.suppressTextChange = false;
@@ -443,6 +584,14 @@ const EditMode = {
         State.editingReviewId = -1;
         State.pendingEdit = null;
         UI.refresh("cancel_editing");
+    // Icon im aktuellen Fenster zurücksetzen
+        WindowManager.runJS(`
+            document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
+                el.classList.remove('undo');
+                el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>';
+                el.title = 'Edit review [Cmd-E]';
+            });
+        `);
     },
     
     copyText(id) {
@@ -450,15 +599,26 @@ const EditMode = {
         const rm = Beat.reviews;
         const reviews = rm.getReviews();
         const review = reviews[id];
-        
+
         if (review && review.string) {
             WindowManager.runJS(`
                 navigator.clipboard.writeText(${JSON.stringify(review.string)}).then(() => {
-                    var icon = document.querySelector('.review-copy-icon[data-id="${id}"]');
-                    if (icon) {
-                        var originalText = icon.textContent;
-                        icon.textContent = '✓';
-                        setTimeout(() => { icon.textContent = originalText; }, 1000);
+                    var iconSpan = document.querySelector('.review-copy-icon[data-id="${id}"]');
+                    if (iconSpan) {
+                        // Speichere das originale SVG
+                        var originalSVG = iconSpan.innerHTML;
+
+                        // Ersetze durch Haken
+                        iconSpan.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 4 9 20 3 14"/></svg>';
+
+                        // Nach 1 Sekunde wiederherstellen
+                        setTimeout(() => {
+                            // Prüfen, ob immer noch das gleiche Icon-Span (nicht zwischenzeitlich gelöscht)
+                            var currentSpan = document.querySelector('.review-copy-icon[data-id="${id}"]');
+                            if (currentSpan && currentSpan.innerHTML !== originalSVG) {
+                                currentSpan.innerHTML = originalSVG;
+                            }
+                        }, 1000);
                     }
                 }).catch(err => console.log('Kopieren fehlgeschlagen:', err));
             `);
@@ -547,8 +707,6 @@ const BatchOperations = {
         State.pendingDeleteIds = reviews.map(r => r.id);
         State.pendingDeleteTotal = State.pendingDeleteIds.length;
         
-        Logger.log("deleteSelectedReviews: pendingDeleteIds = " + JSON.stringify(State.pendingDeleteIds));
-        
         const message = State.pendingDeleteTotal === 1 
             ? 'Really delete this review?' 
             : 'Really delete ' + State.pendingDeleteTotal + ' selected reviews?';
@@ -557,16 +715,13 @@ const BatchOperations = {
     },
     
     confirmDelete() {
-        Logger.log("confirmDeleteSelected gestartet, pendingDeleteIds = " + JSON.stringify(State.pendingDeleteIds));
         
         if (!State.pendingDeleteIds || State.pendingDeleteIds.length === 0) {
-            Logger.log("KEINE pendingDeleteIds! Hole neu...");
             const reviews = Data.getSelectedFilteredReviews();
             State.pendingDeleteIds = reviews.map(r => r.id);
             State.pendingDeleteTotal = State.pendingDeleteIds.length;
             
             if (State.pendingDeleteIds.length === 0) {
-                Logger.log("Immer noch keine IDs – Abbruch");
                 return;
             }
         }
@@ -684,14 +839,33 @@ const Export = {
 
 // ---------- 9. UI RENDERING & REFRESH ----------
 const UI = {
-    refresh(reason, cursorPos, selLength) {
+    _cachedData: null,
+    
+    refresh(reason, cursorPos, selLength, forceDataReload = false) {
+        // Daten nur neu laden, wenn nötig          
+        if (State.dataChanged) {
+            forceDataReload = true;
+            State.dataChanged = false;
+        }
+                
+        let data;
+        if (forceDataReload || reason === "text_change" || reason === "tag_added" || 
+            reason === "tag_removed" || reason === "review_deleted" || reason === "batch_complete" ||
+            reason === "filter_change" || reason === "filter_reset" || reason === "filter_quickchange" || 
+            reason === "clear_selection" || reason === "selection_toggled") {
+            data = Data.getAllReviews();
+            this._cachedData = data;
+        } else {
+            data = this._cachedData;
+            if (!data) {
+                data = Data.getAllReviews();
+                this._cachedData = data;
+            }
+        }
         if (reason !== "start_editing" && reason !== "cancel_editing" && State.editingReviewId !== -1) {
             EditMode.flushBuffer();
-        }
-        
+        }      
         if (!WindowManager.window) return;
-        
-        this.checkAndResetFilter();
         
         if (cursorPos === undefined) {
             try {
@@ -704,6 +878,15 @@ const UI = {
             }
         }
         
+        if (reason === "text_change" && cursorPos === 0) {
+            forceDataReload = true;
+            cursorPos = State.lastCursorPosition;
+        }
+
+        State.hasSelection = selLength > 0;
+        State.selectionLocation = cursorPos;
+        State.selectionLength = selLength;
+
         const cursorChanged = Math.abs(cursorPos - State.lastCursorPosition) > 10;
         const selectionChanged = selLength !== State.lastSelectionLength;
         
@@ -714,22 +897,36 @@ const UI = {
             if (selLength === 0) State.selectedReviews.clear();
         }
         
-        const data = Data.getAllReviews();
-        
+        if (reason !== "review_moved") {
+            State.cursorIsReview = false;
+            State.cursorIsReviewId = -1;
+        }
+
         if (selLength > 0) {
             const selectionStart = cursorPos;
             const selectionEnd = cursorPos + selLength;
+            const reviewsInSelection = [];
+
             for (const review of data.reviews) {
                 if (review.location >= 0 && review.length > 0) {
                     const reviewStart = review.location;
                     const reviewEnd = review.location + review.length;
-                    if (selectionEnd >= reviewStart && selectionStart <= reviewEnd) {
+                    if (selectionEnd > reviewStart && selectionStart < reviewEnd) { 
                         State.selectedReviews.add(review.id);
+                        reviewsInSelection.push(review.id);
                     }
                 }
             }
+
+            if (reviewsInSelection.length === 1) {
+                State.cursorIsReview = true;
+                State.cursorIsReviewId = reviewsInSelection[0];
+            } else if (reviewsInSelection.length > 1) {
+                State.cursorIsReview = true;
+                State.cursorIsReviewId = -1;
+            }
         }
-        
+
         let cursorReviewId = -1;
         let lastReviewBeforeCursor = -1;
         for (const review of data.reviews) {
@@ -743,16 +940,68 @@ const UI = {
                 }
             }
         }
+    
+        if (cursorReviewId === -1 && !State.windowHasFocus) {
+            State.selectedReviewId = -1;
+        }
         
         if (State.selectedReviewId !== -1) {
             const isVisible = data.filtered.some(r => r.id === State.selectedReviewId);
             if (!isVisible) State.selectedReviewId = -1;
         }
-        
+
         let highlightId;
-        if (State.windowHasFocus) {
+        
+        // Highlight-Logik basierend auf reason
+        if (reason === "filter_quickchange") {
             highlightId = State.selectedReviewId;
-        } else {
+            if (highlightId === -1 && cursorReviewId !== -1) {
+                highlightId = cursorReviewId;
+            }
+        } 
+        else if (reason === "filter_change") {
+            if (data.filtered.length > 0) {
+                highlightId = data.filtered[0].id;
+                State.selectedReviewId = highlightId;
+            } else {
+                highlightId = -1;
+                State.selectedReviewId = -1;
+            }
+        }
+        else if (reason === "filter_reset") {
+            // Bestehende Auswahl beibehalten, nicht ändern
+            if (State.selectedReviewId !== -1) {
+                const isVisible = data.filtered.some(r => r.id === State.selectedReviewId);
+                if (isVisible) {
+                    highlightId = State.selectedReviewId;
+                } else {
+                    highlightId = data.filtered.length > 0 ? data.filtered[0].id : -1;
+                    State.selectedReviewId = highlightId;
+                }
+            } else {
+                highlightId = State.currentHighlightId;  // Vorheriges highlight beibehalten
+                if (highlightId !== -1) {
+                    const isVisible = data.filtered.some(r => r.id === highlightId);
+                    if (!isVisible) {
+                        highlightId = data.filtered.length > 0 ? data.filtered[0].id : -1;
+                        State.selectedReviewId = highlightId;
+                    }
+                }
+            }
+        }
+        else if (reason === "expand_and_select" || reason === "expand_all_toggle") {
+            if (State.selectedReviewId !== -1) {
+                highlightId = State.selectedReviewId;
+            } else if (cursorReviewId !== -1) {
+                highlightId = cursorReviewId;
+            } else {
+                highlightId = -1;
+            }
+        } 
+        else if (State.windowHasFocus) {
+            highlightId = State.selectedReviewId;
+        } 
+        else {
             if (State.followCursor) {
                 highlightId = cursorReviewId;
             } else {
@@ -760,64 +1009,71 @@ const UI = {
             }
         }
         
-        if (reason === "filter_change" && State.followCursor) {
-            if (cursorReviewId !== -1) {
-                const isVisible = data.filtered.some(r => r.id === cursorReviewId);
-                if (isVisible) {
-                    State.selectedReviewId = cursorReviewId;
-                    highlightId = cursorReviewId;
-                } else {
-                    State.selectedReviewId = -1;
-                    highlightId = -1;
-                }
-            } else {
-                State.selectedReviewId = -1;
-                highlightId = -1;
-            }
-        }
+        
+        State.currentHighlightId = highlightId;
         
         if (!State.windowHasFocus && highlightId !== -1) {
             State.expandedReviews.add(highlightId);
         }
-        
+
         let targetScrollReviewId = -1;
-        
+        let scrollMode = 0; // 0=smooth near 1=smooth top 2=instant top
+        let forceFollowDocument = false; // Folge dem Hauoptdokument, bei FilterReset oder beim Initialisieren
+
+        // Scroll-Logik basierend auf reason
         if (reason === "filter_change") {
-            if (State.followCursor) {
-                if (cursorReviewId !== -1) {
-                    const isVisible = data.filtered.some(r => r.id === cursorReviewId);
-                    if (isVisible) {
-                        targetScrollReviewId = cursorReviewId;
-                    } else {
-                        for (const review of data.filtered) {
-                            if (review.location >= 0 && review.length > 0) {
-                                const reviewEnd = review.location + review.length;
-                                if (reviewEnd < cursorPos) {
-                                    targetScrollReviewId = review.id;
-                                } else break;
-                            }
-                        }
-                    }
-                }
-                if (targetScrollReviewId === -1 && lastReviewBeforeCursor !== -1) {
-                    const isVisible = data.filtered.some(r => r.id === lastReviewBeforeCursor);
-                    if (isVisible) targetScrollReviewId = lastReviewBeforeCursor;
-                }
+            scrollMode = 2;        
+            if (data.filtered.length > 0) {
+                targetScrollReviewId = data.filtered[0].id;
+            }
+        }
+        else if (reason === "filter_reset") {
+            scrollMode = 2;
+            if (highlightId !== -1) {
+                targetScrollReviewId = highlightId;
             } else {
-                if (State.selectedReviewId !== -1) {
-                    const isVisible = data.filtered.some(r => r.id === State.selectedReviewId);
-                    if (isVisible) {
-                        targetScrollReviewId = State.selectedReviewId;
-                    } else {
-                        State.selectedReviewId = -1;
-                        if (data.filtered.length > 0) targetScrollReviewId = data.filtered[0].id;
-                    }
-                } else if (data.filtered.length > 0) {
-                    targetScrollReviewId = data.filtered[0].id;
+                if (State.followCursor) {
+                    forceFollowDocument = true;
+                } else{
+                    targetScrollReviewId = 0;
                 }
             }
         }
-        else if (!State.windowHasFocus && State.followCursor) {
+        else if (reason === "filter_quickchange") {
+            if (highlightId !== -1) {
+                targetScrollReviewId = highlightId;
+                scrollMode = 2;                
+            }
+        }
+        else if (reason === "expand_and_select") {
+            targetScrollReviewId = -1;
+        }
+        else if (reason === "expand_all_toggle") {
+            if (highlightId !== -1) {
+                targetScrollReviewId = highlightId;
+                scrollMode = 1;
+            } else {
+                forceFollowDocument = true;
+            }     
+        }
+        else if (reason === "review_moved") {
+            targetScrollReviewId = State.selectedReviewId;
+            scrollMode = 1;
+        }
+        else if (reason === "cursor_move" && State.followCursor && !State.windowHasFocus) {
+            scrollMode = 1;  // Auch hier prominent oben
+            if (cursorReviewId !== -1) {
+                targetScrollReviewId = cursorReviewId;
+             } else if (lastReviewBeforeCursor !== -1) {
+                // Cursor ist zwischen Reviews → letztes Review vor Cursor nehmen
+                targetScrollReviewId = lastReviewBeforeCursor;
+            }    
+        }
+        else if (reason === "initial_start") {
+           forceFollowDocument = true;
+           scrollMode = 2;
+        }
+        if ((!State.windowHasFocus && State.followCursor) || forceFollowDocument) {
             const visibleReviews = data.filtered;
             if (visibleReviews.length > 0) {
                 if (cursorReviewId !== -1) {
@@ -830,6 +1086,7 @@ const UI = {
                                 const reviewEnd = review.location + review.length;
                                 if (reviewEnd < cursorPos) {
                                     targetScrollReviewId = review.id;
+                                    scrollMode = 1;  // NEU                                    
                                 } else break;
                             }
                         }
@@ -840,6 +1097,7 @@ const UI = {
                             const reviewEnd = review.location + review.length;
                             if (reviewEnd < cursorPos) {
                                 targetScrollReviewId = review.id;
+                                scrollMode = 1;  // NEU  
                             } else break;
                         }
                     }
@@ -849,13 +1107,25 @@ const UI = {
                 }
             }
         }
-        
-        const html = this.buildHTML(data, targetScrollReviewId, highlightId);
-        WindowManager.runJS('try { sessionStorage.setItem("reviewManagerScrollPos", document.querySelector(".reviews").scrollTop); } catch(e){}');
+
+        if (WindowManager.window) {
+            WindowManager.runJS(`
+                try {
+                    var container = document.querySelector('.reviews');
+                    if (container) {
+                        sessionStorage.setItem('reviewManagerScrollPos', container.scrollTop);
+                    }
+                } catch(e) {}
+            `);
+        }
+    //    Logger.log("reason "+ reason + " scrollMode " + scrollMode + " targetId " + targetScrollReviewId);
+        const html = this.buildHTML(data, targetScrollReviewId, highlightId, scrollMode);
         WindowManager.setHTML(html);
         
         this.updateBatchUI();
     },
+    
+    
     
     updateBatchUI() {
         if (!WindowManager.window) return;
@@ -870,6 +1140,7 @@ const UI = {
                     var displaySpan = document.createElement('span');
                     displaySpan.className = 'tag-add-btn';
                     displaySpan.textContent = 'Tag for batch-operation';
+                    displaySpan.style.Color = '#6c757d';
                     displaySpan.style.backgroundColor = '#6c757d';
                     displaySpan.style.cursor = 'pointer';
                     displaySpan.onclick = function() {
@@ -925,70 +1196,13 @@ const UI = {
         
         if (!tagExists) {
             State.currentFilterTag = "";
-            WindowManager.runJS('document.getElementById("tagSelect")?.remove();');
+            this._cachedData = null;
+        //    UI.refresh("filter_reset", undefined, undefined, true);
         }
     },
     
-    initializeWithCurrentPosition() {
-        try {
-            const range = Beat.selectedRange();
-            State.lastCursorPosition = range.location;
-            State.lastSelectionLength = range.length;
-            const data = Data.getAllReviews();
-            
-            if (State.lastSelectionLength > 0) {
-                const selectionStart = State.lastCursorPosition;
-                const selectionEnd = State.lastCursorPosition + State.lastSelectionLength;
-                for (const review of data.reviews) {
-                    if (review.location >= 0 && review.length > 0) {
-                        const reviewStart = review.location;
-                        const reviewEnd = review.location + review.length;
-                        if (selectionEnd >= reviewStart && selectionStart <= reviewEnd) {
-                            State.selectedReviews.add(review.id);
-                        }
-                    }
-                }
-            }
-            
-            let cursorReviewId = -1;
-            for (const review of data.reviews) {
-                if (review.location >= 0 && review.length > 0) {
-                    const reviewEnd = review.location + review.length;
-                    if (State.lastCursorPosition >= review.location && State.lastCursorPosition <= reviewEnd) {
-                        cursorReviewId = review.id;
-                        break;
-                    }
-                }
-            }
-            
-            let highlightId = State.windowHasFocus ? State.selectedReviewId : cursorReviewId;
-            let targetScrollReviewId = -1;
-            
-            if (!State.windowHasFocus && State.followCursor) {
-                if (cursorReviewId !== -1) {
-                    targetScrollReviewId = cursorReviewId;
-                } else {
-                    let lastReviewId = -1;
-                    for (const review of data.reviews) {
-                        if (review.location >= 0 && review.length > 0) {
-                            const reviewEnd = review.location + review.length;
-                            if (reviewEnd < State.lastCursorPosition) {
-                                lastReviewId = review.id;
-                            } else break;
-                        }
-                    }
-                    if (lastReviewId !== -1) targetScrollReviewId = lastReviewId;
-                }
-            }
-            
-            const html = this.buildHTML(data, targetScrollReviewId, highlightId);
-            if (WindowManager.window) WindowManager.setHTML(html);
-        } catch(e) {
-            Logger.error("Fehler bei Initialisierung", e);
-        }
-    },
     
-    buildHTML(data, targetScrollReviewId = -1, highlightId = -1) {
+    buildHTML(data, targetScrollReviewId = -1, highlightId = -1, scrollMode = 0) {
         const escapeHtml = (str) => {
             if (!str) return '';
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -1000,7 +1214,6 @@ const UI = {
         const hasCurrentTag = State.currentTag && State.currentTag.length > 0;
         const selectedForUi = Array.from(State.selectedReviews);
         const allTags = Data.getAllTags();
-        
         const htmlEditingReviewId = State.editingReviewId;
         
         return `<!DOCTYPE html>
@@ -1041,45 +1254,106 @@ const UI = {
         }
         .main-content { 
             flex: 1; 
-            min-width: 350px;  /* Mindestbreite für Hauptbereich */
+            min-width: 350px;
             display: flex; 
             flex-direction: column; 
-            overflow: hidden; 
+            overflow: hidden;
+            height: 100%;
+        }
+        .header { 
+            background: white; 
+            padding: 6px 6px; 
+            border: 1px solid #dee2e6; 
+            border-radius: 6px; 
+            margin-bottom: px; 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center; 
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            gap: 0px;
+            align-items: center;
+        }
+        .header-right {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .window-size-btn {
+            background: none;
+            cursor: pointer;
+            color: #adb5bd;
+            transition: all 0.2s ease;
+            margin-top: 4px;
+        }
+        .window-size-btn:hover {
+            color: #F8BA00;
+        }        
+        .stats { 
+            display: flex; 
+            gap: 8px; 
+            justify-content: center;
+            color: #495057; 
+            font-size: 11px; 
+            white-space: nowrap;
+        }
+
+        .status-bar {
+            padding: 2px 2px;
+            margin-top: 4px;
+            flex-shrink: 0;
         }
         .input-group { display: flex; flex-direction: column; gap: 4px; }
         .input-group label { font-size: 11px; font-weight: 600; color: #495057; margin-bottom: 4px; display: block; }
         input[type=checkbox], input[type=radio] { accent-color: #FFF69F; }
         input, textarea, [contenteditable="true"] { caret-color: #909090; }
-        .filter-section { margin-bottom: 8px; }
-        .filter-tag-container { display: flex; align-items: center; gap: 4px; background: #FFD34F; padding: 6px 8px; border-radius: 16px; font-size: 11px; width: 100%; cursor: pointer; }
-        .filter-tag { display: flex; align-items: center; gap: 4px; flex: 1; }
-        .filter-tag-remove { font-weight: bold; opacity: 0.6; padding: 0 4px; cursor: pointer; font-size: 12px; }
-        .filter-tag-remove:hover { opacity: 1; color: #dc3545; }
-        .filter-select-btn { background: #6c757d; color: white; border: none; border-radius: 16px; padding: 6px 8px; font-size: 11px; cursor: pointer; width: 100%; text-align: left; }
-        .filter-select-btn:hover { background: #5a6268; }
-        .invert-checkbox { margin-top: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #495057; }
-        .invert-checkbox.disabled { opacity: 0.5; color: #999; }
-        .invert-checkbox label { cursor: pointer; }
+
+        #showFilterSelectorHeaderBtn {
+            transition: background 0.2s ease;
+        }
+        #showFilterSelectorHeaderBtn:hover {
+            background: #F8BA00 !important;
+        }  
+        #filterInvertIcon svg {
+            transition: transform 0.3s ease;
+        }          
+        .filter-invert-icon:hover,
+        .filter-tag-remove:hover {
+            opacity: 1 !important;
+        }        
         .selection-section { margin-top: 8px; }
         .selection-row { display: flex; gap: 6px; margin-bottom: 6px; }
         .selection-row button { flex: 1; padding: 6px 8px; font-size: 11px; background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; color: #495057; cursor: pointer; }
         .selection-row button:hover { background: #e9ecef; }
         .batch-section { background: #f8f9fa; border: 1px solid #6c757d; border-radius: 6px; padding: 12px; display: ${hasSelection ? 'block' : 'none'}; }
         .batch-header { font-weight: 600; margin-bottom: 10px; font-size: 11px; display: flex; align-items: center; gap: 6px; }
-        .batch-header span { background: #6c757d; color: white; padding: 2px 6px; border-radius: 10px; }
+        .batch-header span { background: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; }
         .batch-tag-input { margin-bottom: 10px; }
+        #batchTagContainer .tag-add-btn {
+            color: white !important;
+            background-color: #6c757d !important; 
+        }
         .batch-controls { display: flex; gap: 6px; margin-bottom: 6px; }
         .batch-controls button { flex: 1; padding: 6px; font-size: 11px; background: white; border: 1px solid #6c757d; border-radius: 4px; cursor: pointer; }
         .batch-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .header { background: white; padding: 6px 12px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .stats { display: flex; gap: 16px; color: #495057; font-size: 11px; }
         .stat-item { display: flex; gap: 4px; }
         .stat-label { font-weight: 600; color: #6c757d; }
+        .stat-value {font-weight: 700; color: #6c757d; margin-left: 3px;}        
         .follow-control { display: flex; align-items: center; margin-left: auto; }
-        .follow-control .link-button { background: none; border: none; cursor: pointer; padding: 0; width: 35px; height: 15px; background-color: #adb5bd; color: #f8f9fa; font-size: 12px; font-weight: bold; line-height: 15px; text-align: center; }
-        .follow-control .link-button.active { background-color: #FFD34F; }
-        .reviews-container { flex: 1; overflow: hidden; }
+        .follow-control .link-button { background: none; border: none; cursor: pointer; padding: 0; margin-top: 1px; border-radius: 4px; width: 35px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 12px; font-weight: bold; line-height: 15px; text-align: center; }
+        .follow-control .link-button.active { background-color: #F8BA00; }     
+        .reviews-container { 
+            flex: 1; 
+            overflow: hidden; 
+            min-height: 0;
+        }
         .reviews { height: 100%; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; }
+        .reviews {
+            scroll-padding-top: 10px;
+            scroll-padding-bottom: 10px;
+        }
         .review-text { word-break: break-word; white-space: pre-wrap; max-height: 4.5em; overflow: hidden; line-height: 1.5em; margin: 4px 0; outline: none; }
         .review-text.expanded { max-height: none; }
         .review-text.editing { max-height: none; cursor: text; }
@@ -1091,33 +1365,34 @@ const UI = {
         .review-content.highlight { background-color: #FFF69F !important; }
         .expand-indicator { position: absolute; bottom: 8px; right: 3px; font-size: 25px; color: #adb5bd; pointer-events: none; line-height: 1; }
         .expand-control { display: flex; align-items: center; margin-right: 4px; }
-        .expand-control .expand-button { background: none; border: none; cursor: pointer; padding: 0; width: 16px; height: 15px; background-color: #adb5bd; color: #f8f9fa; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
-        .expand-control .expand-button.active { background-color: #FFD34F; }
-        .expand-control .expand-button span { display: inline-block; line-height: 1; margin-top: -3px; }
+        .expand-control .expand-button {border: none; cursor: pointer; padding: 0; border-radius: 4px; width: 15px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
+        .expand-control .expand-button.active { background-color: #F8BA00; }
+        .expand-control .expand-button span { display: inline-block; line-height: 1; margin-top: -1px; }
         .review-check { width: 30px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-right: 1px solid #dee2e6; }
         .review-check input { margin: 0; cursor: pointer; }
         .review-delete { width: 40px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-left: 1px solid #dee2e6; }     
         .tags-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
-        .tag { display: inline-flex; align-items: center; background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 12px; font-size: 10px; cursor: pointer; }
-        .tag-remove { margin-left: 4px; font-weight: bold; opacity: 0.6; padding: 0 2px; cursor: pointer; }
-        .tag-remove:hover { opacity: 1; color: #dc3545; }
-        .tag-add-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 18px; background: #6c757d; color: white; border-radius: 12px; font-size: 10px; cursor: pointer; border: none; padding: 0 6px; }
-        .tag-add-btn:hover { background: #5a6268; }
-        .tag-input-container { display: inline-flex; align-items: center; background: white; border: 1px solid #6c757d; border-radius: 12px; padding: 0 4px; width: 120px; }
+        .tag { display: inline-flex; align-items: center; height: 16px; background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .tag:hover { background: #adb5bd; color: #ffffff;}
+        .tag-remove { margin-left: 4px; font-weight: bold; font-size: 12px; opacity: 0.6; padding: 0 2px; cursor: pointer; }
+        .tag-remove:hover { opacity: 1; color: #dc3545}
+        .tag-add-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 16px; background: #e9ecef; color: #495057; border-radius: 4px; font-size: 10px; cursor: pointer; border: none; padding: 0 6px; }
+        .tag-add-btn:hover { background: #adb5bd; color: #ffffff;}
+        .tag-input-container { display: inline-flex; align-items: center; background: white; border: 1px solid #6c757d; border-radius: 4px; padding: 0 4px; width: 120px; }
         .tag-input-field { width: 100%; border: none; outline: none; font-size: 10px; padding: 4px 0; background: transparent; }
-.tag-suggestions {
-    position: fixed;  /* oder fixed */
-    background: white;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 10000;  /* Sehr hoher z-index, damit Liste immer oben liegt */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-        .tag-suggestion-item { padding: 6px 8px; font-size: 11px; cursor: pointer; }
+        .tag-suggestions {
+            position: fixed;  /* oder fixed */
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 10000;  /* Sehr hoher z-index, damit Liste immer oben liegt */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+                .tag-suggestion-item { padding: 6px 8px; font-size: 11px; cursor: pointer; }
         .tag-suggestion-item:hover { background: #e9ecef; }
-        .tag-suggestion-item.selected { background: #FFD34F; }
+        .tag-suggestion-item.selected { background: #F8BA00; }
         .review-header {
             margin: 0 0 4px 0;
             display: flex;
@@ -1126,24 +1401,45 @@ const UI = {
             width: 100%;
         }
         .review-id { font-weight: 600; color: #495057; }
-        .review-edit-icon {
-            width: 20px;
-            height: 20px;
-            color: #adb5bd;
-            cursor: pointer;
-            display: flex;
+
+        .review-move-icon,
+        .review-edit-icon,
+        .review-copy-icon {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            transition: color 0.2s;
-            margin-left: auto;
-            margin-right: -8px;
+            width: 16px;
+            height: 16px;
+            color: #adb5bd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            text-decoration: none;
         }
+
+        .review-move-icon:hover,
+        .review-edit-icon:hover,
+        .review-copy-icon:hover {
+            color: #6c757d;
+        }
+
+        .review-move-icon.active {
+            color: #F8BA00;
+        }
+        .review-edit-icon.undo {
+            color: #adb5bd;
+        }
+        .review-edit-icon.undo:hover {
+            color: #6c757d;
+        }
+        .review-move-icon svg,
+        .review-edit-icon svg,
+        .review-copy-icon svg {
+            pointer-events: none;  /* SVG ignoriert Klicks, diese gehen an das span */
+        }
+
         .review-delete-icon {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             color: #adb5bd;
             cursor: pointer;
             background: transparent;
@@ -1155,42 +1451,18 @@ const UI = {
             font-size: 18px;
             line-height: 1;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin-left: 6px;
         }
         .review-delete-icon:hover {
             color: #FF757d;
         }
-        .review-edit-icon.undo {
-            color: #adb5bd;
-        }
-        .review-edit-icon.undo::before {
-            content: "↺";
-            font-size: 14px;
-        }
-        .review-edit-icon:hover {
-            color: #6c757d;
-        }
-        .review-copy-icon {
-            width: 20px;
-            height: 20px;
-            color: #adb5bd;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            transition: color 0.2s;
-            margin-bottom: 8px;
-        }
-        .review-copy-icon:hover {
-            color: #6c757d;
-        }
+
         .keyboard-hint { font-size: 10px; color: #adb5bd; margin-top: 4px; text-align: center; }
     </style>
 <script>
 var targetScrollId = ${targetScrollReviewId};
 var initialHighlightId = ${highlightId};
+var scrollMode = ${scrollMode};
 var initialSelectedIds = ${JSON.stringify(selectedForUi)};
 var followCursor = ${State.followCursor};
 var currentTagValue = "${escapeHtml(State.currentTag || '')}";
@@ -1211,6 +1483,72 @@ function resetProgress() {
     if (bar) {
         bar.style.width = '0%';
     }
+}
+
+function scrollReviewIntoView(reviewId) {
+    const reviewElement = document.querySelector('.review-item[data-id="' + reviewId + '"]');
+    if (!reviewElement) return false;
+    
+    // Prüfen ob sichtbar
+    const container = document.querySelector('.reviews');
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = reviewElement.getBoundingClientRect();
+    
+    const isVisible = elementRect.top >= containerRect.top && 
+                      elementRect.bottom <= containerRect.bottom;
+    
+    if (!isVisible) {
+        reviewElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return true;
+    }
+    return false;
+}
+
+function selectReview(reviewId) {
+    // Altes Highlight entfernen
+    const oldHighlights = document.querySelectorAll('.review-content.highlight');
+    for (let i = 0; i < oldHighlights.length; i++) {
+        oldHighlights[i].classList.remove('highlight');
+    }
+    
+    // Neues Highlight setzen
+    const newHighlight = document.querySelector('.review-item[data-id="' + reviewId + '"] .review-content');
+    if (newHighlight) {
+        newHighlight.classList.add('highlight');
+        
+        // Nur scrollen, wenn nicht vollständig sichtbar (aber dann weich)
+        const reviewElement = document.querySelector('.review-item[data-id="' + reviewId + '"]');
+        const container = document.querySelector('.reviews');
+        
+        if (reviewElement && container) {
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = reviewElement.getBoundingClientRect();
+            
+            const isFullyVisible = elementRect.top >= containerRect.top && 
+                                   elementRect.bottom <= containerRect.bottom;
+            
+            if (!isFullyVisible) {
+                // 'nearest' scrollt nur minimal, was nötig ist
+                reviewElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+        
+        Beat.call('Beat.custom.updateSelectedReviewId(' + reviewId + ')');
+        Beat.call('Beat.custom.jumpToReview(' + reviewId + ')');
+    }
+}
+
+function getCurrentSelectedReviewId() {
+    const highlighted = document.querySelector('.review-content.highlight');
+    if (highlighted) {
+        return parseInt(highlighted.closest('.review-item').dataset.id);
+    }
+    return -1;
+}
+
+function getVisibleReviewIds() {
+    const items = document.querySelectorAll('.review-item');
+    return Array.from(items).map(item => parseInt(item.dataset.id));
 }
 
 function showConfirmDialog(message, deleteId, type) {
@@ -1260,7 +1598,17 @@ function showTagInput(reviewId, button) {
             suggestionsDiv.className = 'tag-suggestions';
             suggestionsDiv.style.position = 'fixed';
             var rect = input.getBoundingClientRect();
-            suggestionsDiv.style.top = (rect.bottom) + 'px';
+            var spaceBelow = window.innerHeight - rect.bottom;
+            var spaceAbove = rect.top;
+            var suggestionHeight = 250; // Fester Wert, passend zum CSS
+
+            if (spaceBelow < suggestionHeight && spaceAbove > spaceBelow) {
+                suggestionsDiv.style.bottom = (window.innerHeight - rect.top) + 'px';
+                suggestionsDiv.style.top = 'auto';
+            } else {
+                suggestionsDiv.style.top = rect.bottom + 'px';
+                suggestionsDiv.style.bottom = 'auto';
+            }
             suggestionsDiv.style.left = rect.left + 'px';
             document.body.appendChild(suggestionsDiv);
             
@@ -1323,20 +1671,22 @@ function showTagInput(reviewId, button) {
             if (input.value.trim() !== '') {
                 confirmTag(reviewId, input.value);
             } else {
-                // Leeres Feld: Zurück zum +-Button ohne zu speichern
-                var newButton = document.createElement('span');
-                newButton.className = 'tag-add-btn';
-                newButton.textContent = '+';
-                newButton.onclick = function(ev) {
-                    ev.stopPropagation();
-                    showTagInput(reviewId, this);
-                };
-                
-                if (inputContainer && inputContainer.parentNode) {
-                    inputContainer.replaceWith(newButton);
-                }
-                
-                if (suggestionsDiv) suggestionsDiv.remove();
+                setTimeout(function() {
+                    // Leeres Feld: Zurück zum +-Button ohne zu speichern
+                    var newButton = document.createElement('span');
+                    newButton.className = 'tag-add-btn';
+                    newButton.textContent = '+';
+                    newButton.onclick = function(ev) {
+                        ev.stopPropagation();
+                        showTagInput(reviewId, this);
+                    };
+
+                    if (inputContainer && inputContainer.parentNode) {
+                        inputContainer.replaceWith(newButton);
+                    }
+
+                    if (suggestionsDiv) suggestionsDiv.remove();
+                }, 0); // 0ms reicht!
             }
             
             // Event-Listener entfernen
@@ -1353,6 +1703,7 @@ function showTagInput(reviewId, button) {
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
+            e.stopPropagation();
             
             if (suggestionsDiv && selectedSuggestionIndex >= 0) {
                 var selectedItem = suggestionsDiv.children[selectedSuggestionIndex];
@@ -1559,7 +1910,8 @@ function showBatchTagInput(container) {
 
 function showFilterSelector(button) {
     if (!button || !button.parentNode) {
-        button = document.getElementById('showFilterSelectorBtn') || document.getElementById('activeFilterTag');
+        button = document.getElementById('showFilterSelectorHeaderBtn') || 
+                 document.getElementById('showFilterSelectorBtn');
         if (!button) return;
     }
     var parentDiv = button.parentNode;
@@ -1615,14 +1967,18 @@ function showFilterSelector(button) {
         } else if (e.key === 'Escape') {
             e.preventDefault();
             suggestionsDiv?.remove();
+            // HIER: Statt alten Button, den neuen eckigen Button wiederherstellen
             if (inputContainer && inputContainer.parentNode) {
                 if (currentFilterTag && currentFilterTag !== "") {
                     Beat.call('Beat.custom.filterReviewsUI("' + currentFilterTag + '")');
                 } else {
+                    // Neuen eckigen Button erstellen
                     var newButton = document.createElement('button');
-                    newButton.id = 'showFilterSelectorBtn';
+                    newButton.id = 'showFilterSelectorHeaderBtn';  // ← NEUE ID
                     newButton.className = 'filter-select-btn';
-                    newButton.textContent = 'Select filter tag...';
+                    newButton.textContent = 'Set filter tag';       // ← NEUER TEXT
+                    newButton.title = 'Set filter tag [Cmd-F]';      
+                    newButton.style.cssText = 'background: #adb5bd; border: none; border-radius: 4px; padding: 0 10px; margin-top: 1px; font-size: 12px; cursor: pointer; color: #f8f9fa; min-width: 120px; height: 18px;font-weight: bold;';  // ← NEUES STYLING
                     newButton.onclick = function() { showFilterSelector(this); };
                     inputContainer.parentNode.replaceChild(newButton, inputContainer);
                 }
@@ -1653,10 +2009,13 @@ function showFilterSelector(button) {
                 if (currentFilterTag && currentFilterTag !== "") {
                     Beat.call('Beat.custom.filterReviewsUI("' + currentFilterTag + '")');
                 } else {
+                    // Neuen eckigen Button erstellen (GLEICHE ÄNDERUNGEN WIE OBEN)
                     var newButton = document.createElement('button');
-                    newButton.id = 'showFilterSelectorBtn';
+                    newButton.id = 'showFilterSelectorHeaderBtn';  // ← NEUE ID
                     newButton.className = 'filter-select-btn';
-                    newButton.textContent = 'Select filter tag...';
+                    newButton.textContent = 'Set filter tag';       // ← NEUER TEXT
+                    newButton.title = 'Set filter tag [Cmd-F]';    
+                    newButton.style.cssText = 'background: #adb5bd; border: none; border-radius: 4px; padding: 0 10px; margin-top: 1px; font-size: 12px; cursor: pointer; color: #f8f9fa; min-width: 120px; height: 18px;font-weight: bold;';  // ← NEUES STYLING
                     newButton.onclick = function() { showFilterSelector(this); };
                     inputContainer.parentNode.replaceChild(newButton, inputContainer);
                 }
@@ -1676,34 +2035,197 @@ document.addEventListener('input', function(e) {
 
 window.addEventListener('blur', function() {
     Beat.call('Beat.custom.flushEditBuffer()');
+//    Beat.call('Beat.custom.cancelEditingReview()');  // ← Das sollte UI.refresh aufrufe    
     Beat.call('Beat.custom.setWindowFocus(false)');
-    document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
-        el.classList.remove('undo');
-        el.innerHTML = '&#9998;';
-        el.title = 'Edit review';
-    });
-    document.querySelectorAll('.review-text.editing').forEach(el => {
-        el.classList.remove('editing');
-        el.removeAttribute('contenteditable');
-    });
 });
 
 document.addEventListener('keydown', function(e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
-        if (htmlEditingReviewId === -1) {
-            var highlightedReview = document.querySelector('.review-content.highlight');
-            if (highlightedReview) {
-                var id = highlightedReview.closest('.review-item').dataset.id;
-                e.preventDefault();
-                Beat.call('Beat.custom.copyReviewText(' + id + ')');
-                return;
-            }
+    // Wenn Tag-Input offen, nichts tun
+    if (document.querySelector('.tag-input-container') !== null) return;
+
+    // Zum Debuggen Taste in die Zwishenablage.
+    // navigator.clipboard.writeText('Key: ' + e.key + ' | altKey: ' + e.altKey + ' | metaKey: ' + e.metaKey + ' | ctrlKey: ' + e.ctrlKey + ' | shiftKey: ' + e.shiftKey);    
+
+    const dialog = document.getElementById('confirmDialog');
+    if (dialog && dialog.style.display === 'flex') {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            dialog.style.display = 'none';
         }
+        return; // Bei offenem Dialog keine weiteren Aktionen
     }
-    if (htmlEditingReviewId !== -1 && e.key === 'Escape') {
+
+    const isCmd = e.metaKey || e.ctrlKey;
+    const isEditing = htmlEditingReviewId !== -1;
+    const currentId = getCurrentSelectedReviewId();
+    
+    // Escape = Edit abbrechen (nur im Edit-Modus)
+    if (isEditing && e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         Beat.call('Beat.custom.cancelEditingReview()');
+        return;
+    }
+
+    // Cmd/Ctrl + E = Edit beenden und speichern (im Edit-Modus)
+    if (isEditing && isCmd && e.key === 'e') {
+        e.preventDefault();
+        Beat.call('Beat.custom.flushEditBuffer()');
+        return;
+    }
+    
+    // Wenn im Edit-Modus, keine weiteren Aktionen
+    if (isEditing) return;
+
+    // Cmd/Ctrl + Shift + A = Select all (alle sichtbaren Reviews auswählen)
+    if (isCmd && e.shiftKey && e.key === 'a') {
+        e.preventDefault();
+        Beat.call('Beat.custom.toggleAllVisible()');
+        return;
+    }
+
+    // Cmd/Ctrl + Shift + C = Clear selection (alle Auswählungen löschen)
+    if (isCmd && e.shiftKey && e.key === 'c') {
+        e.preventDefault();
+        Beat.call('Beat.custom.clearSelections()');
+        return;
+    }
+
+    // Cmd/Ctrl + Shift + R = Reverse selection (Auswahl umkehren)
+    if (isCmd && e.shiftKey && e.key === 'r') {
+        e.preventDefault();
+        Beat.call('Beat.custom.reverseSelection()');
+        return;
+    }
+
+    // Cmd/Ctrl + Shift + I = Intersect selection (nur sichtbare Reviews behalten)
+    if (isCmd && e.shiftKey && e.key === 'i') {
+        e.preventDefault();
+        Beat.call('Beat.custom.intersectSelection()');
+        return;
+    }
+    
+    // Cmd/Ctrl + F = Filter
+    if (isCmd && e.key === 'f' && !e.shiftKey) {
+        e.preventDefault();
+        // Suche nach dem aktiven Filter-Element im Header
+        const filterButton = document.getElementById('showFilterSelectorHeaderBtn') || 
+                            document.getElementById('activeFilterTagHeader') ||
+                            document.getElementById('showFilterSelectorBtn');
+        if (filterButton) {
+            showFilterSelector(filterButton);
+        }
+        return;
+    }
+    
+    // Alt + F = Invert Filter
+    if (e.altKey && (e.key === 'f' || e.key === 'ƒ')) {
+        e.preventDefault();
+        // Prüfen ob ein Filter aktiv ist
+        if (currentFilterTag && currentFilterTag !== "") {
+            var newInvertState = !invertFilter;
+            Beat.call('Beat.custom.setInvertFilter(' + newInvertState + ')');
+        } else {
+            // Kein Filter aktiv, also nichts zu invertieren
+            Beat.log("No active filter to invert");
+        }
+        return;
+    }
+    
+    // Cmd/Ctrl + Shift + F = Filter aufheben
+    if (isCmd && e.shiftKey && e.key === 'f') {
+        e.preventDefault();
+        Beat.call('Beat.custom.filterReviewsUIReset()');
+        return;
+    }
+    
+    // Nur wenn ein Review ausgewählt ist
+    if (currentId !== -1) {
+    
+       // Pfeil runter
+        if (e.key === 'ArrowDown' && !isCmd && !e.altKey) {
+            e.preventDefault();
+            const visibleIds = getVisibleReviewIds();
+            const currentIndex = visibleIds.indexOf(currentId);
+            if (currentIndex < visibleIds.length - 1) {
+                selectReview(visibleIds[currentIndex + 1]);
+            }
+            return;
+        }
+
+        // Pfeil hoch
+        if (e.key === 'ArrowUp' && !isCmd && !e.altKey) {
+            e.preventDefault();
+            const visibleIds = getVisibleReviewIds();
+            const currentIndex = visibleIds.indexOf(currentId);
+            if (currentIndex > 0) {
+                selectReview(visibleIds[currentIndex - 1]);
+            }
+            return;
+        }
+
+        // Enter = Expand/Collapse
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            Beat.call('Beat.custom.toggleExpandReview(' + currentId + ')');
+            return;
+        }    
+        
+        // Cmd/Ctrl + Delete = Review löschen
+        if (isCmd && e.key === 'Backspace') {
+            e.preventDefault();
+            showConfirmDialog('Really delete this review?', currentId, 'single');
+            return;
+        }
+
+        // Cmd/Ctrl + C = Copy
+        if (isCmd && e.key === 'c') {
+            e.preventDefault();
+            Beat.call('Beat.custom.copyReviewText(' + currentId + ')');
+            return;
+        }
+        
+        // Cmd/Ctrl + E = Edit
+        if (isCmd && e.key === 'e') {
+            e.preventDefault();
+            Beat.call('Beat.custom.startEditingReview(' + currentId + ')');
+            return;
+        }
+        
+        // Cmd/Ctrl + A = Add Tag
+        if (isCmd && e.key === 'a') {
+            e.preventDefault();
+            const addBtn = document.querySelector('.review-item[data-id="' + currentId + '"] .tag-add-btn');
+            if (addBtn && addBtn.textContent === '+') {
+                showTagInput(currentId, addBtn);
+            }
+            return;
+        }
+        
+        // Leertaste = Select Toggle
+        if (e.key === ' ' && !isCmd && !e.altKey) {
+            e.preventDefault();
+            const checkbox = document.querySelector('.review-item[data-id="' + currentId + '"] .review-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                Beat.call('Beat.custom.toggleReviewSelection(' + currentId + ')');
+            }
+            return;
+        }
+    }
+    
+});
+
+document.addEventListener('click', function(e) {
+    if (htmlEditingReviewId !== -1) {
+        var isClickInsideEditor = e.target.closest('.review-text.editing');
+        var isClickOnEditIcon = e.target.closest('.review-edit-icon');
+        
+        // Wenn weder im Editor noch auf dem Edit-Icon geklickt wurde
+        if (!isClickInsideEditor && !isClickOnEditIcon) {
+            Beat.call('Beat.custom.flushEditBuffer()');
+//            Beat.call('Beat.custom.cancelEditingReview()');
+        }
     }
 });
 
@@ -1723,16 +2245,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     var container = document.querySelector('.reviews');
+    var savedPos = sessionStorage.getItem('reviewManagerScrollPos');
+    if (savedPos && container) container.scrollTop = parseInt(savedPos);
     if (targetScrollId !== -1) {
-        var target = document.querySelector('.review-item[data-id="' + targetScrollId + '"]');
-        if (target && container) container.scrollTop = Math.max(0, target.offsetTop - 50);
-    } else {
-        try {
-            var savedPos = sessionStorage.getItem('reviewManagerScrollPos');
-            if (savedPos && container) container.scrollTop = parseInt(savedPos);
-        } catch(e) {}
-    }           
-    
+        var el = document.querySelector('.review-item[data-id="' + targetScrollId + '"]');
+        if (el) {
+            if (scrollMode == 2) {
+                if (container) container.scrollTop = Math.max(0, el.offsetTop - 62);              
+            } else if (scrollMode == 1) {
+                setTimeout(function() {
+                    // Follow Cursor: ans obere Ende, weich
+                    el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                }, 50);
+            } else {
+                // Expand/Collapse: nur bei Bedarf (bestehende Logik)
+                if (typeof scrollReviewIntoView === 'function') {
+                    scrollReviewIntoView(targetScrollId);
+                }
+            }
+        }
+    }
     window.addEventListener('focus', function() { Beat.call('Beat.custom.setWindowFocus(true)'); });
     window.addEventListener('blur', function() { 
         Beat.call('Beat.custom.setWindowFocus(false)');
@@ -1746,6 +2278,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('expandAllBtn').onclick = function() {
         Beat.call('Beat.custom.toggleExpandAll()');
     };
+    document.getElementById('narrowBtn').onclick = function() {
+        Beat.call('Beat.custom.setWindowSize(365)');
+    };
+    document.getElementById('wideBtn').onclick = function() {
+        Beat.call('Beat.custom.setWindowSize(572)');
+    };    
     
     document.getElementById('confirmYes').onclick = function() {
         document.getElementById('confirmDialog').style.display = 'none';
@@ -1756,44 +2294,46 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('confirmDialog').style.display = 'none';
     };
     
-    var showFilterBtn = document.getElementById('showFilterSelectorBtn');
-    if (showFilterBtn) {
-        showFilterBtn.addEventListener('click', function(e) {
+    // Filter-Selector im Header
+    var showFilterHeaderBtn = document.getElementById('showFilterSelectorHeaderBtn');
+    if (showFilterHeaderBtn) {
+        showFilterHeaderBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             showFilterSelector(this);
         });
     }
-    
-    var clearFilterBtn = document.getElementById('clearFilterBtn');
-    if (clearFilterBtn) {
-        clearFilterBtn.addEventListener('click', function(e) {
-            window.invertFilter = false;
-            Beat.call('Beat.custom.setInvertFilter(false)');
-            var invertCheckbox = document.getElementById('invertFilterCheckbox');
-            if (invertCheckbox) invertCheckbox.checked = false;
-            Beat.call('Beat.custom.filterReviewsUI("")');
-        });
-    }
 
-    var activeFilterTag = document.getElementById('activeFilterTag');
-    if (activeFilterTag) {
-        activeFilterTag.addEventListener('click', function(e) {
-            if (!e.target.classList.contains('filter-tag-remove')) {
+    // Aktiven Filter im Header anklicken (für Edit)
+    var activeFilterTagHeader = document.getElementById('activeFilterTagHeader');
+    if (activeFilterTagHeader) {
+        activeFilterTagHeader.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('filter-tag-remove') && 
+                !e.target.classList.contains('filter-invert-icon')) {
                 e.stopPropagation();
                 showFilterSelector(this);
             }
         });
     }
 
-    var invertCheckbox = document.getElementById('invertFilterCheckbox');
-    if (invertCheckbox) {
-        invertCheckbox.checked = invertFilter;
-        invertCheckbox.addEventListener('change', function(e) {
-            window.invertFilter = e.target.checked;
-            Beat.call('Beat.custom.setInvertFilter(' + e.target.checked + ')');
-            if (currentFilterTag && currentFilterTag !== "") Beat.call('Beat.custom.filterReviewsUI("' + currentFilterTag + '")');
+    // Invert-Icon im Header
+    var filterInvertIcon = document.getElementById('filterInvertIcon');
+    if (filterInvertIcon) {
+        filterInvertIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var newInvertState = !${State.invertFilter};
+            Beat.call('Beat.custom.setInvertFilter(' + newInvertState + ')');
+            // Keine manuelle Drehung hier – das übernimmt das neu gerenderte HTML
         });
     }
+
+    // Clear Filter Button im Header
+    var clearFilterHeaderBtn = document.getElementById('clearFilterHeaderBtn');
+    if (clearFilterHeaderBtn) {
+        clearFilterHeaderBtn.addEventListener('click', function(e) {
+            Beat.call('Beat.custom.filterReviewsUIReset()');
+        });
+    }    
+
     
     var batchTagContainer = document.getElementById('batchTagContainer');
     if (batchTagContainer) {
@@ -1833,6 +2373,17 @@ document.addEventListener('DOMContentLoaded', function() {
             Beat.call('Beat.custom.startEditingReview(' + id + ')');
             return;
         }
+
+        if (target.classList.contains('review-move-icon')) {
+            var id = parseInt(target.dataset.id);
+            e.preventDefault();
+            e.stopPropagation();
+            if (target.classList.contains('active')) {
+                Beat.call('Beat.custom.moveReview(' + id + ')');
+            }
+            return;
+        }        
+        
         if (target.classList.contains('review-copy-icon') || target.closest('.review-copy-icon')) {
             var id = target.dataset.id || target.closest('.review-copy-icon').dataset.id;
             e.preventDefault();
@@ -1841,8 +2392,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        if (target.classList.contains('review-delete-icon')) {
-            var id = target.dataset.id;
+        if (target.classList.contains('review-delete-icon') || target.closest('.review-delete-icon')) {
+            var icon = target.closest('.review-delete-icon');
+            var id = icon.dataset.id;
             e.preventDefault();
             e.stopPropagation();
             showConfirmDialog('Really delete this review?', id, 'single');
@@ -1854,9 +2406,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (target.classList.contains('review-checkbox')) {
             Beat.call('Beat.custom.toggleReviewSelection(' + target.dataset.id + ')');
             e.stopPropagation();
+            
         } else if (target.classList.contains('tag') && !target.classList.contains('tag-remove')) {
-            Beat.call('Beat.custom.filterReviewsUI("#' + target.dataset.tag + '")');
+            const reviewId = parseInt(target.closest('.review-item').dataset.id);
+            const tagName = target.dataset.tag;
+            Beat.call('Beat.custom.filterReviewsUIQuick("#' + tagName + '", ' + reviewId + ')');
             e.stopPropagation();
+
         } else if (target.classList.contains('tag-remove')) {
             Beat.call('Beat.custom.removeTagFromReview(' + target.dataset.id + ', "' + target.dataset.tag + '")');
             e.stopPropagation();
@@ -1865,8 +2421,19 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         } else if (target.closest('.review-content') && !target.closest('.review-content .review-text.editing')) {
             var id = target.closest('.review-content').dataset.id;
-            Beat.call('Beat.custom.toggleExpandReview(' + id + ')');
+            e.preventDefault();
             e.stopPropagation();
+
+            // Wenn gerade editiert wird, zuerst speichern und beenden
+            if (htmlEditingReviewId !== -1) {
+                Beat.call('Beat.custom.flushEditBuffer()');
+                // Kurze Verzögerung, damit der Save abgeschlossen ist
+                setTimeout(function() {
+                    Beat.call('Beat.custom.toggleExpandReview(' + id + ')');
+                }, 50);
+            } else {
+                Beat.call('Beat.custom.toggleExpandReview(' + id + ')');
+            }
         }
     });
     
@@ -1891,6 +2458,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 indicator.className = 'expand-indicator';
                 indicator.textContent = '▾';
                 reviewContent.appendChild(indicator);
+                reviewContent.title = 'Click to expand [Enter]';
             }
         }
     });
@@ -1906,17 +2474,90 @@ window.showBatchTagInput = showBatchTagInput;
     <div class="container">
         <div class="main-content">
             <div class="header">
-                <div class="stats">
-                    <div class="stat-item"><span class="stat-label">Reviews:</span> ${data.filtered.length}</div>
-                    <div class="stat-item"><span class="stat-label">Tags:</span> ${new Set(data.filtered.flatMap(r => r.tags)).size}</div>
-                    ${hasSelection ? `<div class="stat-item"><span class="stat-label">Selected:</span> ${selectedCount}</div>` : ''}
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div class="expand-control">
-                        <button id="expandAllBtn" class="expand-button ${State.expandAll ? 'active' : ''}" title="Toggle expand/collapse all reviews"><span>▾</span></button>
+                <div class="header-left">
+                    <span id="narrowBtn" class="window-size-btn" title="Narrow window">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="1" width="14" height="22" rx="2" ry="2"/>  
+                        </svg>  
+                    </span>
+                    <span id="wideBtn" class="window-size-btn" title="Wide window">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="1" width="18" height="22" rx="2" ry="2"/>  
+                        <rect x="3" y="1" width="11" height="22" rx="2" ry="2" fill="currentColor"/>  
+                        </svg>
+                    </span>
+                    <!-- NEU: Filterbereich -->
+                    <div class="filter-header-section" style="display: flex; align-items: center; gap: 6px; margin-left: 60px;">
+                        ${State.currentFilterTag && State.currentFilterTag !== "" ? 
+                            (() => {
+                                let displayTag = State.currentFilterTag === "without tag" ? '- no tag -' : State.currentFilterTag.replace('#', '');
+                                let fullTag = (State.invertFilter ? 'NOT ' : '') + displayTag;
+
+                                let truncatedTag = fullTag;
+                                if (fullTag.length > 15) {
+                                    truncatedTag = fullTag.substring(0, 12) + '...';
+                                }
+
+                                return `<div class="filter-tag-header" id="activeFilterTagHeader" style="
+                                    display: flex; 
+                                    align-items: center; 
+                                    background: #F8BA00; 
+                                    border-radius: 4px;
+                                    padding: 0 4px; 
+                                    cursor: pointer; 
+                                    width: 120px;
+                                    height: 18px;
+                                    margin-top: 1px;
+                                    position: relative;
+                                ">
+                                    <span style="
+                                        font-size: 12px; 
+                                        font-weight: 500;
+                                        font-weight: bold;
+                                        opacity: 0.7;            
+                                        overflow: hidden; 
+                                        text-overflow: ellipsis; 
+                                        white-space: nowrap;
+                                        max-width: 90px;
+                                    " title="Active filter: ${fullTag} [Cmd-F]">
+                                        ${truncatedTag}
+                                    </span>
+                                    <div style="display: flex; gap: 6px; position: absolute; right: 0px;">
+                                        <span class="filter-invert-icon" id="filterInvertIcon" 
+                                            data-inverted="${State.invertFilter}"  // ← Direkt beim Rendern setzen
+                                            style="cursor: pointer; display: inline-flex; align-items: center; width: 12px; height: 12px; position: absolute; right: 16px; margin-top: 0px; transform: translateY(-50%);opacity: 0.5;transition: opacity 0.2s ease;"
+                                            title="Invert filter [Alt+F]">
+                                            <svg width="12" height="12" viewBox="0 0 0.375 0.375" fill="currentColor" style="transition: transform 0.3s ease; transform: ${State.invertFilter ? 'rotate(180deg)' : 'rotate(0deg)'};">
+                                            <path fill="currentColor" d="M0.188 0C0.084 0 0 0.084 0 0.188s0.084 0.188 0.188 0.188 0.188 -0.084 0.188 -0.188 -0.084 -0.188 -0.188 -0.188m0 0.047c0.078 0 0.141 0.063 0.141 0.141S0.265 0.328 0.188 0.328z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="filter-tag-remove" id="clearFilterHeaderBtn" style="
+                                            cursor: pointer; 
+                                            font-size: 16px; 
+                                            line-height: 1; 
+                                            display: inline-flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            position: absolute;
+                                            right: 2px;   
+                                            margin-top: 0px;
+                                            transform: translateY(-50%);
+                                            opacity: 0.5;          
+                                            transition: opacity 0.2s ease;                
+                                        " title="Clear filter [Cmd-Shift-F]">✕</span>
+                                    </div>
+                                </div>`;
+                            })() :
+                            `<button id="showFilterSelectorHeaderBtn" class="filter-select-btn" style="background: #adb5bd; border: none; border-radius: 4px; padding: 0 10px; margin-top: 1px; font-size: 12px; cursor: pointer; color: #f8f9fa; min-width: 120px; height: 18px;font-weight: bold;" title="Set filter tag [Cmd-F]">Set filter tag</button>`
+                        }
                     </div>
+                </div>
+                <div class="header-right">
                     <div class="follow-control">
                         <button id="followBtn" class="link-button ${State.followCursor ? 'active' : ''}" title="Follow cursor in main document">Link</button>
+                    </div>
+                    <div class="expand-control">
+                        <button id="expandAllBtn" class="expand-button ${State.expandAll ? 'active' : ''}" title="Toggle expand/collapse all reviews"><span>▾</span></button>
                     </div>
                 </div>
             </div>
@@ -1930,21 +2571,50 @@ window.showBatchTagInput = showBatchTagInput;
                         const isEditing = review.id === htmlEditingReviewId;
                         return `<div class="review-item ${review.selected ? 'selected' : ''}" data-id="${review.id}">
                             <div class="review-check">
-                                <input type="checkbox" class="review-checkbox" ${review.selected ? 'checked' : ''} data-id="${review.id}">
+                                <input type="checkbox" class="review-checkbox" ${State.selectedReviews.has(review.id) ? 'checked' : ''} data-id="${review.id}" title="Select/deselect review [Space]">
                             </div>
                             <div class="review-content ${isHighlighted ? 'highlight' : ''}" data-id="${review.id}">
-                                <div class="review-header">
-                                    <span class="review-id">#${review.id + 1}</span>
-                                    <div style="display: flex; gap: 2px; align-items: center;">
-                                        <span class="review-copy-icon" data-id="${review.id}" title="Copy review text (with tags)">⎘</span>
-                                        <span class="review-edit-icon ${isEditing ? 'undo' : ''}" 
-                                              data-id="${review.id}" 
-                                              title="${isEditing ? 'Reset edit (undo changes)' : 'Edit review'}">
-                                          ${isEditing ? '' : '✎'}
-                                        </span>
-                                    </div>
+                            <div class="review-header">
+                                <span class="review-id">#${review.id + 1}</span>
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <span class="review-move-icon ${!State.hasSelection ? '' : (!State.cursorIsReview || State.cursorIsReviewId === review.id) ? 'active' : ''}" 
+                                          data-id="${review.id}" 
+                                          title="${!State.hasSelection ? 'Move review: select text in document first' : (!State.cursorIsReview || State.cursorIsReviewId === review.id) ? 'Move this review' : 'Select text without review markers to move this review'}">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="9" y="2" width="14" height="9" rx="1" ry="1"/>
+                                            <line x1="16" y1="12" x2="16" y2="18" stroke="currentColor"/>
+                                            <line x1="16" y1="18" x2="3" y2="18" stroke="currentColor"/>
+                                            <polygon points="0,18 7,12 7,24" fill="currentColor" stroke="none"/>
+                                            </svg>
+                                    </span>
+
+                                    <!-- Copy Icon (Dokumente) -->
+                                    <span class="review-copy-icon" data-id="${review.id}" title="Copy review text incl. tags [Cmd-C]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="8" y="8" width="14" height="14" rx="2" ry="2"/>
+                                        <path d="M8 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/>
+                                        </svg>
+                                    </span>
+
+                                    <!-- Edit Icon (Bleistift) -->
+                                    <span class="review-edit-icon ${isEditing ? 'undo' : ''}" 
+                                          data-id="${review.id}" 
+                                          title="${isEditing ? 'Reset edit (undo changes)' : 'Edit review [Cmd-E]'}">
+                                        ${isEditing 
+                                            ? '<svg width="16px" height="16px" viewBox="0 0 1024 1024"><path d="M106.666667 384L405.333333 134.4v499.2z" fill="currentColor" /><path d="M597.333333 298.666667H341.333333v170.666666h256c59.733333 0 106.666667 46.933333 106.666667 106.666667s-46.933333 106.666667-106.666667 106.666667h-64v170.666666h64c153.6 0 277.333333-123.733333 277.333334-277.333333s-123.733333-277.333333-277.333334-277.333333z" fill="currentColor" /></svg>' // Undo
+                                            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>' // Bleistift
+                                        }
+                                    </span>
+                                    <span class="review-delete-icon" data-id="${review.id}" title="Delete review [Cmd-Backspace]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="8" y="7" width="8" height="14" rx="1" ry="1"/>
+                                        <rect x="5" y="3" width="14" height="4" rx="1" ry="1"/>  
+                                        <line x1="12" y1="9" x2="12" y2="19"/>
+                                        </svg>
+                                    </span>    
                                 </div>
-                                <div class="review-text ${isExpanded ? 'expanded' : ''} ${isEditing ? 'editing' : ''}" data-id="${review.id}" ${isEditing ? 'contenteditable="true"' : ''}>${escapedTextWithoutTags || '<span style="color:#999;">(empty)</span>'}</div>
+                            </div>
+                            <div class="review-text ${isExpanded ? 'expanded' : ''} ${isEditing ? 'editing' : ''}" data-id="${review.id}" ${isEditing ? 'contenteditable="true"' : ''}>${escapedTextWithoutTags || '<span style="color:#999;">(empty)</span>'}</div>
                                 <div class="tags-container">
                                     ${review.tags.map(tag => {
                                         const cleanTag = tag.replace(/#/g, '');
@@ -1953,46 +2623,45 @@ window.showBatchTagInput = showBatchTagInput;
                                             <span class="tag-remove" data-id="${review.id}" data-tag="${tag}" title="Remove tag">✕</span>
                                         </span>`;
                                     }).join('')}
-                                    <span class="tag-add-btn" data-id="${review.id}" title="Add new tag to this review">+</span>
+                                    <span class="tag-add-btn" data-id="${review.id}" title="Add new tag to this review [Cmd-A]">+</span>
                                 </div>
-                            </div>
-                            <div class="review-delete">
-                                <button class="review-delete-icon" data-id="${review.id}" title="Delete review">⌫</button>
                             </div>
                         </div>`;
                     }).join('')}
                     ${filteredCount === 0 ? '<div style="text-align:center;color:#999;padding:20px;">No reviews found.</div>' : ''}
                 </div>
             </div>
+                <div class="status-bar">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Reviews:</span> 
+                            <span class="stat-value">${data.filtered.length}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Tags:</span> 
+                            <span class="stat-value">${new Set(data.filtered.flatMap(r => r.tags)).size}</span>
+                        </div>
+                        ${hasSelection ? `
+                        <div class="stat-item">
+                            <span class="stat-label">Selected:</span> 
+                            <span class="stat-value">${selectedCount}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
         </div>
         <div class="sidebar">
-            <div class="input-group filter-section">
-                <label>Filter by Tag</label>
-                ${State.currentFilterTag && State.currentFilterTag !== "" ? 
-                    `<div class="filter-tag-container" id="activeFilterTag" style="cursor: pointer;">
-                        <span class="filter-tag">
-                            ${State.invertFilter ? 'NOT ' : ''}${State.currentFilterTag === "without tag" ? '- no tag -' : escapeHtml(State.currentFilterTag.replace('#', ''))}
-                            <span class="filter-tag-remove" id="clearFilterBtn" style="cursor: pointer;">✕</span>
-                        </span>
-                    </div>` :
-                    `<button id="showFilterSelectorBtn" class="filter-select-btn">Select filter tag...</button>`
-                }
-                <div class="invert-checkbox ${!State.currentFilterTag || State.currentFilterTag === "" ? 'disabled' : ''}" id="invertFilterWrapper">
-                    <input type="checkbox" id="invertFilterCheckbox" ${State.invertFilter ? 'checked' : ''} ${!State.currentFilterTag || State.currentFilterTag === "" ? 'disabled' : ''}>
-                    <label for="invertFilterCheckbox">Invert filter</label>
-                </div>
-            </div>
+
             
             <div class="input-group selection-section">
                 <label>Selection</label>
                 <div class="selection-controls">
                     <div class="selection-row">
-                        <button id="toggleAllBtn" title="Select/deselect all visible reviews">All</button>
-                        <button id="reverseBtn" title="Reverse selection of visible reviews">Reverse</button>
+                        <button id="toggleAllBtn" title="Select/deselect all visible reviews [Cmd-Shift-A]">All</button>
+                        <button id="reverseBtn" title="Reverse selection of visible reviews [Cmd-Shift-R]">Reverse</button>
                     </div>
                     <div class="selection-row">
-                        <button id="intersectBtn" title="Keep only visible reviews in selection">Intersect</button>
-                        <button id="clearAllBtn" title="Clear entire selection">Clear</button>
+                        <button id="intersectBtn" title="Keep only visible reviews in selection [Cmd-Shift-I]">Intersect</button>
+                        <button id="clearAllBtn" title="Clear entire selection [Cmd-Shift-C]">Clear</button>
                     </div>
                 </div>
             </div>
@@ -2010,7 +2679,7 @@ window.showBatchTagInput = showBatchTagInput;
                     <button id="deleteBatchBtn" title="Delete all selected reviews">Delete</button>
                 </div>
             </div>
-            <div id="batchProgress" style="width:0% ; height:4px; background:#FFD34F; border-radius:2px;"></div>            
+            <div id="batchProgress" style="width:0% ; height:4px; background:#F8BA00; border-radius:2px;"></div>            
             <div style="margin-top:auto; padding-top: 12px; padding-bottom: 10px;"">
                 <button id="exportCSVBtn" style="width:100%; padding:6px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;" title="Export filtered reviews to CSV in clipboard">
                     Export to Clipboard
@@ -2034,41 +2703,118 @@ window.showBatchTagInput = showBatchTagInput;
 
 // ---------- 10. EVENT HANDLER ----------
 const EventHandler = {
+    _textTimer: null,
+    _textDelay: 1000, // 1 Sekunde
+    
+    _lastSelectionChange: 0,
+    _selectionInterval: 0.1, // 100ms in Sekunden
+    
     onTextChange(loc, len) {
         if (State.suppressTextChange) return;
-        UI.refresh("text_change", loc, len);
+
+        if (this._textTimer) {
+            this._textTimer.invalidate();
+            this._textTimer = null;
+        }
+
+        this._textTimer = Beat.timer(1.0, () => {
+            UI.refresh("text_change", loc, len, true);
+            this._textTimer = null;
+        }, false);
     },
-    
-    onSelectionChange(loc, len) {
-        UI.refresh("cursor_move", loc, len);
+
+onSelectionChange(loc, len) {
+    if (State.suppressSelectionChange) return;
+    if (State.windowHasFocus) return;
+
+    const now = Date.now();
+    if (now - this._lastSelectionChange >= this._selectionInterval) {
+        this._lastSelectionChange = now;
+        
+        if (len === 0) {
+            State.selectedReviews.clear();
+            State.selectedReviewId = -1;
+        } else {
+            const data = UI._cachedData;
+            if (data) {
+                const selectionStart = loc;
+                const selectionEnd = loc + len;
+                
+                for (const review of data.reviews) {
+                    if (review.location >= 0 && review.length > 0) {
+                        const reviewStart = review.location;
+                        const reviewEnd = review.location + review.length;
+                        if (selectionEnd > reviewStart && selectionStart < reviewEnd) {
+                            State.selectedReviews.add(review.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        UI.refresh("cursor_move", loc, len, false);
     }
+}
 };
 
-// ---------- 11. UI-HELFER ----------
 function toggleExpandReview(reviewId) {
     const id = parseInt(reviewId);
-    if (State.editingReviewId === id) return;
+    if (State.editingReviewId === id) return;    
+    
+    const wasExpanded = State.expandedReviews.has(id);
     
     if (id === State.selectedReviewId) {
-        if (State.expandedReviews.has(id)) State.expandedReviews.delete(id);
-        else State.expandedReviews.add(id);
+        if (wasExpanded) {
+            if (!State.expandAll) State.expandedReviews.delete(id);
+        } else {
+            State.expandedReviews.add(id);
+        }
     } else {
-        if (!State.expandedReviews.has(id)) State.expandedReviews.add(id);
+        if (!State.expandedReviews.has(id)) {
+            State.expandedReviews.add(id);
+        }
+        State.selectedReviewId = id;
     }
+
+
+    jumpToReview(id); // zuerst jumpToReview, dann refresh, damit er für cursorIsReview (für moves) auf die aktuelle Cursorpotition zurückgreift
+    UI.refresh("expand_and_select"); 
     
-    State.selectedReviewId = id;
-    UI.refresh("expand_and_select");
-    jumpToReview(id);
+    // Scrollen falls nicht sichtbar
+    if (WindowManager.window) {
+        // Kleine Verzögerung, damit das DOM sich nach dem Expandieren aktualisiert
+        Beat.timer(0.05, () => {
+            WindowManager.runJS(`
+                const reviewElement = document.querySelector('.review-item[data-id="${id}"]');
+                if (reviewElement) {
+                    // Einfach: Das Review ins sichtbare Feld scrollen
+                    reviewElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            `);
+        }, false);
+    }
 }
 
 function toggleExpandAll() {
     State.expandAll = !State.expandAll;
+    // Vor dem Refresh: Aktuelle highlightId aus dem UI holen und als selectedReviewId setzen
+    if (WindowManager.window) {
+        WindowManager.runJS(`
+            var highlighted = document.querySelector('.review-content.highlight');
+            var highlightId = highlighted ? parseInt(highlighted.closest('.review-item').getAttribute('data-id')) : -1;
+            if (highlightId !== -1) {
+                Beat.call('Beat.custom.setSelectedReviewId(' + highlightId + ')');
+            }
+        `);
+    }
+    
     if (State.expandAll) {
         const data = Data.getAllReviews();
         data.filtered.forEach(review => State.expandedReviews.add(review.id));
     } else {
         State.expandedReviews.clear();
     }
+    
     UI.refresh("expand_all_toggle");
 }
 
@@ -2079,9 +2825,24 @@ function jumpToReview(reviewId) {
         const review = reviews[parseInt(reviewId)];
         if (Beat.reviews && typeof Beat.reviews.rangeForReview === 'function') {
             const range = Beat.reviews.rangeForReview(review);
-            if (range && range.location !== undefined) Beat.scrollTo(range.location);
+            if (range && range.location !== undefined) {
+                // Zum Review scrollen
+                const currentCursor = Beat.selectedRange();
+                if (currentCursor.length > 0) {                         // bei Selektionen nicht Blinken
+                    Beat.scrollTo(range.location);
+                    Beat.setSelectedRange(range.location,0); 
+                } else if (currentCursor.location == range.location) {  // Wenn Cursor schon da ist, sofort Blinken 
+                    TextHighlight.setHighlight(range.location, range.length, true);
+                } else {                                                // Ansonsten Springen und verzögert blinken
+                    Beat.scrollTo(range.location);
+                    Beat.setSelectedRange(range.location,0);                      
+                    TextHighlight.setHighlight(range.location, range.length);
+                }
+            }
         }
-    } catch(e) {}
+    } catch(e) {
+        Logger.error("jumpToReview fehlgeschlagen", e);
+    }
 }
 
 function toggleAllVisible() {
@@ -2127,13 +2888,26 @@ Object.assign(Beat.custom, {
     // Filter
     setCurrentTag,
     filterReviewsUI: (tag) => {
-        State.currentFilterTag = tag;
-        State.saveToDocument();
-        UI.refresh("filter_change");
+        State.setFilterAndRefresh(tag, false, "filter_change");
     },
-    setInvertFilter: (invert) => {
-        State.invertFilter = invert;
+    
+    // Filter zurücksetzen (ohne Scroll)
+    filterReviewsUIReset: () => {
+        State.setFilterAndRefresh("", false, "filter_reset");
+    },
+    
+    // Schneller Tag-Filter (scrollt zum Review)
+    filterReviewsUIQuick: (tag, reviewId) => {
+        State.currentFilterTag = tag;
+        State.invertFilter = false;
+        State.selectedReviewId = reviewId;
         State.saveToDocument();
+        State.refreshNow("filter_quickchange");
+    },
+    
+    // Invert Filter umschalten
+    setInvertFilter: (invert) => {
+        State.setFilterAndRefresh(State.currentFilterTag, invert, "filter_change");
     },
     
     // Selektion
@@ -2146,7 +2920,7 @@ Object.assign(Beat.custom, {
     intersectSelection,
     clearSelections: () => {
         State.clearSelections();
-        UI.refresh("clear_selection");
+        UI.refresh("clear_selection", undefined, undefined, true); //
     },
     selectReview: (id) => {
         State.selectedReviewId = parseInt(id);
@@ -2160,6 +2934,11 @@ Object.assign(Beat.custom, {
     setFollowCursor: (follow) => {
         State.followCursor = follow;
     },
+    updateSelectedReviewId: (reviewId) => {
+        State.selectedReviewId = parseInt(reviewId);
+        // Optional: Das Review automatisch expandieren
+        // State.expandedReviews.add(parseInt(reviewId));
+    },
     
     // Edit-Modus
     startEditingReview: (id) => EditMode.start(id),
@@ -2168,11 +2947,105 @@ Object.assign(Beat.custom, {
     cancelEditingReview: () => EditMode.cancel(),
     copyReviewText: (id) => EditMode.copyText(id),
     
-    // Fenster-Fokus
-    setWindowFocus: (hasFocus) => {
-        State.windowHasFocus = hasFocus;
-    },
+moveReview: (id) => {
+    try {        
+        // Prüfen ob Text selektiert ist
+        if (!State.hasSelection || State.selectionLength === 0) {
+            Logger.log("ABBRUCH: Keine Selektion");
+            return;
+        }
+        
+        // Prüfen ob genau ein Review in der Selektion ist und es das angeklickte ist
+        if (State.cursorIsReview && State.cursorIsReviewId !== parseInt(id)) {
+            Logger.log("ABBRUCH: Falsches Review selektiert");
+            return;
+        }
+        
+        // Original Review holen
+        const rm = Beat.reviews;
+        const originalReview = rm.getReviews()[parseInt(id)];
+        
+        // Text sichern
+        const reviewText = originalReview.string;
+        const tags = reviewText.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
+        const textWithoutTags = reviewText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
+        const tagsString = tags.length > 0 ? ' ' + tags.join(' ') : '';
+        const newText = textWithoutTags + tagsString;
+        
+        // Neue Position
+        const newLocation = State.selectionLocation;
+        
+        // Marker für temporäre Identifikation
+        const marker = "___MOVE_MARKER_" + Date.now() + "___";
+        const tempText = marker + " " + newText;
+        
+        State.suppressTextChange = true;
+        State.suppressSelectionChange = true;
+        
+        // 1. Altes Review löschen
+        rm.deleteReview(originalReview);
+        
+        // 2. Neues Review mit Marker erstellen
+        rm.createReview(tempText, newLocation, State.selectionLength);
+        
+        State.suppressTextChange = false;
+        State.suppressSelectionChange = false;
+
+        // 3. Das neue Review anhand des Markers finden
+        const reviews = rm.getReviews();
+        let newReviewId = -1;
+        let newReviewObj = null;
+        
+        for (let i = 0; i < reviews.length; i++) {
+            const review = reviews[i];
+            if (review.string && review.string.includes(marker)) {
+                newReviewId = i;
+                newReviewObj = review;
+                break;
+            }
+        }
+        
+        if (newReviewId === -1) {
+            Logger.error("Neues Review mit Marker nicht gefunden!");
+            return;
+        }
+        
+        // 4. Marker entfernen
+        newReviewObj.string = newReviewObj.string.replace(marker, '').trim();
+        rm.saveReview(newReviewObj);
+        
+        // 5. Neues Review highlighten und Selektionen löschen
+        State.selectedReviewId = newReviewId;
+        State.selectedReviews.clear();
+        
+        // 6. UI refreshen
+        State.windowHasFocus = true;
+        State.cursorIsReview = true;
+        State.cursorIsReviewId = newReviewId;
     
+        UI._cachedData = null;
+        UI.refresh("review_moved", newLocation, 0, true);
+        jumpToReview(newReviewId);
+        
+    } catch(e) {
+        Logger.error("Fehler beim Move", e);
+        Beat.alert("Error relocating review: " + e.message);
+    }
+},
+    
+// Fenster-Fokus
+setWindowFocus: (hasFocus) => {
+    const wasFocused = State.windowHasFocus;
+    State.windowHasFocus = hasFocus;
+},
+
+setWindowSize: (width) => {
+    if (WindowManager.window && typeof WindowManager.window.setFrame === 'function') {
+        const frame = WindowManager.window.getFrame();
+        WindowManager.window.setFrame(frame.x, frame.y, width, frame.height);
+    }
+},
+
     // CRUD (mit skipRefresh)
     addTagToReview: (id, tag, skipRefresh) => Data.addTag(id, tag, skipRefresh),
     removeTagFromReview: (id, tag, skipRefresh) => Data.removeTag(id, tag, skipRefresh),
@@ -2183,7 +3056,10 @@ Object.assign(Beat.custom, {
     removeCurrentTagFromSelected: () => BatchOperations.removeTagFromSelected(),
     deleteSelectedReviews: () => BatchOperations.deleteSelected(),
     confirmDeleteSelected: () => BatchOperations.confirmDelete(),
-    refreshAfterBatch: () => UI.refresh("batch_complete"),
+    refreshAfterBatch: () => {
+        UI.checkAndResetFilter();
+        UI.refresh("batch_complete", undefined, undefined, true);
+    },
     clearPendingDelete: () => {
         State.pendingDeleteIds = null;
         State.pendingDeleteTotal = 0;
@@ -2191,7 +3067,11 @@ Object.assign(Beat.custom, {
     
     // Export
     exportReviewsToCSV: () => Export.toCSV(),
-    
+
+    setSelectedReviewId: (id) => {
+        State.selectedReviewId = parseInt(id);
+    },
+
     // Hilfsfunktionen
     jumpToReview,
     showDeleteConfirm
