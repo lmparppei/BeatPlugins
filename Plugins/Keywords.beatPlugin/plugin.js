@@ -40,6 +40,100 @@ let occurrenceIndex = {};
 let tagColors = Beat.getUserDefault("tagColors") || {};
 
 
+// --- Marker color mappings and helper utilities ---
+const markerColors = {
+  red: '#ff3b30',
+  orange: '#ff9500',
+  yellow: '#ffcc00',
+  green: '#34c759',
+  teal: '#30b0c7',
+  blue: '#007aff',
+  purple: '#af52de',
+  pink: '#ff2d55',
+  brown: '#a2845e',
+  gray: '#8e8e93',
+  grey: '#8e8e93',
+  cyan: '#32ade6',
+  magenta: '#ff2d55',
+  gold: '#ffd700',
+  goldenrod: '#daa520',
+  rose: '#ff2d55',
+  cherry: '#de1738',
+  buff: '#f0dc82'
+};
+const defaultMarkerColor = '#ffcc00';
+
+function hexToRgba(hex, alpha = 0.18) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function parseMarker(content) {
+  const trimmed = content.trim();
+
+  // 1. marker <color> : <text>
+  let match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: match[1], text: match[2] };
+  }
+
+  // 2. marker : <text>
+  match = trimmed.match(/^marker\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  // 3. marker <color> <text>
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s+(.*)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: match[2] };
+    }
+  }
+
+  // 3.5. marker <color> (no text)
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: "" };
+    }
+  }
+
+  // 4. marker <text>
+  match = trimmed.match(/^marker\s+(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  // Fallback
+  return { color: null, text: trimmed.replace(/^marker\s*/i, '') };
+}
+
+function isValidColor(colorStr) {
+  const hexRegex = /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/;
+  if (hexRegex.test(colorStr)) return true;
+  return markerColors.hasOwnProperty(colorStr.toLowerCase());
+}
+
+function getMarkerColor(colorName) {
+  if (!colorName) return defaultMarkerColor;
+  const lower = colorName.toLowerCase();
+  if (markerColors[lower]) return markerColors[lower];
+  if (/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(colorName)) {
+    return colorName;
+  }
+  return defaultMarkerColor;
+}
+
+
 // Normalize a string for stable keying/dismissal
 function normalize(str) {
   return str
@@ -949,9 +1043,24 @@ function gatherAllTags() {
 
         if (!isStandaloneTag && !isSpecialTag && !line.trim().startsWith('=')) {
           const absPos = lineObj.position + noteMatch.index;
+          let entryContent = content;
+          let markerBgColor = null;
+          let markerBorderColor = null;
+
+          if (isMarker) {
+            const parsedMarker = parseMarker(content);
+            entryContent = parsedMarker.text;
+            const resolvedColor = getMarkerColor(parsedMarker.color);
+            markerBgColor = hexToRgba(resolvedColor, 0.18);
+            markerBorderColor = resolvedColor;
+          }
+
           notesAndSynopsis.push({
             type: isMarker ? 'marker' : 'note',
             content,
+            cleanContent: entryContent,
+            markerBgColor,
+            markerBorderColor,
             absPos,
             lineIndex: i,
             key: `${isMarker ? 'marker' : 'note'}:${normalize(content)}`
@@ -1529,7 +1638,7 @@ function buildUIHtml() {
         const checked = isDismissed ? 'checked' : '';
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
         // Truncate content to 1000 characters for display
-        let displayContent = entry.content;
+        let displayContent = isMarkerEntry ? entry.cleanContent : entry.content;
         if (displayContent.length > 1000) {
           displayContent = displayContent.slice(0, 1000) + '…';
         }
@@ -1590,8 +1699,12 @@ function buildUIHtml() {
             </div>
           `;
         } else {
+          let inlineStyle = 'display: flex; align-items: center;';
+          if (isMarkerEntry && entry.markerBgColor && entry.markerBorderColor) {
+            inlineStyle += ` background: ${entry.markerBgColor}; border-left: 3px solid ${entry.markerBorderColor};`;
+          }
           html += `
-            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}${isMarkerEntry ? ' marker-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="display: flex; align-items: center;">
+            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}${isMarkerEntry ? ' marker-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="${inlineStyle}">
               <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
               <div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</div>
             </div>
