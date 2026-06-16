@@ -1,19 +1,19 @@
  /*:
 Review Manager
 Copyright: Jürgen Heimüller 2026
-Version: 0.93
+Version: 0.97
 Description: Manage and organize your reviews with tags
 */
 
 // ============================================
-// REVIEW MANAGER v0.93 - Strukturierte Version
+// REVIEW MANAGER v0.97 - Strukturierte Version
 // ============================================
 
-Beat.log("=== REVIEW MANAGER v0.93 ===");
+Beat.log("=== REVIEW MANAGER v0.97 ===");
 
 // ---------- 1. KONFIGURATION & CONSTANTS ----------
 const CONFIG = {
-    version: "0.93",
+    version: "0.97",
     windowDefaults: { width: 572, height: 700, minWidth: 365, minHeight: 400 },
     debug: false
 };
@@ -35,6 +35,7 @@ const State = {
     // Edit-Modus
     editingReviewId: -1,
     pendingEdit: null,
+    pendingNewReviewId: null,
     
     // UI-Zustand
     windowHasFocus: false,
@@ -45,6 +46,7 @@ const State = {
     selectionLocation: -1,
     selectionLength: 0,
     currentHighlightId: -1,
+//    catchEnabled: false,
     
     // Batch-Operationen
     pendingDeleteIds: null,
@@ -58,6 +60,10 @@ const State = {
     cursorIsReview: false,
     cursorIsReviewId: -1,
     
+    // Search State
+    searchExpression: "",
+    searchActive: false,  // ob Suchfeld gerade offen ist
+    
     // Setter
     setFilter(tag, invert) {
         this.currentFilterTag = tag;
@@ -66,6 +72,9 @@ const State = {
     },
     
     toggleReviewSelection(id) {
+        if (State.pendingNewReviewId !== null || State.editingReviewId !== -1) {
+            EditMode.flushBuffer();
+        }
         id = parseInt(id);
         if (this.selectedReviews.has(id)) this.selectedReviews.delete(id);
         else this.selectedReviews.add(id);
@@ -198,6 +207,50 @@ const TextHighlight = {
                 Logger.error("Fehler beim Löschen des Text-Highlights", e);
             }
         }
+    }
+};
+
+// ---------- 2.6 SEARCH HELPER ----------
+const SearchHelper = {
+    matchesSearch(reviewText, searchExpr) {
+        if (!searchExpr || searchExpr === "") return true;
+        return reviewText.toLowerCase().includes(searchExpr.toLowerCase());
+    },
+    
+    findNextSearchMatch(filteredReviews, currentId, searchExpr) {
+        if (!searchExpr || searchExpr === "") return -1;
+        if (filteredReviews.length === 0) return -1;
+        
+        let startIndex = -1;
+        
+        if (currentId !== -1) {
+            for (let i = 0; i < filteredReviews.length; i++) {
+                if (filteredReviews[i].id === currentId) {
+                    startIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        let start = startIndex + 1;
+        if (start >= filteredReviews.length) start = 0;
+        
+        for (let i = 0; i < filteredReviews.length; i++) {
+            const idx = (start + i) % filteredReviews.length;
+            const review = filteredReviews[idx];
+            // Direkter Aufruf über den Objektnamen
+            if (SearchHelper.matchesSearch(review.text, searchExpr)) {
+                return review.id;
+            }
+        }
+        return -1;
+    },
+    
+    findAllSearchMatches(filteredReviews, searchExpr) {
+        if (!searchExpr || searchExpr === "") return [];
+        return filteredReviews.filter(review => 
+            SearchHelper.matchesSearch(review.text, searchExpr)
+        ).map(r => r.id);
     }
 };
 
@@ -506,17 +559,34 @@ const EditMode = {
         const data = Data.getAllReviews();
         const review = data.reviews.find(r => r.id === id);
         if (!review) return;
-        
+
         State.expandedReviews.add(id);
         State.selectedReviewId = id;
         State.editingReviewId = id;
         State.pendingEdit = null;
-        
+
         UI.refresh("start_editing");
-        
+
+        // Für neu erstellte Reviews: Editor leeren (Platzhalter unsichtbar machen)
         WindowManager.runJS(`
             setTimeout(() => {
-                document.querySelector('.review-text[data-id="${id}"].editing')?.focus();
+                const editor = document.querySelector('.review-text[data-id="${id}"].editing');
+                if (editor) {
+                    const isPending = ${State.pendingNewReviewId === id};
+                    if (isPending) {
+                        editor.innerText = "";   // überschreibt den unsichtbaren Platzhalter
+                    } else {
+                        const originalText = ${JSON.stringify(review.text.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim())};
+                        editor.innerText = originalText;
+                    }
+                    editor.focus();
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(editor);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
             }, 50);
         `);
     },
@@ -528,15 +598,36 @@ const EditMode = {
     },
     
     flushBuffer() {
+        // 1. Vorhandenen pendingEdit speichern
         if (State.pendingEdit !== null) {
             this.save(State.pendingEdit.id, State.pendingEdit.text);
             State.pendingEdit = null;
         }
 
+        // 2. NEU: Wenn ein neu erstelltes Review nie bearbeitet wurde (kein pendingEdit entstand)
+        //    und es noch im Edit-Modus ist, dann lösche es (weil der Benutzer nichts eingegeben hat)
+        if (State.pendingNewReviewId !== null && State.pendingNewReviewId === State.editingReviewId) {
+            const rm = Beat.reviews;
+            const originalReview = rm.getReviews()[State.pendingNewReviewId];
+            if (originalReview) {
+                // Prüfe, ob der einzige Inhalt der Platzhalter + ggf. Auto-Tag ist
+                const hasOnlyPlaceholderAndTags = originalReview.string === "\u200B" || 
+                    originalReview.string.match(/^[\u200B\s]*#[^\s]+[\u200B\s]*$/);
+
+                if (hasOnlyPlaceholderAndTags) {
+                    rm.deleteReview(originalReview);
+                    State.pendingNewReviewId = null;
+                    State.editingReviewId = -1;
+                    UI._cachedData = null;
+                    UI.refresh("review_deleted", undefined, undefined, true);
+                    return;
+                }
+            }
+        }
+
+        // 3. Icons zurücksetzen und contenteditable entfernen
         if (State.editingReviewId !== -1) {
             State.editingReviewId = -1;
-
-            // Icons zurücksetzen und contenteditable entfernen
             WindowManager.runJS(`
                 document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
                     el.classList.remove('undo');
@@ -553,38 +644,70 @@ const EditMode = {
         UI.refresh("edit_exit", undefined, undefined, true);
     },
 
-    save(id, newText) {
-        try {
-            State.suppressTextChange = true;
-            const rm = Beat.reviews;
-            const reviews = rm.getReviews();
-            const originalReview = reviews[id];
-            if (originalReview) {
-                const newTags = newText.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
-                const oldTags = originalReview.string.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
-                const allTags = [...new Set([...oldTags, ...newTags])];
-                const tagsString = allTags.length > 0 ? ' ' + allTags.join(' ') : '';
+save(id, newText) {
+    try {
+        State.suppressTextChange = true;
+        const rm = Beat.reviews;
+        const reviews = rm.getReviews();
+        const originalReview = reviews[id];
+        if (originalReview) {
+            const newTags = newText.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
+            const oldTags = originalReview.string.match(/#[\wäöüßÄÖÜ\-]+/g) || [];
+            const allTags = [...new Set([...oldTags, ...newTags])];
+            const tagsString = allTags.length > 0 ? ' ' + allTags.join(' ') : '';
+            const cleanedNewText = newText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
+            let finalText = cleanedNewText + tagsString;
 
-                const cleanedNewText = newText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
-                const finalText = cleanedNewText + tagsString;
-
-                originalReview.string = finalText;
-                rm.saveReview(originalReview);
-
-                // Cache invalidieren und merken, dass Daten geändert wurden
+            // Extrahiere Text ohne Tags für die Leerprüfung
+            const textWithoutTags = finalText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();           
+            const isEmpty = (textWithoutTags === "");
+            
+            // Neu erstelltes Review und leerer Text → löschen
+            const isNewAndEmpty = (State.pendingNewReviewId === id) && isEmpty;
+            
+            if (isNewAndEmpty) {
+                rm.deleteReview(originalReview);
+                State.pendingNewReviewId = null;
+                State.editingReviewId = -1;
                 UI._cachedData = null;
-                State.dataChanged = true;
+                UI.refresh("review_deleted", undefined, undefined, true);
+                return;
             }
-        } finally {
-            State.suppressTextChange = false;
+            
+            originalReview.string = finalText;
+            rm.saveReview(originalReview);
+
+            if (State.pendingNewReviewId === id) {
+                State.pendingNewReviewId = null;
+            }
+
+            UI._cachedData = null;
+            State.dataChanged = true;
         }
-    },
+    } finally {
+        State.suppressTextChange = false;
+    }
+},
     
     cancel() {
+        // Neu erstelltes, unverändertes Review beim Abbrechen löschen
+        if (State.pendingNewReviewId !== null && State.pendingNewReviewId === State.editingReviewId) {
+            const rm = Beat.reviews;
+            const review = rm.getReviews()[State.pendingNewReviewId];
+            if (review) {
+                rm.deleteReview(review);
+            }
+            State.pendingNewReviewId = null;
+            State.editingReviewId = -1;
+            UI._cachedData = null;
+            UI.refresh("review_deleted", undefined, undefined, true);
+            return;
+        }
+
+        // Bestehende Abbruch-Logik
         State.editingReviewId = -1;
         State.pendingEdit = null;
         UI.refresh("cancel_editing");
-    // Icon im aktuellen Fenster zurücksetzen
         WindowManager.runJS(`
             document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
                 el.classList.remove('undo');
@@ -842,17 +965,27 @@ const UI = {
     _cachedData: null,
     
     refresh(reason, cursorPos, selLength, forceDataReload = false) {
+    
         // Daten nur neu laden, wenn nötig          
         if (State.dataChanged) {
             forceDataReload = true;
             State.dataChanged = false;
         }
-                
+
+        try {
+            const range = Beat.selectedRange();
+            cursorPos = range.location;
+            selLength = range.length;
+        } catch(e) {
+            cursorPos = State.lastCursorPosition;
+            selLength = State.lastSelectionLength;
+        }       
         let data;
-        if (forceDataReload || reason === "text_change" || reason === "tag_added" || 
-            reason === "tag_removed" || reason === "review_deleted" || reason === "batch_complete" ||
-            reason === "filter_change" || reason === "filter_reset" || reason === "filter_quickchange" || 
-            reason === "clear_selection" || reason === "selection_toggled") {
+        const forceReloadReasons = [
+            "text_change", "tag_added", "tag_removed", "review_deleted", 
+            "batch_complete", "filter_change", "filter_reset", "filter_quickchange",
+            "clear_selection", "selection_toggled"];
+        if (forceDataReload || forceReloadReasons.includes(reason)) {
             data = Data.getAllReviews();
             this._cachedData = data;
         } else {
@@ -867,16 +1000,6 @@ const UI = {
         }      
         if (!WindowManager.window) return;
         
-        if (cursorPos === undefined) {
-            try {
-                const range = Beat.selectedRange();
-                cursorPos = range.location;
-                selLength = range.length;
-            } catch(e) {
-                cursorPos = State.lastCursorPosition;
-                selLength = State.lastSelectionLength;
-            }
-        }
         
         if (reason === "text_change" && cursorPos === 0) {
             forceDataReload = true;
@@ -1056,6 +1179,12 @@ const UI = {
                 forceFollowDocument = true;
             }     
         }
+        else if (reason === "search_found") {
+            if (State.selectedReviewId !== -1) {
+                targetScrollReviewId = State.selectedReviewId;
+                scrollMode = 1;  // smooth scroll to top/near
+            }
+        }           
         else if (reason === "review_moved") {
             targetScrollReviewId = State.selectedReviewId;
             scrollMode = 1;
@@ -1118,62 +1247,9 @@ const UI = {
                 } catch(e) {}
             `);
         }
-    //    Logger.log("reason "+ reason + " scrollMode " + scrollMode + " targetId " + targetScrollReviewId);
+//        Logger.log("reason "+ reason + " scrollMode " + scrollMode + " targetId " + targetScrollReviewId);
         const html = this.buildHTML(data, targetScrollReviewId, highlightId, scrollMode);
         WindowManager.setHTML(html);
-        
-        this.updateBatchUI();
-    },
-    
-    
-    
-    updateBatchUI() {
-        if (!WindowManager.window) return;
-        
-        if (State.selectedReviews.size === 0) {
-            State.currentTag = "";
-            WindowManager.runJS(`
-                currentTagValue = "";
-                var batchTagContainer = document.getElementById('batchTagContainer');
-                if (batchTagContainer) {
-                    batchTagContainer.innerHTML = '';
-                    var displaySpan = document.createElement('span');
-                    displaySpan.className = 'tag-add-btn';
-                    displaySpan.textContent = 'Tag for batch-operation';
-                    displaySpan.style.Color = '#6c757d';
-                    displaySpan.style.backgroundColor = '#6c757d';
-                    displaySpan.style.cursor = 'pointer';
-                    displaySpan.onclick = function() {
-                        if (typeof showBatchTagInput === 'function') showBatchTagInput(batchTagContainer);
-                    };
-                    batchTagContainer.appendChild(displaySpan);
-                }
-                document.getElementById('addTagBatchBtn').disabled = true;
-                document.getElementById('removeTagBatchBtn').disabled = true;
-            `);
-        } else {
-            WindowManager.runJS(`
-                if (typeof currentTagValue !== 'undefined') {
-                    currentTagValue = "${State.currentTag ? State.currentTag.replace(/"/g, '\\"') : ''}";
-                }
-                var batchTagContainer = document.getElementById('batchTagContainer');
-                if (batchTagContainer) {
-                    batchTagContainer.innerHTML = '';
-                    var displaySpan = document.createElement('span');
-                    displaySpan.className = 'tag-add-btn';
-                    displaySpan.textContent = currentTagValue || 'Tag for batch-operation';
-                    displaySpan.style.backgroundColor = '#6c757d';
-                    displaySpan.style.cursor = 'pointer';
-                    displaySpan.onclick = function() {
-                        if (typeof showBatchTagInput === 'function') showBatchTagInput(batchTagContainer);
-                    };
-                    batchTagContainer.appendChild(displaySpan);
-                }
-                var hasTag = currentTagValue && currentTagValue.trim().length > 0;
-                document.getElementById('addTagBatchBtn').disabled = !hasTag;
-                document.getElementById('removeTagBatchBtn').disabled = !hasTag;
-            `);
-        }
     },
     
     checkAndResetFilter() {
@@ -1222,242 +1298,109 @@ const UI = {
     <meta charset="UTF-8">
     <style>
         * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            margin: 0; 
-            padding: 8px; 
-            background: #f8f9fa; 
-            height: 100vh; 
-            width: 100vw;
-            overflow: auto;  /* WICHTIG: Body scrollbar machen */
-            font-size: 12px; 
-        }
-        .container { 
-            display: flex; 
-            min-width: 365px;  /* Mindestbreite für Hauptbereich */
-            height: 100%; 
-            width: 100%; 
-            gap: 8px; 
-        }
-        .sidebar { 
-            width: 200px; 
-            flex-shrink: 0;  /* Verhindert, dass die Sidebar schrumpft */
-            background: white; 
-            border: 1px solid #dee2e6; 
-            border-radius: 6px; 
-            padding: 12px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px;
-//            padding-bottom: 0px;
-        }
-        .main-content { 
-            flex: 1; 
-            min-width: 350px;
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
-            height: 100%;
-        }
-        .header { 
-            background: white; 
-            padding: 6px 6px; 
-            border: 1px solid #dee2e6; 
-            border-radius: 6px; 
-            margin-bottom: px; 
-            display: flex; 
-            justify-content: space-between;
-            align-items: center; 
-            flex-shrink: 0;
-        }
-        .header-left {
-            display: flex;
-            gap: 0px;
-            align-items: center;
-        }
-        .header-right {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-        .window-size-btn {
-            background: none;
-            cursor: pointer;
-            color: #adb5bd;
-            transition: all 0.2s ease;
-            margin-top: 4px;
-        }
-        .window-size-btn:hover {
-            color: #F8BA00;
-        }        
-        .stats { 
-            display: flex; 
-            gap: 8px; 
-            justify-content: center;
-            color: #495057; 
-            font-size: 11px; 
-            white-space: nowrap;
-        }
-
-        .status-bar {
-            padding: 2px 2px;
-            margin-top: 4px;
-            flex-shrink: 0;
-        }
-        .input-group { display: flex; flex-direction: column; gap: 4px; }
-        .input-group label { font-size: 11px; font-weight: 600; color: #495057; margin-bottom: 4px; display: block; }
-        input[type=checkbox], input[type=radio] { accent-color: #FFF69F; }
-        input, textarea, [contenteditable="true"] { caret-color: #909090; }
-
-        #showFilterSelectorHeaderBtn {
-            transition: background 0.2s ease;
-        }
-        #showFilterSelectorHeaderBtn:hover {
-            background: #F8BA00 !important;
-        }  
-        #filterInvertIcon svg {
-            transition: transform 0.3s ease;
-        }          
-        .filter-invert-icon:hover,
-        .filter-tag-remove:hover {
-            opacity: 1 !important;
-        }        
-        .selection-section { margin-top: 8px; }
-        .selection-row { display: flex; gap: 6px; margin-bottom: 6px; }
-        .selection-row button { flex: 1; padding: 6px 8px; font-size: 11px; background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; color: #495057; cursor: pointer; }
-        .selection-row button:hover { background: #e9ecef; }
-        .batch-section { background: #f8f9fa; border: 1px solid #6c757d; border-radius: 6px; padding: 12px; display: ${hasSelection ? 'block' : 'none'}; }
-        .batch-header { font-weight: 600; margin-bottom: 10px; font-size: 11px; display: flex; align-items: center; gap: 6px; }
-        .batch-header span { background: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; }
-        .batch-tag-input { margin-bottom: 10px; }
-        #batchTagContainer .tag-add-btn {
-            color: white !important;
-            background-color: #6c757d !important; 
-        }
+* { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 8px; background: #f8f9fa; height: 100vh; width: 100vw; overflow: auto; font-size: 12px; }
+        #batchTagContainer .tag-add-btn { color: white !important; background-color: #6c757d !important; }
+        #filterInvertIcon svg { transition: transform 0.3s ease; }
+        #showFilterSelectorHeaderBtn { transition: background 0.2s ease; }
+        #showFilterSelectorHeaderBtn:hover { background: #F8BA00 !important; }
         .batch-controls { display: flex; gap: 6px; margin-bottom: 6px; }
         .batch-controls button { flex: 1; padding: 6px; font-size: 11px; background: white; border: 1px solid #6c757d; border-radius: 4px; cursor: pointer; }
         .batch-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .stat-item { display: flex; gap: 4px; }
-        .stat-label { font-weight: 600; color: #6c757d; }
-        .stat-value {font-weight: 700; color: #6c757d; margin-left: 3px;}        
-        .follow-control { display: flex; align-items: center; margin-left: auto; }
-        .follow-control .link-button { background: none; border: none; cursor: pointer; padding: 0; margin-top: 1px; border-radius: 4px; width: 35px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 12px; font-weight: bold; line-height: 15px; text-align: center; }
-        .follow-control .link-button.active { background-color: #F8BA00; }     
-        .reviews-container { 
-            flex: 1; 
-            overflow: hidden; 
-            min-height: 0;
-        }
-        .reviews { height: 100%; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; }
-        .reviews {
-            scroll-padding-top: 10px;
-            scroll-padding-bottom: 10px;
-        }
-        .review-text { word-break: break-word; white-space: pre-wrap; max-height: 4.5em; overflow: hidden; line-height: 1.5em; margin: 4px 0; outline: none; }
-        .review-text.expanded { max-height: none; }
-        .review-text.editing { max-height: none; cursor: text; }
+        .batch-header { font-weight: 600; margin-bottom: 10px; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+        .batch-header span { background: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; }
+        .batch-section { background: #f8f9fa; border: 1px solid #6c757d; border-radius: 6px; padding: 12px; display: ${(hasSelection && State.editingReviewId === -1 && State.pendingNewReviewId === null) ? 'block' : 'none'}; }
+        .batch-tag-input { margin-bottom: 10px; }
+        .container { display: flex; min-width: 365px; height: 100%; width: 100%; gap: 8px; }
+        .expand-button { border: none; cursor: pointer; padding: 0; border-radius: 4px; width: 15px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
+        .expand-button.active { background-color: #F8BA00; }
+        .expand-button span { display: inline-block; line-height: 1; margin-top: -1px; }
+        .expand-control { display: flex; align-items: center; margin-right: 4px; }
+        .expand-indicator { position: absolute; bottom: 8px; right: 3px; font-size: 25px; color: #adb5bd; pointer-events: none; line-height: 1; }
+        .filter-header-section { flex: 1; display: flex; justify-content: center; }
+        .filter-invert-icon:hover, .filter-tag-remove:hover, .search-clear:hover { opacity: 1 !important; }
+        .follow-control { display: flex; align-items: center; gap: 4px; }
+        .header { background: white; padding: 6px; border: 1px solid #dee2e6; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header-left { display: flex; align-items: left; gap: 0px; flex-shrink: 0; }
+        .header-right { display: flex; align-items: left; gap: 4px; flex-shrink: 0; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 11px; font-weight: 600; color: #495057; margin-bottom: 4px; display: block; }
+        input, textarea, [contenteditable="true"] { caret-color: #909090; }
+        input[type=checkbox], input[type=radio] { accent-color: #FFF69F; }
+        .keyboard-hint { font-size: 10px; color: #adb5bd; margin-top: 4px; text-align: center; }
+        .link-button { background: none; border: none; cursor: pointer; padding: 0; border-radius: 4px; width: 35px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 12px; font-weight: bold; line-height: 15px; text-align: center; }
+        .link-button.active { background-color: #F8BA00; }
+        .main-content { flex: 1; min-width: 350px; display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+        .new-icon { cursor: pointer; transition: color 0.2s ease; margin-left: 8px;}
+        .new-icon:hover { color: #6c757d !important; }
+        .new-icon.active { color: #F8BA00; }
+        .new-icon.active:hover { color: #F8BA00 !important; }
+        .review-check { width: 30px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-right: 1px solid #dee2e6; }
+        .review-check input { margin: 0; cursor: pointer; }
+        .review-content { flex: 1; padding: 8px; cursor: pointer; min-width: 0; word-wrap: break-word; background: white; position: relative; }
+        .review-content.highlight { background-color: #FFF69F !important; }
+        .review-delete-icon { width: 16px; height: 16px; color: #adb5bd; cursor: pointer; background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; margin-left: 6px; }
+        .review-delete-icon:hover { color: #FF757d; }
+        .review-delete-icon.inactive { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+        .review-edit-icon.undo { color: #adb5bd; }
+        .review-edit-icon.undo:hover { color: #6c757d; }
+        .review-header { margin: 0 0 4px 0; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .review-id { font-weight: 600; color: #495057; }
         .review-item { display: flex; margin-bottom: 6px; border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden; background: white; }
         .review-item.selected { background-color: #FFF69F; }
         .review-item.selected .review-check { background-color: #FFF69F; }
         .review-item.selected .review-check input[type=checkbox] { accent-color: #FFF69F; }
-        .review-content { flex: 1; padding: 8px; cursor: pointer; min-width: 0; word-wrap: break-word; background: white; position: relative; }
-        .review-content.highlight { background-color: #FFF69F !important; }
-        .expand-indicator { position: absolute; bottom: 8px; right: 3px; font-size: 25px; color: #adb5bd; pointer-events: none; line-height: 1; }
-        .expand-control { display: flex; align-items: center; margin-right: 4px; }
-        .expand-control .expand-button {border: none; cursor: pointer; padding: 0; border-radius: 4px; width: 15px; height: 18px; background-color: #adb5bd; color: #f8f9fa; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
-        .expand-control .expand-button.active { background-color: #F8BA00; }
-        .expand-control .expand-button span { display: inline-block; line-height: 1; margin-top: -1px; }
-        .review-check { width: 30px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-right: 1px solid #dee2e6; }
-        .review-check input { margin: 0; cursor: pointer; }
-        .review-delete { width: 40px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-left: 1px solid #dee2e6; }     
-        .tags-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+        .review-move-icon.active { color: #F8BA00; }
+        .review-move-icon, .review-edit-icon, .review-copy-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; color: #adb5bd; cursor: pointer; transition: color 0.2s ease; text-decoration: none; }
+        .review-move-icon:hover, .review-edit-icon:hover, .review-copy-icon:hover { color: #6c757d; }
+        .review-move-icon svg, .review-edit-icon svg, .review-copy-icon svg { pointer-events: none; }
+        .review-text { word-break: break-word; white-space: pre-wrap; max-height: 4.5em; overflow: hidden; line-height: 1.5em; margin: 4px 0; outline: none; }
+        .review-text.editing { cursor: text; }
+        .review-text.expanded, .review-text.editing { max-height: none; }
+        .reviews { height: 100%; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; scroll-padding-top: 10px; scroll-padding-bottom: 10px; }
+        .reviews-container { flex: 1; overflow: hidden; min-height: 0; }
+        .search-input-container { 
+            display: block; 
+            width: 100%; 
+            background: white; 
+            border: 1px solid #6c757d; 
+            border-radius: 4px; 
+            padding: 3px 2px;
+        }
+        .search-input-field { 
+            width: 100%; 
+            border: none; 
+            outline: none; 
+            font-size: 11px; 
+            padding: 0; 
+            background: transparent; 
+        }
+
+        .sidebar-buttons { display: flex; gap: 6px; margin-bottom: 6px; }
+        .sidebar-buttons button { flex: 1; padding: 6px 8px; font-size: 11px; background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; color: #495057; cursor: pointer; }
+        .sidebar-buttons button:hover { background: #e9ecef; }
+        .selection-section { margin-top: 8px; }
+        .sidebar { width: 200px; flex-shrink: 0; background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .stat-item { display: flex; gap: 4px; }
+        .stat-label { font-weight: 600; color: #6c757d; }
+        .stat-value { font-weight: 700; color: #6c757d; margin-left: 3px; }
+        .stats { display: flex; gap: 8px; justify-content: center; color: #495057; font-size: 11px; white-space: nowrap; }
+        .status-bar { padding: 2px; margin-top: 4px; flex-shrink: 0; }
         .tag { display: inline-flex; align-items: center; height: 16px; background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .tag:hover { background: #adb5bd; color: #ffffff;}
-        .tag-remove { margin-left: 4px; font-weight: bold; font-size: 12px; opacity: 0.6; padding: 0 2px; cursor: pointer; }
-        .tag-remove:hover { opacity: 1; color: #dc3545}
+        .tag:hover { background: #adb5bd; color: #fff; }
         .tag-add-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 16px; background: #e9ecef; color: #495057; border-radius: 4px; font-size: 10px; cursor: pointer; border: none; padding: 0 6px; }
-        .tag-add-btn:hover { background: #adb5bd; color: #ffffff;}
+        .tag-add-btn:hover { background: #adb5bd; color: #fff; }
         .tag-input-container { display: inline-flex; align-items: center; background: white; border: 1px solid #6c757d; border-radius: 4px; padding: 0 4px; width: 120px; }
         .tag-input-field { width: 100%; border: none; outline: none; font-size: 10px; padding: 4px 0; background: transparent; }
-        .tag-suggestions {
-            position: fixed;  /* oder fixed */
-            background: white;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 10000;  /* Sehr hoher z-index, damit Liste immer oben liegt */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-                .tag-suggestion-item { padding: 6px 8px; font-size: 11px; cursor: pointer; }
+        .tag-remove { margin-left: 4px; font-weight: bold; font-size: 12px; opacity: 0.6; padding: 0 2px; cursor: pointer; }
+        .tag-remove:hover { opacity: 1; color: #dc3545; }
+        .tag-suggestion-item { padding: 6px 8px; font-size: 11px; cursor: pointer; }
         .tag-suggestion-item:hover { background: #e9ecef; }
         .tag-suggestion-item.selected { background: #F8BA00; }
-        .review-header {
-            margin: 0 0 4px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-        .review-id { font-weight: 600; color: #495057; }
-
-        .review-move-icon,
-        .review-edit-icon,
-        .review-copy-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-            color: #adb5bd;
-            cursor: pointer;
-            transition: color 0.2s ease;
-            text-decoration: none;
-        }
-
-        .review-move-icon:hover,
-        .review-edit-icon:hover,
-        .review-copy-icon:hover {
-            color: #6c757d;
-        }
-
-        .review-move-icon.active {
-            color: #F8BA00;
-        }
-        .review-edit-icon.undo {
-            color: #adb5bd;
-        }
-        .review-edit-icon.undo:hover {
-            color: #6c757d;
-        }
-        .review-move-icon svg,
-        .review-edit-icon svg,
-        .review-copy-icon svg {
-            pointer-events: none;  /* SVG ignoriert Klicks, diese gehen an das span */
-        }
-
-        .review-delete-icon {
-            width: 16px;
-            height: 16px;
-            color: #adb5bd;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin-left: 6px;
-        }
-        .review-delete-icon:hover {
-            color: #FF757d;
-        }
-
-        .keyboard-hint { font-size: 10px; color: #adb5bd; margin-top: 4px; text-align: center; }
+        .tag-suggestions { position: fixed; background: white; border: 1px solid #ced4da; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 10000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tags-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+        .window-size-btn { background: none; cursor: pointer; color: #adb5bd; transition: color 0.2s ease; margin-top: 4px; margin-left: 2px; }
+        .window-size-btn:hover { color: #F8BA00; }
     </style>
 <script>
 var targetScrollId = ${targetScrollReviewId};
@@ -1465,11 +1408,13 @@ var initialHighlightId = ${highlightId};
 var scrollMode = ${scrollMode};
 var initialSelectedIds = ${JSON.stringify(selectedForUi)};
 var followCursor = ${State.followCursor};
+//var catchEnabled = ${State.catchEnabled};
 var currentTagValue = "${escapeHtml(State.currentTag || '')}";
 var allTags = ${JSON.stringify(allTags)};
 var invertFilter = ${State.invertFilter};
 var currentFilterTag = "${escapeHtml(State.currentFilterTag || '')}";
 var htmlEditingReviewId = ${htmlEditingReviewId};
+var searchExpression = "${escapeHtml(State.searchExpression || '')}";
 
 function setProgressPercent(percent) {
     var bar = document.getElementById('batchProgress');
@@ -2026,6 +1971,99 @@ function showFilterSelector(button) {
     input.focus();
 }
 
+function showSearchSelector(button) {
+    if (!button || !button.parentNode) {
+        button = document.getElementById('showSearchSelectorHeaderBtn');
+        if (!button) return;
+    }
+    var parentDiv = button.parentNode;
+    
+    // Vorherigen Button speichern und durch Input ersetzen
+    var oldButton = button;
+    var inputContainer = document.createElement('div');
+    inputContainer.className = 'search-input-container';
+    
+    var previousValue = window.searchExpression || '';
+    inputContainer.innerHTML = '<input type="text" class="search-input-field" placeholder="search expression..." maxlength="50" value="' + previousValue.replace(/"/g, '&quot;') + '" autofocus>';
+    parentDiv.replaceChild(inputContainer, oldButton);
+    
+    var input = inputContainer.querySelector('.search-input-field');
+    var isConfirming = false;
+    
+if (previousValue && previousValue !== '') {
+    input.select();
+} else {
+    // Sonst Cursor ans Ende
+    input.selectionStart = input.selectionEnd = input.value.length;
+}
+    
+    function saveAndClose(searchValue, shouldSearch) {
+        if (isConfirming) return;
+        isConfirming = true;
+        
+        // NICHT das DOM zerstören, sondern den Inhalt des Containers aktualisieren
+        if (searchValue && searchValue.trim() !== '') {
+            if (shouldSearch) {
+                Beat.call('Beat.custom.setSearchExpressionAndFind("' + searchValue.replace(/"/g, '\\"') + '")');
+            } else {
+                Beat.call('Beat.custom.setSearchExpression("' + searchValue.replace(/"/g, '\\"') + '")');
+            }
+        } else {
+            Beat.call('Beat.custom.clearSearch()');
+        }
+        
+        // UI wird durch refresh neu gezeichnet – das ist die saubere Lösung
+        isConfirming = false;
+    }
+    
+    function handleOutsideClick(e) {
+        var target = e.target;
+        var isClickInside = inputContainer && inputContainer.contains(e.target);
+        
+        var isInteractive = target.closest('.tag-add-btn') !== null ||
+                            target.closest('.filter-tag-header') !== null ||
+                            target.closest('#showFilterSelectorHeaderBtn') !== null ||
+                            target.id === 'activeFilterTagHeader';
+        
+        if (!isClickInside && !isConfirming) {
+            if (isInteractive) {
+                return; // Feld bleibt offen
+            }
+            
+            var searchValue = input ? input.value.trim() : '';
+            saveAndClose(searchValue, false);
+            document.removeEventListener('mousedown', handleOutsideClick, true);
+        }
+    }
+    
+    document.addEventListener('mousedown', handleOutsideClick, true);
+    
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            var searchValue = input.value.trim();
+            saveAndClose(searchValue, true);
+            document.removeEventListener('mousedown', handleOutsideClick, true);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            var searchValue = input.value.trim();
+            saveAndClose(searchValue, false);
+            document.removeEventListener('mousedown', handleOutsideClick, true);
+        }
+    });
+    
+    input.focus();
+}
+
+document.addEventListener('input', function(e) {
+    if (htmlEditingReviewId !== -1 && e.target.classList?.contains('review-text') && e.target.classList.contains('editing')) {
+        var newText = e.target.innerText || e.target.textContent;
+        Beat.call('Beat.custom.bufferEditText(' + htmlEditingReviewId + ', "' + JSON.stringify(newText).slice(1, -1) + '")');
+    }
+}, true);
+
 document.addEventListener('input', function(e) {
     if (htmlEditingReviewId !== -1 && e.target.classList?.contains('review-text') && e.target.classList.contains('editing')) {
         var newText = e.target.innerText || e.target.textContent;
@@ -2042,17 +2080,29 @@ window.addEventListener('blur', function() {
 document.addEventListener('keydown', function(e) {
     // Wenn Tag-Input offen, nichts tun
     if (document.querySelector('.tag-input-container') !== null) return;
+    if (document.querySelector('.search-input-container') !== null) return;
 
     // Zum Debuggen Taste in die Zwishenablage.
     // navigator.clipboard.writeText('Key: ' + e.key + ' | altKey: ' + e.altKey + ' | metaKey: ' + e.metaKey + ' | ctrlKey: ' + e.ctrlKey + ' | shiftKey: ' + e.shiftKey);    
 
     const dialog = document.getElementById('confirmDialog');
     if (dialog && dialog.style.display === 'flex') {
-        if (e.key === 'Escape') {
+        if (e.key === 'y' || e.key === 'Y') {
             e.preventDefault();
-            dialog.style.display = 'none';
+            e.stopPropagation();
+            document.getElementById('confirmYes').click();
+            return;
         }
-        return; // Bei offenem Dialog keine weiteren Aktionen
+        if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('confirmNo').click();
+            return;
+        }
+        // Alle anderen Tasten blockieren
+        e.preventDefault();
+        e.stopPropagation();
+        return;
     }
 
     const isCmd = e.metaKey || e.ctrlKey;
@@ -2072,7 +2122,7 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault();
         Beat.call('Beat.custom.flushEditBuffer()');
         return;
-    }
+    }    
     
     // Wenn im Edit-Modus, keine weiteren Aktionen
     if (isEditing) return;
@@ -2090,23 +2140,56 @@ document.addEventListener('keydown', function(e) {
         Beat.call('Beat.custom.clearSelections()');
         return;
     }
+    
+    if (isCmd && e.key === 'v') {
+        e.preventDefault();
+        Beat.call('Beat.custom.pasteReviewFromClipboard()');
+        return;
+    }    
+    
+    if (isCmd && !e.shiftKey && e.key === 'r') {
+        e.preventDefault();
+        Beat.call('Beat.custom.createEmptyReview()');
+        return;
+    }        
 
     // Cmd/Ctrl + Shift + R = Reverse selection (Auswahl umkehren)
-    if (isCmd && e.shiftKey && e.key === 'r') {
+    if (isCmd && e.shiftKey && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault();
         Beat.call('Beat.custom.reverseSelection()');
         return;
     }
 
     // Cmd/Ctrl + Shift + I = Intersect selection (nur sichtbare Reviews behalten)
-    if (isCmd && e.shiftKey && e.key === 'i') {
+    if (isCmd && e.shiftKey && e.key === 's') {
         e.preventDefault();
         Beat.call('Beat.custom.intersectSelection()');
         return;
     }
     
-    // Cmd/Ctrl + F = Filter
-    if (isCmd && e.key === 'f' && !e.shiftKey) {
+    // Cmd+F = Search (öffnet Set search expression)
+    if (isCmd && e.key === 'f') {
+        e.preventDefault();
+        // Fenster auf mindestens 572 setzen (falls kleiner)
+        Beat.call('Beat.custom.setWindowSize(572,true)');
+        const searchButton = document.getElementById('showSearchSelectorHeaderBtn') || 
+                            document.getElementById('activeSearchHeader');
+
+        if (searchButton) {
+            showSearchSelector(searchButton);
+        }
+        return;
+    }
+
+    // Cmd+G - Search Next
+    if (isCmd && e.key === 'g') {
+        e.preventDefault();
+        Beat.call('Beat.custom.searchNext()');
+        return;
+    }
+    
+    // Cmd/Ctrl + i = Filter
+    if (isCmd && !e.ctrlKey && e.key === 'i' && !e.shiftKey) {
         e.preventDefault();
         // Suche nach dem aktiven Filter-Element im Header
         const filterButton = document.getElementById('showFilterSelectorHeaderBtn') || 
@@ -2118,8 +2201,9 @@ document.addEventListener('keydown', function(e) {
         return;
     }
     
-    // Alt + F = Invert Filter
-    if (e.altKey && (e.key === 'f' || e.key === 'ƒ')) {
+    // Cmd-Alt + i = Invert Filter
+    if (isCmd && e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+            Beat.log("NCMD ALT i");        
         e.preventDefault();
         // Prüfen ob ein Filter aktiv ist
         if (currentFilterTag && currentFilterTag !== "") {
@@ -2127,15 +2211,25 @@ document.addEventListener('keydown', function(e) {
             Beat.call('Beat.custom.setInvertFilter(' + newInvertState + ')');
         } else {
             // Kein Filter aktiv, also nichts zu invertieren
-            Beat.log("No active filter to invert");
+
         }
         return;
     }
     
-    // Cmd/Ctrl + Shift + F = Filter aufheben
-    if (isCmd && e.shiftKey && e.key === 'f') {
+    // Cmd/Ctrl + Shift + i = Filter aufheben
+    if (isCmd && e.shiftKey && e.key === 'i') {
         e.preventDefault();
         Beat.call('Beat.custom.filterReviewsUIReset()');
+        return;
+    }
+
+    // Cmd/Ctrl + Shift + Backspace = Batch-Delete auslösen
+    if (isCmd && e.shiftKey && e.key === 'Backspace') {
+        e.preventDefault();
+        const selectedCount = document.querySelectorAll('.review-checkbox:checked').length;
+        if (selectedCount > 0) {
+            showConfirmDialog('Really delete all selected reviews?', null, 'batch')
+        }
         return;
     }
     
@@ -2269,7 +2363,12 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('blur', function() { 
         Beat.call('Beat.custom.setWindowFocus(false)');
     });
-    
+
+//    document.getElementById('catchBtn').onclick = function() {
+//        catchEnabled = !catchEnabled;
+//        this.classList.toggle('active', catchEnabled);
+//        Beat.call('Beat.custom.setCatchEnabled(' + catchEnabled + ')');
+//    }; 
     document.getElementById('followBtn').onclick = function() {
         followCursor = !followCursor;
         this.classList.toggle('active', followCursor);
@@ -2278,11 +2377,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('expandAllBtn').onclick = function() {
         Beat.call('Beat.custom.toggleExpandAll()');
     };
+    document.getElementById('newReviewBtn').onclick = function() {
+        Beat.call('Beat.custom.createEmptyReview()');
+    };    
+    document.getElementById('pasteBtn').onclick = function(e) {
+        e.stopPropagation();
+        Beat.call('Beat.custom.pasteReviewFromClipboard()');
+    };
     document.getElementById('narrowBtn').onclick = function() {
-        Beat.call('Beat.custom.setWindowSize(365)');
+        Beat.call('Beat.custom.setWindowSize(365, false)');
     };
     document.getElementById('wideBtn').onclick = function() {
-        Beat.call('Beat.custom.setWindowSize(572)');
+        Beat.call('Beat.custom.setWindowSize(572, false)');
     };    
     
     document.getElementById('confirmYes').onclick = function() {
@@ -2334,6 +2440,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }    
 
+    // Search UI Event Listener
+    var showSearchHeaderBtn = document.getElementById('showSearchSelectorHeaderBtn');
+    if (showSearchHeaderBtn) {
+        showSearchHeaderBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showSearchSelector(this);
+        });
+    }
+
+    var activeSearchHeader = document.getElementById('activeSearchHeader');
+    if (activeSearchHeader) {
+        activeSearchHeader.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('search-case-icon') && 
+                !e.target.classList.contains('search-word-icon') &&
+                !e.target.classList.contains('search-clear')) {
+                e.stopPropagation();
+                showSearchSelector(this);
+            }
+        });
+    }
+
+    var clearSearchBtn = document.getElementById('clearSearchHeaderBtn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function(e) {
+            Beat.call('Beat.custom.clearSearch()');
+        });
+    }
+
+    var searchNextBtn = document.getElementById('searchNextBtn');
+    if (searchNextBtn) {
+        searchNextBtn.addEventListener('click', function() {
+            Beat.call('Beat.custom.searchNext()');
+        });
+    }
+
+    var searchToSelectBtn = document.getElementById('searchToSelectBtn');
+    if (searchToSelectBtn) {
+        searchToSelectBtn.addEventListener('click', function() {
+            Beat.call('Beat.custom.searchToSelect()');
+        });
+    }
     
     var batchTagContainer = document.getElementById('batchTagContainer');
     if (batchTagContainer) {
@@ -2357,6 +2504,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('reviewsList').addEventListener('click', function(e) {
         var target = e.target;
+//        Beat.call('Beat.custom.setWindowFocus(true)'); NÖTIG??
         
         if (target.classList.contains('review-edit-icon')) {
             var id = parseInt(target.dataset.id);
@@ -2397,11 +2545,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var id = icon.dataset.id;
             e.preventDefault();
             e.stopPropagation();
+
+            // Prüfen ob Löschen erlaubt ist
+            if (icon.classList.contains('inactive')) return;
+
             showConfirmDialog('Really delete this review?', id, 'single');
             return;
         }
-        
-        Beat.call('Beat.custom.setWindowFocus(true)');
         
         if (target.classList.contains('review-checkbox')) {
             Beat.call('Beat.custom.toggleReviewSelection(' + target.dataset.id + ')');
@@ -2486,74 +2636,91 @@ window.showBatchTagInput = showBatchTagInput;
                         <rect x="3" y="1" width="11" height="22" rx="2" ry="2" fill="currentColor"/>  
                         </svg>
                     </span>
+                    <span id="newReviewBtn" class="new-icon ${(!State.cursorIsReview && State.hasSelection) ? 'active' : ''}" 
+                          style="cursor: pointer; display: inline-flex; align-items: center; color: ${(!State.cursorIsReview && State.hasSelection) ? '#F8BA00' : '#adb5bd'}; transition: color 0.2s ease;"
+                          title="${(!State.cursorIsReview && State.hasSelection) ? 'Add review [Cmd-R]' : (State.cursorIsReview ? 'Cannot add review over existing review' : 'Add review: select text in document first')}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <path d="M12 3v18m-9-9h18"/>
+                            </svg>
+                    </span>                    
+                    <span id="pasteBtn" class="new-icon ${(!State.cursorIsReview && State.hasSelection) ? 'active' : ''}" 
+                          style="cursor: pointer; display: inline-flex; align-items: center; color: ${(!State.cursorIsReview && State.hasSelection) ? '#F8BA00' : '#adb5bd'}; transition: color 0.2s ease;"
+                          title="${(!State.cursorIsReview && State.hasSelection) ? 'Paste review from clipboard [Cmd-V]' : (State.cursorIsReview ? 'Cannot paste over existing review' : 'Paste review: select text in document first')}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 20H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path>
+                            <rect x="6" y="2" width="8" height="2" rx="1" ry="1"/>
+                            <rect x="8" y="8" width="14" height="14" rx="2" ry="2"/>
+                            </svg>
+                    </span>                    
                     <!-- NEU: Filterbereich -->
-                    <div class="filter-header-section" style="display: flex; align-items: center; gap: 6px; margin-left: 60px;">
-                        ${State.currentFilterTag && State.currentFilterTag !== "" ? 
-                            (() => {
-                                let displayTag = State.currentFilterTag === "without tag" ? '- no tag -' : State.currentFilterTag.replace('#', '');
-                                let fullTag = (State.invertFilter ? 'NOT ' : '') + displayTag;
+                </div>    
+                <div class="filter-header-section" style="margin: 0 auto;">
+                    ${State.currentFilterTag && State.currentFilterTag !== "" ? 
+                        (() => {
+                            let displayTag = State.currentFilterTag === "without tag" ? '- no tag -' : State.currentFilterTag.replace('#', '');
+                            let fullTag = (State.invertFilter ? 'NOT ' : '') + displayTag;
 
-                                let truncatedTag = fullTag;
-                                if (fullTag.length > 15) {
-                                    truncatedTag = fullTag.substring(0, 12) + '...';
-                                }
+                            let truncatedTag = fullTag;
+                            if (fullTag.length > 15) {
+                                truncatedTag = fullTag.substring(0, 12) + '...';
+                            }
 
-                                return `<div class="filter-tag-header" id="activeFilterTagHeader" style="
-                                    display: flex; 
-                                    align-items: center; 
-                                    background: #F8BA00; 
-                                    border-radius: 4px;
-                                    padding: 0 4px; 
-                                    cursor: pointer; 
-                                    width: 120px;
-                                    height: 18px;
-                                    margin-top: 1px;
-                                    position: relative;
-                                ">
-                                    <span style="
-                                        font-size: 12px; 
-                                        font-weight: 500;
-                                        font-weight: bold;
-                                        opacity: 0.7;            
-                                        overflow: hidden; 
-                                        text-overflow: ellipsis; 
-                                        white-space: nowrap;
-                                        max-width: 90px;
-                                    " title="Active filter: ${fullTag} [Cmd-F]">
-                                        ${truncatedTag}
+                            return `<div class="filter-tag-header" id="activeFilterTagHeader" style="
+                                display: flex; 
+                                align-items: center; 
+                                background: #F8BA00; 
+                                border-radius: 4px;
+                                padding: 0 4px; 
+                                cursor: pointer; 
+                                width: 120px;
+                                height: 18px;
+                                margin-top: 1px;
+                                position: relative;
+                            ">
+                                <span style="
+                                    font-size: 12px; 
+                                    font-weight: 500;
+                                    font-weight: bold;
+                                    opacity: 0.7;            
+                                    overflow: hidden; 
+                                    text-overflow: ellipsis; 
+                                    white-space: nowrap;
+                                    max-width: 90px;
+                                " title="Active filter: ${fullTag} [Cmd-I]">
+                                    ${truncatedTag}
+                                </span>
+                                <div style="display: flex; gap: 6px; position: absolute; right: 0px;">
+                                    <span class="filter-invert-icon" id="filterInvertIcon" 
+                                        data-inverted="${State.invertFilter}"  // ← Direkt beim Rendern setzen
+                                        style="cursor: pointer; display: inline-flex; align-items: center; width: 12px; height: 12px; position: absolute; right: 16px; margin-top: 0px; transform: translateY(-50%);opacity: 0.5;transition: opacity 0.2s ease;"
+                                        title="Invert filter [Cmd+Ctr+I]">
+                                        <svg width="12" height="12" viewBox="0 0 0.375 0.375" fill="currentColor" style="transition: transform 0.3s ease; transform: ${State.invertFilter ? 'rotate(180deg)' : 'rotate(0deg)'};">
+                                        <path fill="currentColor" d="M0.188 0C0.084 0 0 0.084 0 0.188s0.084 0.188 0.188 0.188 0.188 -0.084 0.188 -0.188 -0.084 -0.188 -0.188 -0.188m0 0.047c0.078 0 0.141 0.063 0.141 0.141S0.265 0.328 0.188 0.328z"/>
+                                        </svg>
                                     </span>
-                                    <div style="display: flex; gap: 6px; position: absolute; right: 0px;">
-                                        <span class="filter-invert-icon" id="filterInvertIcon" 
-                                            data-inverted="${State.invertFilter}"  // ← Direkt beim Rendern setzen
-                                            style="cursor: pointer; display: inline-flex; align-items: center; width: 12px; height: 12px; position: absolute; right: 16px; margin-top: 0px; transform: translateY(-50%);opacity: 0.5;transition: opacity 0.2s ease;"
-                                            title="Invert filter [Alt+F]">
-                                            <svg width="12" height="12" viewBox="0 0 0.375 0.375" fill="currentColor" style="transition: transform 0.3s ease; transform: ${State.invertFilter ? 'rotate(180deg)' : 'rotate(0deg)'};">
-                                            <path fill="currentColor" d="M0.188 0C0.084 0 0 0.084 0 0.188s0.084 0.188 0.188 0.188 0.188 -0.084 0.188 -0.188 -0.084 -0.188 -0.188 -0.188m0 0.047c0.078 0 0.141 0.063 0.141 0.141S0.265 0.328 0.188 0.328z"/>
-                                            </svg>
-                                        </span>
-                                        <span class="filter-tag-remove" id="clearFilterHeaderBtn" style="
-                                            cursor: pointer; 
-                                            font-size: 16px; 
-                                            line-height: 1; 
-                                            display: inline-flex;
-                                            align-items: center;
-                                            justify-content: center;
-                                            position: absolute;
-                                            right: 2px;   
-                                            margin-top: 0px;
-                                            transform: translateY(-50%);
-                                            opacity: 0.5;          
-                                            transition: opacity 0.2s ease;                
-                                        " title="Clear filter [Cmd-Shift-F]">✕</span>
-                                    </div>
-                                </div>`;
-                            })() :
-                            `<button id="showFilterSelectorHeaderBtn" class="filter-select-btn" style="background: #adb5bd; border: none; border-radius: 4px; padding: 0 10px; margin-top: 1px; font-size: 12px; cursor: pointer; color: #f8f9fa; min-width: 120px; height: 18px;font-weight: bold;" title="Set filter tag [Cmd-F]">Set filter tag</button>`
-                        }
-                    </div>
+                                    <span class="filter-tag-remove" id="clearFilterHeaderBtn" style="
+                                        cursor: pointer; 
+                                        font-size: 16px; 
+                                        line-height: 1; 
+                                        display: inline-flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        position: absolute;
+                                        right: 2px;   
+                                        margin-top: 0px;
+                                        transform: translateY(-50%);
+                                        opacity: 0.5;          
+                                        transition: opacity 0.2s ease;                
+                                    " title="Clear filter [Cmd-Shift-I]">✕</span>
+                                </div>
+                            </div>`;
+                        })() :
+                        `<button id="showFilterSelectorHeaderBtn" class="filter-select-btn" style="background: #adb5bd; border: none; border-radius: 4px; padding: 0 10px; margin-top: 1px; font-size: 12px; cursor: pointer; color: #f8f9fa; min-width: 120px; height: 18px;font-weight: bold;" title="Set filter tag [Cmd-I]">Set filter tag</button>`
+                    }
                 </div>
                 <div class="header-right">
                     <div class="follow-control">
+                        <!-- <button id="catchBtn" class="link-button ${State.catchEnabled ? 'active' : ''}" title="Catch: Auto-focus plugin after selecting text without reviews">Catch</button> -->
                         <button id="followBtn" class="link-button ${State.followCursor ? 'active' : ''}" title="Follow cursor in main document">Link</button>
                     </div>
                     <div class="expand-control">
@@ -2565,10 +2732,14 @@ window.showBatchTagInput = showBatchTagInput;
             <div class="reviews-container">
                 <div class="reviews" id="reviewsList">
                     ${data.filtered.map(review => {
-                        const escapedTextWithoutTags = escapeHtml(review.text.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim());
+                        const isPendingNew = (review.id === State.pendingNewReviewId);
+                        const textToShow = isPendingNew ? "" : review.text.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
+                        const escapedTextWithoutTags = escapeHtml(textToShow);
                         const isExpanded = State.expandedReviews.has(review.id);
                         const isHighlighted = review.id === highlightId;
                         const isEditing = review.id === htmlEditingReviewId;
+                        const isDeleteDisabled = (State.editingReviewId !== -1 || State.pendingNewReviewId !== null);
+                        const deleteInactiveClass = isDeleteDisabled ? 'inactive' : '';
                         return `<div class="review-item ${review.selected ? 'selected' : ''}" data-id="${review.id}">
                             <div class="review-check">
                                 <input type="checkbox" class="review-checkbox" ${State.selectedReviews.has(review.id) ? 'checked' : ''} data-id="${review.id}" title="Select/deselect review [Space]">
@@ -2605,16 +2776,16 @@ window.showBatchTagInput = showBatchTagInput;
                                             : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>' // Bleistift
                                         }
                                     </span>
-                                    <span class="review-delete-icon" data-id="${review.id}" title="Delete review [Cmd-Backspace]">
+                                    <span class="review-delete-icon ${deleteInactiveClass}" data-id="${review.id}" title="Delete review [Cmd-Backspace]">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="8" y="7" width="8" height="14" rx="1" ry="1"/>
                                         <rect x="5" y="3" width="14" height="4" rx="1" ry="1"/>  
                                         <line x1="12" y1="9" x2="12" y2="19"/>
                                         </svg>
-                                    </span>    
+                                    </span>
                                 </div>
                             </div>
-                            <div class="review-text ${isExpanded ? 'expanded' : ''} ${isEditing ? 'editing' : ''}" data-id="${review.id}" ${isEditing ? 'contenteditable="true"' : ''}>${escapedTextWithoutTags || '<span style="color:#999;">(empty)</span>'}</div>
+                            <div class="review-text ${isExpanded ? 'expanded' : ''} ${isEditing ? 'editing' : ''}" data-id="${review.id}" ${isEditing ? 'contenteditable="true"' : ''}>${escapedTextWithoutTags === "" ? "" : (escapedTextWithoutTags || '<span style="color:#999;">(empty)</span>')}</div>
                                 <div class="tags-container">
                                     ${review.tags.map(tag => {
                                         const cleanTag = tag.replace(/#/g, '');
@@ -2655,17 +2826,70 @@ window.showBatchTagInput = showBatchTagInput;
             <div class="input-group selection-section">
                 <label>Selection</label>
                 <div class="selection-controls">
-                    <div class="selection-row">
+                    <div class="sidebar-buttons">
                         <button id="toggleAllBtn" title="Select/deselect all visible reviews [Cmd-Shift-A]">All</button>
                         <button id="reverseBtn" title="Reverse selection of visible reviews [Cmd-Shift-R]">Reverse</button>
                     </div>
-                    <div class="selection-row">
-                        <button id="intersectBtn" title="Keep only visible reviews in selection [Cmd-Shift-I]">Intersect</button>
+                    <div class="sidebar-buttons">
+                        <button id="intersectBtn" title="Keep only visible reviews in selection [Cmd-Shift-S]">Intersect</button>
                         <button id="clearAllBtn" title="Clear entire selection [Cmd-Shift-C]">Clear</button>
                     </div>
                 </div>
             </div>
-            
+            <div class="input-group search-section">
+                <label>Search</label>
+                <div class="search-field-container" style="margin-bottom: 2x;">
+                    ${State.searchExpression && State.searchExpression !== "" ? 
+                        (() => {
+                            let displaySearch = State.searchExpression.length > 20 ? State.searchExpression.substring(0, 18) + '…' : State.searchExpression;
+                            let caseIcon = State.searchCaseSensitive ? 'Aa' : 'aa';
+                            let wholeWordIcon = State.searchWholeWord ? 'ab|Ab' : 'ab';
+                            return `<div id="activeSearchHeader" style="
+                                display: flex; 
+                                align-items: center; 
+                                background: #F8BA00; 
+                                border-radius: 4px;
+                                padding: 0 4px; 
+                                cursor: pointer; 
+                                width: 100%;
+                                height: 20px;
+                                margin-top: 0px;
+                                position: relative;
+                            ">
+                                <span style="font-weight: 500; color: #495057; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="Search: ${State.searchExpression}">
+                                    ${displaySearch}
+                                </span>
+                                <div style="display: flex; gap: 8px; margin-left: 8px;">
+                                    <span class="search-clear" id="clearSearchHeaderBtn" style="cursor: pointer; font-size: 16px; opacity: 0.5">✕</span>
+                                </div>
+                            </div>`;
+                        })() :
+                        `<button id="showSearchSelectorHeaderBtn" style="
+                            width: 100%; 
+                            background: #f8f9fa; 
+                            border: 1px solid #ced4da; 
+                            border-radius: 4px; 
+                            padding: 4px 8px; 
+                            font-size: 11px; 
+                            cursor: pointer; 
+                            color: #6c757d; 
+                            text-align: left;
+                        " title="Set search expression [Cmd-F]">
+                            Set search expression
+                        </button>`
+                    }
+                </div>
+
+                <!-- Buttons nur anzeigen wenn Suchbegriff aktiv -->
+                ${State.searchExpression && State.searchExpression !== "" ? `
+                <div class="search-controls">
+                    <div class="sidebar-buttons">
+                        <button id="searchNextBtn" title="Search Next [Cmd-G]">Search</button>
+                        <button id="searchToSelectBtn" title="Add results to selection">Select</button>
+                    </div>
+                </div>
+                ` : ''}
+            </div>     
             <div class="batch-section" id="batchSection">
                 <div class="batch-header"><span>${selectedCount} selected</span></div>
                 <div class="batch-tag-input">
@@ -2676,14 +2900,14 @@ window.showBatchTagInput = showBatchTagInput;
                     <button id="removeTagBatchBtn" ${!hasCurrentTag ? 'disabled' : ''} title="Remove batch tag from all selected reviews">- Tag</button>
                 </div>
                 <div class="batch-controls">
-                    <button id="deleteBatchBtn" title="Delete all selected reviews">Delete</button>
+                    <button id="deleteBatchBtn" title="Delete all selected reviews [Cmd-Shift-Backspace]">Delete</button>
                 </div>
             </div>
             <div id="batchProgress" style="width:0% ; height:4px; background:#F8BA00; border-radius:2px;"></div>            
             <div style="margin-top:auto; padding-top: 12px; padding-bottom: 10px;"">
                 <button id="exportCSVBtn" style="width:100%; padding:6px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;" title="Export filtered reviews to CSV in clipboard">
                     Export to Clipboard
-                </button>
+                </button>  
             </div>
         </div>
     </div>
@@ -2691,8 +2915,8 @@ window.showBatchTagInput = showBatchTagInput;
         <div style="background:white; padding:20px; border-radius:6px; max-width:280px;">
             <div id="confirmMessage" style="margin-bottom:20px; font-size:13px; text-align:center;"></div>
             <div style="display:flex; gap:8px; justify-content:center;">
-                <button id="confirmNo" style="padding:6px 12px; background:#f8f9fa; border:1px solid #ced4da; border-radius:4px; cursor:pointer;">No</button>
-                <button id="confirmYes" style="padding:6px 12px; background:#dc3545; border:none; border-radius:4px; color:white; cursor:pointer;">Yes</button>
+                <button id="confirmNo" style="padding:6px 12px; background:#f8f9fa; border:1px solid #ced4da; border-radius:4px; cursor:pointer;"><u>N</u>o</button>
+                <button id="confirmYes" style="padding:6px 12px; background:#f8f9fa; border:1px solid #ced4da; border-radius:4px; cursor:pointer;"><u>Y</u>es</button>
             </div>
         </div>
     </div>
@@ -2711,6 +2935,12 @@ const EventHandler = {
     
     onTextChange(loc, len) {
         if (State.suppressTextChange) return;
+        if (State.windowHasFocus) return;    // TESTBALLON!!!!!!        
+
+        // Überschreibe die falschen Beat-Werte mit der Realität INTERIMS-LÖSUNG
+        const realRange = Beat.selectedRange();
+        loc = realRange.location;
+        len = realRange.length;
 
         if (this._textTimer) {
             this._textTimer.invalidate();
@@ -2726,6 +2956,62 @@ const EventHandler = {
 onSelectionChange(loc, len) {
     if (State.suppressSelectionChange) return;
     if (State.windowHasFocus) return;
+
+    // Überschreibe die falschen Beat-Werte mit der Realität INTERIMS-LÖSUNG
+    const realRange = Beat.selectedRange();
+    loc = realRange.location;
+    len = realRange.length;
+    
+    // CATCH-LOGIK: Nur wenn Catch aktiv, Selektion nicht leer
+//    if (State.catchEnabled && len > 0) {
+//        // Prüfen, ob die Selektion ein bestehendes Review berührt
+//        let selectionTouchesReview = false;
+//        const data = UI._cachedData || Data.getAllReviews();
+//        if (data && data.reviews) {
+//            const selectionStart = loc;
+//            const selectionEnd = loc + len;
+//            for (const review of data.reviews) {
+//                if (review.location >= 0 && review.length > 0) {
+//                    const reviewStart = review.location;
+//                    const reviewEnd = review.location + review.length;
+//                    if (selectionEnd > reviewStart && selectionStart < reviewEnd) {
+//                        selectionTouchesReview = true;
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Nur Catchen, wenn die Selektion KEIN Review berührt
+//        if (!selectionTouchesReview) {
+//            if (WindowManager.window && typeof WindowManager.window.focus === 'function') {
+//                WindowManager.window.focus();
+//            }
+//            State.windowHasFocus = true;
+//
+//            UI.refresh("catch_focus", loc, len, false);
+
+//            // Blinken mit Verzögerung
+//            Beat.timer(0.1, () => { 
+//                WindowManager.runJS(`
+//               const header = document.querySelector('.header');
+//                if (header) {
+//                    const originalBg = header.style.backgroundColor;
+//                    header.style.transition = 'background-color 0.15s ease';
+//                    header.style.backgroundColor = '#F8BA00';
+//                    setTimeout(() => {
+//                        header.style.backgroundColor = originalBg || '';
+//                        setTimeout(() => {
+//                            header.style.transition = '';
+//                        }, 150);
+//                    }, 150);
+//                }
+//                `);
+//            }, false);
+//            return;
+//        };
+//    }
+    
 
     const now = Date.now();
     if (now - this._lastSelectionChange >= this._selectionInterval) {
@@ -2777,7 +3063,7 @@ function toggleExpandReview(reviewId) {
     }
 
 
-    jumpToReview(id); // zuerst jumpToReview, dann refresh, damit er für cursorIsReview (für moves) auf die aktuelle Cursorpotition zurückgreift
+    jumpToReview(id); // zuerst jumpToReview, dann refresh, damit er für cursorIsReview (für moves) auf die aktuelle Cursorposition zurückgreift
     UI.refresh("expand_and_select"); 
     
     // Scrollen falls nicht sichtbar
@@ -2825,6 +3111,7 @@ function jumpToReview(reviewId) {
         const review = reviews[parseInt(reviewId)];
         if (Beat.reviews && typeof Beat.reviews.rangeForReview === 'function') {
             const range = Beat.reviews.rangeForReview(review);
+            
             if (range && range.location !== undefined) {
                 // Zum Review scrollen
                 const currentCursor = Beat.selectedRange();
@@ -2875,10 +3162,6 @@ function intersectSelection() {
 
 function setCurrentTag(tag) {
     State.currentTag = tag.replace(/#/g, '').trim();
-}
-
-function showDeleteConfirm(reviewId) {
-    if (WindowManager.window) WindowManager.runJS('showConfirmDialog("Really delete this review?", ' + reviewId + ', "single");');
 }
 
 // ---------- 12. BEAT.CUSTOM EXPORTS ----------
@@ -2934,6 +3217,9 @@ Object.assign(Beat.custom, {
     setFollowCursor: (follow) => {
         State.followCursor = follow;
     },
+//    setCatchEnabled: (enabled) => {
+//        State.catchEnabled = enabled;
+//    },    
     updateSelectedReviewId: (reviewId) => {
         State.selectedReviewId = parseInt(reviewId);
         // Optional: Das Review automatisch expandieren
@@ -2947,17 +3233,117 @@ Object.assign(Beat.custom, {
     cancelEditingReview: () => EditMode.cancel(),
     copyReviewText: (id) => EditMode.copyText(id),
     
+// Search Funktionen
+
+setSearchExpressionAndFind: (expr) => {
+    State.searchExpression = expr;
+    State.searchActive = expr !== "";
+    
+    // Cache leeren für frische Daten
+    UI._cachedData = null;
+    
+    // Daten neu laden
+    const data = Data.getAllReviews();
+    const filtered = data.filtered;
+    
+    const firstMatch = SearchHelper.findNextSearchMatch(
+        filtered, -1,
+        State.searchExpression,
+        State.searchCaseSensitive,
+        State.searchWholeWord
+    );
+    
+    if (firstMatch !== -1) {
+        State.selectedReviewId = firstMatch;
+        State.expandedReviews.add(firstMatch);
+        UI.refresh("search_found", undefined, undefined, true);
+        jumpToReview(firstMatch);
+    } else {
+        // Kein Treffer: selectedReviewId zurücksetzen, kein Highlight
+        State.selectedReviewId = -1;
+        UI.refresh("search_no_match", undefined, undefined, true);
+        // Kein jumpToReview, kein Highlight
+    }
+},
+
+setSearchExpression: (expr) => {
+    State.searchExpression = expr;
+    State.searchActive = expr !== "";
+    UI.refresh("search_change", undefined, undefined, true);
+},
+
+setSearchCaseSensitive: (sensitive) => {
+    State.searchCaseSensitive = sensitive;
+    UI.refresh("search_change");
+},
+
+setSearchWholeWord: (wholeWord) => {
+    State.searchWholeWord = wholeWord;
+    UI.refresh("search_change");
+},
+
+clearSearch: () => {
+    State.searchExpression = "";
+    State.searchActive = false;
+    UI.refresh("search_clear");
+},
+
+searchNext: () => {
+    const data = Data.getAllReviews();
+    const filtered = data.filtered;
+    
+    // WICHTIG: Bei keinem Highlight → currentId = -1
+    const currentId = State.selectedReviewId !== -1 ? State.selectedReviewId : -1;
+    
+    const nextId = SearchHelper.findNextSearchMatch(
+        filtered, currentId, 
+        State.searchExpression
+    );
+    
+    if (nextId !== -1) {
+        State.selectedReviewId = nextId;
+        State.expandedReviews.add(nextId);
+        State.windowHasFocus = true;
+        UI.refresh("search_found", undefined, undefined, true);
+        jumpToReview(nextId);
+    } else {
+        State.selectedReviewId = -1;
+        UI.refresh("search_no_match", undefined, undefined, true);
+    }
+},
+
+searchToSelect: () => {
+    const data = Data.getAllReviews();
+    const filtered = data.filtered;
+    
+    const matches = SearchHelper.findAllSearchMatches(
+        filtered,
+        State.searchExpression,
+        State.searchCaseSensitive,
+        State.searchWholeWord
+    );
+    
+    matches.forEach(id => State.selectedReviews.add(id));
+    UI.refresh("search_to_select", undefined, undefined, true);
+
+},
+
+searchNextAfterSet: () => {
+    // Kurze Verzögerung, damit der State sich aktualisiert hat
+    Beat.timer(0.5, () => {
+        Beat.custom.searchNext();
+    }, false);
+},
+
 moveReview: (id) => {
     try {        
         // Prüfen ob Text selektiert ist
         if (!State.hasSelection || State.selectionLength === 0) {
-            Logger.log("ABBRUCH: Keine Selektion");
             return;
         }
         
         // Prüfen ob genau ein Review in der Selektion ist und es das angeklickte ist
         if (State.cursorIsReview && State.cursorIsReviewId !== parseInt(id)) {
-            Logger.log("ABBRUCH: Falsches Review selektiert");
             return;
         }
         
@@ -3006,7 +3392,7 @@ moveReview: (id) => {
         }
         
         if (newReviewId === -1) {
-            Logger.error("Neues Review mit Marker nicht gefunden!");
+            Logger.error("New Review with marker not found!");
             return;
         }
         
@@ -3023,14 +3409,206 @@ moveReview: (id) => {
         State.cursorIsReview = true;
         State.cursorIsReviewId = newReviewId;
     
+        jumpToReview(newReviewId);
         UI._cachedData = null;
         UI.refresh("review_moved", newLocation, 0, true);
-        jumpToReview(newReviewId);
         
     } catch(e) {
-        Logger.error("Fehler beim Move", e);
-        Beat.alert("Error relocating review: " + e.message);
+        Logger.error("Error moving review", e);
     }
+},
+
+pasteReviewFromClipboard: () => {
+    if (!State.hasSelection || State.selectionLength === 0 || State.cursorIsReview) {
+        return;
+    }
+    
+    // 1. Direkt aus der Zwischenablage lesen (neue synchrone API!)
+    let clipboardText;
+    try {
+        clipboardText = Beat.readFromPasteboard();
+    } catch(e) {
+        Logger.error("Error reading clipboard", e);
+        return;
+    }
+    
+    // 2. Prüfen ob die Zwischenablage Text enthält
+    if (!clipboardText || !clipboardText.trim()) {
+        return;
+    }
+    
+    // 3. Review erstellen (gesamte Logik hier direkt)
+    try {
+        let cleanText = clipboardText.trim();
+        
+        // Filter-Logik anwenden
+        const filterTag = State.currentFilterTag;
+        const invertFilter = State.invertFilter;
+        
+        if (filterTag && filterTag !== "") {
+            if (filterTag === "without tag") {
+                // Filter: "no tag"
+                if (invertFilter) {
+                    // Fall 3: NICHT "no tag" = Reviews MIT Tags sollen erscheinen
+                    // Paste-Review hat keine Tags → Tag hinzufügen
+                    const hasTags = (cleanText.match(/#[\wäöüßÄÖÜ\-]+/g) || []).length > 0;
+                    if (!hasTags) {
+                        cleanText = cleanText + " #__TagToMatchFilter";
+                    }
+                } else {
+                    // Fall 4: "no tag" = Reviews OHNE Tags
+                    // Paste-Review hat Tags → alle Tags entfernen
+                    cleanText = cleanText.replace(/#[\wäöüßÄÖÜ\-]+/g, '').trim();
+                }
+            } else {
+                // Normaler Tag-Filter (z.B. "#wichtig")
+                const searchTag = filterTag.toLowerCase();
+                const hasTag = (cleanText.match(/#[\wäöüßÄÖÜ\-]+/g) || [])
+                    .some(tag => tag.toLowerCase() === searchTag);
+                
+                if (invertFilter) {
+                    // Fall 1: NICHT Tag → Reviews OHNE diesen Tag
+                    if (hasTag) {
+                        // Tag entfernen
+                        const regex = new RegExp(searchTag, 'gi');
+                        cleanText = cleanText.replace(regex, '').trim();
+                        // Überflüssige Leerzeichen entfernen
+                        cleanText = cleanText.replace(/\s+/g, ' ').trim();
+                    }
+                } else {
+                    // Fall 2: Tag → Reviews MIT diesem Tag
+                    if (!hasTag) {
+                        // Tag hinzufügen
+                        cleanText = cleanText + " " + filterTag;
+                    }
+                }
+            }
+        }        
+        
+        // Marker für eindeutige Identifikation
+        const marker = "___PASTE_MARKER_" + Date.now() + "_" + Math.random() + "___";
+        const tempText = marker + " " + cleanText;
+        
+        State.suppressTextChange = true;
+        State.suppressSelectionChange = true;
+        
+        const rm = Beat.reviews;
+        
+        // Neues Review mit Marker erstellen
+        rm.createReview(tempText, State.selectionLocation, State.selectionLength);
+        
+        State.suppressTextChange = false;
+        State.suppressSelectionChange = false;
+        
+        // Das neue Review anhand des Markers finden
+        const reviews = rm.getReviews();
+        let newReviewId = -1;
+        let newReviewObj = null;
+        
+        for (let i = 0; i < reviews.length; i++) {
+            const review = reviews[i];
+            if (review.string && review.string.includes(marker)) {
+                newReviewId = i;
+                newReviewObj = review;
+                break;
+            }
+        }
+        
+        if (newReviewId === -1) {
+            Logger.error("New Review with marker not found!");
+            return;
+        }
+        
+        // Marker entfernen
+        newReviewObj.string = newReviewObj.string.replace(marker, '').trim();
+        rm.saveReview(newReviewObj);
+        
+        // Neues Review highlighten und selektieren
+        State.selectedReviewId = newReviewId;
+        State.expandedReviews.add(newReviewId);
+        
+        // UI refreshen
+        State.windowHasFocus = true;
+        State.cursorIsReview = true;
+        State.cursorIsReviewId = newReviewId;  
+        
+        // Zum neuen Review springen
+        Beat.custom.jumpToReview(newReviewId);
+        UI._cachedData = null;
+        UI.refresh("review_moved", State.selectionLocation, 0, true);
+        
+
+  
+    } catch(e) {
+        Logger.error("Error creating review", e);
+    }
+},
+
+createEmptyReview: () => {
+    if (!State.hasSelection || State.selectionLength === 0 || State.cursorIsReview) {
+        return;
+    }
+    
+    let location = State.selectionLocation;
+    let length = State.selectionLength;
+    if (length === 0 && location === -1) {
+        location = State.lastCursorPosition;
+    }
+    if (location < 0) return;
+    
+    const placeholder = "\u200B";
+    
+    // Auto-Tag bestimmen und sofort anhängen (damit Review im Filter sichtbar ist)
+    let autoTag = "";
+    if (State.currentFilterTag && State.currentFilterTag !== "") {
+        if (State.currentFilterTag === "without tag") {
+            if (State.invertFilter) {
+                autoTag = "__TagToMatchFilter";
+            }
+        } else {
+            if (!State.invertFilter) {
+                autoTag = State.currentFilterTag.replace('#', '');
+            }
+        }
+    }
+    
+    State.suppressTextChange = true;
+    State.suppressSelectionChange = true;
+    
+    const rm = Beat.reviews;
+    rm.createReview(placeholder, location, length);
+    
+    State.suppressTextChange = false;
+    State.suppressSelectionChange = false;
+    
+    const reviews = rm.getReviews();
+    let newReviewId = -1;
+    for (let i = 0; i < reviews.length; i++) {
+        if (reviews[i].string && reviews[i].string === placeholder) {
+            newReviewId = i;
+            break;
+        }
+    }
+    if (newReviewId === -1) {
+        Logger.error("New review not found!");
+        return;
+    }
+    
+    // Tag sofort anhängen
+    if (autoTag !== "") {
+        Data.addTag(newReviewId, autoTag, true);
+    }
+    
+    State.pendingNewReviewId = newReviewId;
+    
+    // Selektionen löschen, damit das neue Review nicht markiert wird
+    State.cursorIsReview = false;
+    State.cursorIsReviewId = -1;
+
+    Beat.custom.jumpToReview(newReviewId);
+    UI._cachedData = null;
+    UI.refresh("new_review", location, length, true);
+    EditMode.start(newReviewId);
 },
     
 // Fenster-Fokus
@@ -3039,10 +3617,19 @@ setWindowFocus: (hasFocus) => {
     State.windowHasFocus = hasFocus;
 },
 
-setWindowSize: (width) => {
+setWindowSize: (width, minValue) => {
     if (WindowManager.window && typeof WindowManager.window.setFrame === 'function') {
-        const frame = WindowManager.window.getFrame();
-        WindowManager.window.setFrame(frame.x, frame.y, width, frame.height);
+        var frame = WindowManager.window.getFrame();
+        var newWidth = width;
+        if (minValue) {
+            // Nur setzen wenn aktuell kleiner als gewünschte Breite
+            if (frame.width < width) {
+                newWidth = width;
+            } else {
+                return; // nichts tun
+            }
+        }
+        WindowManager.window.setFrame(frame.x, frame.y, newWidth, frame.height); 
     }
 },
 
@@ -3074,7 +3661,6 @@ setWindowSize: (width) => {
 
     // Hilfsfunktionen
     jumpToReview,
-    showDeleteConfirm
 });
 
 // ---------- 13. INITIALISIERUNG ----------
