@@ -1,4 +1,4 @@
-/*
+/* @ians branch
 Title: Keywords
 Copyright: Bode Pickman
 <Description>
@@ -10,10 +10,10 @@ The Notes + Synopsis tab pulls every inline note, synopsis, omitted text, and No
 
 In the Boneyard, notes are grouped automatically based on section headers and scene headings:
 <br>
-	•	A section header (#, ##, or ###) starts a new group and includes everything below it, even multiple scene headings, until the next section header.
-	<br><br>
+  •	A section header (#, ##, or ###) starts a new group and includes everything below it, even multiple scene headings, until the next section header.
+  <br><br>
   •	If no section header is active, a scene heading (like INT. or EXT.) starts a group and includes all lines until the next scene heading or section header.
-	<br><br>
+  <br><br>
   •	Text before the first section or scene heading is grouped by scene (if possible) or treated as individual entries.
 <br><br>
 This grouping behavior only applies to the Boneyard. The Notepad handles each paragraph as its own entry.
@@ -38,6 +38,100 @@ let occurrenceIndex = {};
 
 // Per-tag color dictionary, persisted in user defaults.
 let tagColors = Beat.getUserDefault("tagColors") || {};
+
+
+// --- Marker color mappings and helper utilities ---
+const markerColors = {
+  red: '#ff3b30',
+  orange: '#ff9500',
+  yellow: '#ffcc00',
+  green: '#34c759',
+  teal: '#30b0c7',
+  blue: '#007aff',
+  purple: '#af52de',
+  pink: '#ff2d55',
+  brown: '#a2845e',
+  gray: '#8e8e93',
+  grey: '#8e8e93',
+  cyan: '#32ade6',
+  magenta: '#ff2d55',
+  gold: '#ffd700',
+  goldenrod: '#daa520',
+  rose: '#ff2d55',
+  cherry: '#de1738',
+  buff: '#f0dc82'
+};
+const defaultMarkerColor = '#ffcc00';
+
+function hexToRgba(hex, alpha = 0.18) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function parseMarker(content) {
+  const trimmed = content.trim();
+
+  // 1. marker <color> : <text>
+  let match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: match[1], text: match[2] };
+  }
+
+  // 2. marker : <text>
+  match = trimmed.match(/^marker\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  // 3. marker <color> <text>
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s+(.*)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: match[2] };
+    }
+  }
+
+  // 3.5. marker <color> (no text)
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: "" };
+    }
+  }
+
+  // 4. marker <text>
+  match = trimmed.match(/^marker\s+(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  // Fallback
+  return { color: null, text: trimmed.replace(/^marker\s*/i, '') };
+}
+
+function isValidColor(colorStr) {
+  const hexRegex = /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/;
+  if (hexRegex.test(colorStr)) return true;
+  return markerColors.hasOwnProperty(colorStr.toLowerCase());
+}
+
+function getMarkerColor(colorName) {
+  if (!colorName) return defaultMarkerColor;
+  const lower = colorName.toLowerCase();
+  if (markerColors[lower]) return markerColors[lower];
+  if (/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(colorName)) {
+    return colorName;
+  }
+  return defaultMarkerColor;
+}
 
 
 // Normalize a string for stable keying/dismissal
@@ -145,6 +239,8 @@ let showNotepad = Beat.getDocumentSetting("showNotepad");
 if (showNotepad === undefined) showNotepad = true;
 let showBoneyard = Beat.getDocumentSetting("showBoneyard");
 if (showBoneyard === undefined) showBoneyard = true;
+let showMarkers = Beat.getDocumentSetting("showMarkers");
+if (showMarkers === undefined) showMarkers = true;
 let hideBackgroundTags = Beat.getDocumentSetting("hideBackgroundTags");
 if (hideBackgroundTags === undefined) hideBackgroundTags = false;
 let enforceContrast = Beat.getUserDefault("enforceContrast");
@@ -190,86 +286,86 @@ function getContrastColor(hex) {
 }
 
 // === WCAG Contrast (Hue-Preserving) Utilities ===
-function _hex(h){return h.replace(/^#/,'');}
-function _clamp01(x){return Math.max(0,Math.min(1,x));}
-function _rgbFromHex(hex){
-  const h=_hex(hex);
+function _hex(h) { return h.replace(/^#/, ''); }
+function _clamp01(x) { return Math.max(0, Math.min(1, x)); }
+function _rgbFromHex(hex) {
+  const h = _hex(hex);
   return {
-    r: parseInt(h.slice(0,2),16),
-    g: parseInt(h.slice(2,4),16),
-    b: parseInt(h.slice(4,6),16)
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16)
   };
 }
-function _hexFromRgb(r,g,b){
-  const to2=n=>n.toString(16).padStart(2,'0');
+function _hexFromRgb(r, g, b) {
+  const to2 = n => n.toString(16).padStart(2, '0');
   return `#${to2(r)}${to2(g)}${to2(b)}`;
 }
-function _rgbToHsl(r,g,b){
-  r/=255; g/=255; b/=255;
-  const max=Math.max(r,g,b), min=Math.min(r,g,b);
-  let h,s,l=(max+min)/2;
-  if(max===min){ h=s=0; }
-  else{
-    const d=max-min;
-    s = l>0.5 ? d/(2-max-min) : d/(max+min);
-    switch(max){
-      case r: h=(g-b)/d + (g<b?6:0); break;
-      case g: h=(b-r)/d + 2; break;
-      case b: h=(r-g)/d + 4; break;
+function _rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
     }
-    h/=6;
+    h /= 6;
   }
-  return {h,s,l};
+  return { h, s, l };
 }
-function _hslToRgb(h,s,l){
-  function hue2rgb(p,q,t){
-    if(t<0) t+=1; if(t>1) t-=1;
-    if(t<1/6) return p + (q-p)*6*t;
-    if(t<1/2) return q;
-    if(t<2/3) return p + (q-p)*(2/3 - t)*6;
+function _hslToRgb(h, s, l) {
+  function hue2rgb(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
     return p;
   }
-  let r,g,b;
-  if(s===0){ r=g=b=l; }
-  else{
-    const q = l<0.5 ? l*(1+s) : l + s - l*s;
-    const p = 2*l - q;
-    r = hue2rgb(p,q,h+1/3);
-    g = hue2rgb(p,q,h);
-    b = hue2rgb(p,q,h-1/3);
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
   }
-  return { r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255) };
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
 }
 // Relative luminance + contrast ratio (WCAG)
-function _relLum(hex){
-  const {r,g,b}=_rgbFromHex(hex);
-  const f=c=>{ c/=255; return (c<=0.03928)? c/12.92 : Math.pow((c+0.055)/1.055,2.4); };
-  const R=f(r), G=f(g), B=f(b);
-  return 0.2126*R + 0.7152*G + 0.0722*B;
+function _relLum(hex) {
+  const { r, g, b } = _rgbFromHex(hex);
+  const f = c => { c /= 255; return (c <= 0.03928) ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const R = f(r), G = f(g), B = f(b);
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 }
-function _contrastRatio(a,b){
-  const L1=_relLum(a), L2=_relLum(b);
-  const hi=Math.max(L1,L2), lo=Math.min(L1,L2);
-  return (hi+0.05)/(lo+0.05);
+function _contrastRatio(a, b) {
+  const L1 = _relLum(a), L2 = _relLum(b);
+  const hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+  return (hi + 0.05) / (lo + 0.05);
 }
-function _editorTextColor(){
+function _editorTextColor() {
   // Heuristic: Beat doesn’t expose the actual editor text color.
   // These values match typical Beat themes closely.
   return (themeMode === 'dark') ? '#E4E4E4' : '#1B1D1E';
 }
 
 // Perceived brightness (0..255) helper
-function _brightness255(hex){
-  const h=_hex(hex); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
-  return (r*299 + g*587 + b*114) / 1000; // 0..255
+function _brightness255(hex) {
+  const h = _hex(hex); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000; // 0..255
 }
 
 /**
  * Adjust only LIGHTNESS (keep hue & saturation) to hit a target WCAG contrast,
  * and enforce a minimum perceived brightness gap from the editor text color for visibility.
  */
-function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
-  const text=_editorTextColor();
+function ensureBgContrastHuePreserving(baseHex, minRatio = 8.0) {
+  const text = _editorTextColor();
   if (!enforceContrast) return baseHex;
   const BRIGHTNESS_GAP = 64; // ~25% of 255 — push further from text luminance
   const STEP = 0.08;         // 8% lightness steps for bolder shifts
@@ -280,22 +376,22 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
   }
 
   // Convert to HSL once
-  const {r,g,b}=_rgbFromHex(baseHex);
-  const {h,s,l}= _rgbToHsl(r,g,b);
+  const { r, g, b } = _rgbFromHex(baseHex);
+  const { h, s, l } = _rgbToHsl(r, g, b);
 
   let best = null; // {hex, deltaL, dir: 'lighter'|'darker'}
 
   // Search toward lighter and darker, prefer smallest lightness change that satisfies contrast first
-  function testDir(sign){
-    for (let k=STEP; k<=1.0; k+=STEP){
-      const L = _clamp01(l + sign*k);
-      const rgb=_hslToRgb(h,s,L);
-      const hex=_hexFromRgb(rgb.r,rgb.g,rgb.b);
-      if (_contrastRatio(text, hex) >= minRatio){
-        best = {hex, deltaL: Math.abs(L-l), dir: (sign>0?'lighter':'darker')};
+  function testDir(sign) {
+    for (let k = STEP; k <= 1.0; k += STEP) {
+      const L = _clamp01(l + sign * k);
+      const rgb = _hslToRgb(h, s, L);
+      const hex = _hexFromRgb(rgb.r, rgb.g, rgb.b);
+      if (_contrastRatio(text, hex) >= minRatio) {
+        best = { hex, deltaL: Math.abs(L - l), dir: (sign > 0 ? 'lighter' : 'darker') };
         break;
       }
-      if ((sign>0 && L>=1.0) || (sign<0 && L<=0.0)) break;
+      if ((sign > 0 && L >= 1.0) || (sign < 0 && L <= 0.0)) break;
     }
   }
   testDir(+1); // try lighter
@@ -306,7 +402,7 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
 
   // Choose the smaller deltaL; tie-break by higher contrast
   let chosen = null;
-  if (lighter && darker){
+  if (lighter && darker) {
     chosen = (lighter.deltaL < darker.deltaL) ? lighter : (darker.deltaL < lighter.deltaL ? darker : (_contrastRatio(text, lighter.hex) >= _contrastRatio(text, darker.hex) ? lighter : darker));
   } else {
     chosen = lighter || darker;
@@ -318,10 +414,10 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
   // Ensure a minimum perceived brightness gap vs text for better visibility, continuing in the chosen direction
   let out = chosen.hex;
   let outL = _rgbToHsl(...Object.values(_rgbFromHex(out))).l;
-  while (Math.abs(_brightness255(text) - _brightness255(out)) < BRIGHTNESS_GAP || _contrastRatio(text, out) < minRatio){
-    outL = _clamp01(outL + (chosen.dir==='lighter' ? STEP : -STEP));
-    const rgb=_hslToRgb(h,s,outL);
-    out = _hexFromRgb(rgb.r,rgb.g,rgb.b);
+  while (Math.abs(_brightness255(text) - _brightness255(out)) < BRIGHTNESS_GAP || _contrastRatio(text, out) < minRatio) {
+    outL = _clamp01(outL + (chosen.dir === 'lighter' ? STEP : -STEP));
+    const rgb = _hslToRgb(h, s, outL);
+    out = _hexFromRgb(rgb.r, rgb.g, rgb.b);
     // Stop if we hit bounds or the contrast is already quite strong
     if (outL === 0 || outL === 1 || _contrastRatio(text, out) >= (minRatio + 0.5)) break;
   }
@@ -329,12 +425,12 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
   const outHsl = _rgbToHsl(...Object.values(_rgbFromHex(out)));
   if (Math.abs(_brightness255(text) - _brightness255(out)) < BRIGHTNESS_GAP) {
     let targetL = (chosen.dir === 'lighter') ? 0.9 : 0.1;
-    const rgb=_hslToRgb(h, s, targetL);
-    const hexTarget=_hexFromRgb(rgb.r, rgb.g, rgb.b);
+    const rgb = _hslToRgb(h, s, targetL);
+    const hexTarget = _hexFromRgb(rgb.r, rgb.g, rgb.b);
     if (_contrastRatio(text, hexTarget) >= minRatio) out = hexTarget;
   }
   // Debug: log before/after contrast
-  try { Beat.log(`[KW] Contrast adjust: base=${baseHex} → result=${out} (min=${minRatio}, gap≥${BRIGHTNESS_GAP})`); } catch {}
+  try { Beat.log(`[KW] Contrast adjust: base=${baseHex} → result=${out} (min=${minRatio}, gap≥${BRIGHTNESS_GAP})`); } catch { }
   return out;
 }
 
@@ -351,9 +447,9 @@ function flashHighlight(color, start, length, cycles) {
     return;
   }
   Beat.textBackgroundHighlight(color, start, length);
-  Beat.timer(0.25, function() {
+  Beat.timer(0.25, function () {
     Beat.reformatRange(start, length);
-    Beat.timer(0.25, function() {
+    Beat.timer(0.25, function () {
       flashHighlight(color, start, length, cycles - 1);
     });
   });
@@ -368,13 +464,13 @@ function flashHighlight(color, start, length, cycles) {
  * @param {number} interval - Interval in seconds between blinks
  * @param {boolean} persistent - If true, do not reformat (remove) highlight at end (for persistent highlights, e.g. keywords)
  */
-function blinkRange(start, length, color, numberOfTimes, interval, persistent = false){
+function blinkRange(start, length, color, numberOfTimes, interval, persistent = false) {
   let remove = false;
 
   doBlink();
 
-  function doBlink(){
-    if(remove) {
+  function doBlink() {
+    if (remove) {
       if (!persistent) {
         Beat.reformatRange(start, length);
       }
@@ -385,7 +481,7 @@ function blinkRange(start, length, color, numberOfTimes, interval, persistent = 
 
     remove = !remove;
 
-    if(numberOfTimes){
+    if (numberOfTimes) {
       Beat.timer(interval, doBlink);
     }
   }
@@ -545,6 +641,10 @@ Beat.custom = {
       showBoneyard = !showBoneyard;
       Beat.setDocumentSetting("showBoneyard", showBoneyard);
     }
+    if (type === 'markers') {
+      showMarkers = !showMarkers;
+      Beat.setDocumentSetting("showMarkers", showMarkers);
+    }
     updateWindowUI();
   },
 
@@ -622,8 +722,8 @@ Beat.custom = {
       const { x: origX, y: origY, width: origW, height: origH } = sizesBeforeMinimize;
       const newWidth = Math.floor(origW * 0.25);
       const newX = (collapseMode === "right")
-                 ? (origX + origW - newWidth)
-                 : origX;
+        ? (origX + origW - newWidth)
+        : origX;
       const newY = origY + origH - 28;
       myWindow.setFrame(newX, newY, newWidth, 28);
     }
@@ -660,10 +760,10 @@ function main() {
     });
   });
 
-const ui = buildUIHtml();
-myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed,
-  { utility: false }
-);
+  const ui = buildUIHtml();
+  myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed,
+    { utility: false }
+  );
 
   centerWindow(myWindow);
 }
@@ -736,76 +836,65 @@ function gatherAllTags() {
   const regexNote = /\[\[(.*?)\]\]/g;
   const regexHash = /[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
   const lines = Beat.lines();
-  // Gather tags
+
+  // Helper to extract keywords, mentions, and special tags from note content in a single place
+  function extractTags(noteContent, lineIndex, noteMatchIndex, lineObj) {
+    let hashMatch;
+    regexHash.lastIndex = 0;
+    while ((hashMatch = regexHash.exec(noteContent)) !== null) {
+      const tagName = hashMatch[1].toLowerCase();
+      if (/^[a-fA-F0-9]{6}$/.test(tagName)) continue;
+      const absPos = lineObj.position + noteMatchIndex + 2 + hashMatch.index;
+      const matchLen = hashMatch[0].length;
+      if (!alreadyHaveOccurrence(absPos, matchLen)) {
+        addOccurrence(tagName, lineIndex, absPos, matchLen);
+      }
+    }
+    const specialRegex = /^\s*(beat|storyline)\b\s*[:]?\s+(.*)$/i;
+    const specialMatch = noteContent.match(specialRegex);
+    if (specialMatch) {
+      const tName = specialMatch[2].trim().toLowerCase();
+      const offsetInNote = noteContent.indexOf(specialMatch[2]);
+      const absPos = lineObj.position + noteMatchIndex + 2 + offsetInNote;
+      const matchLen = tName.length;
+      if (!alreadyHaveOccurrence(absPos, matchLen)) {
+        addOccurrence(tName, lineIndex, absPos, matchLen, true);
+      }
+    }
+  }
+
+  notesAndSynopsis = [];
+
   for (let i = 0; i < lines.length; i++) {
-    // --- Boneyard section skip logic ---
-    const trimmedLine = lines[i].string.trim();
+    const lineObj = lines[i];
+    const line = lineObj.string;
+    const trimmedLine = line.trim();
+
+    // A. Update boneyard section state
     if (boneyardHeaderRegex.test(trimmedLine)) {
       insideBoneyardSection = true;
     }
     if (/^#\s+/.test(trimmedLine) && !boneyardHeaderRegex.test(trimmedLine)) {
       insideBoneyardSection = false;
     }
-    if (insideBoneyardSection && hideBackgroundTags) {
+
+    // B. Synopsis lines (forced page breaks)
+    const trimmedLineLower = trimmedLine.toLowerCase();
+    if (trimmedLineLower === "manual page break" || trimmedLineLower === "===") {
+      notesAndSynopsis.push({
+        type: 'synopsis',
+        content: '**Forced Page Break**',
+        absPos: lineObj.position,
+        lineIndex: i,
+        key: `synopsis:${normalize('**Forced Page Break**')}`
+      });
+      if (!(insideBoneyardSection && hideBackgroundTags)) {
+        extractTags(line, i, 0, lineObj);
+      }
       continue;
     }
-    const lineObj = lines[i];
-    let noteMatch;
-    while ((noteMatch = regexNote.exec(lineObj.string)) !== null) {
-      const noteContent = noteMatch[1];
-      let hashMatch;
-      while ((hashMatch = regexHash.exec(noteContent)) !== null) {
-        const tagName = hashMatch[1].toLowerCase();
-        if (/^[a-fA-F0-9]{6}$/.test(tagName)) continue;
-        const absPos = lineObj.position + noteMatch.index + 2 + hashMatch.index;
-        const matchLen = hashMatch[0].length;
-        if (!alreadyHaveOccurrence(absPos, matchLen)) {
-          addOccurrence(tagName, i, absPos, matchLen);
-        }
-      }
-      const specialRegex = /^\s*(beat|storyline)\b\s*[:]?\s+(.*)$/i;
-      const specialMatch = noteContent.match(specialRegex);
-      if (specialMatch) {
-        const tName = specialMatch[2].trim().toLowerCase();
-        const offsetInNote = noteContent.indexOf(specialMatch[2]);
-        const absPos = lineObj.position + noteMatch.index + 2 + offsetInNote;
-        const matchLen = tName.length;
-        if (!alreadyHaveOccurrence(absPos, matchLen)) {
-          addOccurrence(tName, i, absPos, matchLen, true);
-        }
-      }
-    }
-  }
-  // Gather notes and synopsis lines
-  notesAndSynopsis = [];
-  let insideBoneyard = false;
-  insideBoneyardSection = false;
-  for (let i = 0; i < lines.length; i++) {
-    const lineObj = lines[i];
-    const line = lineObj.string;
-    let noteMatch;
-    while ((noteMatch = regexNote.exec(line)) !== null) {
-      if (insideBoneyardSection) continue;
-      const content = noteMatch[1];
-      if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
-      const absPos = lineObj.position + noteMatch.index;
-      const trimmed = content.trim();
-      const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
-      if (
-        !/^[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed) &&
-        !isSpecialTag &&
-        !line.trim().startsWith('=')
-      ) {
-        notesAndSynopsis.push({ type: 'note', content, absPos, lineIndex: i, key: `note:${normalize(content)}` });
-      }
-    }
-    // Inserted logic to rename manual page breaks and recognize === as forced page break
-    const trimmedLine = line.trim().toLowerCase();
-    if (trimmedLine === "manual page break" || trimmedLine === "===") {
-      notesAndSynopsis.push({ type: 'synopsis', content: '**Forced Page Break**', absPos: lineObj.position, lineIndex: i, key: `synopsis:${normalize('**Forced Page Break**')}` });
-      continue;
-    }
-    // Omitted scene block detection: treat all /* ... */ blocks as omitted scenes
+
+    // C. Omitted block comments
     if (line.includes("/*")) {
       let j = i;
       let blockLines = [line];
@@ -820,7 +909,6 @@ function gatherAllTags() {
       }
 
       const fullBlock = blockLines.join("\n").trim();
-
       const previewText = fullBlock
         .replace(/^\/\*/, "")
         .replace(/\*\/$/, "")
@@ -835,65 +923,64 @@ function gatherAllTags() {
         key: `omitted:${i}`
       });
 
+      // Parse tags for any lines inside the omitted block
+      for (let k = i; k <= j; k++) {
+        if (!(insideBoneyardSection && hideBackgroundTags)) {
+          extractTags(lines[k].string, k, 0, lines[k]);
+        }
+      }
+
       i = j; // Skip to the end of the omitted block
       continue;
     }
-    // --- Track if we are inside a BONEYARD block for main loop ---
-    const trimmed = line.trim();
-    if (/^#\s*BONEYARD/i.test(trimmed)) {
-      // New grouping rules for BONEYARD content
-      // 1. A section header (#, ##, ###) starts a group and collects every line
-      //   —including multiple scene headings—until the next section header.
-      // 2. If no section header is active, a scene heading
-      //    (INT., EXT., INT/EXT., I/E., EST., INT-EXT.) starts a group
-      //    and collects lines until the next scene heading or a section header.
-      // 3. Text before the first header is grouped by rule 2 (scene‑by‑scene).
+
+    // D. Boneyard block
+    if (boneyardHeaderRegex.test(trimmedLine)) {
       const bLines = [];
       for (let k = i + 1; k < lines.length; k++) {
         bLines.push({ text: lines[k].string, position: lines[k].position, index: k });
       }
 
       const sectionRegex = /^#\s*(.*)$/;
-      const sceneRegex   = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EST\.|INT-EXT\.)/i;
+      const sceneRegex = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EST\.|INT-EXT\.)/i;
 
-      const bBlocks     = [];
-      let currentBlock  = null; // active section‑ or scene‑level block
+      const bBlocks = [];
+      let currentBlock = null;
 
       bLines.forEach(({ text: bText, position: bPos, index: bIdx }) => {
         const trimmed = bText.trim();
 
-        // --- Section header -------------------------------------------------
+        // Section header
         const sectionMatch = trimmed.match(sectionRegex);
         if (sectionMatch) {
-          if (currentBlock) bBlocks.push(currentBlock);          // close prior block
-          currentBlock = {                                        // start new section
+          if (currentBlock) bBlocks.push(currentBlock);
+          currentBlock = {
             header: sectionMatch[1].trim(),
             lines: [],
             startIndex: bIdx,
             startPos: bPos
           };
-          return; // header handled
+          return;
         }
 
-        // --- Inside a section header: just accumulate -----------------------
+        // Inside a section header: accumulate
         if (currentBlock && currentBlock.header) {
           currentBlock.lines.push(bText);
           return;
         }
 
-        // --- Scene‑heading logic (only when NOT in a section) ---------------
+        // Scene-heading logic (only when NOT in a section)
         const isSceneHeading = sceneRegex.test(trimmed);
 
         if (isSceneHeading) {
-          if (currentBlock) bBlocks.push(currentBlock);          // close prior scene
-          currentBlock = {                                        // start new scene group
-            header: null,               // scene groups have no explicit header
-            lines: [bText],             // include the heading line itself
+          if (currentBlock) bBlocks.push(currentBlock);
+          currentBlock = {
+            header: null,
+            lines: [bText],
             startIndex: bIdx,
             startPos: bPos
           };
         } else if (trimmed !== '' || (currentBlock && currentBlock.lines.length)) {
-          // Non‑blank line (or blank line inside a group) => accumulate
           if (!currentBlock) {
             currentBlock = {
               header: null,
@@ -905,10 +992,8 @@ function gatherAllTags() {
             currentBlock.lines.push(bText);
           }
         }
-        // Completely blank lines before any group are ignored.
       });
 
-      // Close the last open block, if any.
       if (currentBlock) bBlocks.push(currentBlock);
 
       // Emit all BONEYARD snippets
@@ -924,20 +1009,68 @@ function gatherAllTags() {
           key: `boneyard:${blk.startIndex}`
         });
       });
-      // Stop processing further lines
-      break;
-    }
-    // Update insideBoneyard flag when a top-level header is encountered (not BONEYARD)
-    if (/^#\s+/.test(trimmed) && !/^#\s*BONEYARD/i.test(trimmed)) {
-      insideBoneyard = false;
-      insideBoneyardSection = false;
-    }
-    // If we are inside a BONEYARD block, skip synopsis detection for this line
-    // (Synopsis detection is moved below, after BONEYARD block handling)
 
-    // Guard clause: skip lines that are just == or ===
-    if (line.trim() === "==" || line.trim() === "===") continue;
-    // More explicit: Only add synopsis if NOT inside BONEYARD section (exclude = ... lines inside BONEYARD)
+      // Parse tags for all remaining lines in boneyard if hideBackgroundTags is false
+      if (!hideBackgroundTags) {
+        for (let k = i; k < lines.length; k++) {
+          extractTags(lines[k].string, k, 0, lines[k]);
+        }
+      }
+
+      break; // Stop processing further lines in the main loop
+    }
+
+    // E. Normal inline notes & tags processing
+    let noteMatch;
+    regexNote.lastIndex = 0;
+    while ((noteMatch = regexNote.exec(line)) !== null) {
+      const content = noteMatch[1];
+      const trimmed = content.trim();
+
+      // 1. Extract keywords/tags from the inline note if not skipping boneyard tags
+      if (!(insideBoneyardSection && hideBackgroundTags)) {
+        extractTags(content, i, noteMatch.index, lineObj);
+      }
+
+      // 2. Add to notesAndSynopsis list if it's a valid general note
+      if (!insideBoneyardSection) {
+        if (/^#[a-fA-F0-9]{6}$/.test(trimmed)) continue;
+        const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
+        const isStandaloneTag = /^[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed);
+        // @ian Sub-filter: if we already found a [[...]] note, check if the content starts with "marker" (case-insensitive).
+        // These are stored separately as type:'marker' so they are never mixed with general 'note' entries.
+        const isMarker = /^marker\b/i.test(trimmed);
+
+        if (!isStandaloneTag && !isSpecialTag && !line.trim().startsWith('=')) {
+          const absPos = lineObj.position + noteMatch.index;
+          let entryContent = content;
+          let markerBgColor = null;
+          let markerBorderColor = null;
+
+          if (isMarker) {
+            const parsedMarker = parseMarker(content);
+            entryContent = parsedMarker.text;
+            const resolvedColor = getMarkerColor(parsedMarker.color);
+            markerBgColor = hexToRgba(resolvedColor, 0.18);
+            markerBorderColor = resolvedColor;
+          }
+
+          notesAndSynopsis.push({
+            type: isMarker ? 'marker' : 'note',
+            content,
+            cleanContent: entryContent,
+            markerBgColor,
+            markerBorderColor,
+            absPos,
+            lineIndex: i,
+            key: `${isMarker ? 'marker' : 'note'}:${normalize(content)}`
+          });
+        }
+      }
+    }
+
+    // F. Synopsis lines (= Synopsis text)
+    if (trimmedLine === "==" || trimmedLine === "===") continue;
     const isSynopsisLine = /^=\s?(.*)/.test(line);
     if (isSynopsisLine && !insideBoneyardSection) {
       const content = line.replace(/^=\s?/, '');
@@ -948,13 +1081,12 @@ function gatherAllTags() {
       notesAndSynopsis.push({ type: 'synopsis', content, absPos, lineIndex: i, key: `synopsis:${normalize(content)}` });
     }
   }
-  // --- Add Notepad tags as tag occurrences and to notesAndSynopsis ---
+
+  // --- Add Notepad tags as tag occurrences ---
   // This must come after the main notepadNotes are gathered in gatherNotepadNotes
   const np = Beat.notepad?.string || '';
   if (np) {
     const notepadLines = np.split(/\n/);
-    // Add Notepad entries to notesAndSynopsis (done in gatherNotepadNotes)
-    // Now, scan all Notepad lines for tag patterns and add them as tags
     const tagRegex = /\[\[\s*(#?[^\]\s]+(?:\s+[^\]\s]+)*)\s*\]\]/g;
     notepadLines.forEach(line => {
       const stripped = line.trim();
@@ -1359,8 +1491,12 @@ function buildUIHtml() {
     .meta-block.synopsis-note {
       background: var(--helpBg);
     }
+    .meta-block.marker-note {
+      background: rgba(255, 220, 100, 0.18);
+      border-left: 3px solid #c8a000;
+    }
     /* Slightly darker background for inline notes */
-    .meta-block:not(.notepad-note):not(.boneyard-note):not(.synopsis-note) {
+    .meta-block:not(.notepad-note):not(.boneyard-note):not(.synopsis-note):not(.marker-note) {
       background: color-mix(in srgb, var(--helpBg) 90%, black 10%);
     }
     .filter-toggles {
@@ -1453,8 +1589,8 @@ function buildUIHtml() {
 <body>
   <div class="sticky-header">
     <div class="tab-bar">
-      <button class="themeTab ${activeTab==='keywords'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
-      <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
+      <button class="themeTab ${activeTab === 'keywords' ? 'active' : ''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
+      <button class="themeTab ${activeTab === 'notes' ? 'active' : ''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
     </div>
 `;
 
@@ -1464,8 +1600,9 @@ function buildUIHtml() {
     html += `
       <input type="text" id="noteSearchInput" placeholder="Search notes and synopsis..." 
              oninput="window.filterNotes(this.value)">
-      <div class="filter-toggles toggles">
+      <div class="filter-toggles toggles" style="display:flex; flex-wrap:wrap; gap:4px 16px; align-items:center;">
         <label><input type="checkbox" ${showNotes ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notes\\')')"> Notes</label>
+        <label><input type="checkbox" ${showMarkers ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'markers\\')')"> Markers</label>
         <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'synopsis\\')')"> Synopsis</label>
         <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omits</label>
         <label><input type="checkbox" ${showBoneyard ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'boneyard\\')')"> Boneyard</label>
@@ -1485,9 +1622,11 @@ function buildUIHtml() {
         (entry.sceneIndex === undefined && entry.range === undefined)
       );
       const isSynopsis = entry.type === 'synopsis';
+      const isMarkerEntry = entry.type === 'marker';
       if (
         (
           (entry.type === 'note' && ((isNotepadNote && showNotepad) || (!isNotepadNote && showNotes))) ||
+          (entry.type === 'marker' && showMarkers) ||
           (entry.type === 'synopsis' && showSynopsis) ||
           (entry.type === 'omitted' && showOmitted) ||
           (entry.type === 'boneyard' && showBoneyard)
@@ -1499,7 +1638,7 @@ function buildUIHtml() {
         const checked = isDismissed ? 'checked' : '';
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
         // Truncate content to 1000 characters for display
-        let displayContent = entry.content;
+        let displayContent = isMarkerEntry ? entry.cleanContent : entry.content;
         if (displayContent.length > 1000) {
           displayContent = displayContent.slice(0, 1000) + '…';
         }
@@ -1560,8 +1699,12 @@ function buildUIHtml() {
             </div>
           `;
         } else {
+          let inlineStyle = 'display: flex; align-items: center;';
+          if (isMarkerEntry && entry.markerBgColor && entry.markerBorderColor) {
+            inlineStyle += ` background: ${entry.markerBgColor}; border-left: 3px solid ${entry.markerBorderColor};`;
+          }
           html += `
-            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="display: flex; align-items: center;">
+            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}${isMarkerEntry ? ' marker-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="${inlineStyle}">
               <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
               <div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</div>
             </div>
@@ -1782,9 +1925,9 @@ function buildUIHtml() {
       <label style="margin-right:12px;">
         Auto-collapse:
         <select onchange="Beat.call('Beat.custom.setCollapseMode(\\'' + this.value + '\\')')">
-          <option value="off"   ${collapseMode==='off'   ? 'selected' : ''}>Off</option>
-          <option value="left"  ${collapseMode==='left'  ? 'selected' : ''}>Left</option>
-          <option value="right" ${collapseMode==='right' ? 'selected' : ''}>Right</option>
+          <option value="off"   ${collapseMode === 'off' ? 'selected' : ''}>Off</option>
+          <option value="left"  ${collapseMode === 'left' ? 'selected' : ''}>Left</option>
+          <option value="right" ${collapseMode === 'right' ? 'selected' : ''}>Right</option>
         </select>
       </label>
       <label style="margin-right:12px;">
@@ -1798,9 +1941,9 @@ function buildUIHtml() {
         Theme:
         <select onchange="Beat.call('Beat.custom.setThemeMode(\\'' + this.value + '\\')')">
           <option value="off"   disabled>Type</option>
-          <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
-          <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
-          <option value="system" ${themeMode==='system' ? 'selected' : ''}>System</option>
+          <option value="light"  ${themeMode === 'light' ? 'selected' : ''}>Light</option>
+          <option value="dark"   ${themeMode === 'dark' ? 'selected' : ''}>Dark</option>
+          <option value="system" ${themeMode === 'system' ? 'selected' : ''}>System</option>
         </select>
       </label>
     </div>
