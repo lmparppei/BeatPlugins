@@ -2,11 +2,11 @@
 Title: Keywords
 Copyright: Bode Pickman
 <Description>
-Organize your ideas and easily navigate to specific notes in your document using hashtags or the "at" symbol (like #theme or @plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
-Add a hashtag to any inline note: [[This will create a #tag]]
+Organize your ideas and easily navigate to specific annotations in your document using hashtags or the "at" symbol (like #theme or @plot). It creates a clickable list of keywords so you can jump to them quickly, making it easier to organize, structure, and navigate your document.
+Add a hashtag or "at" symbol to any inline note: [[This will create a #tag]] [[This will also create a @tag]]
 <br><br>
 
-The Notes + Synopsis tab pulls every inline note, synopsis, omitted text, and Notepad entry into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document.<br><br>
+The Annotations tab pulls every inline note, synopsis, omitted text, and notepad entry, markers, and reviews into a searchable, filterable list. You can toggle which types to show, mark items as completed (striking them out), and click any entry to jump to its location in your document.<br><br>
 
 In the Boneyard, notes are grouped automatically based on section headers and scene headings:
 <br>
@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 2.36
+Version: 3.0
 */
 
 // --- Global plugin state --- //
@@ -39,38 +39,122 @@ let occurrenceIndex = {};
 // Per-tag color dictionary, persisted in user defaults.
 let tagColors = Beat.getUserDefault("tagColors") || {};
 
+// Marker color mappings and helper utilities
+const markerColors = {
+  red: '#ff3b30',
+  orange: '#ff9500',
+  yellow: '#ffcc00',
+  green: '#34c759',
+  teal: '#30b0c7',
+  blue: '#007aff',
+  purple: '#af52de',
+  pink: '#ff2d55',
+  brown: '#a2845e',
+  gray: '#8e8e93',
+  grey: '#8e8e93',
+  cyan: '#32ade6',
+  magenta: '#ff2d55',
+  gold: '#ffd700',
+  goldenrod: '#daa520',
+  rose: '#ff2d55',
+  cherry: '#de1738',
+  buff: '#f0dc82'
+};
+const defaultMarkerColor = '#ffcc00';
+
+function hexToRgba(hex, alpha = 0.18) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function parseMarker(content) {
+  const trimmed = content.trim();
+
+  let match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: match[1], text: match[2] };
+  }
+
+  match = trimmed.match(/^marker\s*:\s*(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)\s+(.*)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: match[2] };
+    }
+  }
+
+  match = trimmed.match(/^marker\s+([a-zA-Z0-9#]+)$/i);
+  if (match) {
+    const colorCandidate = match[1].toLowerCase();
+    if (isValidColor(colorCandidate)) {
+      return { color: match[1], text: "" };
+    }
+  }
+
+  match = trimmed.match(/^marker\s+(.*)$/i);
+  if (match) {
+    return { color: null, text: match[1] };
+  }
+
+  return { color: null, text: trimmed.replace(/^marker\s*/i, '') };
+}
+
+function isValidColor(colorStr) {
+  const hexRegex = /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/;
+  if (hexRegex.test(colorStr)) return true;
+  return markerColors.hasOwnProperty(colorStr.toLowerCase());
+}
+
+function getMarkerColor(colorName) {
+  if (!colorName) return defaultMarkerColor;
+  const lower = colorName.toLowerCase();
+  if (markerColors[lower]) return markerColors[lower];
+  if (/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(colorName)) {
+    return colorName;
+  }
+  return defaultMarkerColor;
+}
+
 
 // Normalize a string for stable keying/dismissal
 function normalize(str) {
   return str
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[^a-zA-Z0-9\s-_]/g, '') // remove punctuation like ', ", etc.
+    .replace(/[^\p{L}\p{N}\p{Emoji}\p{M}\s\-_]/gu, '') // remove punctuation but preserve unicode letters, numbers, emoji, marks
     .toLowerCase();
 }
 
 // Lightweight inline markdown parser for bold, italic, underline, code, and styled headers (h1-h3 only)
 // Process input line by line to ensure headers only apply to lines starting with #, and do not affect surrounding lines.
 function parseInlineMarkdown(text) {
-  const lines = text.split("<br>");
+  const lines = text.split(/\r?\n|<br>/i);
   const parsedLines = lines.map(line => {
-    if (/^###\s*[^\n#]/.test(line)) {
-      // Subheading
-      const text = line.replace(/^###\s*/, '');
-      return `<span style="font-size:1em; font-weight:bold;">${text}</span>`;
+    const trimmed = line.trim();
+    
+    // FIX: If the line is just a tag pill (starts with HTML tags), DO NOT touch it!
+    if (trimmed.startsWith('<span class="tag-pill"') || trimmed.startsWith('[[') || trimmed.startsWith('#')) {
+      return line; 
     }
-    if (/^##\s*[^\n#]/.test(line)) {
-      // Secondary heading
-      const text = line.replace(/^##\s*/, '');
-      return `<span style="font-size:1.5em; font-weight:bold;">${text}</span>`;
-    }
-    if (/^#\s*[^\n#]/.test(line)) {
-      // Primary heading
-      const text = line.replace(/^#\s*/, '');
-      return `<span style="font-size:2em; font-weight:bold;">${text}</span>`;
-    }
+
+    if (/^###\s*[^\n#]/.test(line)) return line.replace(/^###\s*/, '');
+    if (/^##\s*[^\n#]/.test(line)) return line.replace(/^##\s*/, '');
+    if (/^#\s*[^\n#]/.test(line)) return line.replace(/^#\s*/, '');
+
     return line;
   });
+
   const joined = parsedLines.join("<br>");
   return joined
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -79,24 +163,32 @@ function parseInlineMarkdown(text) {
     .replace(/`(.*?)`/g, '<code>$1</code>');
 }
 
+
+
 // Helper: render inline hashtags as pills, for both [[#tag]] and #tag syntax
 function renderInlineTags(text) {
   // Style [[#tag]] using color
-  text = text.replace(/\[\[\s*#([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
-    const color = pickColorForTag(tag.toLowerCase());
-    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.toLowerCase()}</span>`;
+  text = text.replace(/\[\[\s*#([\p{L}\p{N}\p{Emoji}\p{M}_]+)\s*\]\]/gu, (_, tag) => {
+    const base = pickColorForTag(tag.toLowerCase());
+    const uiColor = ensureUiContrast(base);
+    const fg = getContrastColor(uiColor);
+    return `<span class="tag-pill" style="background-color:${uiColor}; color:${fg}; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:6px 2px;">${tag.toLowerCase()}</span>`;
   });
 
   // Style [[@tag]] using same color logic (treat as @tag)
-  text = text.replace(/\[\[\s*@([a-zA-Z0-9_]+)\s*\]\]/g, (_, tag) => {
-    const color = pickColorForTag(tag.toLowerCase());
-    return `<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.toLowerCase()}</span>`;
+  text = text.replace(/\[\[\s*@([\p{L}\p{N}\p{Emoji}\p{M}_]+)\s*\]\]/gu, (_, tag) => {
+    const base = pickColorForTag(tag.toLowerCase());
+    const uiColor = ensureUiContrast(base);
+    const fg = getContrastColor(uiColor);
+    return `<span class="tag-pill" style="background-color:${uiColor}; color:${fg}; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:6px 2px;">${tag.toLowerCase()}</span>`;
   });
 
   // Also catch raw inline #tag and @tag (non-wrapped)
-  text = text.replace(/(^|\s)([#@][a-zA-Z0-9_]+)/g, (_, prefix, tag) => {
-    const color = pickColorForTag(tag.slice(1).toLowerCase());
-    return `${prefix}<span class="tag-pill" style="background-color:${color}; color:#fff; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:0 2px;">${tag.slice(1).toLowerCase()}</span>`;
+  text = text.replace(/(^|\s)([#@][\p{L}\p{N}\p{Emoji}\p{M}_]+)/gu, (_, prefix, tag) => {
+    const base = pickColorForTag(tag.slice(1).toLowerCase());
+    const uiColor = ensureUiContrast(base);
+    const fg = getContrastColor(uiColor);
+    return `${prefix}<span class="tag-pill" style="background-color:${uiColor}; color:${fg}; padding:3px 8px; border-radius:20px; font-size:0.85em; margin:6px 2px;">${tag.slice(1).toLowerCase()}</span>`;
   });
 
   return text;
@@ -114,6 +206,12 @@ let colorPopupY = 0;
 // Timer to refresh the tags
 let timer = null;
 
+// Poller for system appearance changes when themeMode === 'system'
+let appearancePoller = null;
+let _lastSystemDark = null;
+let beatPoller = null;
+let _lastBeatDark = null;
+
 // Reference to plugin window
 let myWindow = null;
 let isPluginVisible = true;
@@ -129,7 +227,6 @@ try {
 } catch (e) {
   // ObjC not available in this environment
 }
-
 // --- Notes/Synopsis global state ---
 // Initialize filter and tab preferences from persistent document settings
 let activeTab = Beat.getDocumentSetting("activeTab") || 'keywords';
@@ -145,14 +242,22 @@ let showNotepad = Beat.getDocumentSetting("showNotepad");
 if (showNotepad === undefined) showNotepad = true;
 let showBoneyard = Beat.getDocumentSetting("showBoneyard");
 if (showBoneyard === undefined) showBoneyard = true;
+let showMarkers = Beat.getDocumentSetting("showMarkers");
+if (showMarkers === undefined) showMarkers = true;
+let showReviews = Beat.getDocumentSetting("showReviews");
+if (showReviews === undefined) showReviews = true;
 let hideBackgroundTags = Beat.getDocumentSetting("hideBackgroundTags");
 if (hideBackgroundTags === undefined) hideBackgroundTags = false;
 let enforceContrast = Beat.getUserDefault("enforceContrast");
 if (enforceContrast === undefined) enforceContrast = true;
+ 
 let notesAndSynopsis = [];
 // Set of dismissed notes/synopsis entry keys (type:absPos)
 let savedDismissed = Beat.getDocumentSetting("dismissedEntries") || [];
 let dismissedEntries = new Set(savedDismissed);
+// Whether the filter popout should be shown after UI rebuilds
+let isFilterPopoutOpen = Beat.getDocumentSetting('filterPopoutOpen');
+if (isFilterPopoutOpen === undefined) isFilterPopoutOpen = false;
 
 /**
  * Darkens a given hex color by a specified factor (0.0 to 1.0).
@@ -254,14 +359,158 @@ function _contrastRatio(a,b){
 }
 function _editorTextColor(){
   // Heuristic: Beat doesn’t expose the actual editor text color.
-  // These values match typical Beat themes closely.
-  return (themeMode === 'dark') ? '#E4E4E4' : '#1B1D1E';
+  // Respect explicit themeMode; if 'system', use the _isSystemDark() helper.
+  try {
+    if (themeMode === 'dark') return '#E4E4E4';
+    if (themeMode === 'light') return '#1B1D1E';
+    // system
+    return _isSystemDark() ? '#E4E4E4' : '#1B1D1E';
+  } catch (e) {}
+  return '#1B1D1E';
+}
+
+function _isSystemDark(){
+  try {
+    if (typeof ObjC !== 'undefined') {
+      try {
+        var ud = $.NSUserDefaults.standardUserDefaults;
+        var mode = ud.objectForKey('AppleInterfaceStyle');
+        return (mode && mode.toString && mode.toString() === 'Dark');
+      } catch(e) {
+        return false;
+      }
+    }
+  } catch(e){}
+  return false;
+}
+
+// Try to detect whether Beat (the app) is in dark mode by reading its user defaults
+function _isBeatDark(){
+  try {
+    if (typeof ObjC !== 'undefined' && ObjC.classes && ObjC.classes.NSUserDefaults) {
+      try {
+        const bundle = 'fi.KAPITAN.Beat';
+        const ud = ObjC.classes.NSUserDefaults.standardUserDefaults();
+        const pd = ud.persistentDomainForName_(ObjC.classes.NSString.stringWithString(bundle));
+        if (pd) {
+          // Convert dictionary description to string and search for dark keywords
+          const desc = pd.description ? pd.description().toString().toLowerCase() : '';
+          if (desc.indexOf('dark') >= 0 || desc.indexOf('appearance') >= 0 || desc.indexOf('theme') >= 0) return desc.indexOf('dark') >= 0;
+        }
+        // Fallback: some apps may store in standardUserDefaults top-level keys
+        const maybe = ud.objectForKey_(ObjC.classes.NSString.stringWithString('BeatAppearance')) || ud.objectForKey_(ObjC.classes.NSString.stringWithString('appearance')) || ud.objectForKey_(ObjC.classes.NSString.stringWithString('theme'));
+        if (maybe && maybe.toString) {
+          const s = maybe.toString().toLowerCase();
+          return s.indexOf('dark') >= 0;
+        }
+      } catch (e) {
+        // fall through
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
+function startBeatWatcher(){
+  try { if (beatPoller && beatPoller.stop) beatPoller.stop(); } catch(e){}
+  _lastBeatDark = _isBeatDark();
+  beatPoller = Beat.timer(1.5, function(){
+    const now = _isBeatDark();
+    if (now !== _lastBeatDark){
+      _lastBeatDark = now;
+      removeAllHighlights();
+      reapplyAllHighlights();
+      updateWindowUI();
+    }
+    startBeatWatcher();
+  });
+}
+
+function startAppearanceWatcher(){
+  try {
+    if (appearancePoller && appearancePoller.stop) appearancePoller.stop();
+  } catch(e){}
+  if (themeMode !== 'system') return;
+  _lastSystemDark = _isSystemDark();
+  appearancePoller = Beat.timer(1.5, function(){
+    const now = _isSystemDark();
+    if (now !== _lastSystemDark){
+      _lastSystemDark = now;
+      removeAllHighlights();
+      reapplyAllHighlights();
+      updateWindowUI();
+    }
+    // reschedule
+    startAppearanceWatcher();
+  });
 }
 
 // Perceived brightness (0..255) helper
 function _brightness255(hex){
   const h=_hex(hex); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
   return (r*299 + g*587 + b*114) / 1000; // 0..255
+}
+
+// Return the UI body/background color based on themeMode (used for pill visibility checks)
+function _bodyBgColor(){
+  if (themeMode === 'dark') return '#1e1e1e';
+  // Treat 'system' as light by default; Beat doesn't expose CSS here.
+  return '#ffffff';
+}
+
+/**
+ * Ensure a tag color is visible against the plugin UI background (pills/listing).
+ * Preserves hue/saturation while only adjusting lightness to reach a minimum contrast
+ * ratio against the page background. Returns an adjusted hex color.
+ */
+function ensureUiContrast(baseHex, minRatio = 3.0){
+  if (!enforceContrast) return baseHex;
+  const body = _bodyBgColor();
+  if (_contrastRatio(body, baseHex) >= minRatio && Math.abs(_brightness255(body) - _brightness255(baseHex)) >= 48) return baseHex;
+
+  // Convert to HSL and search lighter/darker directions
+  const {r,g,b} = _rgbFromHex(baseHex);
+  const {h,s,l} = _rgbToHsl(r,g,b);
+  const STEP = 0.06;
+  const BRIGHTNESS_GAP = 48;
+
+  let best = null;
+  function testDir(sign){
+    for (let k = STEP; k <= 1.0; k += STEP){
+      const L = _clamp01(l + sign * k);
+      const rgb = _hslToRgb(h, s, L);
+      const hex = _hexFromRgb(rgb.r, rgb.g, rgb.b);
+      if (_contrastRatio(body, hex) >= minRatio){
+        best = { hex, deltaL: Math.abs(L - l), dir: (sign>0 ? 'lighter' : 'darker') };
+        break;
+      }
+      if ((sign>0 && L>=1.0) || (sign<0 && L<=0.0)) break;
+    }
+  }
+  testDir(+1);
+  const lighter = best;
+  best = null;
+  testDir(-1);
+  const darker = best;
+
+  let chosen = null;
+  if (lighter && darker){
+    chosen = (lighter.deltaL < darker.deltaL) ? lighter : (darker.deltaL < lighter.deltaL ? darker : (_contrastRatio(body, lighter.hex) >= _contrastRatio(body, darker.hex) ? lighter : darker));
+  } else {
+    chosen = lighter || darker;
+  }
+  if (!chosen) return baseHex;
+
+  // Nudging to ensure perceived brightness gap
+  let out = chosen.hex;
+  let outL = _rgbToHsl(...Object.values(_rgbFromHex(out))).l;
+  while (Math.abs(_brightness255(body) - _brightness255(out)) < BRIGHTNESS_GAP || _contrastRatio(body, out) < minRatio){
+    outL = _clamp01(outL + (chosen.dir === 'lighter' ? STEP : -STEP));
+    const rgb = _hslToRgb(h, s, outL);
+    out = _hexFromRgb(rgb.r, rgb.g, rgb.b);
+    if (outL === 0 || outL === 1 || _contrastRatio(body, out) >= (minRatio + 0.5)) break;
+  }
+  return out;
 }
 
 /**
@@ -342,19 +591,28 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
  * FLASH HIGHLIGHT FUNCTION
  * -------------------------
  * Alternates between applying a highlight and reformatting the range.
- * When cycles === 1, leaves the highlight visible.
+ * When cycles === 1, leaves the highlight visible (or removes it if reformatAtEnd = true).
+ * @param {string} color - Highlight color
+ * @param {number} start - Start position
+ * @param {number} length - Length of range
+ * @param {number} cycles - Number of flash cycles
+ * @param {boolean} reformatAtEnd - If true, remove highlight at end. Defaults to false.
  */
-function flashHighlight(color, start, length, cycles) {
+function flashHighlight(color, start, length, cycles, reformatAtEnd = false) {
   if (cycles <= 0) return;
   if (cycles === 1) {
-    Beat.textBackgroundHighlight(color, start, length);
+    if (reformatAtEnd) {
+      Beat.reformatRange(start, length);
+    } else {
+      Beat.textBackgroundHighlight(color, start, length);
+    }
     return;
   }
   Beat.textBackgroundHighlight(color, start, length);
   Beat.timer(0.25, function() {
     Beat.reformatRange(start, length);
     Beat.timer(0.25, function() {
-      flashHighlight(color, start, length, cycles - 1);
+      flashHighlight(color, start, length, cycles - 1, reformatAtEnd);
     });
   });
 }
@@ -439,23 +697,38 @@ Beat.custom = {
 
     const all = tagsByName[tagName];
     const docHits = all.filter(o => o.lineIndex != null && o.lineIndex >= 0);
-    const noteHits = all.filter(o => o.lineIndex == null || o.lineIndex < 0);
+    const reviewHits = all.filter(o => o.lineIndex === -2);
+    const noteHits = all.filter(o => (o.lineIndex == null || o.lineIndex === -1) && o.lineIndex !== -2);
 
     if (!occurrenceIndex[tagName]) occurrenceIndex[tagName] = 0;
 
-    const index = occurrenceIndex[tagName] % docHits.length;
-    const occ = docHits[index];
+    // Combine doc hits and review hits
+    const allJumpable = [...docHits, ...reviewHits];
+    if (allJumpable.length === 0) {
+      if (noteHits.length > 0) {
+        Beat.alert("Note in Notepad", "This keyword was found in your Notepad.");
+      }
+      return;
+    }
+
+    const index = occurrenceIndex[tagName] % allJumpable.length;
+    const occ = allJumpable[index];
 
     if (occ) {
-      const lines = Beat.lines();
-      if (lines[occ.lineIndex]) {
-        Beat.scrollTo(lines[occ.lineIndex].position);
-        flashHighlight(occ.color, occ.absPos, occ.matchLen, 3);
+      if (occ.lineIndex === -2) {
+        // Review hit: jump using absPos directly, end flash with highlight removed to show native review color
+        Beat.scrollTo(occ.absPos);
+        flashHighlight(occ.color, occ.absPos, occ.matchLen, 3, true);
+      } else if (occ.lineIndex >= 0) {
+        // Doc hit: jump using line index, keep highlight at end
+        const lines = Beat.lines();
+        if (lines[occ.lineIndex]) {
+          Beat.scrollTo(lines[occ.lineIndex].position);
+          flashHighlight(occ.color, occ.absPos, occ.matchLen, 3, false);
+        }
       }
       occurrenceIndex[tagName]++;
       updateWindowUI();
-    } else if (noteHits.length > 0) {
-      Beat.alert("Note in Notepad", "This keyword was found in your Notepad.");
     }
   },
 
@@ -541,9 +814,17 @@ Beat.custom = {
       showNotepad = !showNotepad;
       Beat.setDocumentSetting("showNotepad", showNotepad);
     }
+    if (type === 'markers') {
+      showMarkers = !showMarkers;
+      Beat.setDocumentSetting("showMarkers", showMarkers);
+    }
     if (type === 'boneyard') {
       showBoneyard = !showBoneyard;
       Beat.setDocumentSetting("showBoneyard", showBoneyard);
+    }
+    if (type === 'review') {
+      showReviews = !showReviews;
+      Beat.setDocumentSetting("showReviews", showReviews);
     }
     updateWindowUI();
   },
@@ -553,10 +834,100 @@ Beat.custom = {
     Beat.setDocumentSetting("showCompleted", showCompleted);
     updateWindowUI();
   },
+  
+  // Persist a single filter setting without refreshing the UI
+  setFilterSetting(type, state) {
+    try {
+      const val = !!state;
+      if (type === 'notes') { showNotes = val; Beat.setDocumentSetting('showNotes', showNotes); }
+      else if (type === 'markers') { showMarkers = val; Beat.setDocumentSetting('showMarkers', showMarkers); }
+      else if (type === 'synopsis') { showSynopsis = val; Beat.setDocumentSetting('showSynopsis', showSynopsis); }
+      else if (type === 'omitted') { showOmitted = val; Beat.setDocumentSetting('showOmitted', showOmitted); }
+      else if (type === 'boneyard') { showBoneyard = val; Beat.setDocumentSetting('showBoneyard', showBoneyard); }
+      else if (type === 'notepad') { showNotepad = val; Beat.setDocumentSetting('showNotepad', showNotepad); }
+      else if (type === 'review') { showReviews = val; Beat.setDocumentSetting('showReviews', showReviews); }
+      else if (type === 'completed') { showCompleted = val; Beat.setDocumentSetting('showCompleted', showCompleted); }
+    } catch (e) {}
+  },
+
+  // Persist popout open state and optionally force a rebuild
+  setFilterPopout(state) {
+    try {
+      isFilterPopoutOpen = !!state;
+      Beat.setDocumentSetting('filterPopoutOpen', isFilterPopoutOpen);
+      updateWindowUI();
+    } catch (e) {}
+  },
+
+  // Atomically set popout open, toggle the named filter, and rebuild UI so popout remains open
+  toggleFilterWithPopout(type) {
+    try {
+      isFilterPopoutOpen = true;
+      Beat.setDocumentSetting('filterPopoutOpen', true);
+      if (type === 'notes') {
+        showNotes = !showNotes; Beat.setDocumentSetting('showNotes', showNotes);
+      }
+      if (type === 'synopsis') {
+        showSynopsis = !showSynopsis; Beat.setDocumentSetting('showSynopsis', showSynopsis);
+      }
+      if (type === 'omitted') {
+        showOmitted = !showOmitted; Beat.setDocumentSetting('showOmitted', showOmitted);
+      }
+      if (type === 'notepad') {
+        showNotepad = !showNotepad; Beat.setDocumentSetting('showNotepad', showNotepad);
+      }
+      if (type === 'markers') {
+        showMarkers = !showMarkers; Beat.setDocumentSetting('showMarkers', showMarkers);
+      }
+      if (type === 'boneyard') {
+        showBoneyard = !showBoneyard; Beat.setDocumentSetting('showBoneyard', showBoneyard);
+      }
+      if (type === 'review') {
+        showReviews = !showReviews; Beat.setDocumentSetting('showReviews', showReviews);
+      }
+      if (type === 'completed') {
+        showCompleted = !showCompleted; Beat.setDocumentSetting('showCompleted', showCompleted);
+      }
+      updateWindowUI();
+    } catch (e) {}
+  },
+  
+  openReview(reviewIndexStr) {
+    const idx = parseInt(reviewIndexStr, 10);
+    if (isNaN(idx)) return;
+    try {
+      let reviewLocation = -1;
+      const reviews = Beat.reviews?.getReviews?.() || [];
+      const rev = reviews[idx];
+      if (rev && Beat.reviews && typeof Beat.reviews.rangeForReview === 'function') {
+        const range = Beat.reviews.rangeForReview(rev);
+        if (range && range.location !== undefined) reviewLocation = range.location;
+      }
+
+      // fallback to notesAndSynopsis stored absPos
+      if (reviewLocation < 0) {
+        const entry = notesAndSynopsis.find(n => n.type === 'review' && n.reviewIndex === idx);
+        if (entry && entry.absPos >= 0) reviewLocation = entry.absPos;
+      }
+
+      if (reviewLocation >= 0) {
+        // Mirror Keywords behavior: scroll directly to absolute position and flash highlight
+        Beat.scrollTo(reviewLocation);
+        try { flashHighlight('#aad8ff', reviewLocation, 1, 3, true); } catch (e) {}
+      }
+    } catch (e) {}
+  },
 
   toggleTheme() {
     isDarkTheme = !isDarkTheme;
     Beat.setUserDefault("themePreference", isDarkTheme);
+    updateWindowUI();
+  },
+  // Force re-detect and reapply highlights (useful when Beat's theme changed externally)
+  forceReapplyHighlights() {
+    try { Beat.log('[KW] Manual reapply requested'); } catch(e){}
+    removeAllHighlights();
+    reapplyAllHighlights();
     updateWindowUI();
   },
   toggleDismissed(key) {
@@ -573,6 +944,7 @@ Beat.custom = {
     if (isNaN(position)) return;
 
     const lines = Beat.lines();
+    let found = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const lineStart = line.position;
@@ -584,28 +956,50 @@ Beat.custom = {
         blinkRange(lineStart, rangeLength, "#aad8ff", 3, 0.25, false);
         Beat.scrollTo(lineStart);
         // No Beat.reformatRange here to avoid interfering with persistent highlights
+        found = true;
         break;
       }
+    }
+
+    // If nothing matched (for example: a Review entry with a special position),
+    // fall back to scrolling directly to the absolute position. This mirrors
+    // how Keywords handles review hits and ensures Reviews open/expand in the editor.
+    if (!found) {
+      try {
+        Beat.scrollTo(position);
+      } catch (e) {}
     }
   },
   setLightMode() {
     themeMode = "light";
     Beat.setUserDefault("themePreference", themeMode);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    try { if (appearancePoller && appearancePoller.stop) appearancePoller.stop(); } catch(e){}
     updateWindowUI();
   },
   setDarkMode() {
     themeMode = "dark";
     Beat.setUserDefault("themePreference", themeMode);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    try { if (appearancePoller && appearancePoller.stop) appearancePoller.stop(); } catch(e){}
     updateWindowUI();
   },
   setSystemMode() {
     themeMode = "system";
     Beat.setUserDefault("themePreference", themeMode);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    startAppearanceWatcher();
     updateWindowUI();
   },
   setThemeMode(mode) {
     themeMode = mode;
     Beat.setUserDefault("themePreference", mode);
+    removeAllHighlights();
+    reapplyAllHighlights();
+    if (mode === 'system') startAppearanceWatcher(); else try { if (appearancePoller && appearancePoller.stop) appearancePoller.stop(); } catch(e){}
     updateWindowUI();
   },
   setCollapseMode(mode) {
@@ -661,12 +1055,22 @@ function main() {
   });
 
 const ui = buildUIHtml();
-myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed,
-  { utility: false }
-);
 
-  centerWindow(myWindow);
+// Restored to your original working htmlWindow method
+myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed, { 
+  utility: false 
+});
+
+centerWindow(myWindow);
 }
+
+
+
+
+
+
+
+
 
 function gatherNotepadNotes() {
   // Remove any prior Notepad-based entries to prevent duplication or stale dismissal states
@@ -734,7 +1138,7 @@ function gatherAllTags() {
   let insideBoneyardSection = false;
   const boneyardHeaderRegex = /^#\s*BONEYARD/i;
   const regexNote = /\[\[(.*?)\]\]/g;
-  const regexHash = /[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)/gu;
+  const regexHash = /[#@]([\p{L}\p{N}\p{Emoji}\p{M}]+)/gu;
   const lines = Beat.lines();
   // Gather tags
   for (let i = 0; i < lines.length; i++) {
@@ -792,11 +1196,32 @@ function gatherAllTags() {
       const trimmed = content.trim();
       const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
       if (
-        !/^[#@]([\p{L}\p{N}\p{Emoji_Presentation}\p{M}]+)$/u.test(trimmed) &&
+        !/^[#@]([\p{L}\p{N}\p{Emoji}\p{M}]+)$/u.test(trimmed) &&
         !isSpecialTag &&
         !line.trim().startsWith('=')
       ) {
-        notesAndSynopsis.push({ type: 'note', content, absPos, lineIndex: i, key: `note:${normalize(content)}` });
+        let type = 'note';
+        let entryContent = content;
+        let markerBgColor = null;
+        let markerBorderColor = null;
+        if (/^marker\b/i.test(trimmed)) {
+          type = 'marker';
+          const parsedMarker = parseMarker(content);
+          entryContent = parsedMarker.text;
+          const resolvedColor = getMarkerColor(parsedMarker.color);
+          markerBgColor = hexToRgba(resolvedColor, 0.18);
+          markerBorderColor = resolvedColor;
+        }
+        notesAndSynopsis.push({
+          type,
+          content,
+          cleanContent: entryContent,
+          markerBgColor,
+          markerBorderColor,
+          absPos,
+          lineIndex: i,
+          key: `${type}:${normalize(content)}`
+        });
       }
     }
     // Inserted logic to rename manual page breaks and recognize === as forced page break
@@ -948,6 +1373,76 @@ function gatherAllTags() {
       notesAndSynopsis.push({ type: 'synopsis', content, absPos, lineIndex: i, key: `synopsis:${normalize(content)}` });
     }
   }
+  // --- Gather tags from Reviews ---
+  // Extract all tags embedded in review strings and add them to the Keywords list
+  try {
+    const reviews = Beat.reviews?.getReviews?.() || [];
+    const reviewTagRegex = /[@#][\wäöüßÄÖÜ\-]+/g;
+    reviews.forEach(review => {
+      if (review && review.string) {
+        // Get the review's location in the document
+        let reviewLocation = -1;
+        try {
+          if (Beat.reviews && typeof Beat.reviews.rangeForReview === 'function') {
+            const range = Beat.reviews.rangeForReview(review);
+            if (range && range.location !== undefined) {
+              reviewLocation = range.location;
+            }
+          }
+        } catch (e) {
+          // If location can't be determined, skip this review
+        }
+        
+        let tagMatch;
+        while ((tagMatch = reviewTagRegex.exec(review.string)) !== null) {
+          const tagName = tagMatch[0].replace(/^[@#]/, '').toLowerCase();
+          if (tagName && !/^[a-fA-F0-9]{6}$/.test(tagName)) {
+            // Use lineIndex: -2 to mark as a review tag, with actual document location
+            addTag(tagName, pickColorForTag(tagName), {
+              lineIndex: -2,
+              absPos: reviewLocation,
+              matchLen: tagName.length,
+              special: false,
+              reviewOffset: tagMatch.index
+            });
+          }
+        }
+      }
+    });
+  } catch (e) {
+    // Gracefully handle if Beat.reviews is unavailable
+  }
+  // --- Add review notes to notesAndSynopsis ---
+  try {
+    const reviews = Beat.reviews?.getReviews?.() || [];
+    reviews.forEach((review, index) => {
+      if (review && review.string) {
+        let reviewLocation = -1;
+        try {
+          if (Beat.reviews && typeof Beat.reviews.rangeForReview === 'function') {
+            const range = Beat.reviews.rangeForReview(review);
+            if (range && range.location !== undefined) {
+              reviewLocation = range.location;
+            }
+          }
+        } catch (e) {}
+        
+        const reviewText = review.string.trim();
+        if (reviewText) {
+          notesAndSynopsis.push({
+            type: 'review',
+            content: reviewText,
+            absPos: reviewLocation,
+            lineIndex: -2,
+            key: `review:${index}`,
+            reviewIndex: index
+          });
+        }
+      }
+    });
+  } catch (e) {
+    // Gracefully handle if Beat.reviews is unavailable
+  }
   // --- Add Notepad tags as tag occurrences and to notesAndSynopsis ---
   // This must come after the main notepadNotes are gathered in gatherNotepadNotes
   const np = Beat.notepad?.string || '';
@@ -982,8 +1477,14 @@ function gatherAllTags() {
 // Helper to add a tag for Notepad-based tags (does not highlight in doc)
 function addTag(tagName, color, occurrence) {
   if (!tagsByName[tagName]) tagsByName[tagName] = [];
-  // Avoid duplicates: only add if not already present with same -1/-1
-  if (!tagsByName[tagName].some(o => o.lineIndex === occurrence.lineIndex && o.absPos === occurrence.absPos && o.matchLen === occurrence.matchLen && o.special === occurrence.special)) {
+  // Avoid duplicates: only add if not already present with same line/position/length/offset
+  if (!tagsByName[tagName].some(o =>
+    o.lineIndex === occurrence.lineIndex &&
+    o.absPos === occurrence.absPos &&
+    o.matchLen === occurrence.matchLen &&
+    o.special === occurrence.special &&
+    (o.reviewOffset === occurrence.reviewOffset || (o.reviewOffset === undefined && occurrence.reviewOffset === undefined))
+  )) {
     tagsByName[tagName].push({ tag: tagName, ...occurrence, color });
     allOccurrences.push({ tag: tagName, ...occurrence, color });
   }
@@ -1018,6 +1519,9 @@ function pickColorForTag(tagName) {
  */
 function reapplyAllHighlights() {
   for (const occ of allOccurrences) {
+    // Skip highlighting for review tags - they use Beat's native review highlight
+    if (occ.lineIndex === -2) continue;
+    
     const baseColor = pickColorForTag(occ.tag);
     const hl = ensureBgContrastHuePreserving(baseColor, 8.0);
     Beat.textBackgroundHighlight(hl, occ.absPos, occ.matchLen);
@@ -1060,6 +1564,7 @@ function buildUIHtml() {
       --notepadBg: rgba(232, 241, 255, 0.5);
       --boneyardBg: rgba(255, 236, 236, 0.5);
       --synopsisBg: rgba(248, 250, 255, 0.5);
+      --reviewBg: #f4e9bf;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -1074,6 +1579,7 @@ function buildUIHtml() {
         --notepadBg: rgba(34, 48, 63, 0.5);
         --boneyardBg: rgba(68, 38, 38, 0.5);
         --synopsisBg: rgba(37, 42, 51, 0.5);
+        --reviewBg: #70653a;
       }
     }
     /* Darken dropdown chevrons in light mode only */
@@ -1108,6 +1614,7 @@ function buildUIHtml() {
       --notepadBg: rgba(232, 241, 255, 0.5);
       --boneyardBg: rgba(255, 236, 236, 0.5);
       --synopsisBg: rgba(248, 250, 255, 0.55);
+      --reviewBg: #f4e9bf;
     }
     /* Darken dropdown chevrons in light mode only */
     @media (prefers-color-scheme: light) {
@@ -1141,6 +1648,7 @@ function buildUIHtml() {
       --notepadBg: rgba(34, 48, 63, 0.5);
       --boneyardBg: rgba(68, 38, 38, 0.5);
       --synopsisBg: rgba(37, 42, 51, 0.5);
+      --reviewBg: #70653a;
     }`;
   }
 
@@ -1359,8 +1867,23 @@ function buildUIHtml() {
     .meta-block.synopsis-note {
       background: var(--helpBg);
     }
+    .meta-block.review-note {
+      background: var(--reviewBg);
+    }
+    .review-label {
+      margin-left: 10px;
+      color: var(--headerColor);
+      opacity: 0.65;
+      font-size: 0.9em;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .meta-block.marker-note {
+      border-left-width: 3px;
+      border-left-style: solid;
+    }
     /* Slightly darker background for inline notes */
-    .meta-block:not(.notepad-note):not(.boneyard-note):not(.synopsis-note) {
+    .meta-block:not(.notepad-note):not(.boneyard-note):not(.synopsis-note):not(.review-note) {
       background: color-mix(in srgb, var(--helpBg) 90%, black 10%);
     }
     .filter-toggles {
@@ -1371,6 +1894,38 @@ function buildUIHtml() {
       font-size: 0.98em;
       cursor: pointer;
     }
+    /* Filter button and popout styles */
+    .filter-btn {
+      background: var(--helpBg);
+      border: 1px solid var(--searchBorder);
+      color: var(--bodyColor);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-bottom: 8px;
+    }
+    .filter-btn:hover {
+      background-color: var(--searchBg);
+      border-color: var(--headerColor);
+    }
+    .filter-popout {
+      display: none;
+      position: absolute;
+      top: 48px;
+      left: 8px;
+      background: var(--bodyBg);
+      border: 1px solid var(--searchBorder);
+      border-radius: 8px;
+      padding: 12px;
+      z-index: 100;
+      min-width: 220px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .filter-popout.active { display: block; }
+    .filter-popout label { display:flex; align-items:center; margin-bottom:8px; }
+    .filter-popout label input { margin-right:8px }
     /* Native checkbox accent color styling */
     input[type="checkbox"] {
       accent-color: var(--headerColor);
@@ -1399,12 +1954,6 @@ function buildUIHtml() {
       }
     }
   </style>
-  <script>
-    function finalizeColorButtonClick() {
-      var val = document.getElementById('colorPickerInput').value;
-      Beat.call('Beat.custom.finalizeTagColor(\'' + val + '\')');
-    }
-  </script>
   <script>
     function minimizeFTOutliner() {
       Beat.call('Beat.custom.minimizeFTOutliner()');
@@ -1454,7 +2003,7 @@ function buildUIHtml() {
   <div class="sticky-header">
     <div class="tab-bar">
       <button class="themeTab ${activeTab==='keywords'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'keywords\\')')">Keywords</button>
-      <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Notes + Synopsis</button>
+      <button class="themeTab ${activeTab==='notes'?'active':''}" onclick="Beat.call('Beat.custom.switchTab(\\'notes\\')')">Annotations</button>
     </div>
 `;
 
@@ -1462,15 +2011,33 @@ function buildUIHtml() {
   if (activeTab === 'notes') {
     // Add the search input field and filter toggles inside sticky-header
     html += `
-      <input type="text" id="noteSearchInput" placeholder="Search notes and synopsis..." 
+      <input type="text" id="noteSearchInput" placeholder="Search annotations..." 
              oninput="window.filterNotes(this.value)">
-      <div class="filter-toggles toggles">
-        <label><input type="checkbox" ${showNotes ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notes\\')')"> Notes</label>
-        <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'synopsis\\')')"> Synopsis</label>
-        <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'omitted\\')')"> Omits</label>
-        <label><input type="checkbox" ${showBoneyard ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'boneyard\\')')"> Boneyard</label>
-        <label><input type="checkbox" ${showNotepad ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleFilter(\\'notepad\\')')"> Notepad</label>
-        <label><input type="checkbox" ${showCompleted ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleShowCompleted()')"> Show completed</label>
+      <div style="position:relative;">
+        <button class="filter-btn" onclick="Beat.call('Beat.custom.setFilterPopout(true)')">Filters ▾</button>
+        <div id="filterPopout" class="filter-popout ${isFilterPopoutOpen ? 'active' : ''}">
+          <label><input type="checkbox" ${showNotes ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'notes\\')')"> Notes</label>
+          <label><input type="checkbox" ${showMarkers ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'markers\\')')"> Markers</label>
+          <label><input type="checkbox" ${showSynopsis ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'synopsis\\')')"> Synopsis</label>
+          <label><input type="checkbox" ${showOmitted ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'omitted\\')')"> Omits</label>
+          <label><input type="checkbox" ${showBoneyard ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'boneyard\\')')"> Boneyard</label>
+          <label><input type="checkbox" ${showNotepad ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'notepad\\')')"> Notepad</label>
+          <label><input type="checkbox" ${showReviews ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'review\\')')"> Reviews</label>
+          <label><input type="checkbox" ${showCompleted ? 'checked' : ''} onchange="Beat.call('Beat.custom.toggleFilterWithPopout(\\'completed\\')')"> Show completed</label>
+          <div style="display:flex; justify-content:flex-end; margin-top:8px;"><button onclick="Beat.call('Beat.custom.setFilterPopout(false)')">Close</button></div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd;">
+        <span style="font-size: 0.9em; color: #666;"></span>
+        <button class="add-note-btn" title="Add note to Notepad"
+          onmouseenter="window._hoverScroll = setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50)"
+          onmouseleave="clearTimeout(window._hoverScroll)"
+          onclick="Beat.call(() => {
+            let np = Beat.notepad.string;
+            if (np.length > 0 && !np.endsWith('\\n')) np += '\\n';
+            Beat.notepad.string = np + '\\nTypeYourNote';
+            Beat.custom.refreshUI();
+          })">+ Add Note</button>
       </div>
     </div> <!-- end sticky-header -->
     `;
@@ -1485,12 +2052,16 @@ function buildUIHtml() {
         (entry.sceneIndex === undefined && entry.range === undefined)
       );
       const isSynopsis = entry.type === 'synopsis';
+      const isReview = entry.type === 'review';
+      const isMarkerEntry = entry.type === 'marker';
       if (
         (
           (entry.type === 'note' && ((isNotepadNote && showNotepad) || (!isNotepadNote && showNotes))) ||
+          (entry.type === 'marker' && showMarkers) ||
           (entry.type === 'synopsis' && showSynopsis) ||
           (entry.type === 'omitted' && showOmitted) ||
-          (entry.type === 'boneyard' && showBoneyard)
+          (entry.type === 'boneyard' && showBoneyard) ||
+          (entry.type === 'review' && showReviews)
         ) &&
         (showCompleted || !dismissedEntries.has(entryKey)) &&
         (showOmitted || !isOmitted)
@@ -1499,7 +2070,7 @@ function buildUIHtml() {
         const checked = isDismissed ? 'checked' : '';
         const style = isDismissed ? 'text-decoration: line-through; opacity: 0.5;' : '';
         // Truncate content to 1000 characters for display
-        let displayContent = entry.content;
+        let displayContent = isMarkerEntry ? entry.cleanContent : entry.content;
         if (displayContent.length > 1000) {
           displayContent = displayContent.slice(0, 1000) + '…';
         }
@@ -1517,23 +2088,30 @@ function buildUIHtml() {
         });
         // Remove any remaining [[...]] wrappers
         parsed = parsed.replace(/\[\[(.*?)\]\]/g, '$1');
+        // Prepare review label HTML that will be shown on the right side
+        const reviewLabelHtml = isReview ? `<div class="review-label">Located in Review</div>` : '';
         // Add a data attribute for Boneyard entries (styling suspended)
         let boneyardAttr = isBoneyard ? ' data-is-boneyard="true"' : '';
         // Escape double quotes for data-original attribute
         const dataOriginal = entry.content.replace(/"/g, '&quot;');
         if (isNotepadNote) {
           // Render tag preview below notepad note using only tag tokens ([[#tag]], [[@tag]])
-          const tagOnlyContent = (entry.content.match(/\[\[\s*[@#][a-zA-Z0-9_]+\s*\]\]/g) || []).join(' ');
+          const tagOnlyContent = (entry.content.match(/\[\[\s*[@#][\p{L}\p{N}\p{Emoji}\p{M}_]+\s*\]\]/gu) || []).join(' ');
           const renderedTagsHTML = renderInlineTags(tagOnlyContent);
           const hintId = `hint-${notepadNoteIndex++}`;
           html += `
-            <div class="meta-block notepad-note" style="display: flex; flex-direction: column; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed #ddd;">
+            <div class="meta-block notepad-note" data-type="note" style="display: flex; flex-direction: column; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed #ddd;">
               <div style="display: flex; align-items: center;">
                 <input type="checkbox" ${checked} onclick="event.stopPropagation(); Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
-                <div
-                  class="editable-note"
-                  contenteditable="true"
-                  onkeydown="if (event.key === 'Enter') event.preventDefault();"
+               <div
+  class="editable-note"
+  contenteditable="true"
+  onkeydown="if (event.key === 'Enter') { 
+    // Allows Enter to create regular breaks instead of creating broken paragraph divs
+    document.execCommand('insertLineBreak'); 
+    event.preventDefault(); 
+  }"
+
                   onblur="(function(el){
                     const newContent = el.innerText;
                     Beat.call((newVal) => {
@@ -1560,15 +2138,33 @@ function buildUIHtml() {
             </div>
           `;
         } else {
+          let inlineStyle = 'display: flex; align-items: center;';
+          if (isMarkerEntry && entry.markerBorderColor) {
+            inlineStyle += ` background: ${entry.markerBgColor}; border-left: 3px solid ${entry.markerBorderColor};`;
+          }
           html += `
-            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}" data-original="${dataOriginal}"${boneyardAttr} style="display: flex; align-items: center;">
+            <div class="meta-block${isBoneyard ? ' boneyard-note' : ''}${isSynopsis ? ' synopsis-note' : ''}${isReview ? ' review-note' : ''}${isMarkerEntry ? ' marker-note' : ''}" data-type="${entry.type}" data-original="${dataOriginal}"${boneyardAttr} style="${inlineStyle}">
               <input type="checkbox" ${checked} onclick="Beat.call('Beat.custom.toggleDismissed(\\'${entryKey}\\')')" style="margin-right: 8px;">
-              <div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</div>
+              ${isReview ?
+                `<div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.openReview(\\'${entry.reviewIndex}\\')')">${parsed}</div>` :
+                `<div style="white-space: pre-wrap; cursor:pointer; ${style}; flex: 1;" onclick="Beat.call('Beat.custom.scrollToMetaEntry(\\'${entry.absPos}\\')')">${parsed}</div>`}
+              ${reviewLabelHtml}
             </div>
           `;
         }
       }
     }
+    html += `
+      <button class="add-note-btn" title="Add note to Notepad"
+        onmouseenter="window._hoverScroll = setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50)"
+        onmouseleave="clearTimeout(window._hoverScroll)"
+        onclick="Beat.call(() => {
+          let np = Beat.notepad.string;
+          if (np.length > 0 && !np.endsWith('\\n')) np += '\\n';
+          Beat.notepad.string = np + '\\nTypeYourNote';
+          Beat.custom.refreshUI();
+        })">+ Add Note</button>
+    `;
     // Add the floating plus button for Notes + Synopsis tab
     html += `
 <style>
@@ -1587,43 +2183,29 @@ function buildUIHtml() {
     border-radius: 16px;
     background: transparent;
     border: 2px solid #687d9d;
-    color: #687d9d;
+    color: #687d9d;seems like you 
     font-size: 0.9em;
     font-weight: 600;
     vertical-align: middle;
   }
-  .floating-add-btn {
+  .add-note-btn {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 10px;
+    right: 15px;
     background-color: #687d9d;
     color: #fff;
     border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    font-size: 22px;
-    text-align: center;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.9em;
     cursor: pointer;
-    z-index: 1001;
+    z-index: 1000;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
-  .floating-add-btn:hover {
+  .add-note-btn:hover {
     background-color: #506082;
   }
 </style>
-<button class="floating-add-btn" title="Add note to Notepad"
-  onmouseenter="window._hoverScroll = setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50)"
-  onmouseleave="clearTimeout(window._hoverScroll)"
-  onclick="Beat.call(() => {
-    let np = Beat.notepad.string;
-    if (np.length > 0 && !np.endsWith('\\n')) np += '\\n';
-    Beat.notepad.string = np + '\\nTypeYourNote';
-    Beat.custom.refreshUI();
-  })">+</button>
 <script>
   window.filterNotes = function(query) {
     const blocks = document.querySelectorAll('.meta-block');
@@ -1646,9 +2228,9 @@ function buildUIHtml() {
     <input type="text" id="keywordSearchInput" placeholder="Search keywords..." 
            oninput="window.filterKeywords(this.value)"
            style="width: 100%; padding: 6px 10px; font-size: 0.95em; border-radius: 6px; border: 1px solid var(--searchBorder, #ccc); background-color: var(--searchBg, #fff); color: var(--searchColor, #000);">
-    <label style="margin-top: 6px; display:block;" title="Hide Keywords in Notepad, Boneyard, and Omits.">
+    <label style="margin-top: 6px; display:block;" title="Hide Keywords in Notepad, Boneyard, Omits, and Reviews.">
       <input type="checkbox" ${hideBackgroundTags ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideBackgroundTags()')">
-      Hide Keywords in Notepad, Boneyard, & Omits
+      Hide Keywords in Notepad, Boneyard, Omits, & Reviews
     </label>
     <h2>Favorites</h2>
   </div>
@@ -1663,17 +2245,20 @@ function buildUIHtml() {
       const occs = tagsByName[ftag];
       if (!occs || occs.every(o => {
         const entry = notesAndSynopsis.find(n => n.lineIndex === o.lineIndex);
-        return o.lineIndex === -1 || (entry && ['omitted', 'boneyard'].includes(entry.type));
+        return o.lineIndex === -1 || o.lineIndex === -2 || (entry && ['omitted', 'boneyard'].includes(entry.type));
       })) continue;
     }
     const occurrences = tagsByName[ftag] || [];
     const isSpecial = occurrences.some(o => o.special === true);
-    const color = pickColorForTag(ftag);
+    const baseColor = pickColorForTag(ftag);
+    const color = ensureUiContrast(baseColor);
     const borderColor = darkenHexColor(color, 0.2);
-    const notepadCount = occurrences.filter(o => o.lineIndex < 0).length;
+    const notepadCount = occurrences.filter(o => o.lineIndex === -1).length;
+    const reviewCount = occurrences.filter(o => o.lineIndex === -2).length;
     const docCount = occurrences.filter(o => o.lineIndex >= 0).length;
-    // Tooltip position and count relative to document entries only
-    const pos = (occurrenceIndex[ftag] != null && docCount > 0 ? (occurrenceIndex[ftag] % docCount) : 0) + 1;
+    const jumpableCount = docCount + reviewCount; // Both doc and review hits are jumpable
+    // Tooltip position and count relative to jumpable entries
+    const pos = (occurrenceIndex[ftag] != null && jumpableCount > 0 ? (occurrenceIndex[ftag] % jumpableCount) : 0) + 1;
     const pillClass = (activeTooltipTag === ftag) ? "tag-pill active" : "tag-pill";
     let pillStyle;
     if (isSpecial) {
@@ -1685,6 +2270,17 @@ function buildUIHtml() {
     let tagLabel = ftag.split(/\s+/)[0];
     // Determine if all occurrences are notepad-only
     const notepadOnly = occurrences.every(o => o.lineIndex === -1);
+    // Build location text based on where tags are found
+    let locationText;
+    if (notepadOnly) {
+      locationText = 'in Notepad';
+    } else if (docCount > 0 && reviewCount > 0) {
+      locationText = 'in document (also in Reviews)';
+    } else if (reviewCount > 0) {
+      locationText = 'in Reviews';
+    } else {
+      locationText = 'in document';
+    }
     html += `
     <div class="${pillClass}"
          style="${pillStyle}"
@@ -1695,7 +2291,7 @@ function buildUIHtml() {
          oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${ftag}\\', ' + event.clientX + ', ' + event.clientY + ')');">
       ${tagLabel}
       <span class="tooltip">
-        ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (also in Notepad)' : 'in document')}
+        ${notepadOnly ? '' : `${pos}/${jumpableCount}`} ${locationText}
       </span>
     </div>
     `;
@@ -1716,7 +2312,7 @@ function buildUIHtml() {
     const occs = tagsByName[t];
     return occs.some(o => {
       const entry = notesAndSynopsis.find(n => n.lineIndex === o.lineIndex);
-      return o.lineIndex !== -1 && (!entry || !['omitted', 'boneyard'].includes(entry.type));
+      return o.lineIndex !== -1 && o.lineIndex !== -2 && (!entry || !['omitted', 'boneyard'].includes(entry.type));
     });
   });
   if (!otherTags.length) {
@@ -1725,12 +2321,15 @@ function buildUIHtml() {
     for (const tagName of otherTags) {
       const occurrences = tagsByName[tagName];
       const isSpecial = occurrences.some(o => o.special === true);
-      const color = pickColorForTag(tagName);
+      const baseColor = pickColorForTag(tagName);
+      const color = ensureUiContrast(baseColor);
       const borderColor = darkenHexColor(color, 0.2);
-      const notepadCount = occurrences.filter(o => o.lineIndex < 0).length;
+      const notepadCount = occurrences.filter(o => o.lineIndex === -1).length;
+      const reviewCount = occurrences.filter(o => o.lineIndex === -2).length;
       const docCount = occurrences.filter(o => o.lineIndex >= 0).length;
-      // Tooltip position and count relative to document entries only
-      const pos = (occurrenceIndex[tagName] != null && docCount > 0 ? (occurrenceIndex[tagName] % docCount) : 0) + 1;
+      const jumpableCount = docCount + reviewCount; // Both doc and review hits are jumpable
+      // Tooltip position and count relative to jumpable entries
+      const pos = (occurrenceIndex[tagName] != null && jumpableCount > 0 ? (occurrenceIndex[tagName] % jumpableCount) : 0) + 1;
       const pillClass = (activeTooltipTag === tagName) ? "tag-pill active" : "tag-pill";
       let pillStyle;
       if (isSpecial) {
@@ -1742,6 +2341,17 @@ function buildUIHtml() {
       let tagLabel = tagName.split(/\s+/)[0];
       // Determine if all occurrences are notepad-only
       const notepadOnly = occurrences.every(o => o.lineIndex === -1);
+      // Build location text based on where tags are found
+      let locationText;
+      if (notepadOnly) {
+        locationText = 'in Notepad';
+      } else if (docCount > 0 && reviewCount > 0) {
+        locationText = 'in document (also in Reviews)';
+      } else if (reviewCount > 0) {
+        locationText = 'in Reviews';
+      } else {
+        locationText = 'in document';
+      }
       html += `
       <div class="${pillClass}"
            style="${pillStyle}"
@@ -1752,7 +2362,7 @@ function buildUIHtml() {
            oncontextmenu="event.preventDefault(); Beat.call('Beat.custom.handleTagRightClick(\\'${tagName}\\', ' + event.clientX + ', ' + event.clientY + ')');">
         ${tagLabel}
         <span class="tooltip">
-          ${notepadOnly ? '' : `${pos}/${docCount}`} ${notepadOnly ? 'in Notepad' : (notepadCount > 0 ? 'in document (also in Notepad)' : 'in document')}
+          ${notepadOnly ? '' : `${pos}/${jumpableCount}`} ${locationText}
         </span>
       </div>
       `;
@@ -1800,8 +2410,7 @@ function buildUIHtml() {
           <option value="off"   disabled>Type</option>
           <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
           <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
-          <option value="system" ${themeMode==='system' ? 'selected' : ''}>System</option>
-        </select>
+          <!-- System option removed to prevent light-theme fallback layout bugs -->        </select>
       </label>
     </div>
   </div>
@@ -1864,6 +2473,9 @@ function centerWindow(winObj) {
 
 function reapplyAllHighlights() {
   for (const occ of allOccurrences) {
+    // Skip highlighting for review tags - they use Beat's native review highlight
+    if (occ.lineIndex === -2) continue;
+    
     const baseColor = pickColorForTag(occ.tag);
     const hl = ensureBgContrastHuePreserving(baseColor, 8.0);
     Beat.textBackgroundHighlight(hl, occ.absPos, occ.matchLen);
@@ -1871,15 +2483,57 @@ function reapplyAllHighlights() {
   }
 }
 
-// --- Modified togglePluginVisibility function using myWindow consistently ---
+// --- Integrated UI Visibility & Highlight Toggle Engine ---
+
+// Global highlight visibility tracking state
+let keywordsHighlightsOn = true;
+
+function toggleKeywordsHighlights() {
+  Beat.log("toggleKeywordsHighlights triggered");
+  keywordsHighlightsOn = !keywordsHighlightsOn;
+  
+  if (!keywordsHighlightsOn) {
+    removeAllHighlights();
+    Beat.log("Keywords highlights removed from view.");
+  } else {
+    reapplyAllHighlights();
+    Beat.log("Keywords highlights reapplied to view.");
+  }
+}
+
+// Global tracking variables to store your custom dragged coordinates
+let savedPluginX = null;
+let savedPluginY = null;
+
 function togglePluginVisibility() {
   Beat.log("togglePluginVisibility triggered");
   if (myWindow) {
-    if (isPluginVisible) {
-      myWindow.hide();
-      isPluginVisible = false;
+    isPluginVisible = !isPluginVisible;
+    
+    if (!isPluginVisible) {
+      // 1. SAVE LOCATION: Grab the window's exact custom location right before hiding it
+      if (typeof myWindow.getFrame === "function") {
+        const frameBeforeHide = myWindow.getFrame();
+        savedPluginX = frameBeforeHide.x;
+        savedPluginY = frameBeforeHide.y;
+      }
+      
+      // 2. MAKE INVISIBLE: Collapse size to 0x0 at its current spot so it vanishes completely
+      if (typeof myWindow.setFrame === "function" && savedPluginX !== null && savedPluginY !== null) {
+        myWindow.setFrame(savedPluginX, savedPluginY, 0, 0);
+      } else {
+        myWindow.hide();
+      }
     } else {
-      myWindow.show();
+      // 3. RESTORE LOCATION: Instantly expand it back to full size exactly where you left it
+      if (typeof myWindow.setFrame === "function" && savedPluginX !== null && savedPluginY !== null) {
+        myWindow.setFrame(savedPluginX, savedPluginY, 600, 500);
+      } else if (typeof centerWindow === "function") {
+        if (typeof myWindow.setFrame === "function") { myWindow.setFrame(100, 100, 600, 500); }
+        centerWindow(myWindow);
+      } else if (typeof myWindow.show === "function") {
+        myWindow.show();
+      }
     }
   } else {
     main();
@@ -1887,10 +2541,19 @@ function togglePluginVisibility() {
   }
 }
 
-const toggleMenuItem = Beat.menuItem("Keywords", ["cmd", "ctrl", "k"], togglePluginVisibility);
-Beat.menu("Keywords", [toggleMenuItem]);
+
+
+// --- NATIVE MENU CONTROLLERS ---
+
+const toggleWindowMenuItem = Beat.menuItem("Toggle Window", ["cmd", "ctrl", "k"], togglePluginVisibility);
+const toggleHighlightsMenuItem = Beat.menuItem("Toggle Highlights", ["cmd", "shift", "k"], toggleKeywordsHighlights);
+
+// Unified menu bar wrapper container
+Beat.menu("Keywords", [
+  toggleWindowMenuItem,
+  toggleHighlightsMenuItem
+]);
 
 // --- Modified onKeyDown block using myWindow ---
-
 
 main();
