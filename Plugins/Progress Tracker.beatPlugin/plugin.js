@@ -16,7 +16,7 @@ Copyright: Bode Pickman
 </Description>
 
 Image: Progress Tracker.png
-Version: 1.0
+Version: 1.1
 */
 // State variables
 let countType = 'page';
@@ -25,6 +25,12 @@ let projectGoal = 100;
 let deadlineDate = null;
 let dailyOffset = 0;
 let dailyOffsetDate = '';
+
+// --- FULLSCREEN & POSITION MEMORY CONTROLLER STATE ---
+let isPanelVisible = true;
+let savedPanelX = null;
+let savedPanelY = null;
+
 
 // Load saved settings from document
 countType = Beat.getDocumentSetting('goals.countType') || countType;
@@ -79,8 +85,12 @@ function initDailyOffset() {
 
 // Update metrics and send to UI
 function updateMetrics() {
+  // FIX: If the user toggled the tracker off, do absolutely nothing!
+  if (typeof isPanelVisible !== 'undefined' && !isPanelVisible) return;
+
   try {
     initDailyOffset();
+
     const totalCount = getTotalCount();
     const dailyCount = totalCount - dailyOffset;
     const projectCount = totalCount;
@@ -137,6 +147,47 @@ Beat.custom.refresh = function() {
   updateMetrics();
 };
 
+// FULLSCREEN SAFE TOGGLE: Shrinks the panel canvas to 0x0 right where it sits 
+// to trick macOS Spaces, while tracking its custom position metrics flawlessly!
+Beat.custom.toggleProgressTrackerWindow = function() {
+  if (panel) {
+    isPanelVisible = !isPanelVisible;
+    
+    if (!isPanelVisible) {
+      // 1. MEMORY CHECK: Read the exact user dragged coordinates before closing
+      if (typeof panel.getFrame === "function") {
+        const frameBeforeHide = panel.getFrame();
+        savedPanelX = frameBeforeHide.x;
+        savedPanelY = frameBeforeHide.y;
+      }
+      
+      // 2. INVISIBLE STATE: Collapse dimensions to absolute zero right at its current spot
+      // FIXED: Uses 'savedPanelY' instead of the broken 'savedPluginY' variable name!
+      if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+        panel.setFrame(savedPanelX, savedPanelY, 0, 0);
+      } else {
+        panel.hide();
+      }
+    } else {
+      // 3. RESTORE STATE: Instant size expansion directly back to the user's custom location
+      if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+        panel.setFrame(savedPanelX, savedPanelY, 440, 520); // Restores your clean dimensions
+      } else if (typeof centerWindow === "function") {
+        // Safe startup fallback placement
+        if (typeof panel.setFrame === "function") { panel.setFrame(100, 100, 440, 520); }
+        centerWindow(panel);
+      } else {
+        panel.show();
+      }
+      
+      // Keep structural stats flowing dynamically on window expansion
+      updateMetrics();
+    }
+  }
+};
+
+
+
 // Auto-collapse API
 Beat.custom.setCollapseMode = function(mode) {
   collapseMode = mode;
@@ -179,10 +230,10 @@ const html = `
 :root {
     --background-color: #ffffff;
     --text-color: #333333;
-    --primary-color: #007aff;
+    --primary-color: #71acd4;
     --secondary-color: #555555;
-    --input-border-color: #cccccc;
-    --daily-donut-color: rgba(66, 208, 173, 1);
+    --input-border-color: rgba(204, 204, 204, 1);
+    --daily-donut-color: #6facb2;
     --donut-background-color: #cccccc;
 }
 
@@ -190,10 +241,10 @@ const html = `
     :root {
         --background-color: #1e1e1e;
         --text-color: #f0f0f0;
-        --primary-color: #0A84FF;
+        --primary-color: #71acd4;
         --secondary-color: #AAAAAA;
         --input-border-color: #555555;
-        --daily-donut-color: #42D0AD;
+        --daily-donut-color: #6facb2;
         --donut-background-color: #333333;
     }
     #reset-daily {
@@ -213,10 +264,10 @@ const html = `
 .dark {
     --background-color: #1e1e1e;
     --text-color: #f0f0f0;
-    --primary-color: #0A84FF;
+    --primary-color: #71acd4;
     --secondary-color: #AAAAAA;
     --input-border-color: #555555;
-    --daily-donut-color: #42D0AD;
+    --daily-donut-color: #6facb2;
     --donut-background-color: #333333;
 }
 .dark #reset-daily,
@@ -754,19 +805,75 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 // Tracks whether the Progress Tracker panel is currently shown
 let isPluginVisible = true;
 
+// 1. RECOVER STORAGE STATE: Instantly pull saved positions on launch if available
+let savedProgressX = typeof Beat.localStorage !== 'undefined' ? Beat.localStorage.getItem('progress_tracker_x') : null;
+let savedProgressY = typeof Beat.localStorage !== 'undefined' ? Beat.localStorage.getItem('progress_tracker_y') : null;
+
 // Initialize panel
 let panel = Beat.htmlWindow(html, 387, 375);
-panel.toggle = function () {
-  if (isPluginVisible) {
-    panel.hide();
-    isPluginVisible = false;
-  } else {
-    panel.show();
-    isPluginVisible = true;
+
+// 2. INTELLIGENT POSITION BOOT: If saved data exists, position it there immediately
+if (savedProgressX !== null && savedProgressY !== null) {
+  if (typeof panel.setFrame === "function") {
+    panel.setFrame(Number(savedProgressX), Number(savedProgressY), 387, 375);
+  }
+}
+
+// 3. KEEP IN MEMORY: Crucial to keep instances alive so positioning isn't dropped mid-session
+panel.resizable = true;
+panel.stayInMemory = true; 
+
+// 4. COORDINATE TRACKING SYNCHRONIZER: Call this to commit manual window drags
+function syncProgressTrackerCoordinates() {
+  if (panel && typeof panel.getFrame === "function") {
+    const currentFrame = panel.getFrame();
+    // Guard check: Avoid tracking hidden off-screen positions or collapsed zero-bounds
+    if (currentFrame.x > -5000 && currentFrame.w > 0) {
+      savedProgressX = currentFrame.x;
+      savedProgressY = currentFrame.y;
+      
+      if (typeof Beat.localStorage !== 'undefined') {
+        Beat.localStorage.setItem('progress_tracker_x', savedProgressX);
+        Beat.localStorage.setItem('progress_tracker_y', savedProgressY);
+      }
+    }
+  }
+}
+
+// 5. UNIFIED RE-POSITION TOGGLE ENGINE
+Beat.custom = Beat.custom || {};
+Beat.custom.toggleProgressTrackerWindow = function () {
+  if (panel) {
+    isPluginVisible = !isPluginVisible;
+    
+    if (!isPluginVisible) {
+      // Actively capture coordinates right before hiding
+      syncProgressTrackerCoordinates();
+      
+      // Teleport off-screen instead of closing or structural collapse
+      if (typeof panel.setFrame === "function" && savedProgressX !== null && savedProgressY !== null) {
+        panel.setFrame(-25000, -25000, 387, 375);
+      } else if (typeof panel.hide === "function") {
+        panel.hide();
+      }
+    } else {
+      // Restore view exactly where the user last placed it
+      if (typeof panel.show === "function") {
+        panel.show();
+      }
+      
+      if (typeof panel.setFrame === "function" && savedProgressX !== null && savedProgressY !== null) {
+        panel.setFrame(Number(savedProgressX), Number(savedProgressY), 387, 375);
+      }
+      
+      // Trigger a direct UI data refresh upon waking back up
+      try { updateMetrics(); } catch (e) {}
+    }
   }
 };
-panel.resizable = true;
-panel.stayInMemory = false;
+
+// Re-map the older legacy direct toggle assignment to match your unified custom method
+panel.toggle = Beat.custom.toggleProgressTrackerWindow;
 
 // Listen for changes
 Beat.onTextChange(function() {
@@ -784,10 +891,22 @@ Beat.onPreviewFinished(function() {
   }
 });
 
-// Register keyboard shortcut to toggle Progress Tracker panel (Floating Notepad pattern)
-const toggleItem = Beat.menuItem("Toggle Progress Tracker Panel", ["cmd", "ctrl", "g"], () => {
-  if (panel && typeof panel.toggle === "function") {
-    panel.toggle();
-  }
-});
-const pluginMenu = Beat.menu("Progress Tracker", [toggleItem]);
+// --- UNIFIED NATIVE SHORTCUT MENU REGISTER ---
+
+// Map directly to your new structural offscreen toggle routine
+const toggleProgressWindowItem = Beat.menuItem(
+  "Toggle Progress Tracker", 
+  ["cmd", "ctrl", "p"], 
+  Beat.custom.toggleProgressTrackerWindow
+);
+
+Beat.menu("Progress Tracker", [
+  toggleProgressWindowItem
+]);
+
+// 6. ACTIVE BINDING: Continually catch real-time dragging across multiple monitors
+if (panel && typeof panel.onMove === "function") {
+  panel.onMove(function() {
+    syncProgressTrackerCoordinates();
+  });
+}
