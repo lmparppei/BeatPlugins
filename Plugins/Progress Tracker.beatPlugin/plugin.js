@@ -16,8 +16,9 @@ Copyright: Bode Pickman
 </Description>
 
 Image: Progress Tracker.png
-Version: 1.0
+Version: 1.1
 */
+
 // State variables
 let countType = 'page';
 let dailyGoal = 0;
@@ -26,6 +27,13 @@ let deadlineDate = null;
 let dailyOffset = 0;
 let dailyOffsetDate = '';
 
+// --- FULLSCREEN & POSITION MEMORY CONTROLLER STATE ---
+let isPanelVisible = true;
+let savedPanelX = null;
+let savedPanelY = null;
+let savedPanelWidth = 387; // Default width
+let savedPanelHeight = 375; // Default height
+
 // Load saved settings from document
 countType = Beat.getDocumentSetting('goals.countType') || countType;
 dailyGoal = Beat.getDocumentSetting('goals.dailyGoal') || dailyGoal;
@@ -33,10 +41,22 @@ projectGoal = Beat.getDocumentSetting('goals.projectGoal') || projectGoal;
 const dl = Beat.getDocumentSetting('goals.deadlineDate') || '';
 deadlineDate = dl ? new Date(dl) : deadlineDate;
 
+// 1. RECOVER STORAGE STATE: Instantly pull saved positions on launch if available
+if (typeof Beat.localStorage !== 'undefined') {
+  const sx = Beat.localStorage.getItem('progress_tracker_x');
+  const sy = Beat.localStorage.getItem('progress_tracker_y');
+  const sw = Beat.localStorage.getItem('progress_tracker_w');
+  const sh = Beat.localStorage.getItem('progress_tracker_h');
+  if (sx !== null) savedPanelX = Number(sx);
+  if (sy !== null) savedPanelY = Number(sy);
+  if (sw !== null) savedPanelWidth = Number(sw);
+  if (sh !== null) savedPanelHeight = Number(sh);
+}
+
 // Extract only screenplay content for word count
 function getScreenplayText() {
   let txt = Beat.getText();
-  // Exclude everything under a BONEYARD headingƒ
+  // Exclude everything under a BONEYARD heading
   txt = txt.split(/^\s*#\s*BONEYARD\b/im)[0];
   // Remove boneyard blocks {{{ ... }}}
   txt = txt.replace(/\{\{\{[\s\S]*?\}\}\}/g, '');
@@ -72,15 +92,17 @@ function initDailyOffset() {
     if (dailyOffsetDate !== today) {
         dailyOffset = getTotalCount();
         dailyOffsetDate = today;
-        // dailyOffset still loaded globally, as it's not document-specific
-        // No longer using savePref for document settings
     }
 }
 
 // Update metrics and send to UI
 function updateMetrics() {
+  // FIX: If the user toggled the tracker off, do absolutely nothing!
+  if (typeof isPanelVisible !== 'undefined' && !isPanelVisible) return;
+
   try {
     initDailyOffset();
+
     const totalCount = getTotalCount();
     const dailyCount = totalCount - dailyOffset;
     const projectCount = totalCount;
@@ -120,7 +142,6 @@ Beat.custom.setDeadline = function(dateStr) {
 
 // Reset daily counter immediately
 Beat.custom.resetDaily = function() {
-  // Reset daily counter immediately
   dailyShown = false;
   projectShown = false;
   isFirstRun = true;
@@ -161,8 +182,6 @@ Beat.custom.maximizeGoalsPanel = function() {
   }
 };
 
-// dailyOffset still loaded globally, as it's not document-specific
-
 // Auto-collapse mode (persisted)
 let collapseMode = Beat.getUserDefault("goals.collapseMode") || "off";
 // Prepare deadline string for HTML
@@ -179,10 +198,10 @@ const html = `
 :root {
     --background-color: #ffffff;
     --text-color: #333333;
-    --primary-color: #007aff;
+    --primary-color: #71acd4;
     --secondary-color: #555555;
-    --input-border-color: #cccccc;
-    --daily-donut-color: rgba(66, 208, 173, 1);
+    --input-border-color: rgba(204, 204, 204, 1);
+    --daily-donut-color: #6facb2;
     --donut-background-color: #cccccc;
 }
 
@@ -190,10 +209,10 @@ const html = `
     :root {
         --background-color: #1e1e1e;
         --text-color: #f0f0f0;
-        --primary-color: #0A84FF;
+        --primary-color: #71acd4;
         --secondary-color: #AAAAAA;
         --input-border-color: #555555;
-        --daily-donut-color: #42D0AD;
+        --daily-donut-color: #6facb2;
         --donut-background-color: #333333;
     }
     #reset-daily {
@@ -213,10 +232,10 @@ const html = `
 .dark {
     --background-color: #1e1e1e;
     --text-color: #f0f0f0;
-    --primary-color: #0A84FF;
+    --primary-color: #71acd4;
     --secondary-color: #AAAAAA;
     --input-border-color: #555555;
-    --daily-donut-color: #42D0AD;
+    --daily-donut-color: #6facb2;
     --donut-background-color: #333333;
 }
 .dark #reset-daily,
@@ -311,7 +330,6 @@ body {
     margin: 4px 0;
     font-size: 14px;
 }
-/* Added overlay CSS */
 .success-overlay {
   position: absolute;
   top: 0; left: 0;
@@ -504,7 +522,7 @@ function applyThemeOverride() {
       return originalMatchMedia(query);
     };
     matchMediaOverride = window.matchMedia;
-    document.documentElement.classList.add(theme); // theme will be "dark" or "light"
+    document.documentElement.classList.add(theme);
   } else if (theme === 'system') {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.classList.add(prefersDark ? 'dark' : 'light');
@@ -512,8 +530,7 @@ function applyThemeOverride() {
 
   Beat.call(() => Beat.custom.refresh());
 }
-applyThemeOverride(); // run on load
-  // Auto-collapse handlers
+applyThemeOverride(); 
   const collapseSelect = document.getElementById('collapse-select');
   collapseSelect.addEventListener('change', e => {
     Beat.call((mode) => Beat.custom.setCollapseMode(mode), e.target.value);
@@ -529,16 +546,13 @@ let isFirstRun = true;
 let dailyShown = false;
 let projectShown = false;
 
-// Mute state and toggle button (persisted)
 let isMuted = localStorage.getItem('goalsMuted') === 'true';
 
-// Settings button + mute-checkbox
 const settingsBtn    = document.getElementById('settings-btn');
 const settingsOverlay = document.getElementById('settingsOverlay');
 const settingsClose  = document.getElementById('settingsClose');
 const muteCheckbox   = document.getElementById('mute-checkbox');
 
-// Theme select event
 const themeSelect = document.getElementById('theme-select');
 themeSelect.value = localStorage.getItem('goalsTheme') || 'system';
 themeSelect.addEventListener('change', (e) => {
@@ -546,10 +560,8 @@ themeSelect.addEventListener('change', (e) => {
   applyThemeOverride();
 });
 
-// Initialize checkbox from saved state
 muteCheckbox.checked = isMuted;
 
-// Show/hide settings overlay
 settingsBtn.addEventListener('click', () => {
   settingsOverlay.style.display = 'flex';
 });
@@ -557,7 +569,6 @@ settingsClose.addEventListener('click', () => {
   settingsOverlay.style.display = 'none';
 });
 
-// Persist mute preference
 muteCheckbox.addEventListener('change', () => {
   isMuted = muteCheckbox.checked;
   localStorage.setItem('goalsMuted', isMuted);
@@ -577,23 +588,20 @@ function showSuccess(message) {
   }
   btn.onclick = () => { ov.style.display = 'none'; };
 }
-// Resolve CSS variables
+
 const root = getComputedStyle(document.documentElement);
 const borderColor = root.getPropertyValue('--input-border-color').trim();
 const primaryColor = root.getPropertyValue('--primary-color').trim();
 const secondaryColor = root.getPropertyValue('--secondary-color').trim();
 
-// Draw arc helper
 function drawArc(ctx, radius, thickness, progress, color) {
     const canvas = ctx.canvas;
     const rect = canvas.getBoundingClientRect();
     const w = rect.width;
     const h = rect.height;
-    // Clear using CSS px
     ctx.clearRect(0, 0, w, h);
     const cx = w / 2;
     const cy = h / 2;
-    // Background full circle
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
     ctx.lineWidth = thickness;
@@ -602,7 +610,6 @@ function drawArc(ctx, radius, thickness, progress, color) {
     ctx.strokeStyle = donutBg;
     ctx.lineCap = "butt";
     ctx.stroke();
-    // Progress arc
     ctx.beginPath();
     ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.min(progress, 1));
     ctx.lineWidth = thickness;
@@ -611,7 +618,6 @@ function drawArc(ctx, radius, thickness, progress, color) {
     ctx.stroke();
 }
 
-// High-DPI canvas setup
 function setupCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -622,7 +628,6 @@ function setupCanvas(canvas) {
   return ctx;
 }
 
-// Combined double donut
 function updateDonuts(projProg, dailyProg) {
   const projCanvas = document.getElementById('projectDonut');
   const dailyCanvas = document.getElementById('dailyDonut');
@@ -633,7 +638,6 @@ function updateDonuts(projProg, dailyProg) {
   drawArc(dailyCtx, 60, 20, dailyProg, dailyColor);
 }
 
-// Update info text
 function updateInfo(daysLeft, pagesPerDay) {
   const ct = document.getElementById('countTypeSelect').value;
   const unitLabel = ct === 'word' ? 'words' : 'pages';
@@ -643,10 +647,8 @@ function updateInfo(daysLeft, pagesPerDay) {
   if (infoEl) infoEl.textContent = combined;
 }
 
-// Entry point called by plugin.js
 window.updateProgress = function(countTypeArg, dailyCount, dailyGoal, projCount, projGoal, deadlineStr) {
   try {
-    // Populate controls with current settings
     var sel = document.getElementById('countTypeSelect');
     if (sel) sel.value = countTypeArg;
     var dailyInput = document.getElementById('daily-goal');
@@ -657,7 +659,6 @@ window.updateProgress = function(countTypeArg, dailyCount, dailyGoal, projCount,
     if (deadlineInput) {
       var ds = '';
       if (deadlineStr) {
-        // Extract date part (YYYY-MM-DD) from ISO string
         ds = deadlineStr.split('T')[0];
       }
       deadlineInput.value = ds;
@@ -666,12 +667,12 @@ window.updateProgress = function(countTypeArg, dailyCount, dailyGoal, projCount,
     const projProg = projGoal ? projCount / projGoal : 0;
     const dailyProg = dailyGoal ? dailyCount / dailyGoal : 0;
     updateDonuts(projProg, dailyProg);
-    // Display today's count in the center
+    
     var centerEl = document.getElementById('centerCounter');
     if (centerEl) {
         centerEl.textContent = dailyCount;
     }
-    // Display total document count and "remaining"
+    
     var ct = document.getElementById('countTypeSelect').value;
     var unit = ct === 'word' ? 'words' : 'pages';
     var totalEl = document.getElementById('total-count');
@@ -700,15 +701,12 @@ window.updateProgress = function(countTypeArg, dailyCount, dailyGoal, projCount,
         showSuccess('🏆 Project goal achieved!');
       }
     }
-
-    // After first render, enable celebrations
     isFirstRun = false;
   } catch (err) {
     console.error("Goals plugin updateProgress error:", err);
   }
 };
 
-// UI event listeners
 document.getElementById('countTypeSelect').addEventListener('change', (e) => {
   Beat.call((type) => Beat.custom.setCountType(type), e.target.value);
 });
@@ -722,51 +720,101 @@ document.getElementById('deadline-input').addEventListener('change', (e) => {
   Beat.call((val) => Beat.custom.setDeadline(val), e.target.value);
 });
 
-// Draw initial empty donuts
 updateDonuts(0, 0);
 updateProgress('${countType}', ${dailyInit}, ${dailyGoal}, ${totalInit}, ${projectGoal}, '${deadlineInit}');
 
-// Reset Daily button event
 document.getElementById('reset-daily').addEventListener('click', () => {
-  // Reset UI flags and hide overlay immediately
   dailyShown = false;
   projectShown = false;
   isFirstRun = true;
   const ov = document.getElementById('successOverlay');
   if (ov) ov.style.display = 'none';
 
-  // Then reset plugin state and refresh metrics
   Beat.call(() => Beat.custom.resetDaily());
   Beat.call(() => Beat.custom.refresh());
 });
 
-// Refresh metrics whenever the window regains focus
 window.addEventListener('focus', () => {
   Beat.call(() => Beat.custom.refresh());
 });
-// Listen for color scheme changes (light/dark)
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   Beat.call(() => Beat.custom.refresh());
 });
 </script>
 `;
 
-// Tracks whether the Progress Tracker panel is currently shown
-let isPluginVisible = true;
-
 // Initialize panel
-let panel = Beat.htmlWindow(html, 387, 375);
-panel.toggle = function () {
-  if (isPluginVisible) {
-    panel.hide();
-    isPluginVisible = false;
-  } else {
-    panel.show();
-    isPluginVisible = true;
+let panel = Beat.htmlWindow(html, savedPanelWidth, savedPanelHeight);
+
+// 2. INTELLIGENT POSITION BOOT: If saved data exists, position it there immediately
+if (savedPanelX !== null && savedPanelY !== null) {
+  if (typeof panel.setFrame === "function") {
+    panel.setFrame(savedPanelX, savedPanelY, savedPanelWidth, savedPanelHeight);
+  }
+}
+
+// 3. KEEP IN MEMORY: Crucial to keep instances alive so positioning isn't dropped mid-session
+panel.resizable = true;
+panel.stayInMemory = true; 
+
+// 4. COORDINATE & SIZE TRACKING SYNCHRONIZER: Call this to commit manual window drags/resizes
+function syncProgressTrackerCoordinates() {
+  if (panel && typeof panel.getFrame === "function") {
+    const currentFrame = panel.getFrame();
+    // Guard check: Avoid tracking hidden off-screen positions or collapsed zero-bounds
+    if (currentFrame.x > -5000 && currentFrame.width > 0 && currentFrame.height > 0) {
+      savedPanelX = currentFrame.x;
+      savedPanelY = currentFrame.y;
+      savedPanelWidth = currentFrame.width;
+      savedPanelHeight = currentFrame.height;
+      
+      if (typeof Beat.localStorage !== 'undefined') {
+        Beat.localStorage.setItem('progress_tracker_x', savedPanelX);
+        Beat.localStorage.setItem('progress_tracker_y', savedPanelY);
+        Beat.localStorage.setItem('progress_tracker_w', savedPanelWidth);
+        Beat.localStorage.setItem('progress_tracker_h', savedPanelHeight);
+      }
+    }
+  }
+}
+
+// 5. UNIFIED RE-POSITION TOGGLE ENGINE (Flattening & Memory)
+Beat.custom.toggleProgressTrackerWindow = function() {
+  if (panel) {
+    isPanelVisible = !isPanelVisible;
+    
+    if (!isPanelVisible) {
+      // 1. MEMORY CHECK: Actively capture coordinates and size right before hiding
+      syncProgressTrackerCoordinates();
+      
+      // 2. INVISIBLE STATE: Collapse dimensions to absolute zero right at its current spot
+      if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+        panel.setFrame(savedPanelX, savedPanelY, 0, 0);
+      } else {
+        panel.hide();
+      }
+    } else {
+      // 3. RESTORE STATE: Instant size expansion directly back to the user's custom location
+      if (typeof panel.show === "function") {
+        panel.show();
+      }
+      
+      if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+        panel.setFrame(savedPanelX, savedPanelY, savedPanelWidth, savedPanelHeight); 
+      } else if (typeof centerWindow === "function") {
+        // Safe startup fallback placement
+        if (typeof panel.setFrame === "function") { panel.setFrame(100, 100, savedPanelWidth, savedPanelHeight); }
+        centerWindow(panel);
+      }
+      
+      // Keep structural stats flowing dynamically on window expansion
+      try { updateMetrics(); } catch (e) {}
+    }
   }
 };
-panel.resizable = true;
-panel.stayInMemory = false;
+
+// Re-map the older legacy direct toggle assignment to match your unified custom method
+panel.toggle = Beat.custom.toggleProgressTrackerWindow;
 
 // Listen for changes
 Beat.onTextChange(function() {
@@ -784,10 +832,20 @@ Beat.onPreviewFinished(function() {
   }
 });
 
-// Register keyboard shortcut to toggle Progress Tracker panel (Floating Notepad pattern)
-const toggleItem = Beat.menuItem("Toggle Progress Tracker Panel", ["cmd", "ctrl", "g"], () => {
-  if (panel && typeof panel.toggle === "function") {
-    panel.toggle();
-  }
-});
-const pluginMenu = Beat.menu("Progress Tracker", [toggleItem]);
+// --- UNIFIED NATIVE SHORTCUT MENU REGISTER ---
+const toggleProgressWindowItem = Beat.menuItem(
+  "Toggle Progress Tracker", 
+  ["cmd", "ctrl", "p"], 
+  Beat.custom.toggleProgressTrackerWindow
+);
+
+Beat.menu("Progress Tracker", [
+  toggleProgressWindowItem
+]);
+
+// 6. ACTIVE BINDING: Continually catch real-time dragging across multiple monitors
+if (panel && typeof panel.onMove === "function") {
+  panel.onMove(function() {
+    syncProgressTrackerCoordinates();
+  });
+}
