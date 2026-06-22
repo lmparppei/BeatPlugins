@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 3.0
+Version: 3.1
 */
 
 // --- Global plugin state --- //
@@ -216,6 +216,24 @@ let _lastBeatDark = null;
 let myWindow = null;
 let isPluginVisible = true;
 let sizesBeforeMinimize = null;
+
+// --- FULLSCREEN & POSITION MEMORY CONTROLLER STATE ---
+let savedPluginX = null;
+let savedPluginY = null;
+let savedPluginWidth = 600; // Default width
+let savedPluginHeight = 500; // Default height
+
+// RECOVER STORAGE STATE: Instantly pull saved positions on launch if available
+if (typeof Beat.localStorage !== 'undefined') {
+  const sx = Beat.localStorage.getItem('keywords_x');
+  const sy = Beat.localStorage.getItem('keywords_y');
+  const sw = Beat.localStorage.getItem('keywords_w');
+  const sh = Beat.localStorage.getItem('keywords_h');
+  if (sx !== null) savedPluginX = Number(sx);
+  if (sy !== null) savedPluginY = Number(sy);
+  if (sw !== null) savedPluginWidth = Number(sw);
+  if (sh !== null) savedPluginHeight = Number(sh);
+}
 
 // Theme mode: "light", "dark", or "system" (default uses system preference)
 let themeMode = Beat.getUserDefault("themePreference") || "system";
@@ -1054,23 +1072,27 @@ function main() {
     });
   });
 
-const ui = buildUIHtml();
+  const ui = buildUIHtml();
 
-// Restored to your original working htmlWindow method
-myWindow = Beat.htmlWindow(ui, 600, 500, onWindowClosed, { 
-  utility: false 
-});
+  myWindow = Beat.htmlWindow(ui, savedPluginWidth, savedPluginHeight, onWindowClosed, { utility: false });
+  myWindow.stayInMemory = true;
+  myWindow.resizable = true;
 
-centerWindow(myWindow);
+  if (savedPluginX !== null && savedPluginY !== null) {
+      if (typeof myWindow.setFrame === "function") {
+          myWindow.setFrame(savedPluginX, savedPluginY, savedPluginWidth, savedPluginHeight);
+      }
+  } else {
+      centerWindow(myWindow);
+  }
+
+  // ACTIVE BINDING: Continually catch real-time dragging and resizing
+  if (typeof myWindow.onMove === "function") {
+      myWindow.onMove(function() {
+          syncKeywordsCoordinates();
+      });
+  }
 }
-
-
-
-
-
-
-
-
 
 function gatherNotepadNotes() {
   // Remove any prior Notepad-based entries to prevent duplication or stale dismissal states
@@ -1272,7 +1294,7 @@ function gatherAllTags() {
       // 2. If no section header is active, a scene heading
       //    (INT., EXT., INT/EXT., I/E., EST., INT-EXT.) starts a group
       //    and collects lines until the next scene heading or a section header.
-      // 3. Text before the first header is grouped by rule 2 (scene‑by‑scene).
+      // 3. Text before the first header is grouped by rule 2 (scene‑by‑scene).
       const bLines = [];
       for (let k = i + 1; k < lines.length; k++) {
         bLines.push({ text: lines[k].string, position: lines[k].position, index: k });
@@ -2039,8 +2061,7 @@ function buildUIHtml() {
             Beat.custom.refreshUI();
           })">+ Add Note</button>
       </div>
-    </div> <!-- end sticky-header -->
-    `;
+    </div>     `;
     let notepadNoteIndex = 0;
     for (const [index, entry] of notesAndSynopsis.entries()) {
       const entryKey = entry.key || `${entry.type}:${entry.lineIndex ?? entry.absPos}`;
@@ -2410,7 +2431,7 @@ function buildUIHtml() {
           <option value="off"   disabled>Type</option>
           <option value="light"  ${themeMode==='light'  ? 'selected' : ''}>Light</option>
           <option value="dark"   ${themeMode==='dark'   ? 'selected' : ''}>Dark</option>
-          <!-- System option removed to prevent light-theme fallback layout bugs -->        </select>
+                  </select>
       </label>
     </div>
   </div>
@@ -2501,9 +2522,27 @@ function toggleKeywordsHighlights() {
   }
 }
 
-// Global tracking variables to store your custom dragged coordinates
-let savedPluginX = null;
-let savedPluginY = null;
+// COORDINATE & SIZE TRACKING SYNCHRONIZER: Call this to commit manual window drags/resizes
+function syncKeywordsCoordinates() {
+    if (myWindow && typeof myWindow.getFrame === "function") {
+        const currentFrame = myWindow.getFrame();
+        // Guard check: Avoid tracking hidden off-screen positions or collapsed zero-bounds
+        if (currentFrame.x > -5000 && currentFrame.width > 0 && currentFrame.height > 0) {
+            savedPluginX = currentFrame.x;
+            savedPluginY = currentFrame.y;
+            savedPluginWidth = currentFrame.width;
+            savedPluginHeight = currentFrame.height;
+
+            if (typeof Beat.localStorage !== 'undefined') {
+                Beat.localStorage.setItem('keywords_x', savedPluginX);
+                Beat.localStorage.setItem('keywords_y', savedPluginY);
+                Beat.localStorage.setItem('keywords_w', savedPluginWidth);
+                Beat.localStorage.setItem('keywords_h', savedPluginHeight);
+            }
+        }
+    }
+}
+
 
 function togglePluginVisibility() {
   Beat.log("togglePluginVisibility triggered");
@@ -2511,13 +2550,9 @@ function togglePluginVisibility() {
     isPluginVisible = !isPluginVisible;
     
     if (!isPluginVisible) {
-      // 1. SAVE LOCATION: Grab the window's exact custom location right before hiding it
-      if (typeof myWindow.getFrame === "function") {
-        const frameBeforeHide = myWindow.getFrame();
-        savedPluginX = frameBeforeHide.x;
-        savedPluginY = frameBeforeHide.y;
-      }
-      
+      // 1. SAVE LOCATION & SIZE
+      syncKeywordsCoordinates();
+
       // 2. MAKE INVISIBLE: Collapse size to 0x0 at its current spot so it vanishes completely
       if (typeof myWindow.setFrame === "function" && savedPluginX !== null && savedPluginY !== null) {
         myWindow.setFrame(savedPluginX, savedPluginY, 0, 0);
@@ -2525,14 +2560,16 @@ function togglePluginVisibility() {
         myWindow.hide();
       }
     } else {
+      if (typeof myWindow.show === "function") {
+          myWindow.show();
+      }
+
       // 3. RESTORE LOCATION: Instantly expand it back to full size exactly where you left it
       if (typeof myWindow.setFrame === "function" && savedPluginX !== null && savedPluginY !== null) {
-        myWindow.setFrame(savedPluginX, savedPluginY, 600, 500);
+        myWindow.setFrame(savedPluginX, savedPluginY, savedPluginWidth, savedPluginHeight);
       } else if (typeof centerWindow === "function") {
-        if (typeof myWindow.setFrame === "function") { myWindow.setFrame(100, 100, 600, 500); }
+        if (typeof myWindow.setFrame === "function") { myWindow.setFrame(100, 100, savedPluginWidth, savedPluginHeight); }
         centerWindow(myWindow);
-      } else if (typeof myWindow.show === "function") {
-        myWindow.show();
       }
     }
   } else {
