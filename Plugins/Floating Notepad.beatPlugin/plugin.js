@@ -3,45 +3,78 @@ Floating Notepad
 Short description: Quickly access and edit Beat's notepad in a floating window with keyboard shortcuts.
 Copyright: Bode Pickman
 <Description>
-  <p>The Floating Notepad plugin provides a convenient way to access and edit Beat's notepad from a floating window. This allows users to keep their notes easily accessible while working on their screenplay, without the need to switch tabs or panels.
+  <p>The Floating Notepad plugin provides a convenient way to access and edit Beat's notepad from a floating window. This allows users to keep their notes easily accessible while working on their screenplay, without the need to switch tabs or panels.</p>
   <p>⚠️WARNING: This plugin does not support color. If your notes are color-coordinated, do not use this plugin, as it will remove all colors upon launch.</p>
   <p>Features:</p>
   <ul>
     <li>Floating Window: Displays the notepad in a floating window that can be moved and resized independently of the main application window.</li>
     <li>Keyboard Shortcuts: Toggle the visibility of the floating notepad using the keyboard shortcut ⌘⌥ 3.</li>
-    <li>Navigate Headings: Use ⌥↑ and ⌥↓ to cycle through heading sections. This allows for quickly moving between different parts of your notes, enabling efficient organization and easy access to important information.</li>
+    <li>Navigate Headings: Use ⌥↑ and ⌥↓ to cycle through heading sections.</li>
     <li>Markdown Support: Supports limited Markdown rendering, allowing users to format their notes effectively.</li>
     <li>Real-time Synchronization: Automatically synchronizes changes between the floating notepad and the main notepad panel.</li>
-    <li>Search Functionality: Easily search through your notes with the built-in search bar, allowing for quick access to specific information.</li>
+    <li>Search Functionality: Easily search through your notes with the built-in search bar.</li>
     <li>Zoom In/Out: Adjust the font size of your notes for better readability with zoom in and out controls.</li>
   </ul>
 </Description>
 Image: floating_notepad.png
-Compatibility: 1.999.10
-Version: 1.4
+
+Version: 1.5
 */
 
 const html = Beat.assetAsString("ui.html");
 const notepad = Beat.notepad;
 
-// Set up the panel
+// --- FULLSCREEN & POSITION MEMORY CONTROLLER STATE ---
+let isPanelVisible = true;
+let savedPanelX = null;
+let savedPanelY = null;
+let savedPanelWidth = 2000;  // Holds your original default width
+let savedPanelHeight = 600;  // Holds your original default height
+
+// FIXED: Tracks and saves your custom width and height modifications seamlessly!
+function togglePanelVisibility() {
+    Beat.log("togglePanelVisibility triggered");
+    if (panel) {
+        isPanelVisible = !isPanelVisible;
+        
+        if (!isPanelVisible) {
+            // 1. MEMORY CHECK: Extract your custom position AND custom stretched bounds right before closing
+            if (typeof panel.getFrame === "function") {
+                const currentFrame = panel.getFrame();
+                savedPanelX = currentFrame.x;
+                savedPanelY = currentFrame.y;
+                savedPanelWidth = currentFrame.width;
+                savedPanelHeight = currentFrame.height;
+            }
+            
+            // 2. INVISIBLE STATE: Collapse window bounds to 0x0 at its exact location
+            if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+                panel.setFrame(savedPanelX, savedPanelY, 0, 0);
+            } else {
+                panel.hide();
+            }
+        } else {
+            // 3. RESTORE STATE: Re-expand using your custom stretched width and height metrics!
+            if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
+                panel.setFrame(savedPanelX, savedPanelY, savedPanelWidth, savedPanelHeight);
+            } else if (typeof panel.show === "function") {
+                panel.show();
+            }
+            
+            // Refresh editor text ranges instantly on expansion wake
+            refreshNotepad();
+        }
+    }
+}
+
+// Set up the panel (Preserved original dimensions)
 const panel = Beat.htmlWindow(html, 2000, 600, null, { utility: false });
 panel.stayInMemory = true; // Keep the panel in memory even when closed
 const frame = panel.getFrame();
 panel.setFrame(frame.x, frame.y - 300, frame.width, frame.height);
 
-// Optional: disable fullscreen if you want green button to not toggle fullscreen
-// panel.disableFullScreen = true;
-
-// Variable to track the panel's visibility state
-let isPanelVisible = true;
-
 // Variable to track if the update is programmatic
 let isProgrammaticUpdate = false;
-
-// Create a menu item to toggle the panel visibility when needed
-const menuItem = Beat.menuItem("Floating Notepad", ["cmd", "alt", "3"], togglePanelVisibility);
-const menu = Beat.menu("Floating Notepad", [menuItem]);
 
 // Custom methods
 Beat.custom = {
@@ -60,16 +93,6 @@ Beat.onNotepadChange(() => {
         console.log("Notepad changed, but skipping due to programmatic update.");
     }
 });
-
-// Function to toggle the panel visibility
-function togglePanelVisibility() {
-    if (isPanelVisible) {
-        panel.hide();
-    } else {
-        panel.show();
-    }
-    isPanelVisible = !isPanelVisible;
-}
 
 // Function to refresh the notepad content
 function refreshNotepad() {
@@ -204,3 +227,7 @@ panel.call(() => {
     document.addEventListener('DOMContentLoaded', refreshNotepad);
     document.addEventListener('focus', refreshNotepad);
 });
+
+// --- UNIFIED NATIVE MENU SHORTCUT REGISTER (NO DUPLICATES) ---
+const menuItem = Beat.menuItem("Floating Notepad", ["cmd", "alt", "3"], togglePanelVisibility);
+const menu = Beat.menu("Floating Notepad", [menuItem]);
