@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 3.1
+Version: 3.2
 */
 
 // --- Global plugin state --- //
@@ -1212,7 +1212,21 @@ function gatherAllTags() {
     let noteMatch;
     while ((noteMatch = regexNote.exec(line)) !== null) {
       if (insideBoneyardSection) continue;
-      const content = noteMatch[1];
+      const content = noteMatch[1].trim();
+
+      // --- TARGETED EXCLUSION FIX ---
+      // 1. Define scene heading starters
+      const sceneStarters = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EST\.|INT-EXT\.)/i;
+      
+      // 2. Check if the note is a color AND if it's on a scene heading line
+      const isColor = isValidColor(content) || isValidColor("#" + content);
+      const isSceneLine = sceneStarters.test(line.trim());
+
+      if (isColor && isSceneLine) {
+        continue; // Skip only if it's a color AND on a scene heading line
+      }
+      // -------------------------------
+
       if (/^#[a-fA-F0-9]{6}$/.test(content.trim())) continue;
       const absPos = lineObj.position + noteMatch.index;
       const trimmed = content.trim();
