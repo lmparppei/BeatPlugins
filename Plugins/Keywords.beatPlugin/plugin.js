@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 3.2
+Version: 3.3
 */
 
 // --- Global plugin state --- //
@@ -116,6 +116,10 @@ function isValidColor(colorStr) {
   return markerColors.hasOwnProperty(colorStr.toLowerCase());
 }
 
+function isSectionHeadingLine(line) {
+  return /^#{1,6}\s*/.test(line.trim());
+}
+
 function getMarkerColor(colorName) {
   if (!colorName) return defaultMarkerColor;
   const lower = colorName.toLowerCase();
@@ -168,7 +172,7 @@ function parseInlineMarkdown(text) {
 // Helper: render inline hashtags as pills, for both [[#tag]] and #tag syntax
 function renderInlineTags(text) {
   // Style [[#tag]] using color
-  text = text.replace(/\[\[\s*#([\p{L}\p{N}\p{Emoji}\p{M}_]+)\s*\]\]/gu, (_, tag) => {
+  text = text.replace(/\[\[\s*#([\p{L}\p{N}\p{Emoji}\p{M}_-]+)\s*\]\]/gu, (_, tag) => {
     const base = pickColorForTag(tag.toLowerCase());
     const uiColor = ensureUiContrast(base);
     const fg = getContrastColor(uiColor);
@@ -176,7 +180,7 @@ function renderInlineTags(text) {
   });
 
   // Style [[@tag]] using same color logic (treat as @tag)
-  text = text.replace(/\[\[\s*@([\p{L}\p{N}\p{Emoji}\p{M}_]+)\s*\]\]/gu, (_, tag) => {
+  text = text.replace(/\[\[\s*@([\p{L}\p{N}\p{Emoji}\p{M}_-]+)\s*\]\]/gu, (_, tag) => {
     const base = pickColorForTag(tag.toLowerCase());
     const uiColor = ensureUiContrast(base);
     const fg = getContrastColor(uiColor);
@@ -184,7 +188,7 @@ function renderInlineTags(text) {
   });
 
   // Also catch raw inline #tag and @tag (non-wrapped)
-  text = text.replace(/(^|\s)([#@][\p{L}\p{N}\p{Emoji}\p{M}_]+)/gu, (_, prefix, tag) => {
+  text = text.replace(/(^|\s)([#@][\p{L}\p{N}\p{Emoji}\p{M}_-]+)/gu, (_, prefix, tag) => {
     const base = pickColorForTag(tag.slice(1).toLowerCase());
     const uiColor = ensureUiContrast(base);
     const fg = getContrastColor(uiColor);
@@ -600,8 +604,7 @@ function ensureBgContrastHuePreserving(baseHex, minRatio=8.0){
     const hexTarget=_hexFromRgb(rgb.r, rgb.g, rgb.b);
     if (_contrastRatio(text, hexTarget) >= minRatio) out = hexTarget;
   }
-  // Debug: log before/after contrast
-  try { Beat.log(`[KW] Contrast adjust: base=${baseHex} → result=${out} (min=${minRatio}, gap≥${BRIGHTNESS_GAP})`); } catch {}
+  
   return out;
 }
 
@@ -1020,6 +1023,15 @@ Beat.custom = {
     if (mode === 'system') startAppearanceWatcher(); else try { if (appearancePoller && appearancePoller.stop) appearancePoller.stop(); } catch(e){}
     updateWindowUI();
   },
+  toggleLightDark() {
+    try {
+      if (themeMode === 'dark') {
+        this.setLightMode();
+      } else {
+        this.setDarkMode();
+      }
+    } catch (e) {}
+  },
   setCollapseMode(mode) {
     collapseMode = mode;
     Beat.setUserDefault("collapseMode", mode);
@@ -1160,7 +1172,7 @@ function gatherAllTags() {
   let insideBoneyardSection = false;
   const boneyardHeaderRegex = /^#\s*BONEYARD/i;
   const regexNote = /\[\[(.*?)\]\]/g;
-  const regexHash = /[#@]([\p{L}\p{N}\p{Emoji}\p{M}]+)/gu;
+  const regexHash = /[#@]([\p{L}\p{N}\p{Emoji}\p{M}_-]+)/gu;
   const lines = Beat.lines();
   // Gather tags
   for (let i = 0; i < lines.length; i++) {
@@ -1218,12 +1230,13 @@ function gatherAllTags() {
       // 1. Define scene heading starters
       const sceneStarters = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EST\.|INT-EXT\.)/i;
       
-      // 2. Check if the note is a color AND if it's on a scene heading line
+      // 2. Check if the note is a color AND if it's on a scene or section heading line
       const isColor = isValidColor(content) || isValidColor("#" + content);
       const isSceneLine = sceneStarters.test(line.trim());
+      const isSectionLine = isSectionHeadingLine(line);
 
-      if (isColor && isSceneLine) {
-        continue; // Skip only if it's a color AND on a scene heading line
+      if (isColor && (isSceneLine || isSectionLine)) {
+        continue; // Skip only if it's a color AND on a scene/section heading line
       }
       // -------------------------------
 
@@ -1232,7 +1245,7 @@ function gatherAllTags() {
       const trimmed = content.trim();
       const isSpecialTag = /^\s*(beat|storyline)\b\s*[:]?\s+([^\]]+)/i.test(trimmed);
       if (
-        !/^[#@]([\p{L}\p{N}\p{Emoji}\p{M}]+)$/u.test(trimmed) &&
+        !/^[#@]([\p{L}\p{N}\p{Emoji}\p{M}_-]+)$/u.test(trimmed) &&
         !isSpecialTag &&
         !line.trim().startsWith('=')
       ) {
@@ -1413,7 +1426,7 @@ function gatherAllTags() {
   // Extract all tags embedded in review strings and add them to the Keywords list
   try {
     const reviews = Beat.reviews?.getReviews?.() || [];
-    const reviewTagRegex = /[@#][\wäöüßÄÖÜ\-]+/g;
+    const reviewTagRegex = /[@#][\p{L}\p{N}\p{Emoji}\p{M}_-]+/gu;
     reviews.forEach(review => {
       if (review && review.string) {
         // Get the review's location in the document
@@ -1999,6 +2012,15 @@ function buildUIHtml() {
     }
     window.addEventListener('blur', minimizeFTOutliner);
     window.addEventListener('focus', maximizeFTOutliner);
+    // In-window shortcut: Ctrl+Cmd+0 to toggle light/dark
+    window.addEventListener('keydown', function(e){
+      try {
+        if (e.metaKey && e.ctrlKey && (e.key === '0' || e.key === '0')){
+          e.preventDefault();
+          Beat.call('Beat.custom.toggleLightDark()');
+        }
+      } catch(err){}
+    });
   </script>
   <style>
     #footerBar {
@@ -2131,7 +2153,7 @@ function buildUIHtml() {
         const dataOriginal = entry.content.replace(/"/g, '&quot;');
         if (isNotepadNote) {
           // Render tag preview below notepad note using only tag tokens ([[#tag]], [[@tag]])
-          const tagOnlyContent = (entry.content.match(/\[\[\s*[@#][\p{L}\p{N}\p{Emoji}\p{M}_]+\s*\]\]/gu) || []).join(' ');
+          const tagOnlyContent = (entry.content.match(/\[\[\s*[@#][\p{L}\p{N}\p{Emoji}\p{M}_-]+\s*\]\]/gu) || []).join(' ');
           const renderedTagsHTML = renderInlineTags(tagOnlyContent);
           const hintId = `hint-${notepadNoteIndex++}`;
           html += `
@@ -2265,7 +2287,7 @@ function buildUIHtml() {
            style="width: 100%; padding: 6px 10px; font-size: 0.95em; border-radius: 6px; border: 1px solid var(--searchBorder, #ccc); background-color: var(--searchBg, #fff); color: var(--searchColor, #000);">
     <label style="margin-top: 6px; display:block;" title="Hide Keywords in Notepad, Boneyard, Omits, and Reviews.">
       <input type="checkbox" ${hideBackgroundTags ? 'checked' : ''} onclick="Beat.call('Beat.custom.toggleHideBackgroundTags()')">
-      Hide Keywords in Notepad, Boneyard, Omits, & Reviews
+      Show Keywords in Screenplay Only
     </label>
     <h2>Favorites</h2>
   </div>
@@ -2419,7 +2441,9 @@ function buildUIHtml() {
       <p>You can also tag Storylines/Beats: [[Storyline: #tag]] or [[Beat #tag]].</p>
       <p>Click a tag in the plugin to jump to its location in the document.</p>
       <p>Left click to change the color of a tag.</p>
-      <p>Use Ctrl+Cmd+K to toggle the plugin.</p>
+      <p>Use Ctrl+Cmd+K to toggle the plugin window.</p>
+      <p>Use Shift+Cmd+K to toggle the highlights.</p>
+      <p>Use Shift+Cmd+0 to toggle theme.</p>
       <p>Close the window to remove highlights from the document.</p>
       <button onclick="document.getElementById('helpPopover').style.display='none';">Close</button>
     </div>
@@ -2598,11 +2622,13 @@ function togglePluginVisibility() {
 
 const toggleWindowMenuItem = Beat.menuItem("Toggle Window", ["cmd", "ctrl", "k"], togglePluginVisibility);
 const toggleHighlightsMenuItem = Beat.menuItem("Toggle Highlights", ["cmd", "shift", "k"], toggleKeywordsHighlights);
+const toggleThemeMenuItem = Beat.menuItem("Toggle Theme", ["cmd", "ctrl", "0"], function(){ try { Beat.custom.toggleLightDark(); } catch(e){} });
 
 // Unified menu bar wrapper container
 Beat.menu("Keywords", [
   toggleWindowMenuItem,
-  toggleHighlightsMenuItem
+  toggleHighlightsMenuItem,
+  toggleThemeMenuItem
 ]);
 
 // --- Modified onKeyDown block using myWindow ---
