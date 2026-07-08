@@ -1,0 +1,72 @@
+<style>
+	.line {	
+		width: 100%;
+		height: 6px;
+	}
+	.number {
+		position: absolute;
+		left: -1px;
+		bottom: 2px;
+		padding-left: .2em;
+	}
+	.small {
+		font-size: .85em;
+		font-style: italic;
+		color: #aaa;
+	}
+	.sceneGrid { display: flex; flex-direction: column; overflow: scroll; color: #555}
+	.headerRow {border-bottom: 1px solid #aaa; color: #aaa}
+	.bodyRow {border-top: 1px dotted #ddd}
+	.row { display: flex; padding: 0 0.2em;}
+	.row:nth-child(even) {background-color: #f0f0f0}
+	.cell { box-sizing: border-box; position: relative; }
+	.divider {border-left: 1px solid #aaa}
+	.row:hover { background-color: #ddd}
+	.nameCell { flex: 0 0 auto; width: 200px;}
+	.sceneCell { flex-basis: 0; } /* flex-grow is set inline per scene */
+	.sceneCell:hover { background-color: #888;}
+	.sumCell { flex: 0 0 auto; width: 50px; padding-left: 5px; border-left: 1px solid #aaa}
+	button {margin-top: 5px;}
+	.regexLabel { margin-top: 5em; }
+
+</style>
+
+<h1>#TITLE#</h1>
+<div class="sceneGrid">
+#DATA#
+</div>
+
+
+<script>
+	function updateEntityType() {
+		Beat.call(() => {
+			Beat.custom.updateEntityType()
+		})
+	}
+	function updateAlphabetical() {
+		Beat.call(() => {
+			Beat.custom.updateAlphabetical()
+		})
+	}
+	function setRegexPattern() {
+		Beat.call(() => {
+			Beat.custom.setRegexPattern()
+		});
+	}
+	function clearRegexPatterns() {
+		Beat.call(() => {
+			Beat.custom.clearRegexPatterns()
+		});
+	}
+	
+</script>
+<button onclick="updateEntityType()">Update Entity Type</button>
+<button onclick="updateAlphabetical()">Toggle Alphabetical Order</button>
+<!-- <button onclick="updateFormulas()">Define Custom Formula</button> -->
+<p class='small'>#HELPTEXT#</p>
+<h3 class="regexLabel">⚠️ REGEX ⚠️</h3>
+<p>
+If the existing entity types do not suit your fancy, you can define custom entities using RegEx, a computer syntax for patterns.
+</p>
+<button onclick="setRegexPattern()">Add Regex Pattern</button>
+<button onclick="clearRegexPatterns()">Clear Defined Regex Patterns</button>
