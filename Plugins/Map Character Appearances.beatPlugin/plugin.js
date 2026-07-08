@@ -17,8 +17,21 @@ const ENTITY_LOCATION = "Locations";
 const ENTITY_SUB_LOCATION = "Sublocations";
 const ENTITY_REGEX = "Regex";
 
-function stripSuffix(line) {
-        return line.replace(/\(.*\)/gm, '');
+// Beat color palette
+let colors = [
+    [0,129,239], [0,223,121], [250,111,193], [181, 32, 218], [251, 193,35], [7, 189, 235], [255,161,13], [169,106,7], [72,231,211]
+]
+
+function rgbToHex(color) {
+    let r = color[0]
+    let g = color[1]
+    let b = color[2]
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
 }
 
 function titleCase(str) {
@@ -30,6 +43,13 @@ function titleCase(str) {
 }
 
 function getRandomColor() {
+    if (colors.length > 0) {
+        let i = Math.floor(Math.random() * colors.length)
+        let color = rgbToHex(colors[i])
+        colors.splice(i, 1)
+        return color
+    }
+
     const letters = '0123456789ABCDEF';
     let color = '#';
     for (let i = 0; i < 6; i++) {
@@ -43,7 +63,7 @@ function getSceneLengthInEights(scene) {
   return sceneLen[0] * 8 + sceneLen[1]
 }
 
-
+// Define the functions we can callback from the HTML window.
 Beat.custom = {
     updateEntityType: function () {
         let entityType = Beat.dropdownPrompt("Change Entity Type", "Which entity would you like to map by scene? Changes apply after re-starting plugin.", validEntities);
@@ -65,6 +85,8 @@ Beat.custom = {
     },
     clearRegexPatterns: function () {
       Beat.setUserDefault(DEFINED_PATTERNS_SETTING, []);
+      Beat.alert("All existing regex entities have been deleted.");
+      Beat.end();
     }
 }
 
@@ -144,12 +166,12 @@ if (e == ENTITY_CHARACTER) {
   pattern = patterns.find(p => p.nickname === e);
   generateScenesByRegex(pattern)
 } else {
-  Beat.alert(`Entity ${e} has not been implemented. Rerouting to character.`);
+  Beat.alert(`Entity ${e} has not been implemented. Falling back to character entity.`);
   e = ENTITY_CHARACTER;
   generateScenesByCharacter();  
 }
 
-// Get scene lengths
+// Create a dictionary of scene lengths
 let sceneEights = {};
 for (let i = 0; i < sceneCount; i++) {
   const scene = Beat.scenes()[i];
@@ -157,6 +179,7 @@ for (let i = 0; i < sceneCount; i++) {
   sceneEights[i] = eights;
 }
 
+// Construct table header html
 let html = `<div class="row header">`;
 html += `<div class="cell nameCell">Scene</div>`;
 
@@ -173,16 +196,15 @@ for (let i = 0; i < sceneCount; i++) {
 html += `<div class="cell sumCell">pages</div>`;
 html += `</div>`;
 
-// Body rows
+// Construct table body html
 let bodyRows = [];
 let totalEights = 0;
 for (const [entityName, {entityColor, scenes: sceneIndexesForCharacter}] of Object.entries(scenesForEntity)) {
   let rowDiv = `<div class="row bodyRow">`;
-  // Name column
   let sumEights = 0;
   rowDiv += `<div class="cell nameCell">${entityName}</div>`;
 
-  // Scene cells
+  // For each scene, if entity is present, colorize.
   for (let i = 0; i < sceneCount; i++) {
 
     const classes = ["cell", "sceneCell"];
@@ -263,6 +285,7 @@ function generateScenesByLocation(differentiateSublocations = false) {
 }
 
 function generateScenesByCharacter() {
+  // First, find all characters with dialogue.
   for (let i = 0; i < sceneCount; i++) {
     // Process one scene at a time.
     const scene = Beat.scenes()[i];
@@ -273,6 +296,28 @@ function generateScenesByCharacter() {
         // handle
       } else if (line.typeAsString() == "Character") {
         addSceneForEntity(line.characterName(), i, ENTITY_CHARACTER);
+      }
+    }
+  }
+  const talkingCharacters = Object.keys(scenesForEntity);
+
+  for (let i = 0; i < sceneCount; i++) {
+    const scene = Beat.scenes()[i];
+
+    for (const line of Beat.linesForScene(scene)) {
+      if (!line || line.typeAsString() !== "Action") continue;
+
+      const text = line.string;
+
+      for (const charName of talkingCharacters) {
+        const escaped = charName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(
+          `\\b(?:${titleCase(escaped)}|${escaped.toUpperCase()})\\b`
+        );
+
+        if (regex.test(text)) {
+          addSceneForEntity(charName, i, ENTITY_CHARACTER);
+        }
       }
     }
   }
