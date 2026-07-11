@@ -45,8 +45,6 @@ button:active { background: #e0e0e0; }
 }
 .btn-danger:hover { background: #fdecea; }
 
-/* The table's semantics come from the markup; its layout comes from the
-   grid rules below. */
 #pattern-table,
 #pattern-table thead,
 #pattern-table tbody {
@@ -74,7 +72,6 @@ th, td {
     border: 0;
 }
 
-/* Grid columns scale with the window instead of fixed pixel widths. */
 #pattern-table thead tr,
 .pattern-row {
     display: grid;
@@ -172,8 +169,6 @@ th, td {
     every <code>PROP: LANTERN</code> in the script into a "LANTERN" entity.
     You can build and test patterns at <code>regex101.com</code>.
 </p>
-<!-- The `display` overrides above strip the implicit table semantics, so the
-     ARIA roles here (and in renderPatternList) put them back for screen readers. -->
 <table id="pattern-table" role="table" aria-label="Custom entity type patterns">
     <thead role="rowgroup">
         <tr role="row">
@@ -188,9 +183,6 @@ th, td {
 <button id="show-add-form">+ Add New Pattern</button>
 <div id="add-pattern-form">
     <label>Name <input type="text" id="new-nickname" placeholder="e.g. Props"></label>
-    <!-- spellcheck="false" stops macOS from curling quotes / autocorrecting as
-         the user types regex; what they type or paste is used verbatim, so
-         curly quotes stay matchable when the script contains them. -->
     <label>Pattern <input type="text" id="new-pattern" placeholder="e.g. PROP: ([A-Z ]+)" spellcheck="false" autocorrect="off" autocapitalize="off"></label>
     <label>Flags <input type="text" id="new-flags" placeholder="e.g. gi (g = every match per line, i = ignore case)" spellcheck="false" autocorrect="off" autocapitalize="off"></label>
     <label>Description <textarea id="new-description" rows="2" placeholder="e.g. Props called out in action lines"></textarea></label>
