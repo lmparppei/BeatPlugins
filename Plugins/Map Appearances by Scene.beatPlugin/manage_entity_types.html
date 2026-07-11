@@ -1,0 +1,331 @@
+<style>
+body {
+    font-family: -apple-system, sans-serif;
+    padding: 20px;
+    color: #222;
+    -webkit-user-select: text;
+    user-select: text;
+}
+h2 {
+    margin: 0 0 8px;
+}
+.help-text {
+    margin: 0 0 16px;
+    max-width: 560px;
+    color: #555;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+.help-text code {
+    font-family: ui-monospace, monospace;
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+button {
+    font: inherit;
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f5f5f5;
+    cursor: pointer;
+}
+button:hover { background: #ebebeb; }
+button:active { background: #e0e0e0; }
+.btn-primary {
+    background: #0071e3;
+    border-color: #0071e3;
+    color: white;
+}
+.btn-primary:hover { background: #0064c9; }
+.btn-danger {
+    background: transparent;
+    border-color: #e6bcbc;
+    color: #c0392b;
+}
+.btn-danger:hover { background: #fdecea; }
+
+/* The table's semantics come from the markup; its layout comes from the
+   grid rules below. */
+#pattern-table,
+#pattern-table thead,
+#pattern-table tbody {
+    display: block;
+}
+/* Neutralize UA cell styling; the .pattern-* classes do the real styling. */
+th, td {
+    display: block;
+    padding: 0;
+    font-weight: inherit;
+    text-align: inherit;
+}
+
+/* Visually hidden but available to screen readers - used for the otherwise
+   empty Actions column header. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Grid columns scale with the window instead of fixed pixel widths. */
+#pattern-table thead tr,
+.pattern-row {
+    display: grid;
+    grid-template-columns: minmax(90px, 1fr) minmax(140px, 2fr) minmax(140px, 2fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding: 10px 4px;
+}
+#pattern-table thead tr {
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #888;
+    border-bottom: 2px solid #ddd;
+}
+.pattern-row {
+    border-bottom: 1px solid #eee;
+}
+.pattern-row:hover { background: #f7f7f7; }
+.pattern-name {
+    font-weight: 600;
+    overflow-wrap: break-word;
+}
+.pattern-regex {
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
+    color: #444;
+    overflow-wrap: break-word;
+}
+.pattern-description {
+    color: #777;
+    font-size: 0.9em;
+    overflow-wrap: break-word;
+}
+.pattern-list-empty {
+    display: block;
+    padding: 12px 4px;
+    color: #888;
+}
+
+#add-pattern-form {
+    margin: 16px 0;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 480px;
+    padding: 14px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fafafa;
+    box-sizing: border-box;
+}
+#add-pattern-form.visible { display: flex; }
+#add-pattern-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9em;
+    color: #444;
+}
+#add-pattern-form input,
+#add-pattern-form textarea {
+    font: inherit;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+#add-pattern-form textarea { resize: vertical; }
+#add-pattern-form .form-actions {
+    display: flex;
+    gap: 8px;
+}
+.error {
+    color: #c0392b;
+    font-size: 0.9em;
+    min-height: 1.2em;
+}
+.actions {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 8px;
+}
+</style>
+<h2>Manage Custom Entity Types</h2>
+<p class="help-text">
+    Custom entity types find entities using <em>regular expressions</em> (RegEx).
+    Each pattern is run against every line of the script, scene by scene, and
+    the text matched by the pattern's first capture group <code>(…)</code>
+    becomes the entity's name. For example, <code>PROP: ([A-Z ]+)</code> turns
+    every <code>PROP: LANTERN</code> in the script into a "LANTERN" entity.
+    You can build and test patterns at <code>regex101.com</code>.
+</p>
+<!-- The `display` overrides above strip the implicit table semantics, so the
+     ARIA roles here (and in renderPatternList) put them back for screen readers. -->
+<table id="pattern-table" role="table" aria-label="Custom entity type patterns">
+    <thead role="rowgroup">
+        <tr role="row">
+            <th scope="col" role="columnheader">Name</th>
+            <th scope="col" role="columnheader">Pattern</th>
+            <th scope="col" role="columnheader">Description</th>
+            <th scope="col" role="columnheader"><span class="sr-only">Actions</span></th>
+        </tr>
+    </thead>
+    <tbody id="pattern-list" role="rowgroup"></tbody>
+</table>
+<button id="show-add-form">+ Add New Pattern</button>
+<div id="add-pattern-form">
+    <label>Name <input type="text" id="new-nickname" placeholder="e.g. Props"></label>
+    <!-- spellcheck="false" stops macOS from curling quotes / autocorrecting as
+         the user types regex; what they type or paste is used verbatim, so
+         curly quotes stay matchable when the script contains them. -->
+    <label>Pattern <input type="text" id="new-pattern" placeholder="e.g. PROP: ([A-Z ]+)" spellcheck="false" autocorrect="off" autocapitalize="off"></label>
+    <label>Flags <input type="text" id="new-flags" placeholder="e.g. gi (g = every match per line, i = ignore case)" spellcheck="false" autocorrect="off" autocapitalize="off"></label>
+    <label>Description <textarea id="new-description" rows="2" placeholder="e.g. Props called out in action lines"></textarea></label>
+    <!-- role="alert" announces validation failures to screen readers. -->
+    <div id="add-error" class="error" role="alert"></div>
+    <div class="form-actions">
+        <button id="add-pattern-btn" class="btn-primary">Add</button>
+        <button id="cancel-add-btn">Cancel</button>
+    </div>
+</div>
+<div class="actions">
+    <button id="save-btn" class="btn-primary">Save</button>
+    <button id="cancel-btn">Cancel</button>
+</div>
+<!-- shared_helpers.js, inlined by renderTemplate in plugin.js. -->
+<script>{{SHARED_HELPERS}}</script>
+<script>
+const patterns = {{PATTERNS}};
+const reservedNames = {{RESERVED_NAMES}};
+
+const listContainer = document.getElementById("pattern-list");
+const addForm = document.getElementById("add-pattern-form");
+const addError = document.getElementById("add-error");
+const nicknameInput = document.getElementById("new-nickname");
+const patternInput = document.getElementById("new-pattern");
+const flagsInput = document.getElementById("new-flags");
+const descriptionInput = document.getElementById("new-description");
+
+function renderPatternList() {
+    listContainer.replaceChildren();
+
+    if (patterns.length === 0) {
+        const emptyRow = document.createElement("tr");
+        emptyRow.className = "pattern-list-empty";
+        emptyRow.setAttribute("role", "row");
+        const emptyCell = document.createElement("td");
+        emptyCell.setAttribute("role", "cell");
+        emptyCell.textContent = "No custom patterns defined yet.";
+        emptyRow.appendChild(emptyCell);
+        listContainer.appendChild(emptyRow);
+        return;
+    }
+
+    patterns.forEach((pattern, index) => {
+        const row = document.createElement("tr");
+        row.className = "pattern-row";
+        row.setAttribute("role", "row");
+
+        const cell = () => {
+            const td = document.createElement("td");
+            td.setAttribute("role", "cell");
+            row.appendChild(td);
+            return td;
+        };
+        const textCell = (className, textContent) => {
+            const td = cell();
+            td.className = className;
+            td.textContent = textContent;
+        };
+
+        textCell("pattern-name", pattern.nickname);
+        textCell("pattern-regex", `/${pattern.pattern}/${pattern.flags}`);
+        textCell("pattern-description", pattern.description || "");
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn-danger";
+        deleteBtn.textContent = "Delete";
+        // Every row's button says "Delete"; the label tells them apart.
+        deleteBtn.setAttribute("aria-label", `Delete ${pattern.nickname}`);
+        deleteBtn.addEventListener("click", () => {
+            patterns.splice(index, 1);
+            renderPatternList();
+        });
+        cell().appendChild(deleteBtn);
+
+        listContainer.appendChild(row);
+    });
+}
+
+function resetAddForm() {
+    addForm.classList.remove("visible");
+    nicknameInput.value = "";
+    patternInput.value = "";
+    flagsInput.value = "";
+    descriptionInput.value = "";
+    addError.textContent = "";
+}
+
+document.getElementById("show-add-form").addEventListener("click", () => {
+    addForm.classList.add("visible");
+    addError.textContent = "";
+    nicknameInput.focus();
+});
+
+document.getElementById("cancel-add-btn").addEventListener("click", resetAddForm);
+
+function addPattern() {
+    const nickname = nicknameInput.value;
+    const pattern = patternInput.value;
+    const flags = flagsInput.value;
+
+    const error = validateNewPattern(nickname, pattern, flags,
+        [...reservedNames, ...patterns.map(p => p.nickname)]);
+    if (error) {
+        addError.textContent = error;
+        return;
+    }
+
+    patterns.push({ nickname: nickname.trim(), pattern, flags, description: descriptionInput.value.trim() });
+    renderPatternList();
+    resetAddForm();
+}
+
+document.getElementById("add-pattern-btn").addEventListener("click", addPattern);
+
+// Enter in any of the form's single-line inputs adds the pattern.
+addForm.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.target.tagName === "INPUT") {
+        event.preventDefault();
+        addPattern();
+    }
+});
+
+document.getElementById("save-btn").addEventListener("click", () => {
+    Beat.call((patternsJSON) => {
+        Beat.custom.saveCustomEntityTypes(patternsJSON);
+    }, JSON.stringify(patterns));
+});
+
+// window.close() is a no-op in Beat's HTML windows, so the plugin context has to close the window for us.
+document.getElementById("cancel-btn").addEventListener("click", () => {
+    Beat.call(() => {
+        Beat.custom.closeManageWindow();
+    });
+});
+
+renderPatternList();
+</script>
