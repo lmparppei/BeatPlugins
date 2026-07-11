@@ -61,9 +61,6 @@ function main() {
     for (const pattern of customPatterns) {
         generateScenesByRegex(pattern);
     }
-
-    // Stay alive after this script finishes so Beat.custom calls from the
-    // HTML windows keep working.
     Beat.makeResident();
     openResultsWindow();
 }
