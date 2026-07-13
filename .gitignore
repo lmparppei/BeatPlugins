@@ -1,3 +1,10 @@
 commit_and_publish.sh
 .DS_Store
 Plugins/.DS_Store
+
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Beat runtime temp files
+__beat_tmp_*.html
