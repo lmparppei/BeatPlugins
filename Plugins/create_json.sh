@@ -36,9 +36,13 @@ for dir in */
 
 	version=$(find "./$dir$filename" -type f -exec grep "Version:" {} \;);
 	version=${version/Version: /}
+
 	description=$(find "./$dir$filename" -type f -exec grep "Description:" {} \;);
+	description=$(json_escape $description);
 	description=${description/Description: /}
+
 	copyright=$(find "./$dir$filename" -type f -exec grep "Copyright:" {} \;);
+	copyright=$(json_escape $copyright);
 	copyright=${copyright/Copyright: /}
 
 	html=$(sed -n "/<Description>/,/<\/Description>/p" ./$dir$filename)
@@ -56,7 +60,7 @@ for dir in */
 		image=""
 	fi
 	
-	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": \"$copyright\", \"description\": \"$description\", \"image\": \"$image\", \"html\": $html }"
+	json+="		\"$pluginName\": { \"version\": \"$version\", \"copyright\": $copyright, \"description\": $description, \"image\": \"$image\", \"html\": $html }"
 
 	i=$(($i + 1))
 	if [[ $i -lt $count ]]
