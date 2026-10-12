@@ -1,5 +1,3 @@
-// Load the UI markup from ui.html
-const html = `
 <style>
 :root {
     --background-color: #ffffff;
@@ -9,212 +7,357 @@ const html = `
     --input-border-color: #cccccc;
     --daily-donut-color: #008080;
 }
+@media (prefers-color-scheme: dark) {
+  :root { --daily-donut-color: #008080; }
+}
 body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    background-color: var(--background-color); color: var(--text-color);
+    display: flex; justify-content: center; align-items: center; height: 100vh;
 }
 .counter-container {
-    width: 360px;
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    padding: 16px;
-    background: var(--background-color);
+    width: 380px; border: none; border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 16px; background: var(--background-color);
 }
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-    justify-content: space-between;
-}
-.controls label {
-    font-size: 12px;
-    color: var(--secondary-color);
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 80px;
-}
-.controls input,
-.controls select {
-    margin-top: 4px;
-    padding: 4px;
-    font-size: 14px;
-    border: 1px solid var(--input-border-color);
-    border-radius: 4px;
-}
-.metrics {
-    position: relative;
-    width: 100%;
-    padding-top: 100%;
-}
-.metrics canvas {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-origin: center;
-}
-#projectDonut {
-    width: 200px;
-    height: 200px;
-}
-#dailyDonut {
-    width: 140px;
-    height: 140px;
-}
-.info {
-    margin-top: 16px;
-    text-align: center;
-}
-.info div {
-    margin: 4px 0;
-    font-size: 14px;
-}
-  .success-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.5);
-    color: #fff;
-    font-size: 24px;
-    font-weight: bold;
-    z-index: 10;
-  }
-</style>
+.tabs { display: flex; width: 100%; margin-bottom: 16px; border-bottom: 1px solid var(--input-border-color); }
+.tab-btn { flex: 1; padding: 8px; background: none; border: none; color: var(--secondary-color); cursor: pointer; font-size: 14px; }
+.tab-btn.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); font-weight: bold; }
+.tab-content { display: none; width: 100%; flex-direction: column; align-items: center; flex: 1; }
+.tab-content.active { display: flex; }
 
-<style>
-@media (prefers-color-scheme: dark) {
-  :root {
-    --daily-donut-color: #008080;
-  }
-}
+.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; justify-content: space-between; width: 100%; }
+.controls label { font-size: 12px; color: var(--secondary-color); display: flex; flex-direction: column; flex: 1; min-width: 80px; }
+.controls input, .controls select { margin-top: 4px; padding: 4px; font-size: 14px; border: 1px solid var(--input-border-color); border-radius: 4px; }
+.metrics { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; position: relative; margin-bottom: 16px; min-height: 220px; }
+.metrics canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#projectDonut { width: 200px; height: 200px; }
+#dailyDonut { width: 140px; height: 140px; }
+.info { margin-top: 16px; text-align: center; }
+.info div { margin: 4px 0; font-size: 14px; }
+.success-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; font-weight: bold; z-index: 10; border-radius: 12px; }
+
+/* Dashboard Styles */
+.dashboard-stats { display: flex; justify-content: space-between; width: 100%; margin-bottom: 16px; }
+.stat-box { flex: 1; text-align: center; background: rgba(128,128,128,0.1); padding: 8px; border-radius: 8px; margin: 0 4px; }
+.stat-title { font-size: 11px; color: var(--secondary-color); margin-bottom: 4px; }
+.stat-val { font-size: 18px; font-weight: bold; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px; }
+.chart-header select { font-size: 10px; padding: 2px; border-radius: 4px; background: var(--background-color); color: var(--text-color); border: 1px solid var(--input-border-color); }
+.chart-container { width: 100%; height: 150px; margin-bottom: 16px; position: relative; }
+#lineChartCanvas { width: 100%; height: 100%; }
+.heatmap { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; width: 100%; }
+.heat-block { aspect-ratio: 1; background-color: var(--primary-color); border-radius: 2px; opacity: 0.1; }
 </style>
 
 <div class="counter-container">
-  <div class="controls">
-    <label>Count Type
-      <select id="countTypeSelect">
-        <option value="page">Pages</option>
-        <option value="word">Words</option>
-      </select>
-    </label>
-    <label>Daily Goal
-      <input type="number" id="daily-goal" placeholder="0" />
-    </label>
-    <label>Project Goal
-      <input type="number" id="project-goal" placeholder="0" />
-    </label>
-    <label>Deadline
-      <input type="date" id="deadline-input" />
-    </label>
+  <div class="tabs">
+    <button class="tab-btn active" id="btn-goal" onclick="switchTab('goal')">Goal</button>
+    <button class="tab-btn" id="btn-dashboard" onclick="switchTab('dashboard')">Dashboard</button>
   </div>
 
-  <div class="metrics">
-    <canvas id="projectDonut"></canvas>
-    <canvas id="dailyDonut"></canvas>
-    <div id="centerCounter" style="
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 64px;
-        font-weight: bold;
-        cursor: pointer;
-        pointer-events: auto;
-    ">0</div>
+  <div id="tab-goal" class="tab-content active">
+    <div class="controls">
+      <label>Count Type
+        <select id="countTypeSelect"><option value="page">Pages</option><option value="word">Words</option></select>
+      </label>
+      <label>Daily Goal<input type="number" id="daily-goal" placeholder="0" /></label>
+      <label>Project Goal<input type="number" id="project-goal" placeholder="0" /></label>
+      <label>Deadline<input type="date" id="deadline-input" /></label>
+    </div>
+    <div class="metrics">
+      <canvas id="projectDonut"></canvas>
+      <canvas id="dailyDonut"></canvas>
+      <div id="centerCounter" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 64px; font-weight: bold; cursor: pointer; pointer-events: auto;">0</div>
+    </div>
+    <div class="info">
+      <div id="days-left"></div>
+      <div id="pages-per-day"></div>
+    </div>
   </div>
 
-</div>
-  <div class="info">
-    <div id="days-left"></div>
-    <div id="pages-per-day"></div>
+  <div id="tab-dashboard" class="tab-content">
+    <div class="dashboard-stats">
+      <div class="stat-box"><div class="stat-title">🔥 Streak</div><div id="dash-streak" class="stat-val">0</div></div>
+      <div class="stat-box"><div class="stat-title">📅 7 Days</div><div id="dash-weekly" class="stat-val">0</div></div>
+      <div class="stat-box"><div class="stat-title">🏆 All Time</div><div id="dash-alltime" class="stat-val">0</div></div>
+    </div>
+    
+    <div class="chart-header">
+      <span style="font-size: 11px; font-weight: bold; color: var(--secondary-color);">Trends</span>
+      <div style="display: flex; gap: 4px;">
+        <select id="chartTypeSelect" onchange="switchChartType(this.value)">
+          <option value="output">Daily</option>
+          <option value="cumulative">Cumulative</option>
+        </select>
+        <select id="chartRangeSelect" onchange="switchChartRange(this.value)">
+          <option value="week">Current Week</option>
+          <option id="monthOptionLabel" value="month">Month</option>
+          <option value="3month">3 Months</option>
+          <option value="6month">6 Months</option>
+          <option value="year">The Year</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="lineChartCanvas"></canvas>
+    </div>
+    <div id="heatmapContainer" class="heatmap"></div>
   </div>
+
   <div id="successOverlay" class="success-overlay">🎉 Goal achieved!</div>
 </div>
 
 <script>
-// Load and apply persisted settings
+let currentChartRange = 'week';
+let currentChartType = 'output';
+
+document.addEventListener("DOMContentLoaded", () => {
+  const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
+  const monthOpt = document.getElementById('monthOptionLabel');
+  if (monthOpt) monthOpt.textContent = currentMonthName;
+});
+
 const settings = new PluginSettings('goals');
 settings.load();
-const savedCountType = settings.get('countType', 'page');
-const savedDailyGoal = settings.get('dailyGoal', '');
-const savedProjectGoal = settings.get('projectGoal', '');
-const savedDeadline = settings.get('deadlineDate', '');
-// Apply to inputs
-document.getElementById('countTypeSelect').value = savedCountType;
-document.getElementById('daily-goal').value = savedDailyGoal;
-document.getElementById('project-goal').value = savedProjectGoal;
-document.getElementById('deadline-input').value = savedDeadline;
+document.getElementById('countTypeSelect').value = settings.get('countType', 'page');
+document.getElementById('daily-goal').value = settings.get('dailyGoal', '');
+document.getElementById('project-goal').value = settings.get('projectGoal', '');
+document.getElementById('deadline-input').value = settings.get('deadlineDate', '');
 
-// Resolve CSS variables
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  document.getElementById('btn-' + tabId).classList.add('active');
+  if(tabId === 'dashboard' && window._lastHistory) drawDashboard(window._lastHistory);
+}
+
+function switchChartRange(range) {
+  currentChartRange = range;
+  if (window._lastHistory) drawDashboard(window._lastHistory);
+}
+
+function switchChartType(type) {
+  currentChartType = type;
+  if (window._lastHistory) drawDashboard(window._lastHistory);
+}
+
 const root = getComputedStyle(document.documentElement);
 const borderColor = root.getPropertyValue('--input-border-color').trim();
 const primaryColor = root.getPropertyValue('--primary-color').trim();
-const secondaryColor = root.getPropertyValue('--secondary-color').trim();
 
-// High-DPI canvas setup
 function setupCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.style.width = rect.width + 'px'; canvas.style.height = rect.height + 'px';
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
   ctx.scale(dpr, dpr);
   return ctx;
 }
 
-// Draw arc helper
 function drawArc(ctx, radius, thickness, progress, color) {
-  const center = ctx.canvas.width / 2;
+  const center = ctx.canvas.width / (window.devicePixelRatio || 1) / 2;
   ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
-  ctx.beginPath();
-  ctx.arc(center, center, radius, 0, 2 * Math.PI);
-  ctx.lineWidth = thickness;
-  ctx.strokeStyle = borderColor;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(center, center, radius, -Math.PI/2, -Math.PI/2 + 2 * Math.PI * Math.min(progress,1));
-  ctx.strokeStyle = color;
-  ctx.stroke();
+  ctx.beginPath(); ctx.arc(center, center, radius, 0, 2 * Math.PI);
+  ctx.lineWidth = thickness; ctx.strokeStyle = borderColor; ctx.stroke();
+  ctx.beginPath(); ctx.arc(center, center, radius, -Math.PI/2, -Math.PI/2 + 2 * Math.PI * Math.min(progress,1));
+  ctx.strokeStyle = color; ctx.stroke();
 }
 
-// Combined double donut
 function updateDonuts(projProg, dailyProg) {
   const projCanvas = document.getElementById('projectDonut');
   const dailyCanvas = document.getElementById('dailyDonut');
-  const projCtx = setupCanvas(projCanvas);
-  const dailyCtx = setupCanvas(dailyCanvas);
-  drawArc(projCtx, 90, 20, projProg, primaryColor);
+  if (!projCanvas || !dailyCanvas) return;
+  const ctxP = projCanvas.getContext('2d'); const dpr = window.devicePixelRatio || 1;
+  projCanvas.width = 200 * dpr; projCanvas.height = 200 * dpr; ctxP.scale(dpr, dpr);
+  const ctxD = dailyCanvas.getContext('2d');
+  dailyCanvas.width = 140 * dpr; dailyCanvas.height = 140 * dpr; ctxD.scale(dpr, dpr);
+  drawArc(ctxP, 90, 20, projProg, primaryColor);
   const dailyColor = root.getPropertyValue('--daily-donut-color').trim();
-  drawArc(dailyCtx, 60, 20, dailyProg, dailyColor);
+  drawArc(ctxD, 60, 20, dailyProg, dailyColor);
 }
 
-// Update info text
 function updateInfo(daysLeft, pagesPerDay) {
   document.getElementById('days-left').textContent = `${daysLeft} day${daysLeft===1?'':'s'} left`;
   document.getElementById('pages-per-day').textContent = `${pagesPerDay} per day`;
 }
 
 function showSuccess(message) {
-  const ov = document.getElementById('successOverlay');
-  if (!ov) return;
-  ov.textContent = message;
-  ov.style.display = 'flex';
+  const ov = document.getElementById('successOverlay'); if (!ov) return;
+  ov.textContent = message; ov.style.display = 'flex';
   setTimeout(() => { ov.style.display = 'none'; }, 2000);
 }
 
-// Entry point called by plugin.js
-window.updateProgress = function(dailyCount, dailyGoal, projCount, projGoal, deadlineStr) {
+function renderChart(history, range, type, canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || canvas.offsetParent === null) return;
+  
+  const ctx = setupCanvas(canvas);
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr; const h = canvas.height / dpr;
+  const padLeft = 45, padBottom = 20, padTop = 10, padRight = 10;
+  const chartW = w - padLeft - padRight; const chartH = h - padTop - padBottom;
+  
+  let points = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  const getCumul = (endStr) => {
+    let sum = 0; for (let k in history) { if (k <= endStr) sum += history[k]; } return sum;
+  };
+
+  if (range === 'week') {
+    const days = 7;
+    for(let i=days-1; i>=0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      points.push({ label: label, value: type === 'cumulative' ? getCumul(ds) : (history[ds] || 0) });
+    }
+  } else if (range === 'month') {
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    let curr = new Date(firstDay);
+    while (curr <= lastDay && curr <= today) {
+      const ds = curr.toISOString().split('T')[0];
+      const label = curr.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      points.push({ label: label, value: type === 'cumulative' ? getCumul(ds) : (history[ds] || 0) });
+      curr.setDate(curr.getDate() + 1);
+    }
+  } else {
+    let months = range === '3month' ? 3 : range === '6month' ? 6 : range === 'year' ? 12 : 24;
+    for(let i=months-1; i>=0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+      const monthPrefix = d.toISOString().slice(0, 7);
+      const lastDayStr = lastDay.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: months > 11 ? '2-digit' : undefined });
+      
+      if (type === 'cumulative') {
+        points.push({ label: label, value: getCumul(lastDayStr) });
+      } else {
+        let sum = 0;
+        for (let date in history) { if (date.startsWith(monthPrefix)) sum += history[date]; }
+        points.push({ label: label, value: sum });
+      }
+    }
+  }
+
+  let maxVal = Math.max(...points.map(p => p.value), 10);
+  const currentGoal = type === 'cumulative' ? parseFloat(document.getElementById('project-goal').value) : parseFloat(document.getElementById('daily-goal').value);
+  if (currentGoal && currentGoal > maxVal) { maxVal = currentGoal; }
+
+  const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)));
+  maxVal = Math.ceil(maxVal / magnitude) * magnitude;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = root.getPropertyValue('--secondary-color').trim();
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  
+  const gridSteps = 3;
+  ctx.strokeStyle = root.getPropertyValue('--input-border-color').trim();
+  ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+  
+  for(let i=0; i<=gridSteps; i++) {
+    const y = padTop + chartH - (i/gridSteps * chartH);
+    const val = Math.round(i/gridSteps * maxVal);
+    let valStr = val > 9999 ? (val/1000).toFixed(1)+'k' : val.toString();
+    ctx.fillText(valStr, padLeft - 8, y);
+    ctx.beginPath(); ctx.moveTo(padLeft, y); ctx.lineTo(w - padRight, y); ctx.stroke();
+  }
+  ctx.setLineDash([]); 
+
+  if (currentGoal && currentGoal > 0 && currentGoal <= maxVal) {
+     const goalY = padTop + chartH - (currentGoal / maxVal * chartH);
+     ctx.beginPath(); ctx.moveTo(padLeft, goalY); ctx.lineTo(w - padRight, goalY);
+     ctx.strokeStyle = root.getPropertyValue('--secondary-color').trim();
+     ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  const stepX = chartW / Math.max(points.length - 1, 1);
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = padLeft + (i * stepX);
+    const y = padTop + chartH - (p.value / maxVal * chartH);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    
+    let showLabel = false;
+    if (range === 'week') showLabel = true;
+    else if (range === 'month' && (i % 7 === 0 || i === points.length-1)) showLabel = true;
+    else if ((range === '3month' || range === '6month')) showLabel = true;
+    else if (range === 'year' && i % 2 === 0) showLabel = true;
+    else if (range === 'all' && i % 4 === 0) showLabel = true;
+
+    if (showLabel) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(p.label, x, padTop + chartH + 6);
+    }
+  });
+  
+  ctx.strokeStyle = root.getPropertyValue('--primary-color').trim(); ctx.lineWidth = 2; ctx.stroke();
+  
+  ctx.fillStyle = root.getPropertyValue('--background-color').trim();
+  points.forEach((p, i) => {
+    const x = padLeft + (i * stepX);
+    const y = padTop + chartH - (p.value / maxVal * chartH);
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+}
+
+function drawDashboard(history) {
+  window._lastHistory = history;
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  let allTime = 0, weekly = 0, currentStreak = 0;
+  for (let date in history) { allTime += history[date]; }
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    if (history[ds]) weekly += history[ds];
+  }
+  
+  let checkDate = new Date(today);
+  while (true) {
+    const ds = checkDate.toISOString().split('T')[0];
+    if (history[ds] > 0 || (currentStreak === 0 && ds === today.toISOString().split('T')[0])) {
+       if (history[ds] > 0) currentStreak++;
+       checkDate.setDate(checkDate.getDate() - 1);
+    } else { break; }
+  }
+  
+  document.getElementById('dash-alltime').textContent = allTime;
+  document.getElementById('dash-weekly').textContent = weekly;
+  document.getElementById('dash-streak').textContent = currentStreak;
+
+  renderChart(history, currentChartRange, currentChartType, 'lineChartCanvas');
+
+  const heatmap = document.getElementById('heatmapContainer');
+  if (heatmap) {
+      heatmap.innerHTML = '';
+      for(let i=27; i>=0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const ds = d.toISOString().split('T')[0];
+        const count = history[ds] || 0;
+        const block = document.createElement('div');
+        block.className = 'heat-block';
+        if (count > 0) {
+           if (count > 1000) block.style.opacity = 1;
+           else if (count > 500) block.style.opacity = 0.7;
+           else block.style.opacity = 0.4;
+        }
+        block.title = ds + ": " + count;
+        heatmap.appendChild(block);
+      }
+  }
+}
+
+window.updateProgress = function(dailyCount, dailyGoal, projCount, projGoal, deadlineStr, historyStr) {
   const projProg = projGoal? projCount / projGoal : 0;
   const dailyProg = dailyGoal? dailyCount / dailyGoal : 0;
   updateDonuts(projProg, dailyProg);
@@ -224,43 +367,21 @@ window.updateProgress = function(dailyCount, dailyGoal, projCount, projGoal, dea
   if (deadlineStr) {
     const dl = new Date(deadlineStr);
     const today = new Date(); today.setHours(0,0,0,0);
-    const diff = dl - today;
-    days = Math.ceil(diff / (1000*60*60*24));
+    days = Math.ceil((dl - today) / (1000*60*60*24));
   }
   const pagesPerDay = days>0 && projGoal? Math.ceil((projGoal - projCount)/days) : 0;
   updateInfo(days, pagesPerDay);
 
-  // Celebrate if goals met
-  if (dailyGoal > 0 && dailyCount >= dailyGoal) {
-    showSuccess('🎉 Daily goal achieved!');
-  } else if (projGoal > 0 && projCount >= projGoal) {
-    showSuccess('🏆 Project goal achieved!');
-  }
+  if (historyStr) { drawDashboard(JSON.parse(historyStr)); }
+
+  if (dailyGoal > 0 && dailyCount >= dailyGoal) { showSuccess('🎉 Daily goal achieved!'); } 
+  else if (projGoal > 0 && projCount >= projGoal) { showSuccess('🏆 Project goal achieved!'); }
 };
 
-// UI event listeners
-document.getElementById('countTypeSelect').addEventListener('change', (e) => {
-  Beat.call((type) => Beat.custom.setCountType(type), e.target.value);
-  settings.set('countType', e.target.value);
-  settings.save();
-});
-document.getElementById('daily-goal').addEventListener('input', (e) => {
-  Beat.call((val) => Beat.custom.setDailyGoal(val), parseInt(e.target.value));
-  settings.set('dailyGoal', parseInt(e.target.value) || 0);
-  settings.save();
-});
-document.getElementById('project-goal').addEventListener('input', (e) => {
-  Beat.call((val) => Beat.custom.setProjectGoal(val), parseInt(e.target.value));
-  settings.set('projectGoal', parseInt(e.target.value) || 0);
-  settings.save();
-});
-document.getElementById('deadline-input').addEventListener('change', (e) => {
-  Beat.call((val) => Beat.custom.setDeadline(val), e.target.value);
-  settings.set('deadlineDate', e.target.value);
-  settings.save();
-});
+document.getElementById('countTypeSelect').addEventListener('change', (e) => { Beat.call((type) => Beat.custom.setCountType(type), e.target.value); settings.set('countType', e.target.value); settings.save(); });
+document.getElementById('daily-goal').addEventListener('input', (e) => { Beat.call((val) => Beat.custom.setDailyGoal(val), parseInt(e.target.value)); settings.set('dailyGoal', parseInt(e.target.value) || 0); settings.save(); });
+document.getElementById('project-goal').addEventListener('input', (e) => { Beat.call((val) => Beat.custom.setProjectGoal(val), parseInt(e.target.value)); settings.set('projectGoal', parseInt(e.target.value) || 0); settings.save(); });
+document.getElementById('deadline-input').addEventListener('change', (e) => { Beat.call((val) => Beat.custom.setDeadline(val), e.target.value); settings.set('deadlineDate', e.target.value); settings.save(); });
 
-// Draw initial empty donuts
 updateDonuts(0, 0);
 </script>
-`;
