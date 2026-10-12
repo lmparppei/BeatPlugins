@@ -1,13 +1,17 @@
 Review Manager
 
 Organize your reviews with tags.
-Ver 0.97 / © Jürgen Heimüller 2026
+Ver 0.98 / © Jürgen Heimüller 2026
 
 Created with the help of DeepSeek.
 
 ----------------------------------------------------------------------------
 
 
+- Changes in V0.98
+  Import-reviews function (from clipboard in csv-format)
+  Advanced saving window position and size
+  Fixed some UI-glitches
 - Changes in V0.97
   Add-review function
   Paste function
@@ -42,7 +46,7 @@ Right Side (Review List)
 - Triangle button (top right): Click to expand all reviews (if they are longer than 3 lines) permanently or collapse them and expand manually (Enter).
 - Select reviews: Click the checkbox next to a review to select it. 
   You can also select text in the main Beat window – all reviews within that selection will be automatically selected in the plugin. 
-- Move: select text in the document and click on the (yellow) move-icon to move review position
+- Move: select text in the document and click on the (yellow) move-icon to move review location
 - Edit: Click on the edit-icon to edit the review, click the undo icon (or press [Esc] to revert to the saved version
 - Copy: Click on the copy-icon (or press [Cmd-C]) to copy the entire review (incl. tags)
 - Delete: Click the trash icon to delete a single review.
@@ -57,12 +61,14 @@ Left Side (Controls)
   Intersect: Keep only visible reviews in the selection (for AND-operations) [Cmd-Shift-S]
   Clear: Deselect all reviews [Cmd-Shift-C]
   (Note: "All", "Reverse", and "Intersect" only apply to the currently filtered reviews.)
-- Search [Cmd-F]: Enter search expression, „Search“ or [ENTER] will find next review containing search expression (icl. tags), [Cmd-G] will search next. „Select“ will add all found reviews to selection (e.g. to add tags). 
+- Search [Cmd-F]: Enter search expression, „Search“ or [ENTER] will find next review containing search expression (incl. tags), [Cmd-G] will search next. „Select“ will add all found reviews to selection (e.g. to add tags). 
 - Batch operations:
   Once reviews are selected, you can:
   Add a tag to all selected reviews
   Remove a tag from all selected reviews
   Delete all selected reviews at once
 - Export to CSV:
-  Click "Export to Clipboard" to copy all filtered reviews to the clipboard in CSV format.
+  Click "Export" to copy all (filtered) reviews to the clipboard in CSV format.
   You can then paste them directly into a word processor or spreadsheet application.
+- Import from CSV:
+  Click „Import“ to copy from the clipboard in CSV format. The plugin will try to match scene-number and reference text. If there are any reviews that can’t be imported, they will be copied to the clipboard for further actions.

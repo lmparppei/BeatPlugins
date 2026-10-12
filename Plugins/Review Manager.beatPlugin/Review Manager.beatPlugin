@@ -1,7 +1,7 @@
  /*:
 Review Manager
 Copyright: Jürgen Heimüller 2026
-Version: 0.97
+Version: 0.98
 Description: Manage and organize your reviews with tags
 */
 
@@ -15,7 +15,8 @@ Beat.log("=== REVIEW MANAGER v0.97 ===");
 const CONFIG = {
     version: "0.97",
     windowDefaults: { width: 572, height: 700, minWidth: 365, minHeight: 400 },
-    debug: false
+    debug: false,
+    positionPollingInterval: 3  // NEU
 };
 
 // ---------- 2. STATE MANAGEMENT ----------
@@ -51,6 +52,7 @@ const State = {
     // Batch-Operationen
     pendingDeleteIds: null,
     pendingDeleteTotal: 0,
+    pendingImport: null,
     
     // Suppress Flags
     suppressTextChange: false,
@@ -63,6 +65,10 @@ const State = {
     // Search State
     searchExpression: "",
     searchActive: false,  // ob Suchfeld gerade offen ist
+
+    // NEU: Für Polling
+    _lastSavedFrame: null,
+    _pollingTimer: null,
     
     // Setter
     setFilter(tag, invert) {
@@ -379,6 +385,10 @@ const Data = {
                 review.string = (review.string + " " + formattedTag).trim();
                 rm.saveReview(review);
                 if (!skipRefresh) {
+                    // ZUERST flushBuffer() aufrufen
+                    if (State.editingReviewId === parseInt(id)) {
+                        EditMode.flushBuffer();
+                    }
                     UI.checkAndResetFilter();  // Prüfe ob Filter noch gültig ist
                     UI.refresh("tag_added", undefined, undefined, true);
                 }
@@ -407,6 +417,10 @@ removeTag(id, tagToRemove, skipRefresh = false) {
         
         rm.saveReview(review);
         if (!skipRefresh) {
+            // ZUERST flushBuffer() aufrufen
+            if (State.editingReviewId === parseInt(id)) {
+                EditMode.flushBuffer();
+            }        
             UI.checkAndResetFilter();
             UI.refresh("tag_removed", undefined, undefined, true);
         }
@@ -416,6 +430,7 @@ removeTag(id, tagToRemove, skipRefresh = false) {
 },
     
     deleteReview(id, skipRefresh = false) {
+        State.pendingEdit = null;
         try {
             State.suppressTextChange = true;
             const rm = Beat.reviews;
@@ -473,8 +488,21 @@ const WindowManager = {
         }        
         
         const html = UI.buildHTML(data, -1, initialHighlightId);
-        this.window = Beat.htmlWindow(html, 572, 700, this.onClose.bind(this));
+        this.window = Beat.htmlWindow(html, CONFIG.windowDefaults.width, CONFIG.windowDefaults.height, this.onClose.bind(this));
         this.restorePosition();
+
+        // NEU: Initialen Frame speichern
+        if (this.window && typeof this.window.getFrame === 'function') {
+            const frame = this.window.getFrame();
+            if (frame) {
+                State._lastSavedFrame = {
+                    x: frame.x, y: frame.y,
+                    width: frame.width, height: frame.height
+                };
+            }
+        }
+
+        this._startPolling();        
         
         
         const range = Beat.selectedRange();
@@ -487,6 +515,7 @@ const WindowManager = {
     },
     
     onClose() {
+        this._stopPolling();    
         this.savePosition();
         State.saveToDocument();
         TextHighlight.clearHighlight();        
@@ -496,6 +525,46 @@ const WindowManager = {
         State.editingReviewId = -1;
         State.pendingEdit = null;
         try { Beat.end(); } catch (e) {}
+    },
+
+    // NEU: Polling starten (kompakte Version)
+    _startPolling() {
+        this._stopPolling(); // Sicherheitshalber alten Timer löschen
+        
+        this._pollingTimer = Beat.timer(CONFIG.positionPollingInterval, () => {
+            try {
+                if (!this.window || typeof this.window.getFrame !== 'function') return;
+                
+                const frame = this.window.getFrame();
+//                if (!frame || frame.width < 100 || frame.height < 100) return;
+//                    Logger.log("1: Y "+frame.y + " X "+frame.x+" w "+frame.width+" h "+frame.height);      
+//                Beat.log("Y: " + WindowManager.window.getFrame().y);
+                // Prüfen ob sich was geändert hat
+                const changed = !State._lastSavedFrame ||
+                    Math.abs(frame.x - State._lastSavedFrame.x) > 1 ||
+                    Math.abs(frame.y - State._lastSavedFrame.y) > 1 ||
+                    Math.abs(frame.width - State._lastSavedFrame.width) > 1 ||
+                    Math.abs(frame.height - State._lastSavedFrame.height) > 1;
+                
+                if (changed) {
+                    Beat.setDocumentSetting("reviewManagerWindowSize", { 
+                        width: frame.width, height: frame.height 
+                    });
+                    Beat.setDocumentSetting("reviewManagerWindowPosition", { 
+                        x: Math.max(0, frame.x), y: Math.max(0, frame.y) 
+                    });
+                    State._lastSavedFrame = { x: frame.x, y: frame.y, width: frame.width, height: frame.height };
+                }
+            } catch(e) { /* silent fail */ }
+        }, true); // true = wiederholen
+    },
+    
+    // NEU: Polling stoppen (kompakte Version)
+    _stopPolling() {
+        if (this._pollingTimer) {
+            this._pollingTimer.invalidate();
+            this._pollingTimer = null;
+        }
     },
     
     savePosition() {
@@ -691,6 +760,7 @@ save(id, newText) {
     
     cancel() {
         // Neu erstelltes, unverändertes Review beim Abbrechen löschen
+        State.pendingEdit = null;   // ← NEU: verhindert stale save()
         if (State.pendingNewReviewId !== null && State.pendingNewReviewId === State.editingReviewId) {
             const rm = Beat.reviews;
             const review = rm.getReviews()[State.pendingNewReviewId];
@@ -706,7 +776,6 @@ save(id, newText) {
 
         // Bestehende Abbruch-Logik
         State.editingReviewId = -1;
-        State.pendingEdit = null;
         UI.refresh("cancel_editing");
         WindowManager.runJS(`
             document.querySelectorAll('.review-edit-icon.undo').forEach(el => {
@@ -957,6 +1026,523 @@ const Export = {
             Logger.error("Fehler beim CSV Export", e);
             Beat.alert("Fehler beim Export: " + e.message);
         }
+    }
+};
+
+// ---------- 8.5 IMPORT ----------
+const Import = {
+    // ---------- STEP 1: Lesen + Validieren + Dialog ----------
+    fromCSV() {
+        Beat.log("=== REVIEW IMPORT: Prepare ===");
+        try {
+            State.pendingImport = null;
+
+            let clipboardText = Beat.readFromPasteboard();
+            if (!clipboardText || !clipboardText.trim()) {
+                Beat.alert("Clipboard is empty or contains no text.");
+                return;
+            }
+
+            if (clipboardText.charCodeAt(0) === 0xFEFF) {
+                clipboardText = clipboardText.substring(1);
+            }
+
+            const rows = this.parseCSV(clipboardText);
+            if (rows.length < 2) {
+                Beat.alert("CSV contains no data rows.");
+                return;
+            }
+
+            const expectedHeaders = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
+            const headers = rows[0].map(h => h.trim());
+            const headersValid = expectedHeaders.every((h, i) => headers[i] === h);
+            if (!headersValid) {
+                Beat.alert("Invalid CSV headers.\nExpected:\n" + expectedHeaders.join("; "));
+                return;
+            }
+
+            const dataRowCount = rows.length - 1;
+
+            State.pendingImport = {
+                rows: rows,
+                createdReviews: [],
+                failedRows: [],
+                stats: {
+                    created: 0,
+                    moved: 0,           // #__MOVED
+                    noScene: 0,         // #__NO_SCENE_NUMBER
+                    alreadyTaken: 0,    // #__ALREADY_TAKEN
+                    skipped: 0,         // ungültige Zeile
+                    duplicateSkipped: 0,// Skip wegen identischem Review-Text
+                    notFound: 0         // keine Stelle gefunden
+                }
+            };
+
+            WindowManager.runJS(
+                'showConfirmDialog(' +
+                    JSON.stringify("Import " + dataRowCount + " review(s) from clipboard?") +
+                    ', null, "import");'
+            );
+
+        } catch(e) {
+            Logger.error("Import prep error", e);
+            Beat.alert("Import error: " + e.message);
+        }
+    },
+
+    // ---------- STEP 2: Schleife im HTML-Window starten ----------
+    confirmImport() {
+        const imp = State.pendingImport;
+        if (!imp) return;
+
+        Beat.log("=== REVIEW IMPORT: Run ===");
+
+        const total = imp.rows.length - 1;
+
+        WindowManager.runJS(`
+            var total = ${total};
+            var idx = 1;
+            var processed = 0;
+            function processNext() {
+                if (idx > total) {
+                    Beat.call('Beat.custom.finalizeImport()');
+                    setTimeout(function() {
+                        var bar = document.getElementById('batchProgress');
+                        if (bar) bar.style.width = '0%';
+                    }, 1000);
+                    return;
+                }
+                Beat.call('Beat.custom.importRowAt(' + idx + ')');
+                idx++;
+                processed++;
+                var percent = Math.round((processed / total) * 100);
+                var bar = document.getElementById('batchProgress');
+                if (bar) bar.style.width = percent + '%';
+                setTimeout(processNext, 20);
+            }
+            processNext();
+        `);
+    },
+
+    // ---------- STEP 3: Eine Zeile verarbeiten ----------
+    importRowAt(index) {
+        const imp = State.pendingImport;
+        if (!imp) return;
+
+        const row = imp.rows[index];
+        if (!row || row.length < 7) {
+            imp.stats.skipped++;
+            imp.failedRows.push(row || []);
+            return;
+        }
+
+        const sceneNum      = (row[1] || "").trim();
+        const location      = parseInt(row[2]);
+        const lengthFromCSV = parseInt(row[3]);
+        const reviewText    = row[4];
+        const referenceText = row[5];
+        const selected      = (row[6] || "").trim();
+
+        if (isNaN(location) || !reviewText || !referenceText) {
+            imp.stats.skipped++;
+            imp.failedRows.push(row);
+            return;
+        }
+
+        const fullText    = Beat.getText();
+        const fullTextLen = fullText.length;
+        const refLen      = referenceText.length;
+
+        // Wunschlänge: CSV-Length hat Vorrang, sonst Reference-Text-Länge
+        const rawCreateLength = (!isNaN(lengthFromCSV) && lengthFromCSV > 0)
+            ? lengthFromCSV
+            : refLen;
+
+        // Sichere Länge für eine konkrete Position:
+        // 1. rawCreateLength passt → nehmen
+        // 2. sonst refLen, wenn sie passt → nehmen
+        // 3. sonst refLen (best effort, wird von Beat ggf. gekürzt)
+        const safeLen = (loc) => {
+            if (loc >= 0 && loc + rawCreateLength <= fullTextLen) return rawCreateLength;
+            if (loc >= 0 && loc + refLen <= fullTextLen) return refLen;
+            return refLen;
+        };
+
+        let created = null;
+        let skipRow = false;
+
+        // ---------- CASE 1: Original-Position ----------
+        if (location >= 0 && location + refLen <= fullTextLen) {
+            const docText = fullText.substring(location, location + refLen);
+            const matches = (docText === referenceText);
+            const hasExisting = this.hasReviewAt(location, refLen);
+
+            if (matches && !hasExisting) {
+                created = this.createReviewAt(
+                    reviewText,
+                    location,
+                    safeLen(location)
+                );
+            }
+        }
+
+        // ---------- CASE 2: Reference Text irgendwo im Dokument ----------
+        if (!created) {
+            const allPositions = this.findAllPositions(fullText, referenceText);
+
+            const posInfo = [];
+            for (let p = 0; p < allPositions.length; p++) {
+                const pos = allPositions[p];
+                let posSceneNumStr = null;
+                let posSceneNumInt = NaN;
+                try {
+                    const scene = Beat.sceneAtPosition(pos);
+                    if (scene && scene.sceneNumber !== undefined && scene.sceneNumber !== null) {
+                        posSceneNumStr = String(scene.sceneNumber).trim();
+                        const parsed = parseInt(scene.sceneNumber);
+                        if (!isNaN(parsed)) posSceneNumInt = parsed;
+                    }
+                } catch(e) {}
+                posInfo.push({
+                    pos: pos,
+                    sceneNumStr: posSceneNumStr,
+                    sceneNumInt: posSceneNumInt
+                });
+            }
+
+            if (posInfo.length > 0) {
+
+                // --------- Duplikat-Check an ALLEN Fundstellen ---------
+                const importStripped = this.stripTags(reviewText);
+                let isDuplicateAnywhere = false;
+                for (let i = 0; i < posInfo.length; i++) {
+                    const existingReview = this.getReviewAt(posInfo[i].pos, refLen);
+                    if (!existingReview) continue;
+                    if (this.stripTags(existingReview.string) === importStripped) {
+                        isDuplicateAnywhere = true;
+                        break;
+                    }
+                }
+                if (isDuplicateAnywhere) {
+                    skipRow = true;
+                    imp.stats.duplicateSkipped++;
+                }
+
+                // --------- Fall A: keine Szenennummer in CSV ---------
+                if (!skipRow && sceneNum === "") {
+                    let chosen = null;
+                    for (let i = 0; i < posInfo.length; i++) {
+                        if (!this.hasReviewAt(posInfo[i].pos, refLen)) {
+                            chosen = posInfo[i];
+                            break;
+                        }
+                    }
+                    if (chosen) {
+                        created = this.createReviewAt(
+                            reviewText + " #__NO_SCENE_NUMBER",
+                            chosen.pos,
+                            safeLen(chosen.pos)
+                        );
+                        if (created) imp.stats.noScene++;
+                    }
+                }
+
+                // --------- Fall B: Szenennummer vorhanden ---------
+                else if (!skipRow) {
+                    const targetSceneStr = sceneNum.toUpperCase();
+                    const targetSceneInt = parseInt(sceneNum);
+
+                    const exactMatches = posInfo.filter(pi =>
+                        pi.sceneNumStr !== null &&
+                        pi.sceneNumStr.toUpperCase() === targetSceneStr
+                    );
+
+                    if (exactMatches.length > 0) {
+                        let freeMatch = null;
+                        for (let i = 0; i < exactMatches.length; i++) {
+                            if (!this.hasReviewAt(exactMatches[i].pos, refLen)) {
+                                freeMatch = exactMatches[i];
+                                break;
+                            }
+                        }
+
+                        if (freeMatch) {
+                            created = this.createReviewAt(
+                                reviewText,
+                                freeMatch.pos,
+                                safeLen(freeMatch.pos)
+                            );
+                        } else {
+                            const available = posInfo.filter(pi =>
+                                !this.hasReviewAt(pi.pos, refLen)
+                            );
+                            if (available.length > 0) {
+                                const best = this.pickClosestScene(available, targetSceneInt);
+                                if (best) {
+                                    created = this.createReviewAt(
+                                        reviewText + " #__ALREADY_TAKEN",
+                                        best.pos,
+                                        safeLen(best.pos)
+                                    );
+                                    if (created) imp.stats.alreadyTaken++;
+                                }
+                            }
+                        }
+                    } else {
+                        const available = posInfo.filter(pi =>
+                            !this.hasReviewAt(pi.pos, refLen)
+                        );
+                        if (available.length > 0) {
+                            const best = this.pickClosestScene(available, targetSceneInt);
+                            if (best) {
+                                created = this.createReviewAt(
+                                    reviewText + " #__MOVED",
+                                    best.pos,
+                                    safeLen(best.pos)
+                                );
+                                if (created) imp.stats.moved++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (skipRow) return;
+
+        if (created) {
+            imp.stats.created++;
+            created.selected = (selected === "Yes");
+            imp.createdReviews.push(created);
+        } else {
+            imp.stats.notFound++;
+            imp.failedRows.push(row);
+        }
+    },
+
+    // ---------- STEP 4: Selektionen, Refresh, Meldung ----------
+    finalizeImport() {
+        const imp = State.pendingImport;
+        if (!imp) return;
+
+        const rm = Beat.reviews;
+
+        if (imp.createdReviews.length > 0) {
+            const allReviews = rm.getReviews();
+            for (let c = 0; c < imp.createdReviews.length; c++) {
+                const cr = imp.createdReviews[c];
+                if (!cr.selected) continue;
+                for (let i = 0; i < allReviews.length; i++) {
+                    try {
+                        const range = rm.rangeForReview(allReviews[i]);
+                        if (range && range.location === cr.location && range.length === cr.length) {
+                            State.selectedReviews.add(i);
+                            break;
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
+
+        UI._cachedData = null;
+        UI.refresh("import_complete", undefined, undefined, true);
+
+        // Nicht erzeugte Reviews als CSV in die Zwischenablage
+        let clipboardCopied = false;
+        if (imp.failedRows.length > 0) {
+            clipboardCopied = this.copyFailedRowsToClipboard(imp.failedRows);
+        }
+
+        // ---------- Meldung ----------
+        const s = imp.stats;
+        let msg = "Import complete:\n";
+        msg += "• " + s.created + " review(s) created";
+
+        let details = [];
+        if (s.moved > 0)        details.push(s.moved + " #__MOVED");
+        if (s.noScene > 0)      details.push(s.noScene + " #__NO_SCENE_NUMBER");
+        if (s.alreadyTaken > 0) details.push(s.alreadyTaken + " #__ALREADY_TAKEN");
+        if (details.length > 0) msg += "\n  (" + details.join(", ") + ")";
+
+        if (s.duplicateSkipped > 0) msg += "\n• " + s.duplicateSkipped + " duplicate(s) skipped";
+        if (s.notFound > 0)         msg += "\n• " + s.notFound + " not found";
+        if (s.skipped > 0)          msg += "\n• " + s.skipped + " row(s) skipped";
+
+        if (imp.failedRows.length > 0 && clipboardCopied) {
+            msg += "\n\n" + imp.failedRows.length +
+                   " unsuccessful row(s) copied to clipboard as CSV.";
+        }
+        Beat.alert(msg);
+
+        State.pendingImport = null;
+        Beat.log("=== REVIEW IMPORT: Done ===");
+    },
+
+    // ---------- Nicht erzeugte Zeilen als CSV in die Zwischenablage ----------
+    copyFailedRowsToClipboard(rows) {
+        try {
+            const headers = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
+            const escapeCSV = (str) => {
+                if (str === undefined || str === null) return '""';
+                str = String(str).replace(/"/g, '""');
+                return '"' + str + '"';
+            };
+
+            const lines = [headers.join(";")];
+            for (let r = 0; r < rows.length; r++) {
+                const row = rows[r];
+                const out = [];
+                for (let c = 0; c < 7; c++) {
+                    out.push(escapeCSV(row[c] !== undefined ? row[c] : ""));
+                }
+                lines.push(out.join(";"));
+            }
+
+            const csv = "\uFEFF" + lines.join("\n");
+
+            WindowManager.runJS(`
+                try {
+                    navigator.clipboard.writeText(${JSON.stringify(csv)}).catch(function(e){
+                        console.log('clipboard write failed', e);
+                    });
+                } catch(e) {
+                    console.log('clipboard write failed', e);
+                }
+            `);
+            return true;
+        } catch(e) {
+            Logger.error("copyFailedRowsToClipboard error", e);
+            return false;
+        }
+    },
+
+    // ---------- Helfer ----------
+    parseCSV(text) {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        let i = 0;
+        const len = text.length;
+
+        while (i < len) {
+            const ch = text[i];
+            if (inQuotes) {
+                if (ch === '"') {
+                    if (i + 1 < len && text[i + 1] === '"') { currentField += '"'; i += 2; }
+                    else { inQuotes = false; i++; }
+                } else { currentField += ch; i++; }
+            } else {
+                if (ch === '"') { inQuotes = true; i++; }
+                else if (ch === ';') { currentRow.push(currentField); currentField = ''; i++; }
+                else if (ch === '\r') { i++; }
+                else if (ch === '\n') {
+                    currentRow.push(currentField);
+                    rows.push(currentRow);
+                    currentRow = []; currentField = '';
+                    i++;
+                } else { currentField += ch; i++; }
+            }
+        }
+        if (currentField !== '' || currentRow.length > 0) {
+            currentRow.push(currentField);
+            rows.push(currentRow);
+        }
+        return rows;
+    },
+
+    findAllPositions(text, searchStr) {
+        const positions = [];
+        if (!searchStr || searchStr.length === 0) return positions;
+        let idx = 0;
+        while ((idx = text.indexOf(searchStr, idx)) !== -1) {
+            positions.push(idx);
+            idx += 1;
+        }
+        return positions;
+    },
+
+    hasReviewAt(location, length) {
+        return this.getReviewAt(location, length) !== null;
+    },
+
+    getReviewAt(location, length) {
+        try {
+            const rm = Beat.reviews;
+            if (!rm || typeof rm.rangeForReview !== 'function') return null;
+            const reviews = rm.getReviews();
+            const targetEnd = location + length;
+            for (let i = 0; i < reviews.length; i++) {
+                try {
+                    const range = rm.rangeForReview(reviews[i]);
+                    if (!range || range.location === undefined) continue;
+                    const reviewStart = range.location;
+                    const reviewEnd   = range.location + (range.length || 0);
+                    if (reviewEnd > location && reviewStart < targetEnd) {
+                        return reviews[i];
+                    }
+                } catch(e) {}
+            }
+        } catch(e) {}
+        return null;
+    },
+
+    // Wählt aus einer Liste von { pos, sceneNumStr, sceneNumInt } die Stelle
+    // mit der Szenennummer, die numerisch am nächsten an targetSceneInt liegt.
+    // Fallback: erste verfügbare Stelle.
+    pickClosestScene(availableList, targetSceneInt) {
+        if (!availableList || availableList.length === 0) return null;
+
+        if (isNaN(targetSceneInt)) return availableList[0];
+
+        let best = availableList[0];
+        let bestDist = Infinity;
+        for (let a = 0; a < availableList.length; a++) {
+            const item = availableList[a];
+            if (isNaN(item.sceneNumInt)) continue;
+            const dist = Math.abs(item.sceneNumInt - targetSceneInt);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = item;
+            }
+        }
+        return best;
+    },
+
+    // Tags entfernen + Whitespace normalisieren (für Duplikat-Vergleich)
+    stripTags(str) {
+        return (str || "")
+            .replace(/#[\wäöüßÄÖÜ\-]+/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+    },
+
+    createReviewAt(text, location, length) {
+        const marker = "\u200B\u2063IMP" + Date.now() + "_" + Math.random().toString(36).slice(2) + "\u2063\u200B";
+        const tempText = text + marker;
+
+        try {
+            State.suppressTextChange = true;
+            State.suppressSelectionChange = true;
+
+            const rm = Beat.reviews;
+            rm.createReview(tempText, location, length);
+
+            const reviews = rm.getReviews();
+            for (let i = 0; i < reviews.length; i++) {
+                if (reviews[i].string && reviews[i].string.indexOf(marker) !== -1) {
+                    reviews[i].string = reviews[i].string.replace(marker, '').trim();
+                    rm.saveReview(reviews[i]);
+                    return { location: location, length: length };
+                }
+            }
+        } catch(e) {
+            Logger.error("createReviewAt failed", e);
+        } finally {
+            State.suppressTextChange = false;
+            State.suppressSelectionChange = false;
+        }
+        return null;
     }
 };
 
@@ -2393,11 +2979,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('confirmYes').onclick = function() {
         document.getElementById('confirmDialog').style.display = 'none';
-        if (window.pendingDeleteType === 'single') Beat.call('Beat.custom.deleteReview(' + window.pendingDeleteId + ')');
-        else if (window.pendingDeleteType === 'batch') Beat.call('Beat.custom.confirmDeleteSelected()');
+        if (window.pendingDeleteType === 'single') {
+            Beat.call('Beat.custom.deleteReview(' + window.pendingDeleteId + ')');
+        } else if (window.pendingDeleteType === 'batch') {
+            Beat.call('Beat.custom.confirmDeleteSelected()');
+        } else if (window.pendingDeleteType === 'import') {
+            Beat.call('Beat.custom.confirmImport()');
+        }
     };
     document.getElementById('confirmNo').onclick = function() {
         document.getElementById('confirmDialog').style.display = 'none';
+        if (window.pendingDeleteType === 'import') {
+            Beat.call('Beat.custom.cancelImport()');
+        }
     };
     
     // Filter-Selector im Header
@@ -2501,6 +3095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('removeTagBatchBtn').onclick = function() { Beat.call('Beat.custom.removeCurrentTagFromSelected()'); };
     document.getElementById('deleteBatchBtn').onclick = function() { showConfirmDialog('Really delete all selected reviews?', null, 'batch'); };
     document.getElementById('exportCSVBtn').onclick = function() { Beat.call('Beat.custom.exportReviewsToCSV()'); };
+    document.getElementById('importCSVBtn').onclick = function() { Beat.call('Beat.custom.importReviewsFromCSV()'); };
     
     document.getElementById('reviewsList').addEventListener('click', function(e) {
         var target = e.target;
@@ -2904,11 +3499,14 @@ window.showBatchTagInput = showBatchTagInput;
                 </div>
             </div>
             <div id="batchProgress" style="width:0% ; height:4px; background:#F8BA00; border-radius:2px;"></div>            
-            <div style="margin-top:auto; padding-top: 12px; padding-bottom: 10px;"">
-                <button id="exportCSVBtn" style="width:100%; padding:6px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;" title="Export filtered reviews to CSV in clipboard">
-                    Export to Clipboard
-                </button>  
-            </div>
+                <div style="margin-top:auto; padding-top: 12px; padding-bottom: 10px; display: flex; gap: 4px;">
+                    <button id="exportCSVBtn" style="flex:1; padding:6px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;" title="Export filtered reviews to CSV in clipboard">
+                        Export
+                    </button>  
+                    <button id="importCSVBtn" style="flex:1; padding:6px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;" title="Import reviews from CSV in clipboard">
+                        Import
+                    </button>
+                </div>
         </div>
     </div>
     <div id="confirmDialog" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
@@ -3654,6 +4252,11 @@ setWindowSize: (width, minValue) => {
     
     // Export
     exportReviewsToCSV: () => Export.toCSV(),
+    importReviewsFromCSV: () => Import.fromCSV(),
+    confirmImport: () => Import.confirmImport(),
+    importRowAt: (idx) => Import.importRowAt(idx),
+    finalizeImport: () => Import.finalizeImport(),
+    cancelImport: () => { State.pendingImport = null; },
 
     setSelectedReviewId: (id) => {
         State.selectedReviewId = parseInt(id);
