@@ -16,7 +16,7 @@ Copyright: Bode Pickman
 </Description>
 
 Image: Progress Tracker.png
-Version: 2.0.0
+Version: 2.1.0
 */
 
 // State variables
@@ -46,6 +46,10 @@ if (storedDaysOff !== null && storedDaysOff !== undefined) {
 let strictMode = Beat.getUserDefault('progress_tracker_strictMode') === 'true';
 
 countType = Beat.getDocumentSetting('goals.countType') || countType;
+let dashboardMetric = Beat.getUserDefault('progress_tracker_dashboardMetric');
+if (!['pages', 'words', 'duration'].includes(dashboardMetric)) {
+  dashboardMetric = activeMetric === 'duration' ? 'duration' : countType === 'word' ? 'words' : 'pages';
+}
 
 let writingHistories = { page: {}, word: {} };
 let timeHistories = {};
@@ -412,6 +416,13 @@ Beat.custom.setActiveMetric = function(metric) {
   updateMetrics();
 };
 
+Beat.custom.setDashboardMetric = function(metric) {
+  if (['pages', 'words', 'duration'].includes(metric)) {
+    dashboardMetric = metric;
+    Beat.setUserDefault('progress_tracker_dashboardMetric', dashboardMetric);
+  }
+};
+
 Beat.custom.setHistoryScope = function(scope) {
   historyScope = scope === 'document' ? 'document' : 'global';
   Beat.setUserDefault('progress_tracker_scope', historyScope);
@@ -676,9 +687,9 @@ body:hover #reset-daily, body:hover #settings-btn { opacity: 1; }
     <span style="font-size: 11px; font-weight: bold; color: var(--secondary-color);">Trends</span>
     <div style="display: flex; gap: 4px;">
       <select id="metricTypeSelect" onchange="switchMetricType(this.value)">
-        <option value="pages"${countType === 'page' && activeMetric === 'count' ? ' selected' : ''}>Pages</option>
-        <option value="words"${countType === 'word' && activeMetric === 'count' ? ' selected' : ''}>Words</option>
-        <option value="duration"${activeMetric === 'duration' ? ' selected' : ''}>Duration</option>
+        <option value="pages"${dashboardMetric === 'pages' ? ' selected' : ''}>Pages</option>
+        <option value="words"${dashboardMetric === 'words' ? ' selected' : ''}>Words</option>
+        <option value="duration"${dashboardMetric === 'duration' ? ' selected' : ''}>Duration</option>
       </select>
       <select id="chartTypeSelect" onchange="switchChartType(this.value)">
         <option value="output">Incremental</option>
@@ -767,6 +778,7 @@ let currentChartType = 'output';
 let lastProgress = null;
 let lastDraftedGross = 0;
 window._activeMetricVal = '${activeMetric}';
+window._dashboardMetric = '${dashboardMetric}';
 window._daysOff = ${JSON.stringify(daysOff)};
 window._strictMode = ${strictMode ? 'true' : 'false'};
 
@@ -853,16 +865,11 @@ function switchChartType(type) {
 }
 
 function switchMetricType(val) {
-  window._activeMetricVal = val;
-  if (val === 'pages') {
-    Beat.call((t) => Beat.custom.setCountType(t), 'page');
-    Beat.call((m) => Beat.custom.setActiveMetric(m), 'count');
-  } else if (val === 'words') {
-    Beat.call((t) => Beat.custom.setCountType(t), 'word');
-    Beat.call((m) => Beat.custom.setActiveMetric(m), 'count');
-  } else if (val === 'duration') {
-    Beat.call((m) => Beat.custom.setActiveMetric(m), 'duration');
-  }
+  if (!['pages', 'words', 'duration'].includes(val)) return;
+  window._dashboardMetric = val;
+  window._activeMetricVal = val === 'duration' ? 'duration' : 'count';
+  Beat.call((metric) => Beat.custom.setDashboardMetric(metric), val);
+  Beat.call((metric) => Beat.custom.setActiveMetric(metric), window._activeMetricVal);
   if (window._lastHistories) {
     drawDashboard(window._lastHistories, window._lastTimeHistory, window._activeMetricVal, lastDraftedGross, window._daysOff, window._strictMode);
   }
@@ -1274,7 +1281,8 @@ function drawDashboard(histories, timeData, metricVal, draftedGross, selectedDay
   const today = new Date(); today.setHours(0,0,0,0);
   const isDurationMode = metricVal === 'duration';
   
-  const isWordMode = document.getElementById('countTypeSelect').value === 'word';
+  const isWordMode = window._dashboardMetric === 'words';
+  const isGoalWordMode = document.getElementById('countTypeSelect').value === 'word';
   const pageHist = histories.page || {};
   const wordHist = histories.word || {};
   const activeHist = isWordMode ? wordHist : pageHist;
@@ -1289,7 +1297,7 @@ function drawDashboard(histories, timeData, metricVal, draftedGross, selectedDay
     if (window._strictMode) {
       const dailyGoalInput = parseFloat(document.getElementById('daily-goal').value) || 0;
       if (dailyGoalInput > 0) {
-        const metricValue = isWordMode ? wCount : pCount;
+        const metricValue = isGoalWordMode ? wCount : pCount;
         return metricValue >= dailyGoalInput;
       }
     }
@@ -1481,8 +1489,7 @@ window.updateProgress = function(countTypeArg, activeMetricArg, dailyCount, dail
     var sel = document.getElementById('countTypeSelect'); if (sel) sel.value = countTypeArg;
     var metricSel = document.getElementById('metricTypeSelect');
     if (metricSel) {
-      if (activeMetricArg === 'duration') metricSel.value = 'duration';
-      else metricSel.value = countTypeArg === 'word' ? 'words' : 'pages';
+      metricSel.value = window._dashboardMetric;
     }
 
     var dailyInput = document.getElementById('daily-goal'); if (dailyInput) dailyInput.value = dailyGoal;
