@@ -1,571 +1,1265 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="system">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Floating Notepad</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
     <style>
         :root {
-            --background-color: #f5f5f5;
-            --text-color: #333;
-            font-size: 20px;
-            --textarea-background-color: #F1F1F1;
-            --footer-background-color: #F1F1F1;
-            --footer-text-color: #787878;
-            --selection-background-color: #b3d4fc;
-            --selection-text-color: #000000;
-            --scrollbar-background-color: #e0e0e0;
-            --scrollbar-thumb-color: #b0b0b0;
-            --highlight-color: #4a90e2;
-            --highlight-color-other: #a0a0a0;
-            --input-background-color: #ffffff;
-            --input-text-color: #333333;
-            --input-border-color: #cccccc;
+            color-scheme: light;
+            --background: #f5f5f5;
+            --surface: #f1f1f1;
+            --text: #333;
+            --muted: #787878;
+            --border: #ccc;
+            --control: #fff;
+            --selection: #b3d4fc;
+            --selection-text: #000;
+            --accent: #4a90e2;
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --background: #222;
+            --surface: #202022;
+            --text: #d5d5d5;
+            --muted: #999;
+            --border: #555;
+            --control: #333;
+            --selection: #4a90e2;
+            --selection-text: #fff;
         }
 
         @media (prefers-color-scheme: dark) {
-            :root {
-                --background-color: #222;
-                --text-color: #d5d5d5;
-                --textarea-background-color: #202022;
-                --footer-background-color: #202022;
-                --footer-text-color: #999;
-                --selection-background-color: #4a90e2;
-                --selection-text-color: #ffffff;
-                --scrollbar-background-color: #333;
-                --scrollbar-thumb-color: #555;
-                --highlight-color: #4a90e2;
-                --highlight-color-other: #707070;
-                --input-background-color: #333333;
-                --input-text-color: #d5d5d5;
-                --input-border-color: #555555;
-            }
-
-            .CodeMirror {
-                background-color: var(--textarea-background-color) !important;
-                color: var(--text-color) !important;
+            :root[data-theme="system"] {
+                color-scheme: dark;
+                --background: #222;
+                --surface: #202022;
+                --text: #d5d5d5;
+                --muted: #999;
+                --border: #555;
+                --control: #333;
+                --selection: #4a90e2;
+                --selection-text: #fff;
             }
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        * {
             box-sizing: border-box;
         }
 
-        .container {
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
             display: flex;
             flex-direction: column;
-            height: 100%;
+            overflow: hidden;
+            background: var(--background);
+            color: var(--text);
+            font: 14px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
         }
 
-        .header {
+        .toolbar {
             display: flex;
-            justify-content: space-between;
+            min-height: 42px;
             align-items: center;
-            padding: 4px 10px;
-            background-color: var(--footer-background-color);
-            color: var(--footer-text-color);
+            gap: 8px;
+            padding: 5px 8px;
+            background: var(--surface);
+            color: var(--muted);
+        }
+
+        button,
+        input {
+            color: var(--text);
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .heading-picker {
             position: relative;
-            gap: 10px;
+            flex: 0 1 220px;
+            min-width: 120px;
         }
 
-        .jump-nav {
-            display: flex;
-            align-items: center;
+        #headingToggle,
+        .search input {
+            width: 100%;
+            min-height: 28px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--control);
         }
 
-        .jump-nav select {
-            padding: 3px 6px;
-            font-size: 0.85em;
-            background-color: var(--input-background-color);
-            color: var(--input-text-color);
-            border: 1px solid var(--input-border-color);
-            border-radius: 3px;
-            max-width: 180px;
-            cursor: pointer;
+        #headingToggle {
+            overflow: hidden;
+            padding: 4px 8px;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .search-bar {
-            display: flex;
-            align-items: center;
-            padding: 2px;
-            background-color: var(--footer-background-color);
-            color: var(--footer-text-color);
-            flex-grow: 1;
-            max-width: 300px;
-        }
-
-        .search-bar input {
-            margin-right: 5px;
-            padding: 3px;
-            font-size: 0.9em;
-            flex-grow: 1;
-            background-color: var(--input-background-color);
-            color: var(--input-text-color);
-            border: 1px solid var(--input-border-color);
-            border-radius: 3px;
-        }
-
-        .search-bar button {
-            padding: 3px;
-            font-size: 0.9em;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--footer-text-color);
-            display: flex;
-            align-items: center;
-            margin: -3px;
-        }
-
-        .search-bar button svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .search-bar .clear-search {
-            font-size: 1.2em;
-            cursor: pointer;
-            margin-left: 5px;
-        }
-
-        .font-size-controls {
-            display: flex;
-            align-items: center;
-            padding: 2px;
-        }
-
-        .font-size-controls button {
-            background: none;
-            border: none;
-            font-size: 1.4em;
-            cursor: pointer;
-            margin: 0 2px;
-            color: var(--footer-text-color);
-        }
-
-        .footer-icon {
+        #headingMenu {
             position: absolute;
-            right: 10px;
-            bottom: 10px;
-            top: auto;
-            transform: translateY(0);
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .footer:hover .footer-instructions {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .footer-instructions {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-right: 30px;
-        }
-
-        .content {
-            flex: 1;
+            z-index: 10;
+            top: calc(100% + 4px);
+            left: 0;
+            display: none;
+            width: max-content;
+            min-width: 220px;
+            max-width: min(420px, 80vw);
+            max-height: 60vh;
             overflow: auto;
+            padding: 4px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background: var(--control);
+            box-shadow: 0 4px 14px #0003;
         }
 
-        .CodeMirror {
+        #headingMenu.open {
+            display: block;
+        }
+
+        #headingMenu button {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+            padding: 6px 8px;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #headingMenu button:hover,
+        #headingMenu button:focus {
+            outline: 0;
+            background: var(--accent);
+            color: var(--selection-text);
+        }
+
+        .search {
+            display: flex;
+            flex: 1 1 220px;
+            min-width: 100px;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .search input {
+            min-width: 0;
+            padding: 4px 7px;
+        }
+
+        .icon-button,
+        .font-controls button,
+        #clearSearch {
+            display: grid;
+            min-width: 28px;
+            min-height: 28px;
+            place-items: center;
+            padding: 2px 5px;
+            border: 0;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--muted);
+        }
+
+        .icon-button:hover,
+        .font-controls button:hover,
+        #clearSearch:hover {
+            background: var(--background);
+            color: var(--text);
+        }
+
+        .icon-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .font-controls {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+        }
+
+        .font-controls button {
+            font-size: 19px;
+        }
+
+        #editorSurface {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            background: var(--background);
+            --editor-font-size: 16px;
+            --editor-line-height: 24px;
+        }
+
+        #editorDisplay,
+        #editor {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            font-size: var(--editor-font-size);
+            font-weight: 400;
+            line-height: var(--editor-line-height);
+            tab-size: 4;
+        }
+
+        #editorDisplay {
+            position: absolute;
+            inset: 0 auto auto 0;
+            min-height: 100%;
+            margin: 0;
+            overflow: visible;
+            color: var(--text);
+            pointer-events: none;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        #editorDisplay .markdown-heading {
+            display: inline-block;
+            color: var(--accent);
+            font-weight: 700;
+            line-height: inherit;
+            transform: scaleY(1.2);
+            transform-origin: center 85%;
+            vertical-align: baseline;
+        }
+
+        #editorDisplay .markdown-heading.level-1,
+        #editorDisplay .markdown-heading.level-2 {
+            text-decoration: underline;
+            text-decoration-color: var(--border);
+            text-underline-offset: 3px;
+        }
+
+        #editorDisplay .markdown-heading.level-1 {
+            text-decoration-thickness: 2px;
+        }
+
+        #editorDisplay .markdown-marker {
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        #editorDisplay .markdown-strong {
+            font-weight: 700;
+        }
+
+        #editorDisplay .markdown-underline {
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        #editorDisplay .markdown-emphasis {
+            font-style: italic;
+        }
+
+        #editorDisplay .markdown-strikethrough {
+            text-decoration: line-through;
+        }
+
+        #editorDisplay .markdown-code {
+            padding: 0 2px;
+            border-radius: 3px;
+            background: var(--surface);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        #editorDisplay .markdown-code-block {
+            color: var(--muted);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        #editorDisplay .markdown-rule {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+
+        #editorDisplay .markdown-link {
+            color: var(--accent);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+        #editorDisplay .markdown-quote {
+            color: var(--muted);
+            border-left: 2px solid var(--border);
+            padding-left: 5px;
+        }
+
+        #editorDisplay .fountain-scene-heading {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        #editorDisplay .fountain-character {
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.035em;
+        }
+
+        #editorDisplay .fountain-dialogue {
+            color: var(--text);
+        }
+
+        #editorDisplay .fountain-parenthetical {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        #editorDisplay .fountain-transition {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        #editorDisplay .fountain-centered {
+            color: var(--accent);
+            font-style: italic;
+        }
+
+        #editorDisplay .markdown-rule {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+
+        #editorDisplay .search-match {
+            border-radius: 2px;
+            background: #ffd966;
+            color: #222;
+        }
+
+        #editorDisplay .search-match.active {
+            background: #ff9f43;
+            color: #111;
+            box-shadow: 0 0 0 1px #d97706;
+        }
+
+        #editorDisplay .editor-selection {
+            background: var(--selection);
+            color: var(--selection-text);
+        }
+
+        #editorCaret {
+            position: absolute;
+            z-index: 3;
+            display: none;
+            width: 1px;
+            background: var(--text);
+            pointer-events: none;
+            animation: caret-blink 1.06s steps(2, start) infinite;
+        }
+
+        @keyframes caret-blink {
+            to { visibility: hidden; }
+        }
+
+        #editor {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
             height: 100%;
-            border: none;
-            background-color: var(--textarea-background-color) !important;
-            color: var(--text-color) !important;
+            resize: none;
+            outline: 0;
+            overflow: auto;
+            background: transparent;
+            color: transparent;
+            caret-color: transparent;
+            font-weight: 400;
+            white-space: pre-wrap;
         }
 
-        .CodeMirror-scroll {
-            height: 100% !important;
-        }
-
-        .CodeMirror-sizer {
-            margin-bottom: 0 !important;
-        }
-
-        .CodeMirror-cursor {
-            border-left-color: #0088F0 !important;
-            border-left-width: 2px;
-        }
-
-        .CodeMirror-selected {
-            background: var(--selection-background-color) !important;
-        }
-
-        .CodeMirror-selectedtext {
-            color: var(--selection-text-color) !important;
-        }
-
-        ::selection {
-            background: var(--selection-background-color);
-            color: var(--selection-text-color);
+        #editor::selection,
+        input::selection {
+            background: transparent;
+            color: transparent;
         }
 
         .footer {
-            background-color: var(--footer-background-color);
-            color: var(--footer-text-color);
-            padding: 4px 8px;
-            font-size: 0.8em;
-            text-align: center;
             display: flex;
+            min-height: 32px;
             align-items: center;
-            justify-content: right;
-            height: 40px;
-            position: relative;
+            justify-content: flex-end;
+            padding: 4px 10px;
+            background: var(--background);
+            color: var(--muted);
+            font-size: 12px;
         }
 
-        ::-webkit-scrollbar {
-            width: 10px;
+        .instructions {
+            opacity: 0;
+            transition: opacity 150ms ease;
         }
 
-        ::-webkit-scrollbar-track {
-            background: var(--scrollbar-background-color);
+        .hint-indicator {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            color: var(--muted);
         }
 
-        ::-webkit-scrollbar-thumb {
-            background-color: var(--scrollbar-thumb-color);
-            border-radius: 5px;
-            border: 2px solid var(--scrollbar-background-color);
+        .hint-indicator svg {
+            width: 14px;
+            height: 14px;
         }
 
-        .CodeMirror-line span.cm-formatting {
-            display: none !important;
-        }
-        .CodeMirror-activeline .CodeMirror-line span.cm-formatting {
-            display: inline !important;
+        .footer:hover .instructions,
+        .instructions:focus-within {
+            opacity: 1;
         }
 
-        .cm-header-1 { font-size: 1.75em; }
-        .cm-header-2 { font-size: 1.50em; }
-        .cm-header-3 { font-size: 1.25em; }
-        .cm-header-4 { font-size: 1.15em; }
-        .cm-header-5 { font-size: 1.0em; }
-
-        .search-highlight-current {
-            background-color: var(--highlight-color);
-            color: var(--selection-text-color);
+        #status {
+            margin-left: auto;
+            padding-left: 10px;
         }
 
-        .search-highlight-other {
-            background-color: var(--highlight-color-other);
-            color: var(--selection-text-color);
+        @media (max-width: 520px) {
+            .toolbar {
+                flex-wrap: wrap;
+            }
+
+            .heading-picker {
+                flex: 1 1 150px;
+            }
+
+            .search {
+                order: 3;
+                flex-basis: 100%;
+            }
+
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="jump-nav">
-                <select id="headerSelect">
-                    <option value="">Jump to heading...</option>
-                </select>
-            </div>
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Find...">
-                <button id="findPrev">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                </button>
-                <button id="findNext">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                </button>
-                <span class="clear-search" id="clearSearch">×</span>
-            </div>
-            <div class="font-size-controls">
-                <button id="increaseFontSize">+</button>
-                <button id="decreaseFontSize">-</button>
-            </div>
+    <header class="toolbar">
+        <div class="heading-picker">
+            <button id="headingToggle" type="button" aria-haspopup="true" aria-expanded="false">Jump to heading ▾</button>
+            <div id="headingMenu" role="menu" aria-label="Jump to heading"></div>
         </div>
-        <div class="content">
-            <textarea id="notepadTextarea"></textarea>
+
+        <div class="search" role="search">
+            <input id="searchInput" type="search" placeholder="Find…" aria-label="Find in notepad">
+            <button class="icon-button" id="findPrevious" type="button" aria-label="Previous match" title="Previous match">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg>
+            </button>
+            <button class="icon-button" id="findNext" type="button" aria-label="Next match" title="Next match">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m8.6 16.6 1.4 1.4 6-6-6-6-1.4 1.4 4.6 4.6z"/></svg>
+            </button>
+            <button id="clearSearch" type="button" aria-label="Clear search" title="Clear search">×</button>
         </div>
-        <div class="footer">
-            <div class="footer-instructions">
-                Open dropdown (⌘/). Jump sections (⌥↑/↓). Toggle window (⌥⌘3). Markdown markup shows only on active line.
-            </div>
-            <div class="footer-icon">
-                ?
-            </div>
+
+        <div class="font-controls" aria-label="Editor text size">
+            <button id="decreaseFont" type="button" aria-label="Decrease text size">−</button>
+            <button id="increaseFont" type="button" aria-label="Increase text size">+</button>
         </div>
+    </header>
+
+    <div id="editorSurface">
+        <pre id="editorDisplay" aria-hidden="true"></pre>
+        <textarea id="editor" wrap="soft" spellcheck="true" autocorrect="on" autocapitalize="sentences" aria-label="Beat notepad"></textarea>
+        <div id="editorCaret" aria-hidden="true"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
+    <footer class="footer">
+        <span class="hint-indicator" title="Hover here to show keyboard shortcuts" aria-label="Hover here to show keyboard shortcuts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5v5M12 7.5h.01" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+        </span>
+        <span class="instructions">· ⌘↑/↓: navigate dropdown · ⌥↑/↓: jump sections · ⌥⌘3: show or hide</span>
+        <span id="status" role="status" aria-live="polite"></span>
+    </footer>
+
     <script>
-        let simplemde;
-        let searchMatches = [];
-        let currentMatchIndex = -1;
-        let fontSize = 16;
+        (() => {
+            const editor = document.getElementById("editor");
+            const searchInput = document.getElementById("searchInput");
+            const headingToggle = document.getElementById("headingToggle");
+            const headingMenu = document.getElementById("headingMenu");
+            const status = document.getElementById("status");
+            let matches = [];
+            let activeMatch = -1;
+            let fontSize = 16;
+            let syncTimer = null;
+            let lastSyncedText = null;
+            let hasUnsyncedEdits = false;
+            const undoHistory = [];
+            let historyIndex = -1;
+            let pendingHistorySnapshot = null;
+            let pendingHistoryInputType = "";
+            let lastHistoryEditTime = 0;
+            let restoringHistory = false;
 
-        function initializeEditor(content) {
-            simplemde = new SimpleMDE({
-                element: document.getElementById("notepadTextarea"),
-                initialValue: content,
-                spellChecker: false,
-                autosave: {
-                    enabled: true,
-                    uniqueId: "floating-notepad",
-                    delay: 1000,
-                },
-                toolbar: false,
-                status: false,
-                previewRender: (plainText) => {
-                    const modifiedText = plainText.replace(/^(#+)([^#\s])/gm, '$1 $2');
-                    return this.parent.markdown(modifiedText);
-                },
-                parsingConfig: {
-                    allowAtxHeaderWithoutSpace: true
-                },
-                codeMirror: {
-                    mode: {
-                        name: "gfm",
-                        highlightFormatting: true,
-                        underscoresBreakWords: false,
-                        emoji: true,
-                    },
-                    inputStyle: "contenteditable"
-                }
-            });
-
-            const cm = simplemde.codemirror;
-            const inputField = cm.getInputField();
-            if (inputField) {
-                inputField.setAttribute("spellcheck", "true");
-                inputField.setAttribute("autocorrect", "true");
-                inputField.setAttribute("autocapitalize", "sentences");
+            function getLines() {
+                return editor.value.split("\n");
             }
 
-            let lastActiveLine = -1;
-            cm.on("cursorActivity", () => {
-                const currentLine = cm.getCursor().line;
-                if (currentLine !== lastActiveLine) {
-                    if (lastActiveLine >= 0 && lastActiveLine < cm.lineCount()) {
-                        cm.removeLineClass(lastActiveLine, "wrap", "CodeMirror-activeline");
-                    }
-                    cm.addLineClass(currentLine, "wrap", "CodeMirror-activeline");
-                    lastActiveLine = currentLine;
+            function readHistorySnapshot() {
+                return {
+                    value: editor.value,
+                    selectionStart: editor.selectionStart,
+                    selectionEnd: editor.selectionEnd
+                };
+            }
+
+            function snapshotsMatch(first, second) {
+                return first.value === second.value &&
+                    first.selectionStart === second.selectionStart &&
+                    first.selectionEnd === second.selectionEnd;
+            }
+
+            function resetUndoHistory() {
+                undoHistory.length = 0;
+                undoHistory.push(readHistorySnapshot());
+                historyIndex = 0;
+                pendingHistorySnapshot = null;
+                lastHistoryEditTime = 0;
+            }
+
+            function recordUndoHistory(inputType = "insertText") {
+                if (restoringHistory) return;
+                const current = readHistorySnapshot();
+                if (historyIndex < 0) resetUndoHistory();
+                const previous = undoHistory[historyIndex];
+                if (snapshotsMatch(previous, current)) return;
+
+                undoHistory.splice(historyIndex + 1);
+                const now = Date.now();
+                const canCoalesce = /^(insertText|deleteContentBackward|deleteContentForward)$/.test(inputType) &&
+                    inputType === pendingHistoryInputType &&
+                    pendingHistorySnapshot &&
+                    pendingHistorySnapshot.selectionStart === pendingHistorySnapshot.selectionEnd &&
+                    now - lastHistoryEditTime < 750 &&
+                    historyIndex > 0;
+
+                if (canCoalesce) {
+                    undoHistory[historyIndex] = current;
+                } else {
+                    undoHistory.push(current);
+                    historyIndex = undoHistory.length - 1;
                 }
-            });
-            cm.addLineClass(cm.getCursor().line, "wrap", "CodeMirror-activeline");
 
-            cm.on("change", debounce(syncNotepadToMain, 500));
+                if (undoHistory.length > 200) {
+                    undoHistory.shift();
+                    historyIndex -= 1;
+                }
+                lastHistoryEditTime = now;
+                pendingHistorySnapshot = null;
+                pendingHistoryInputType = "";
+            }
 
-            document.getElementById('increaseFontSize').addEventListener('click', () => changeFontSize(2));
-            document.getElementById('decreaseFontSize').addEventListener('click', () => changeFontSize(-2));
-            document.getElementById('clearSearch').addEventListener('click', clearSearchInput);
-            document.getElementById('headerSelect').addEventListener('change', jumpToSelectedHeader);
+            function restoreHistorySnapshot(snapshot) {
+                window.clearTimeout(syncTimer);
+                restoringHistory = true;
+                editor.value = snapshot.value;
+                editor.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+                restoringHistory = false;
+                hasUnsyncedEdits = true;
+                updateEditorDisplay();
+                updateHeadings();
+                updateSearchMatches();
+                scheduleSync();
+            }
 
-            updateHeaderDropdown();
-        }
+            function undoEdit() {
+                if (historyIndex <= 0) return;
+                historyIndex -= 1;
+                restoreHistorySnapshot(undoHistory[historyIndex]);
+            }
 
-        function refreshNotepad() {
-            Beat.callback(
-                () => Beat.notepad.string,
-                (text) => {
-                    if (!simplemde) {
-                        initializeEditor(text);
+            function redoEdit() {
+                if (historyIndex >= undoHistory.length - 1) return;
+                historyIndex += 1;
+                restoreHistorySnapshot(undoHistory[historyIndex]);
+            }
+
+            function handleUndoShortcut(event) {
+                if (!event.metaKey || event.ctrlKey || event.altKey) return;
+                const key = event.key.toLowerCase();
+                if (key !== "z" && !(key === "y" && !event.shiftKey)) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (key === "y" || event.shiftKey) redoEdit();
+                else undoEdit();
+            }
+
+            function parseHeading(line) {
+                const match = line.match(/^(#{1,6})([ \t]*)(.*)$/);
+                if (!match) return null;
+                const title = match[3];
+                if (!title) return null;
+                return {
+                    level: match[1].length,
+                    marker: match[1] + match[2],
+                    title
+                };
+            }
+
+            function isCharacterCue(line, followingLine) {
+                const cue = line.trim();
+                return /^[A-Z][A-Z0-9 .,'’()\-]*$/.test(cue) &&
+                    /[A-Z]/.test(cue) &&
+                    cue.length <= 40 &&
+                    followingLine.trim().length > 0 &&
+                    !parseHeading(followingLine) &&
+                    !/^\s*(?:>|[-+*]\s+|\d+[.)]\s+)/.test(followingLine);
+            }
+
+            function classifyFountainLine(line, lineNumber, lines) {
+                const trimmed = line.trim();
+                if (!trimmed) return null;
+
+                const centered = trimmed.match(/^>(.+)<$/);
+                if (centered) return { type: "centered", text: centered[1].trim() };
+
+                const transition = trimmed.replace(/^>\s*/, "");
+                if (/^(?:[A-Z][A-Z0-9 .'-]* TO:|FADE (?:IN|OUT):?)$/.test(transition)) {
+                    return { type: "transition", text: transition };
+                }
+
+                if (/^(?:INT\.|EXT\.|EST\.|INT\/EXT\.|INT\.\/EXT\.|I\/E\.)\s*\S/i.test(trimmed)) {
+                    return { type: "scene-heading", text: line };
+                }
+
+                if (/^\(.*\)$/.test(trimmed)) {
+                    return { type: "parenthetical", text: line };
+                }
+
+                const nextLine = lines[lineNumber + 1] || "";
+                if (isCharacterCue(line, nextLine)) return { type: "character", text: line };
+
+                return null;
+            }
+
+            function updateEditorDisplay() {
+                const fragment = document.createDocumentFragment();
+                let lineOffset = 0;
+                let inCodeFence = false;
+                let inDialogue = false;
+                const lines = getLines();
+                lines.forEach((line, lineNumber) => {
+                    const renderedLine = document.createElement("div");
+                    const heading = parseHeading(line);
+                    const fountain = classifyFountainLine(line, lineNumber, lines);
+                    const fence = line.match(/^(\s*```.*)$/);
+                    const quote = line.match(/^(\s*&gt;|\s*> ?)(.*)$/);
+                    const list = line.match(/^(\s*(?:[-+*]|\d+[.)])\s+)(.*)$/);
+                    const rule = /^\s*(?:(?:-{3,})|(?:\*{3,})|(?:_{3,}))\s*$/.test(line);
+
+                    if (!line.trim()) {
+                        inDialogue = false;
+                    }
+
+                    if (fence) {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, line, lineOffset, "markdown-marker");
+                        inCodeFence = !inCodeFence;
+                    } else if (inCodeFence) {
+                        appendHighlightedText(renderedLine, line || "\u00a0", lineOffset, "markdown-code-block");
+                    } else if (fountain && fountain.type === "centered") {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, ">", lineOffset, "markdown-marker");
+                        appendInlineMarkdown(renderedLine, fountain.text, lineOffset + 1, "fountain-centered");
+                        appendHighlightedText(renderedLine, "<", lineOffset + line.length - 1, "markdown-marker");
+                    } else if (fountain && fountain.type === "transition") {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, line, lineOffset, "fountain-transition");
+                    } else if (fountain && fountain.type === "scene-heading") {
+                        inDialogue = false;
+                        appendInlineMarkdown(renderedLine, fountain.text, lineOffset, "fountain-scene-heading");
+                    } else if (heading) {
+                        inDialogue = false;
+                        const marker = document.createElement("span");
+                        marker.className = "markdown-marker";
+                        appendHighlightedText(marker, heading.marker, lineOffset, "markdown-marker");
+                        const title = document.createElement("span");
+                        title.className = `markdown-heading level-${heading.level}`;
+                        appendInlineMarkdown(title, heading.title, lineOffset + heading.marker.length);
+                        renderedLine.append(marker, title);
+                    } else if (quote) {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, quote[1], lineOffset, "markdown-marker");
+                        const quoteText = document.createElement("span");
+                        quoteText.className = "markdown-quote";
+                        appendInlineMarkdown(quoteText, quote[2], lineOffset + quote[1].length);
+                        renderedLine.appendChild(quoteText);
+                    } else if (fountain && fountain.type === "character") {
+                        inDialogue = true;
+                        appendHighlightedText(renderedLine, line, lineOffset, "fountain-character");
+                    } else if (fountain && fountain.type === "parenthetical" && inDialogue) {
+                        appendInlineMarkdown(renderedLine, line, lineOffset, "fountain-parenthetical");
+                    } else if (inDialogue && !list && !rule) {
+                        appendInlineMarkdown(renderedLine, line, lineOffset, "fountain-dialogue");
+                    } else if (fountain && fountain.type === "parenthetical") {
+                        appendInlineMarkdown(renderedLine, line, lineOffset);
+                    } else if (list) {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, list[1], lineOffset, "markdown-marker");
+                        appendInlineMarkdown(renderedLine, list[2], lineOffset + list[1].length);
+                    } else if (rule) {
+                        inDialogue = false;
+                        appendHighlightedText(renderedLine, line, lineOffset, "markdown-rule");
                     } else {
-                        simplemde.value(text);
+                        appendInlineMarkdown(renderedLine, line || "\u00a0", lineOffset);
                     }
-                    updateHeaderDropdown();
-                }
-            );
-        }
-
-        function syncNotepadToMain() {
-            const content = simplemde.value();
-            Beat.call(
-                (arg) => Beat.custom.syncNotepad(arg),
-                content
-            );
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), wait);
-            };
-        }
-
-        function updateHeaderDropdown() {
-            if (!simplemde) return;
-            const cm = simplemde.codemirror;
-            const select = document.getElementById('headerSelect');
-            if (!select) return;
-
-            const currentVal = select.value;
-            select.innerHTML = '<option value="">Jump to heading...</option>';
-
-            const headerRegex = /^(#{1,6})\s*(.+)$/;
-            cm.eachLine((line) => {
-                const match = line.text.match(headerRegex);
-                if (match) {
-                    const lineNum = cm.getLineNumber(line);
-                    const hashes = match[1];
-                    const title = match[2].trim();
-                    const indent = "&nbsp;&nbsp;".repeat(hashes.length - 1);
-                    
-                    const opt = document.createElement('option');
-                    opt.value = lineNum;
-                    opt.innerHTML = indent + hashes + " " + title;
-                    select.appendChild(opt);
-                }
-            });
-            select.value = currentVal;
-        }
-
-        function jumpToSelectedHeader() {
-            const select = document.getElementById('headerSelect');
-            const lineNum = parseInt(select.value, 10);
-            if (!isNaN(lineNum) && simplemde) {
-                const cm = simplemde.codemirror;
-                cm.setCursor({ line: lineNum, ch: 0 });
-                cm.scrollIntoView({ line: lineNum, ch: 0 }, 100);
-                cm.focus();
+                    fragment.appendChild(renderedLine);
+                    lineOffset += line.length + 1;
+                });
+                document.getElementById("editorDisplay").replaceChildren(fragment);
+                syncEditorDisplayScroll();
+                updateCustomCaret();
             }
-        }
 
-        window.addEventListener('load', refreshNotepad);
-        window.addEventListener("focus", refreshNotepad);
-        refreshNotepad();
+            function appendInlineMarkdown(parent, text, sourceOffset, styleClass = "") {
+                const tokenPattern = /\*\*\*(.+?)\*\*\*|(\*\*|__)(.+?)\2|~~(.+?)~~|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|(\*|_)([^*_]+?)\8/g;
+                let cursor = 0;
+                let token;
+                while ((token = tokenPattern.exec(text)) !== null) {
+                    appendHighlightedText(parent, text.slice(cursor, token.index), sourceOffset + cursor, styleClass);
+                    const tokenStart = sourceOffset + token.index;
+                    const tokenEnd = tokenStart + token[0].length;
+                    if (token[1] !== undefined) {
+                        appendHighlightedText(parent, "***", tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[1], tokenStart + 3, `${styleClass} markdown-strong markdown-emphasis`);
+                        appendHighlightedText(parent, "***", tokenEnd - 3, "markdown-marker");
+                    } else if (token[3] !== undefined) {
+                        const marker = token[2];
+                        const contentClass = "markdown-strong";
+                        appendHighlightedText(parent, marker, tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[3], tokenStart + marker.length, `${styleClass} ${contentClass}`);
+                        appendHighlightedText(parent, marker, tokenEnd - marker.length, "markdown-marker");
+                    } else if (token[4] !== undefined) {
+                        appendHighlightedText(parent, "~~", tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[4], tokenStart + 2, `${styleClass} markdown-strikethrough`);
+                        appendHighlightedText(parent, "~~", tokenEnd - 2, "markdown-marker");
+                    } else if (token[5] !== undefined) {
+                        appendHighlightedText(parent, "`", tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[5], tokenStart + 1, `${styleClass} markdown-code`);
+                        appendHighlightedText(parent, "`", tokenEnd - 1, "markdown-marker");
+                    } else if (token[6] !== undefined) {
+                        const destinationStart = tokenStart + token[0].indexOf("](");
+                        appendHighlightedText(parent, "[", tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[6], tokenStart + 1, `${styleClass} markdown-link`);
+                        appendHighlightedText(parent, token[0].slice(token[0].indexOf("](")), destinationStart, "markdown-marker");
+                    } else {
+                        const marker = token[8];
+                        const contentClass = marker === "*"
+                            ? "markdown-emphasis"
+                            : "markdown-underline";
+                        appendHighlightedText(parent, marker, tokenStart, "markdown-marker");
+                        appendHighlightedText(parent, token[9], tokenStart + 1, `${styleClass} ${contentClass}`);
+                        appendHighlightedText(parent, marker, tokenEnd - 1, "markdown-marker");
+                    }
+                    cursor = token.index + token[0].length;
+                }
+                appendHighlightedText(parent, text.slice(cursor), sourceOffset + cursor, styleClass);
+            }
 
-        document.getElementById('searchInput').addEventListener('input', performSearch);
-        document.getElementById('findPrev').addEventListener('click', () => navigateSearchResults(-1));
-        document.getElementById('findNext').addEventListener('click', () => navigateSearchResults(1));
+            function appendHighlightedText(parent, text, sourceOffset, styleClass = "") {
+                if (!text) return;
+                const textEnd = sourceOffset + text.length;
+                const selectedStart = editor.selectionStart;
+                const selectedEnd = editor.selectionEnd;
+                const showSelection = document.activeElement === editor && selectedStart !== selectedEnd;
+                const boundaries = new Set([sourceOffset, textEnd]);
+                if (showSelection && selectedStart < textEnd && selectedEnd > sourceOffset) {
+                    boundaries.add(Math.max(sourceOffset, selectedStart));
+                    boundaries.add(Math.min(textEnd, selectedEnd));
+                }
+                for (const match of matches) {
+                    if (match.start < textEnd && match.end > sourceOffset) {
+                        boundaries.add(Math.max(sourceOffset, match.start));
+                        boundaries.add(Math.min(textEnd, match.end));
+                    }
+                }
+                const sortedBoundaries = [...boundaries].sort((first, second) => first - second);
+                for (let index = 0; index < sortedBoundaries.length - 1; index += 1) {
+                    const start = sortedBoundaries[index];
+                    const end = sortedBoundaries[index + 1];
+                    if (start === end) continue;
+                    const match = matches.find((candidate) => candidate.start <= start && candidate.end >= end);
+                    const selected = showSelection && selectedStart < end && selectedEnd > start;
+                    const extraClasses = [];
+                    if (match) {
+                        extraClasses.push(match.index === activeMatch ? "search-match active" : "search-match");
+                    }
+                    if (selected) extraClasses.push("editor-selection");
+                    const classNames = [styleClass, ...extraClasses].filter(Boolean).join(" ");
+                    const segment = text.slice(start - sourceOffset, end - sourceOffset);
+                    if (classNames) {
+                        const span = document.createElement("span");
+                        span.className = classNames;
+                        span.textContent = segment;
+                        parent.appendChild(span);
+                    } else {
+                        parent.appendChild(document.createTextNode(segment));
+                    }
+                }
+            }
 
-        function performSearch() {
-            const query = document.getElementById('searchInput').value;
-            searchMatches = [];
-            currentMatchIndex = -1;
+            function syncEditorDisplayScroll() {
+                const display = document.getElementById("editorDisplay");
+                display.style.transform = `translate(${-editor.scrollLeft}px, ${-editor.scrollTop}px)`;
+            }
 
-            if (query) {
-                const cm = simplemde.codemirror;
-                const regex = new RegExp(query, 'gi');
-                cm.eachLine((line) => {
-                    let match;
-                    while ((match = regex.exec(line.text)) !== null) {
-                        searchMatches.push({ line: cm.getLineNumber(line), ch: match.index });
+            function updateCustomCaret() {
+                const caret = document.getElementById("editorCaret");
+                if (document.activeElement !== editor || editor.selectionStart !== editor.selectionEnd) {
+                    caret.style.display = "none";
+                    return;
+                }
+
+                const display = document.getElementById("editorDisplay");
+                const lines = getLines();
+                let lineOffset = 0;
+                let lineElement = display.firstElementChild;
+                let localOffset = 0;
+                for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
+                    const line = lines[lineNumber];
+                    if (editor.selectionStart <= lineOffset + line.length || lineNumber === lines.length - 1) {
+                        localOffset = Math.max(0, Math.min(line.length, editor.selectionStart - lineOffset));
+                        break;
+                    }
+                    lineOffset += line.length + 1;
+                    lineElement = lineElement.nextElementSibling;
+                }
+
+                if (!lineElement) {
+                    caret.style.display = "none";
+                    return;
+                }
+
+                const walker = document.createTreeWalker(lineElement, NodeFilter.SHOW_TEXT);
+                let textNode;
+                let consumed = 0;
+                let range = document.createRange();
+                while ((textNode = walker.nextNode())) {
+                    if (localOffset <= consumed + textNode.length) {
+                        range.setStart(textNode, localOffset - consumed);
+                        range.collapse(true);
+                        break;
+                    }
+                    consumed += textNode.length;
+                }
+                if (!textNode) {
+                    range.setStart(lineElement, lineElement.childNodes.length);
+                    range.collapse(true);
+                }
+
+                let rect = range.getBoundingClientRect();
+                if (!rect.height) rect = lineElement.getBoundingClientRect();
+                const surfaceRect = document.getElementById("editorSurface").getBoundingClientRect();
+                const lineHeight = Number.parseFloat(getComputedStyle(editor).lineHeight) || fontSize * 1.5;
+                const top = rect.top - surfaceRect.top;
+                const left = rect.left - surfaceRect.left;
+                caret.style.left = `${left}px`;
+                caret.style.top = `${top}px`;
+                caret.style.height = `${rect.height || lineHeight}px`;
+                caret.style.display = "block";
+            }
+
+            function findHeadings() {
+                const headings = [];
+                getLines().forEach((line, lineNumber) => {
+                    const heading = parseHeading(line);
+                    if (heading) {
+                        headings.push({
+                            lineNumber,
+                            level: heading.level,
+                            label: `${heading.marker}${heading.title.replace(/[ \t]+#+[ \t]*$/, "").trim()}`
+                        });
                     }
                 });
-                highlightMatches();
-                navigateSearchResults(1);
-            } else {
-                clearHighlights();
+                return headings;
             }
-        }
 
-        function highlightMatches() {
-            clearHighlights();
-            const cm = simplemde.codemirror;
-            searchMatches.forEach((match, index) => {
-                cm.markText(
-                    { line: match.line, ch: match.ch },
-                    { line: match.line, ch: match.ch + document.getElementById('searchInput').value.length },
-                    { className: index === currentMatchIndex ? 'search-highlight-current' : 'search-highlight-other' }
+            function updateHeadings() {
+                headingMenu.replaceChildren();
+                const headings = findHeadings();
+                if (!headings.length) {
+                    const empty = document.createElement("div");
+                    empty.textContent = "No headings found";
+                    empty.style.padding = "6px 8px";
+                    headingMenu.appendChild(empty);
+                    return;
+                }
+
+                headings.forEach((heading) => {
+                    const item = document.createElement("button");
+                    item.type = "button";
+                    item.setAttribute("role", "menuitem");
+                    item.textContent = heading.label;
+                    item.style.paddingLeft = `${8 + (heading.level - 1) * 14}px`;
+                    item.addEventListener("click", () => jumpToLine(heading.lineNumber));
+                    headingMenu.appendChild(item);
+                });
+            }
+
+            function setEditorText(text, preserveSelection = true) {
+                if (editor.value === text) return false;
+                const start = preserveSelection ? editor.selectionStart : 0;
+                const end = preserveSelection ? editor.selectionEnd : 0;
+                const scrollTop = editor.scrollTop;
+                editor.value = text;
+                editor.setSelectionRange(Math.min(start, text.length), Math.min(end, text.length));
+                editor.scrollTop = scrollTop;
+                if (searchInput.value) updateSearchMatches(false);
+                updateEditorDisplay();
+                updateHeadings();
+                return true;
+            }
+
+            window.refreshFloatingNotepad = (text) => {
+                if (hasUnsyncedEdits && text !== editor.value) return;
+                const changed = setEditorText(text || "");
+                if (changed) resetUndoHistory();
+                lastSyncedText = text || "";
+                hasUnsyncedEdits = false;
+                updateHeadings();
+            };
+
+            function syncToBeat() {
+                const text = editor.value;
+                if (text === lastSyncedText) {
+                    hasUnsyncedEdits = false;
+                    return;
+                }
+                lastSyncedText = text;
+                hasUnsyncedEdits = false;
+                Beat.call(
+                    (content) => Beat.custom.syncNotepad(content),
+                    text
                 );
-            });
-        }
-
-        function clearHighlights() {
-            const cm = simplemde.codemirror;
-            cm.getAllMarks().forEach(mark => mark.clear());
-        }
-
-        function navigateSearchResults(direction) {
-            if (searchMatches.length === 0) return;
-
-            currentMatchIndex = (currentMatchIndex + direction + searchMatches.length) % searchMatches.length;
-            const match = searchMatches[currentMatchIndex];
-            const cm = simplemde.codemirror;
-            cm.setCursor({ line: match.line, ch: match.ch });
-            cm.scrollIntoView({ line: match.line, ch: match.ch });
-            highlightMatches();
-        }
-
-        function changeFontSize(delta) {
-            fontSize += delta;
-            document.querySelector('.CodeMirror').style.fontSize = fontSize + 'px';
-        }
-
-        function clearSearchInput() {
-            document.getElementById('searchInput').value = '';
-            clearHighlights();
-        }
-
-        function jumpRelative(direction) {
-            if (!simplemde) return;
-            const cm = simplemde.codemirror;
-            const currentLine = cm.getCursor().line;
-            const headerRegex = /^(#{1,6})\s*(.+)$/;
-            const headerLines = [];
-
-            cm.eachLine((line) => {
-                if (headerRegex.test(line.text)) {
-                    headerLines.push(cm.getLineNumber(line));
-                }
-            });
-
-            if (headerLines.length === 0) return;
-
-            let targetLine = headerLines[0];
-            if (direction > 0) {
-                const next = headerLines.find(l => l > currentLine);
-                targetLine = next !== undefined ? next : headerLines[0];
-            } else {
-                const prev = [...headerLines].reverse().find(l => l < currentLine);
-                targetLine = prev !== undefined ? prev : headerLines[headerLines.length - 1];
             }
 
-            cm.setCursor({ line: targetLine, ch: 0 });
-            cm.scrollIntoView({ line: targetLine, ch: 0 }, 100);
-            cm.focus();
-        }
+            function scheduleSync() {
+                window.clearTimeout(syncTimer);
+                syncTimer = window.setTimeout(syncToBeat, 250);
+            }
 
-        // Handle global shortcuts
-        window.addEventListener('keydown', (e) => {
-            // Opt + Up/Down for relative heading navigation
-            if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
-                if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    jumpRelative(1);
-                } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    jumpRelative(-1);
+            function requestNotepad() {
+                Beat.callback(
+                    () => Beat.notepad.string,
+                    (text) => {
+                        if (!hasUnsyncedEdits) {
+                            const changed = setEditorText(text || "");
+                            if (changed || historyIndex < 0) resetUndoHistory();
+                            lastSyncedText = text || "";
+                            hasUnsyncedEdits = false;
+                        }
+                        updateHeadings();
+                    }
+                );
+            }
+
+            function lineStart(lineNumber) {
+                const lines = getLines();
+                let offset = 0;
+                for (let index = 0; index < lineNumber && index < lines.length; index += 1) {
+                    offset += lines[index].length + 1;
+                }
+                return offset;
+            }
+
+            function scrollToOffset(offset) {
+                const surface = document.getElementById("editorSurface");
+                const mirror = document.createElement("div");
+                const marker = document.createElement("span");
+                const style = window.getComputedStyle(editor);
+                const prefix = document.createTextNode(editor.value.slice(0, offset));
+
+                mirror.setAttribute("aria-hidden", "true");
+                Object.assign(mirror.style, {
+                    position: "absolute",
+                    top: "0",
+                    left: "0",
+                    width: `${editor.clientWidth}px`,
+                    padding: style.padding,
+                    border: "0",
+                    boxSizing: "border-box",
+                    visibility: "hidden",
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "break-word",
+                    font: style.font,
+                    lineHeight: style.lineHeight,
+                    letterSpacing: style.letterSpacing,
+                    tabSize: style.tabSize
+                });
+                Object.assign(marker.style, {
+                    display: "inline-block",
+                    width: "0",
+                    height: style.lineHeight,
+                    verticalAlign: "top"
+                });
+                mirror.append(prefix, marker);
+                surface.appendChild(mirror);
+                const offsetTop = marker.getBoundingClientRect().top - surface.getBoundingClientRect().top;
+                mirror.remove();
+
+                const targetTop = Math.max(0, offsetTop - editor.clientHeight * 0.35);
+                editor.scrollTop = Math.min(targetTop, editor.scrollHeight - editor.clientHeight);
+                syncEditorDisplayScroll();
+            }
+
+            function jumpToLine(lineNumber) {
+                closeHeadingMenu();
+                const offset = lineStart(lineNumber);
+                editor.focus();
+                editor.setSelectionRange(offset, offset);
+                updateEditorDisplay();
+                scrollToOffset(offset);
+            }
+
+            function currentLineNumber() {
+                return editor.value.slice(0, editor.selectionStart).split("\n").length - 1;
+            }
+
+            function jumpRelative(direction) {
+                const headings = findHeadings();
+                if (!headings.length) return;
+                const current = currentLineNumber();
+                let target;
+                if (direction > 0) {
+                    target = headings.find((heading) => heading.lineNumber > current) || headings[0];
+                } else {
+                    target = [...headings].reverse().find((heading) => heading.lineNumber < current) || headings[headings.length - 1];
+                }
+                jumpToLine(target.lineNumber);
+            }
+
+            function openHeadingMenu() {
+                updateHeadings();
+                headingMenu.classList.add("open");
+                headingToggle.setAttribute("aria-expanded", "true");
+                const first = headingMenu.querySelector("button");
+                if (first) first.focus();
+            }
+
+            function closeHeadingMenu(focusToggle = false) {
+                headingMenu.classList.remove("open");
+                headingToggle.setAttribute("aria-expanded", "false");
+                if (focusToggle) headingToggle.focus();
+            }
+
+            function toggleHeadingMenu() {
+                if (headingMenu.classList.contains("open")) {
+                    closeHeadingMenu();
+                } else {
+                    openHeadingMenu();
                 }
             }
 
-            // Cmd + / to focus and expand/open the header dropdown menu
-            if (e.metaKey && e.key === '/') {
-                e.preventDefault();
-                const selectElement = document.getElementById('headerSelect');
-                if (selectElement) {
-                    selectElement.focus();
-                    if (typeof selectElement.showPicker === 'function') {
-                        selectElement.showPicker();
-                    } else {
-                        const event = new MouseEvent('mousedown', {
-                            bubbles: true,
-                            cancelable: true,
-                            view: window
-                        });
-                        selectElement.dispatchEvent(event);
+            function updateSearchMatches(resetIndex = true) {
+                const query = searchInput.value;
+                matches = [];
+                if (resetIndex) activeMatch = -1;
+                if (!query) {
+                    status.textContent = "";
+                    updateEditorDisplay();
+                    return;
+                }
+
+                const text = editor.value.toLocaleLowerCase();
+                const needle = query.toLocaleLowerCase();
+                let offset = 0;
+                while ((offset = text.indexOf(needle, offset)) !== -1) {
+                    matches.push({ start: offset, end: offset + query.length, index: matches.length });
+                    offset += Math.max(1, query.length);
+                }
+                status.textContent = matches.length ? `${matches.length} found` : "No matches";
+                updateEditorDisplay();
+            }
+
+            function navigateSearch(direction) {
+                if (!searchInput.value) return;
+                updateSearchMatches(false);
+                if (!matches.length) return;
+                activeMatch = activeMatch < 0
+                    ? (direction > 0 ? 0 : matches.length - 1)
+                    : (activeMatch + direction + matches.length) % matches.length;
+                const match = matches[activeMatch];
+                editor.setSelectionRange(match.start, match.end);
+                scrollToOffset(match.start);
+                updateEditorDisplay();
+                status.textContent = `${activeMatch + 1} of ${matches.length}`;
+            }
+
+            function applyMarkdownShortcut(opening, closing = opening, selectionPlaceholder = "text") {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                const selectedText = editor.value.slice(start, end);
+                const innerText = selectedText || selectionPlaceholder;
+                const replacement = `${opening}${innerText}${closing}`;
+
+                pendingHistorySnapshot = readHistorySnapshot();
+                pendingHistoryInputType = "format";
+                editor.setRangeText(replacement, start, end, "select");
+                const innerStart = start + opening.length;
+                editor.setSelectionRange(innerStart, innerStart + innerText.length);
+                editor.focus();
+                editor.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+
+            function handleFormattingShortcut(event) {
+                if (!event.metaKey || event.ctrlKey || event.altKey) return;
+                if (event.key.toLowerCase() === "b" && event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("***");
+                } else if (event.key.toLowerCase() === "u") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("_");
+                } else if (event.key.toLowerCase() === "b" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("**");
+                } else if (event.key === "i" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("*");
+                } else if (event.key.toLowerCase() === "x" && event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("~~");
+                } else if (event.key.toLowerCase() === "c" && event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("`");
+                } else if (event.key.toLowerCase() === "k" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyMarkdownShortcut("[", "](url)");
+                }
+            }
+
+            function clearSearch() {
+                searchInput.value = "";
+                matches = [];
+                activeMatch = -1;
+                status.textContent = "";
+                updateEditorDisplay();
+                searchInput.focus();
+            }
+
+            editor.addEventListener("input", () => {
+                recordUndoHistory(pendingHistoryInputType || "insertText");
+                hasUnsyncedEdits = true;
+                updateHeadings();
+                updateSearchMatches();
+                scheduleSync();
+            });
+            editor.addEventListener("beforeinput", (event) => {
+                if (event.inputType === "historyUndo" || event.inputType === "historyRedo") {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    if (event.inputType === "historyUndo") undoEdit();
+                    else redoEdit();
+                    return;
+                }
+                pendingHistorySnapshot = readHistorySnapshot();
+                pendingHistoryInputType = event.inputType || "insertText";
+            }, true);
+            editor.addEventListener("keydown", handleUndoShortcut, true);
+            editor.addEventListener("keydown", handleFormattingShortcut, true);
+            editor.addEventListener("scroll", () => {
+                syncEditorDisplayScroll();
+                updateCustomCaret();
+            });
+            ["select", "keyup", "click", "focus", "blur"].forEach((eventName) => {
+                editor.addEventListener(eventName, updateEditorDisplay);
+            });
+
+            document.getElementById("headingToggle").addEventListener("click", toggleHeadingMenu);
+            document.getElementById("findPrevious").addEventListener("click", () => navigateSearch(-1));
+            document.getElementById("findNext").addEventListener("click", () => navigateSearch(1));
+            document.getElementById("clearSearch").addEventListener("click", clearSearch);
+            document.getElementById("increaseFont").addEventListener("click", () => {
+                fontSize = Math.min(40, fontSize + 2);
+                const surface = document.getElementById("editorSurface");
+                surface.style.setProperty("--editor-font-size", `${fontSize}px`);
+                surface.style.setProperty("--editor-line-height", `${fontSize * 1.5}px`);
+                updateCustomCaret();
+            });
+            document.getElementById("decreaseFont").addEventListener("click", () => {
+                fontSize = Math.max(10, fontSize - 2);
+                const surface = document.getElementById("editorSurface");
+                surface.style.setProperty("--editor-font-size", `${fontSize}px`);
+                surface.style.setProperty("--editor-line-height", `${fontSize * 1.5}px`);
+                updateCustomCaret();
+            });
+            searchInput.addEventListener("input", () => updateSearchMatches());
+            searchInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    navigateSearch(event.shiftKey ? -1 : 1);
+                } else if (event.key === "Escape") {
+                    clearSearch();
+                }
+            }, true);
+            document.addEventListener("click", (event) => {
+                if (!event.target.closest(".heading-picker")) closeHeadingMenu();
+            });
+
+            window.addEventListener("keydown", (event) => {
+                if (headingMenu.classList.contains("open")) {
+                    const items = Array.from(headingMenu.querySelectorAll("button"));
+                    const index = items.indexOf(document.activeElement);
+                    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && items.length) {
+                        event.preventDefault();
+                        const delta = event.key === "ArrowDown" ? 1 : -1;
+                        items[(index + delta + items.length) % items.length].focus();
+                        return;
+                    }
+                    if (event.key === "Enter" && index >= 0) {
+                        event.preventDefault();
+                        items[index].click();
+                        return;
+                    }
+                    if (event.key === "Escape") {
+                        event.preventDefault();
+                        closeHeadingMenu(true);
+                        return;
                     }
                 }
-            }
-        });
+
+                if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey &&
+                    (event.key === "/" || event.key === "ArrowUp" || event.key === "ArrowDown")) {
+                    event.preventDefault();
+                    if (headingMenu.classList.contains("open")) closeHeadingMenu();
+                    else openHeadingMenu();
+                    return;
+                }
+
+                if (document.activeElement === editor && event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+                    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                        event.preventDefault();
+                        jumpRelative(event.key === "ArrowDown" ? 1 : -1);
+                    }
+                }
+            });
+
+            updateEditorDisplay();
+            updateHeadings();
+            requestNotepad();
+            window.addEventListener("focus", requestNotepad);
+        })();
     </script>
 </body>
 </html>
