@@ -1,214 +1,139 @@
 /*
 Floating Notepad
 Short description: Quickly access and edit Beat's notepad in a floating window with keyboard shortcuts.
-Copyright: Bode Pickman
+Copyright: Bode
 <Description>
-  <p>The Floating Notepad plugin provides a convenient way to access and edit Beat's notepad from a floating window. 
+  <p>The Floating Notepad plugin provides a convenient way to access and edit Beat's notepad from a floating window.
   <br><br>
-  Open header dropdown with CMD+/. 
+  Open the section menu with CMD+UP and CMD+DOWN.
   <br><br>
-  Jump sections with ⌥↑ and ⌥↓
+  Jump sections with OPT+UP and OPT+DOWN.
   <br><br>
-  Toggle window with OPT+CMD+3
-   <br><br>
-   ⚠️WARNING: This plugin does not support color. If your notes are color-coordinated, do not use this plugin, as it will remove all colors upon launch.
-   <br><br>
-   </p>
+  Toggle the window with OPT+CMD+3.
+  <br><br>
+  ⚠️WARNING: This plugin does not support color. If your notes are color-coordinated, do not use this plugin, as it will remove all colors upon launch.
+  </p>
 </Description>
 Image: floating_notepad.png
-Version: 2.0
+Version: 3.0
 */
 
 const html = Beat.assetAsString("ui.html");
-const notepad = Beat.notepad;
-
-let isPanelVisible = true;
-let savedPanelX = null;
-let savedPanelY = null;
-let savedPanelWidth = 2000;
-let savedPanelHeight = 600;
-
-function togglePanelVisibility() {
-    Beat.log("togglePanelVisibility triggered");
-    if (panel) {
-        isPanelVisible = !isPanelVisible;
-        
-        if (!isPanelVisible) {
-            if (typeof panel.getFrame === "function") {
-                const currentFrame = panel.getFrame();
-                savedPanelX = currentFrame.x;
-                savedPanelY = currentFrame.y;
-                savedPanelWidth = currentFrame.width;
-                savedPanelHeight = currentFrame.height;
-            }
-            
-            if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
-                panel.setFrame(savedPanelX, savedPanelY, 0, 0);
-            } else {
-                panel.hide();
-            }
-        } else {
-            if (typeof panel.setFrame === "function" && savedPanelX !== null && savedPanelY !== null) {
-                panel.setFrame(savedPanelX, savedPanelY, savedPanelWidth, savedPanelHeight);
-            } else if (typeof panel.show === "function") {
-                panel.show();
-            }
-            refreshNotepad();
-        }
-    }
-}
-
 const panel = Beat.htmlWindow(html, 2000, 600, null, { utility: false });
 panel.stayInMemory = true;
-const frame = panel.getFrame();
-panel.setFrame(frame.x, frame.y - 300, frame.width, frame.height);
 
-let isProgrammaticUpdate = false;
+let panelVisible = true;
+let savedFrame = null;
+let beatThemePoller = null;
+let lastForcedAppearance = null;
+let panelWasForcedDark = false;
+let isSyncingFromPanel = false;
+
+const initialFrame = panel.getFrame();
+panel.setFrame(initialFrame.x, initialFrame.y - 300, initialFrame.width, initialFrame.height);
 
 Beat.custom = {
     syncNotepad(content) {
-        console.log("Syncing notepad content programmatically.");
-        notepad.string = content;
+        if (typeof content !== "string") {
+            throw new TypeError("Floating Notepad content must be a string.");
+        }
+        isSyncingFromPanel = true;
+        try {
+            Beat.notepad.string = content;
+        } finally {
+            isSyncingFromPanel = false;
+        }
     }
 };
 
+function refreshNotepad() {
+    const text = Beat.notepad.string || "";
+    panel.call(() => {
+        if (typeof window.refreshFloatingNotepad === "function") {
+            window.refreshFloatingNotepad(text);
+            return;
+        }
+        const editor = document.getElementById("editor");
+        if (editor && editor.value !== text) editor.value = text;
+    });
+}
+
 Beat.onNotepadChange(() => {
-    if (!isProgrammaticUpdate) {
-        console.log("Notepad changed, refreshing notepad.");
-        refreshNotepad();
-    } else {
-        console.log("Notepad changed, but skipping due to programmatic update.");
-    }
+    if (!isSyncingFromPanel) refreshNotepad();
 });
 
-function refreshNotepad() {
-    const text = Beat.notepad.string;
-    console.log("Refreshing notepad with content:", text);
+function getForcedAppearance() {
+    const appearance = Number(Beat.getRawUserDefault("Forced Appearance") || 0);
+    if (![0, 1, 2].includes(appearance)) {
+        throw new Error("Unsupported Beat forced appearance value: " + appearance);
+    }
+    return appearance;
+}
+
+function applyAppearance(appearance) {
+    const theme = appearance === 1 ? "dark" : appearance === 2 ? "light" : "system";
+    if (appearance === 1) {
+        panel.dark = true;
+        panelWasForcedDark = true;
+    } else if (panelWasForcedDark) {
+        panel.dark = false;
+        panelWasForcedDark = false;
+    }
+
     panel.call(() => {
-        if (typeof simplemde === 'undefined') {
-            console.log("Initializing editor with content:", text);
-            initializeEditor(text);
-        } else {
-            console.log("Updating editor content programmatically.");
-            isProgrammaticUpdate = true;
-            simplemde.value(text);
-            isProgrammaticUpdate = false;
-        }
-        if (typeof updateHeaderDropdown === 'function') {
-            updateHeaderDropdown();
-        }
+        document.documentElement.dataset.theme = theme;
     });
 }
 
-function syncNotepadToMain() {
-    const content = simplemde.value();
-    console.log("Syncing notepad to main with content:", content);
-    isProgrammaticUpdate = true;
-    Beat.call(
-        (arg) => {
-            Beat.custom.syncNotepad(arg);
-            isProgrammaticUpdate = false;
-        },
-        content
-    );
+function checkAppearance() {
+    const appearance = getForcedAppearance();
+    if (appearance !== lastForcedAppearance) {
+        lastForcedAppearance = appearance;
+        applyAppearance(appearance);
+    }
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-    };
+function startAppearanceWatcher() {
+    if (beatThemePoller && typeof beatThemePoller.stop === "function") {
+        beatThemePoller.stop();
+    }
+    lastForcedAppearance = null;
+    checkAppearance();
+    scheduleAppearanceCheck();
 }
 
-function initializeEditor(content) {
-    simplemde = new SimpleMDE({
-        element: document.getElementById("notepadTextarea"),
-        initialValue: content,
-        spellChecker: false,
-        autosave: {
-            enabled: true,
-            uniqueId: "floating-notepad",
-            delay: 1000,
-        },
-        toolbar: false,
-        status: false,
-        previewRender: (plainText) => {
-            const modifiedText = plainText.replace(/^(#+)([^#\s])/gm, '$1 $2');
-            return this.parent.markdown(modifiedText);
-        },
-        parsingConfig: {
-            allowAtxHeaderWithoutSpace: true
-        },
-        codeMirror: {
-            mode: {
-                name: "gfm",
-                highlightFormatting: true,
-                underscoresBreakWords: false,
-                emoji: true,
-            }
-        }
+function scheduleAppearanceCheck() {
+    beatThemePoller = Beat.timer(1.5, () => {
+        checkAppearance();
+        scheduleAppearanceCheck();
     });
-
-    const cm = simplemde.codemirror;
-
-    cm.on("change", debounce(() => {
-        if (!isProgrammaticUpdate) {
-            console.log("Editor content changed, syncing to main.");
-            syncNotepadToMain();
-        } else {
-            console.log("Editor content changed, but skipping due to programmatic update.");
-        }
-        if (typeof updateHeaderDropdown === 'function') {
-            updateHeaderDropdown();
-        }
-    }, 500));
-
-    cm.addKeyMap({
-        "Alt-Down": (cmInstance) => navigateToNextHeading(cmInstance),
-        "Alt-Up": (cmInstance) => navigateToPreviousHeading(cmInstance),
-        "Enter": (cmInstance) => {
-            if (!isProgrammaticUpdate) {
-                syncNotepadToMain();
-            }
-            cmInstance.execCommand("newlineAndIndent");
-        }
-    });
-
-    if (typeof updateHeaderDropdown === 'function') {
-        updateHeaderDropdown();
-    }
 }
 
-function navigateToNextHeading(cm) {
-    const cursor = cm.getCursor();
-    const lineCount = cm.lineCount();
-    const headingRegex = /^#{1,6}\s+[^#]/; 
-    for (let i = cursor.line + 1; i < lineCount; i++) {
-        const lineText = cm.getLine(i);
-        if (headingRegex.test(lineText)) {
-            cm.setCursor({ line: i, ch: 0 });
-            break;
+function togglePanelVisibility() {
+    panelVisible = !panelVisible;
+    if (!panelVisible) {
+        if (typeof panel.getFrame === "function") savedFrame = panel.getFrame();
+        if (savedFrame && typeof panel.setFrame === "function") {
+            panel.setFrame(savedFrame.x, savedFrame.y, 0, 0);
+        } else if (typeof panel.hide === "function") {
+            panel.hide();
         }
+        return;
     }
-}
 
-function navigateToPreviousHeading(cm) {
-    const cursor = cm.getCursor();
-    const headingRegex = /^#{1,6}\s+[^#]/;
-    for (let i = cursor.line - 1; i >= 0; i--) {
-        const lineText = cm.getLine(i);
-        if (headingRegex.test(lineText)) {
-            cm.setCursor({ line: i, ch: 0 });
-            break;
-        }
+    if (savedFrame && typeof panel.setFrame === "function") {
+        panel.setFrame(savedFrame.x, savedFrame.y, savedFrame.width, savedFrame.height);
+    } else if (typeof panel.show === "function") {
+        panel.show();
     }
+    refreshNotepad();
 }
 
 panel.call(() => {
-    document.addEventListener('DOMContentLoaded', refreshNotepad);
-    document.addEventListener('focus', refreshNotepad);
+    window.addEventListener("focus", refreshNotepad);
 });
 
+startAppearanceWatcher();
+
 const menuItem = Beat.menuItem("Floating Notepad", ["cmd", "alt", "3"], togglePanelVisibility);
-const menu = Beat.menu("Floating Notepad", [menuItem]);
+Beat.menu("Floating Notepad", [menuItem]);
