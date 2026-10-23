@@ -70,12 +70,13 @@
             align-items: center;
             gap: 8px;
             padding: 5px 8px;
-            background: var(--surface);
+            background: transparent;
             color: var(--muted);
         }
 
         button,
-        input {
+        input,
+        select {
             color: var(--text);
             font: inherit;
         }
@@ -151,10 +152,31 @@
 
         .search {
             display: flex;
-            flex: 1 1 220px;
-            min-width: 100px;
+            flex: 1 1 160px;
+            min-width: 80px;
             align-items: center;
             gap: 3px;
+        }
+
+        .toolbar-toggle {
+            flex: 0 0 auto;
+            min-height: 28px;
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--control);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .toolbar-toggle:hover {
+            border-color: var(--accent);
+        }
+
+        .toolbar-toggle[aria-pressed="true"] {
+            border-color: var(--accent);
+            background: var(--selection);
+            color: var(--selection-text);
         }
 
         .search input {
@@ -183,6 +205,11 @@
             color: var(--text);
         }
 
+        .icon-button[aria-pressed="true"] {
+            background: var(--selection);
+            color: var(--selection-text);
+        }
+
         .icon-button svg {
             width: 18px;
             height: 18px;
@@ -196,6 +223,29 @@
 
         .font-controls button {
             font-size: 19px;
+        }
+
+        .theme-picker {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            gap: 5px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        #themeMode {
+            min-height: 28px;
+            padding: 3px 7px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--control);
+            color: var(--text);
+        }
+
+        #themeMode:focus,
+        #themeMode:hover {
+            border-color: var(--accent);
         }
 
         #editorSurface {
@@ -213,6 +263,7 @@
             display: block;
             width: 100%;
             padding: 12px;
+            padding-bottom: calc(12px + var(--typewriter-bottom-space, 0px));
             border: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
             font-size: var(--editor-font-size);
@@ -224,6 +275,7 @@
         #editorDisplay {
             position: absolute;
             inset: 0 auto auto 0;
+            z-index: 4;
             min-height: 100%;
             margin: 0;
             overflow: visible;
@@ -238,9 +290,7 @@
             color: var(--accent);
             font-weight: 700;
             line-height: inherit;
-            transform: scaleY(1.2);
-            transform-origin: center 85%;
-            vertical-align: baseline;
+            vertical-align: middle;
         }
 
         #editorDisplay .markdown-heading.level-1,
@@ -252,6 +302,46 @@
 
         #editorDisplay .markdown-heading.level-1 {
             text-decoration-thickness: 2px;
+        }
+
+        #editorDisplay .folded-section-heading::after {
+            color: var(--muted);
+            content: " …";
+            font-weight: 400;
+        }
+
+        #editorDisplay .section-heading-line {
+            position: relative;
+        }
+
+        #editorDisplay .section-fold-button {
+            position: absolute;
+            left: -12px;
+            top: 0;
+            display: grid;
+            width: 12px;
+            height: var(--editor-line-height);
+            place-items: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            pointer-events: auto;
+            font: inherit;
+            line-height: 1;
+        }
+
+        #editorDisplay .section-fold-button::before {
+            content: "▾";
+        }
+
+        #editorDisplay .section-fold-button.is-folded::before {
+            content: "▸";
+        }
+
+        #editorDisplay .section-fold-button:focus-visible {
+            outline: 1px solid var(--accent);
+            border-radius: 2px;
         }
 
         #editorDisplay .markdown-marker {
@@ -453,7 +543,9 @@
             <button id="headingToggle" type="button" aria-haspopup="true" aria-expanded="false">Jump to heading ▾</button>
             <div id="headingMenu" role="menu" aria-label="Jump to heading"></div>
         </div>
-
+        <button class="toolbar-toggle" id="typewriterToggle" type="button" aria-label="Typewriter mode" aria-pressed="true" title="Typewriter mode keeps the current line centered">
+            Typewriter
+        </button>
         <div class="search" role="search">
             <input id="searchInput" type="search" placeholder="Find…" aria-label="Find in notepad">
             <button class="icon-button" id="findPrevious" type="button" aria-label="Previous match" title="Previous match">
@@ -469,6 +561,15 @@
             <button id="decreaseFont" type="button" aria-label="Decrease text size">−</button>
             <button id="increaseFont" type="button" aria-label="Increase text size">+</button>
         </div>
+
+        <label class="theme-picker">
+            Theme
+            <select id="themeMode" aria-label="Theme">
+                <option value="beat">Beat</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </label>
     </header>
 
     <div id="editorSurface">
@@ -481,7 +582,7 @@
         <span class="hint-indicator" title="Hover here to show keyboard shortcuts" aria-label="Hover here to show keyboard shortcuts">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5v5M12 7.5h.01" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
         </span>
-        <span class="instructions">· ⌘↑/↓: navigate dropdown · ⌥↑/↓: jump sections · ⌥⌘3: show or hide</span>
+        <span class="instructions">· ⌥⌘↑/↓: navigate dropdown · ⌥↑/↓: jump sections · ⌘↑: fold · ⌘↓: unfold · ⌥⌘3: show or hide</span>
         <span id="status" role="status" aria-live="polite"></span>
     </footer>
 
@@ -491,10 +592,23 @@
             const searchInput = document.getElementById("searchInput");
             const headingToggle = document.getElementById("headingToggle");
             const headingMenu = document.getElementById("headingMenu");
+            const typewriterToggle = document.getElementById("typewriterToggle");
             const status = document.getElementById("status");
+            window.setBeatTheme = (theme, mode) => {
+                if (!["system", "light", "dark"].includes(theme)) {
+                    throw new TypeError("Unsupported Floating Notepad theme: " + theme);
+                }
+                if (!["beat", "system", "light", "dark"].includes(mode)) {
+                    throw new TypeError("Unsupported Floating Notepad theme mode: " + mode);
+                }
+                document.documentElement.dataset.theme = theme;
+                document.getElementById("themeMode").value = mode;
+            };
             let matches = [];
             let activeMatch = -1;
             let fontSize = 16;
+            let typewriterMode = true;
+            let foldedSectionLine = null;
             let syncTimer = null;
             let lastSyncedText = null;
             let hasUnsyncedEdits = false;
@@ -570,6 +684,7 @@
                 editor.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
                 restoringHistory = false;
                 hasUnsyncedEdits = true;
+                updateTypewriterPadding();
                 updateEditorDisplay();
                 updateHeadings();
                 updateSearchMatches();
@@ -652,14 +767,38 @@
                 let inCodeFence = false;
                 let inDialogue = false;
                 const lines = getLines();
+                const sections = findSections(lines);
+                const sectionsByLine = new Map(sections.map((section) => [section.lineNumber, section]));
+                const foldedSection = sections.find((section) => section.lineNumber === foldedSectionLine);
+                const trailingBlankLines = foldedSection
+                    ? getFoldedTrailingBlankLines(foldedSection, lines)
+                    : 0;
                 lines.forEach((line, lineNumber) => {
+                    const isFolded = foldedSection &&
+                        lineNumber > foldedSection.lineNumber &&
+                        lineNumber < foldedSection.endLine;
+                    const fence = line.match(/^(\s*```.*)$/);
+                    if (isFolded) {
+                        if (fence) inCodeFence = !inCodeFence;
+                        if (!line.trim()) inDialogue = false;
+                        lineOffset += line.length + 1;
+                        return;
+                    }
+
                     const renderedLine = document.createElement("div");
+                    renderedLine.dataset.lineNumber = String(lineNumber);
                     const heading = parseHeading(line);
                     const fountain = classifyFountainLine(line, lineNumber, lines);
-                    const fence = line.match(/^(\s*```.*)$/);
                     const quote = line.match(/^(\s*&gt;|\s*> ?)(.*)$/);
                     const list = line.match(/^(\s*(?:[-+*]|\d+[.)])\s+)(.*)$/);
                     const rule = /^\s*(?:(?:-{3,})|(?:\*{3,})|(?:_{3,}))\s*$/.test(line);
+                    const section = sectionsByLine.get(lineNumber);
+                    if (section) {
+                        renderedLine.classList.add("section-heading-line");
+                        if (foldedSection && lineNumber === foldedSection.lineNumber) {
+                            renderedLine.classList.add("folded-section-heading");
+                        }
+                    }
 
                     if (!line.trim()) {
                         inDialogue = false;
@@ -717,10 +856,35 @@
                     } else {
                         appendInlineMarkdown(renderedLine, line || "\u00a0", lineOffset);
                     }
+                    if (section) {
+                        const isFolded = foldedSectionLine === section.lineNumber;
+                        const foldButton = document.createElement("button");
+                        foldButton.type = "button";
+                        foldButton.className = "section-fold-button";
+                        foldButton.classList.toggle("is-folded", isFolded);
+                        foldButton.setAttribute("aria-label", `${isFolded ? "Expand" : "Collapse"} ${section.label.trim()}`);
+                        foldButton.setAttribute("aria-expanded", String(!isFolded));
+                        foldButton.title = `${isFolded ? "Expand" : "Collapse"} section`;
+                        foldButton.addEventListener("pointerdown", (event) => event.preventDefault());
+                        foldButton.addEventListener("click", (event) => {
+                            event.stopPropagation();
+                            toggleSectionFold(section.lineNumber);
+                        });
+                        renderedLine.appendChild(foldButton);
+                    }
                     fragment.appendChild(renderedLine);
+                    if (foldedSection && lineNumber === foldedSection.lineNumber) {
+                        for (let index = 0; index < trailingBlankLines; index += 1) {
+                            const spacer = document.createElement("div");
+                            spacer.className = "folded-section-spacer";
+                            spacer.textContent = "\u00a0";
+                            fragment.appendChild(spacer);
+                        }
+                    }
                     lineOffset += line.length + 1;
                 });
                 document.getElementById("editorDisplay").replaceChildren(fragment);
+                clampFoldedScroll();
                 syncEditorDisplayScroll();
                 updateCustomCaret();
             }
@@ -817,6 +981,24 @@
                 display.style.transform = `translate(${-editor.scrollLeft}px, ${-editor.scrollTop}px)`;
             }
 
+            function clampFoldedScroll() {
+                if (foldedSectionLine === null) return;
+                const display = document.getElementById("editorDisplay");
+                const maxScrollTop = Math.max(0, display.scrollHeight - editor.clientHeight);
+                if (editor.scrollTop > maxScrollTop) editor.scrollTop = maxScrollTop;
+            }
+
+            function getFoldedTrailingBlankLines(section, lines) {
+                if (section.endLine >= lines.length) return 0;
+                let count = 0;
+                for (let lineNumber = section.endLine - 1;
+                    lineNumber > section.lineNumber && !lines[lineNumber].trim();
+                    lineNumber -= 1) {
+                    count += 1;
+                }
+                return Math.max(1, count);
+            }
+
             function updateCustomCaret() {
                 const caret = document.getElementById("editorCaret");
                 if (document.activeElement !== editor || editor.selectionStart !== editor.selectionEnd) {
@@ -826,23 +1008,19 @@
 
                 const display = document.getElementById("editorDisplay");
                 const lines = getLines();
-                let lineOffset = 0;
-                let lineElement = display.firstElementChild;
-                let localOffset = 0;
-                for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
-                    const line = lines[lineNumber];
-                    if (editor.selectionStart <= lineOffset + line.length || lineNumber === lines.length - 1) {
-                        localOffset = Math.max(0, Math.min(line.length, editor.selectionStart - lineOffset));
-                        break;
-                    }
-                    lineOffset += line.length + 1;
-                    lineElement = lineElement.nextElementSibling;
-                }
-
+                const caretLineNumber = currentLineNumber();
+                const lineElement = display.querySelector(`[data-line-number="${caretLineNumber}"]`);
                 if (!lineElement) {
                     caret.style.display = "none";
                     return;
                 }
+                const localOffset = Math.max(
+                    0,
+                    Math.min(
+                        lines[caretLineNumber].length,
+                        editor.selectionStart - lineStart(caretLineNumber)
+                    )
+                );
 
                 const walker = document.createTreeWalker(lineElement, NodeFilter.SHOW_TEXT);
                 let textNode;
@@ -873,24 +1051,84 @@
                 caret.style.display = "block";
             }
 
-            function findHeadings() {
-                const headings = [];
-                getLines().forEach((line, lineNumber) => {
+            function findSections(lines = getLines()) {
+                const sections = [];
+                let inCodeFence = false;
+                lines.forEach((line, lineNumber) => {
+                    if (/^\s*```/.test(line)) {
+                        inCodeFence = !inCodeFence;
+                        return;
+                    }
+                    if (inCodeFence) return;
+
                     const heading = parseHeading(line);
                     if (heading) {
-                        headings.push({
+                        sections.push({
                             lineNumber,
                             level: heading.level,
                             label: `${heading.marker}${heading.title.replace(/[ \t]+#+[ \t]*$/, "").trim()}`
                         });
+                        return;
+                    }
+
+                    const fountain = classifyFountainLine(line, lineNumber, lines);
+                    if (fountain && fountain.type === "scene-heading") {
+                        sections.push({
+                            lineNumber,
+                            level: 1,
+                            label: fountain.text.trim()
+                        });
                     }
                 });
-                return headings;
+
+                const openSections = [];
+                sections.forEach((section) => {
+                    section.endLine = lines.length;
+                    while (openSections.length &&
+                        openSections[openSections.length - 1].level >= section.level) {
+                        openSections.pop().endLine = section.lineNumber;
+                    }
+                    openSections.push(section);
+                });
+                return sections;
+            }
+
+            function findHeadings() {
+                return findSections();
+            }
+
+            function sectionAtLine(lineNumber) {
+                const sections = findSections();
+                for (let index = sections.length - 1; index >= 0; index -= 1) {
+                    if (sections[index].lineNumber <= lineNumber) return sections[index];
+                }
+                return null;
+            }
+
+            function clearFoldedSection() {
+                if (foldedSectionLine === null) return;
+                foldedSectionLine = null;
+                updateEditorDisplay();
+            }
+
+            function toggleSectionFold(sectionLine = sectionAtLine(currentLineNumber())?.lineNumber) {
+                if (sectionLine === undefined || sectionLine === null) return;
+                if (foldedSectionLine !== null) {
+                    if (foldedSectionLine === sectionLine) {
+                        foldedSectionLine = null;
+                        updateEditorDisplay();
+                        return;
+                    }
+                }
+
+                foldedSectionLine = sectionLine;
+                scrollToOffset(lineStart(sectionLine));
+                updateEditorDisplay();
             }
 
             function updateHeadings() {
                 headingMenu.replaceChildren();
-                const headings = findHeadings();
+                const headings = findSections();
                 if (!headings.length) {
                     const empty = document.createElement("div");
                     empty.textContent = "No headings found";
@@ -912,6 +1150,7 @@
 
             function setEditorText(text, preserveSelection = true) {
                 if (editor.value === text) return false;
+                foldedSectionLine = null;
                 const start = preserveSelection ? editor.selectionStart : 0;
                 const end = preserveSelection ? editor.selectionEnd : 0;
                 const scrollTop = editor.scrollTop;
@@ -921,6 +1160,7 @@
                 if (searchInput.value) updateSearchMatches(false);
                 updateEditorDisplay();
                 updateHeadings();
+                keepCaretCentered();
                 return true;
             }
 
@@ -976,7 +1216,7 @@
                 return offset;
             }
 
-            function scrollToOffset(offset) {
+            function scrollToOffset(offset, verticalPosition = 0.35) {
                 const surface = document.getElementById("editorSurface");
                 const mirror = document.createElement("div");
                 const marker = document.createElement("span");
@@ -1011,18 +1251,38 @@
                 const offsetTop = marker.getBoundingClientRect().top - surface.getBoundingClientRect().top;
                 mirror.remove();
 
-                const targetTop = Math.max(0, offsetTop - editor.clientHeight * 0.35);
+                const targetTop = Math.max(0, offsetTop - editor.clientHeight * verticalPosition);
                 editor.scrollTop = Math.min(targetTop, editor.scrollHeight - editor.clientHeight);
                 syncEditorDisplayScroll();
             }
 
+            function keepCaretCentered() {
+                if (typewriterMode) scrollToOffset(editor.selectionStart, 0.5);
+            }
+
+            function updateTypewriterPadding() {
+                const surface = document.getElementById("editorSurface");
+                const extraSpace = typewriterMode ? editor.clientHeight / 2 : 0;
+                surface.style.setProperty("--typewriter-bottom-space", `${extraSpace}px`);
+                if (!typewriterMode) {
+                    editor.scrollTop = Math.min(
+                        editor.scrollTop,
+                        Math.max(0, editor.scrollHeight - editor.clientHeight)
+                    );
+                }
+                updateEditorDisplay();
+                keepCaretCentered();
+            }
+
             function jumpToLine(lineNumber) {
                 closeHeadingMenu();
+                clearFoldedSection();
                 const offset = lineStart(lineNumber);
                 editor.focus();
                 editor.setSelectionRange(offset, offset);
                 updateEditorDisplay();
                 scrollToOffset(offset);
+                keepCaretCentered();
             }
 
             function currentLineNumber() {
@@ -1065,6 +1325,7 @@
             }
 
             function updateSearchMatches(resetIndex = true) {
+                clearFoldedSection();
                 const query = searchInput.value;
                 matches = [];
                 if (resetIndex) activeMatch = -1;
@@ -1095,6 +1356,7 @@
                 const match = matches[activeMatch];
                 editor.setSelectionRange(match.start, match.end);
                 scrollToOffset(match.start);
+                keepCaretCentered();
                 updateEditorDisplay();
                 status.textContent = `${activeMatch + 1} of ${matches.length}`;
             }
@@ -1158,11 +1420,13 @@
             }
 
             editor.addEventListener("input", () => {
+                foldedSectionLine = null;
                 recordUndoHistory(pendingHistoryInputType || "insertText");
                 hasUnsyncedEdits = true;
                 updateHeadings();
                 updateSearchMatches();
                 scheduleSync();
+                keepCaretCentered();
             });
             editor.addEventListener("beforeinput", (event) => {
                 if (event.inputType === "historyUndo" || event.inputType === "historyRedo") {
@@ -1178,14 +1442,33 @@
             editor.addEventListener("keydown", handleUndoShortcut, true);
             editor.addEventListener("keydown", handleFormattingShortcut, true);
             editor.addEventListener("scroll", () => {
+                clampFoldedScroll();
                 syncEditorDisplayScroll();
                 updateCustomCaret();
             });
             ["select", "keyup", "click", "focus", "blur"].forEach((eventName) => {
-                editor.addEventListener(eventName, updateEditorDisplay);
+                editor.addEventListener(eventName, () => {
+                    updateEditorDisplay();
+                    keepCaretCentered();
+                });
             });
-
+            const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
+            Beat.call((isDark) => Beat.custom.setSystemDarkMode(isDark), systemDarkMode.matches);
+            systemDarkMode.addEventListener("change", (event) => {
+                Beat.call((isDark) => Beat.custom.setSystemDarkMode(isDark), event.matches);
+            });
+            Beat.call(() => Beat.custom.editorReady());
             document.getElementById("headingToggle").addEventListener("click", toggleHeadingMenu);
+            typewriterToggle.addEventListener("pointerdown", (event) => event.preventDefault());
+            typewriterToggle.addEventListener("click", () => {
+                typewriterMode = !typewriterMode;
+                typewriterToggle.setAttribute("aria-pressed", String(typewriterMode));
+                updateTypewriterPadding();
+            });
+            window.addEventListener("resize", updateTypewriterPadding);
+            document.getElementById("themeMode").addEventListener("change", (event) => {
+                Beat.call((mode) => Beat.custom.setThemeMode(mode), event.target.value);
+            });
             document.getElementById("findPrevious").addEventListener("click", () => navigateSearch(-1));
             document.getElementById("findNext").addEventListener("click", () => navigateSearch(1));
             document.getElementById("clearSearch").addEventListener("click", clearSearch);
@@ -1194,14 +1477,14 @@
                 const surface = document.getElementById("editorSurface");
                 surface.style.setProperty("--editor-font-size", `${fontSize}px`);
                 surface.style.setProperty("--editor-line-height", `${fontSize * 1.5}px`);
-                updateCustomCaret();
+                updateEditorDisplay();
             });
             document.getElementById("decreaseFont").addEventListener("click", () => {
                 fontSize = Math.max(10, fontSize - 2);
                 const surface = document.getElementById("editorSurface");
                 surface.style.setProperty("--editor-font-size", `${fontSize}px`);
                 surface.style.setProperty("--editor-line-height", `${fontSize * 1.5}px`);
-                updateCustomCaret();
+                updateEditorDisplay();
             });
             searchInput.addEventListener("input", () => updateSearchMatches());
             searchInput.addEventListener("keydown", (event) => {
@@ -1218,6 +1501,29 @@
             });
 
             window.addEventListener("keydown", (event) => {
+                if (event.metaKey && event.ctrlKey && event.key === "0") {
+                    event.preventDefault();
+                    Beat.call(() => Beat.custom.toggleLightDark());
+                    return;
+                }
+
+                if (document.activeElement === editor &&
+                    event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey &&
+                    (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+                    event.preventDefault();
+                    if (event.key === "ArrowUp") {
+                        const section = sectionAtLine(currentLineNumber());
+                        if (section && foldedSectionLine !== section.lineNumber) {
+                            foldedSectionLine = section.lineNumber;
+                            scrollToOffset(lineStart(section.lineNumber));
+                            updateEditorDisplay();
+                        }
+                    } else if (foldedSectionLine !== null) {
+                        clearFoldedSection();
+                    }
+                    return;
+                }
+
                 if (headingMenu.classList.contains("open")) {
                     const items = Array.from(headingMenu.querySelectorAll("button"));
                     const index = items.indexOf(document.activeElement);
@@ -1239,7 +1545,7 @@
                     }
                 }
 
-                if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey &&
+                if (event.metaKey && event.altKey && !event.ctrlKey && !event.shiftKey &&
                     (event.key === "/" || event.key === "ArrowUp" || event.key === "ArrowDown")) {
                     event.preventDefault();
                     if (headingMenu.classList.contains("open")) closeHeadingMenu();
