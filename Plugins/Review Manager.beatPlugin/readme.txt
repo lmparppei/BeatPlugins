@@ -7,7 +7,9 @@ Created with the help of DeepSeek.
 
 ----------------------------------------------------------------------------
 
-
+- Changes in V0.98a
+  Workaround for WebKit-Crash when exporting/importing 
+  Import/Export-functions no longer access clipboard, but write/read csv-files
 - Changes in V0.98
   Import-reviews function (from clipboard in csv-format)
   Advanced saving window position and size

@@ -1,7 +1,7 @@
  /*:
 Review Manager
 Copyright: Jürgen Heimüller 2026
-Version: 0.98
+Version: 0.98a
 Description: Manage and organize your reviews with tags
 */
 
@@ -1009,19 +1009,19 @@ const Export = {
             
             const BOM = "\uFEFF";
             const csvContent = BOM + headers.join(";") + "\n" + rows.join("\n");
-            
-            WindowManager.runJS(`
-                var csvContent = ${JSON.stringify(csvContent)};
-                var count = ${rows.length};
-                var filterInfo = ${JSON.stringify(filterInfo)};
-                navigator.clipboard.writeText(csvContent).then(function() {
-                    alert("Export: " + count + " Reviews copied to Clipboard" + filterInfo + "\\n\\nIn Excel/Numbers einfach mit Strg+V einfügen.");
-                }).catch(function(err) {
-                    alert("Fehler beim Kopieren in die Zwischenablage: " + err);
+
+            Beat.timer(0.3, () => {
+                Beat.saveFile("csv", (filePath) => {
+                    if (!filePath) return;
+                    try {
+                        Beat.writeToFile(filePath, csvContent);
+                        Beat.alert("Export: " + rows.length + " Reviews written to:\n" + filePath +"\n" + filterInfo);
+                    } catch (e) {
+                        Logger.error("Export write failed", e);
+                        Beat.alert("Error while Exporting: " + e.message);
+                    }
                 });
-            `);
-            
-            Beat.alert(`Export: ${rows.length} Reviews copied to Clipboard${filterInfo}`);
+            }, false);
         } catch(e) {
             Logger.error("Fehler beim CSV Export", e);
             Beat.alert("Fehler beim Export: " + e.message);
@@ -1031,58 +1031,80 @@ const Export = {
 
 // ---------- 8.5 IMPORT ----------
 const Import = {
-    // ---------- STEP 1: Lesen + Validieren + Dialog ----------
+    // ---------- STEP 1: Datei öffnen + validieren ----------
     fromCSV() {
         Beat.log("=== REVIEW IMPORT: Prepare ===");
         try {
             State.pendingImport = null;
 
-            let clipboardText = Beat.readFromPasteboard();
-            if (!clipboardText || !clipboardText.trim()) {
-                Beat.alert("Clipboard is empty or contains no text.");
-                return;
-            }
+            // Delay: WebView-IPC zur Ruhe kommen lassen, bevor ein modaler Dialog öffnet
+            Beat.timer(0.3, () => {
+                Beat.openFile(["csv"], (filePath) => {
+                    if (!filePath) return; // abgebrochen
 
-            if (clipboardText.charCodeAt(0) === 0xFEFF) {
-                clipboardText = clipboardText.substring(1);
-            }
+                    let fileText;
+                    try {
+                        fileText = Beat.fileToString(filePath);
+                    } catch (e) {
+                        Logger.error("Import read failed", e);
+                        Beat.alert("Error reading CSV file: " + e.message);
+                        return;
+                    }
 
-            const rows = this.parseCSV(clipboardText);
-            if (rows.length < 2) {
-                Beat.alert("CSV contains no data rows.");
-                return;
-            }
+                    if (!fileText || !fileText.trim()) {
+                        Beat.alert("File is empty or contains no text.");
+                        return;
+                    }
+                    if (fileText.charCodeAt(0) === 0xFEFF) {
+                        fileText = fileText.substring(1);
+                    }
 
-            const expectedHeaders = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
-            const headers = rows[0].map(h => h.trim());
-            const headersValid = expectedHeaders.every((h, i) => headers[i] === h);
-            if (!headersValid) {
-                Beat.alert("Invalid CSV headers.\nExpected:\n" + expectedHeaders.join("; "));
-                return;
-            }
+                    let rows;
+                    try {
+                        rows = this.parseCSV(fileText);
+                    } catch (e) {
+                        Logger.error("CSV parse error", e);
+                        Beat.alert("Error parsing CSV: " + e.message);
+                        return;
+                    }
 
-            const dataRowCount = rows.length - 1;
+                    if (rows.length < 2) {
+                        Beat.alert("CSV contains no data rows.");
+                        return;
+                    }
 
-            State.pendingImport = {
-                rows: rows,
-                createdReviews: [],
-                failedRows: [],
-                stats: {
-                    created: 0,
-                    moved: 0,           // #__MOVED
-                    noScene: 0,         // #__NO_SCENE_NUMBER
-                    alreadyTaken: 0,    // #__ALREADY_TAKEN
-                    skipped: 0,         // ungültige Zeile
-                    duplicateSkipped: 0,// Skip wegen identischem Review-Text
-                    notFound: 0         // keine Stelle gefunden
-                }
-            };
+                    const expectedHeaders = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
+                    const headers = rows[0].map(h => h.trim());
+                    const headersValid = expectedHeaders.every((h, i) => headers[i] === h);
+                    if (!headersValid) {
+                        Beat.alert("Invalid CSV headers.\nExpected:\n" + expectedHeaders.join("; "));
+                        return;
+                    }
 
-            WindowManager.runJS(
-                'showConfirmDialog(' +
-                    JSON.stringify("Import " + dataRowCount + " review(s) from clipboard?") +
-                    ', null, "import");'
-            );
+                    const dataRowCount = rows.length - 1;
+
+                    State.pendingImport = {
+                        rows: rows,
+                        createdReviews: [],
+                        failedRows: [],
+                        stats: {
+                            created: 0,
+                            moved: 0,            // #__MOVED
+                            noScene: 0,          // #__NO_SCENE_NUMBER
+                            alreadyTaken: 0,     // #__ALREADY_TAKEN
+                            skipped: 0,          // ungültige Zeile
+                            duplicateSkipped: 0, // Skip wegen identischem Review-Text
+                            notFound: 0          // keine Stelle gefunden
+                        }
+                    };
+
+                    WindowManager.runJS(
+                        'showConfirmDialog(' +
+                            JSON.stringify("Import " + dataRowCount + " review(s) from file?") +
+                            ', null, "import");'
+                    );
+                });
+            }, false);
 
         } catch(e) {
             Logger.error("Import prep error", e);
@@ -1090,12 +1112,19 @@ const Import = {
         }
     },
 
-    // ---------- STEP 2: Schleife im HTML-Window starten ----------
+    // ---------- STEP 2: Import-Schleife starten ----------
     confirmImport() {
         const imp = State.pendingImport;
         if (!imp) return;
 
         Beat.log("=== REVIEW IMPORT: Run ===");
+        this.runImportLoop();
+    },
+
+    // Wird von confirmImport aufgerufen – startet die setTimeout-Kette im HTML-Window
+    runImportLoop() {
+        const imp = State.pendingImport;
+        if (!imp) return;
 
         const total = imp.rows.length - 1;
 
@@ -1122,6 +1151,12 @@ const Import = {
             }
             processNext();
         `);
+    },
+
+    // Wird aufgerufen, wenn der User den Bestätigen-Dialog mit "No" schließt
+    cancelImport() {
+        State.pendingImport = null;
+        Beat.log("=== REVIEW IMPORT: Cancelled ===");
     },
 
     // ---------- STEP 3: Eine Zeile verarbeiten ----------
@@ -1320,13 +1355,14 @@ const Import = {
         }
     },
 
-    // ---------- STEP 4: Selektionen, Refresh, Meldung ----------
+    // ---------- STEP 4: Selektionen, Status-Alert, Save-Dialog (nur bei Failed-Rows) ----------
     finalizeImport() {
         const imp = State.pendingImport;
         if (!imp) return;
 
         const rm = Beat.reviews;
 
+        // Selektions-Übernahme
         if (imp.createdReviews.length > 0) {
             const allReviews = rm.getReviews();
             for (let c = 0; c < imp.createdReviews.length; c++) {
@@ -1344,76 +1380,92 @@ const Import = {
             }
         }
 
-        UI._cachedData = null;
-        UI.refresh("import_complete", undefined, undefined, true);
-
-        // Nicht erzeugte Reviews als CSV in die Zwischenablage
-        let clipboardCopied = false;
-        if (imp.failedRows.length > 0) {
-            clipboardCopied = this.copyFailedRowsToClipboard(imp.failedRows);
-        }
-
-        // ---------- Meldung ----------
+        const failedCount = imp.failedRows.length;
+        const failedCSV   = failedCount > 0 ? this.buildFailedRowsCSV(imp.failedRows) : null;
         const s = imp.stats;
-        let msg = "Import complete:\n";
-        msg += "• " + s.created + " review(s) created";
 
-        let details = [];
-        if (s.moved > 0)        details.push(s.moved + " #__MOVED");
-        if (s.noScene > 0)      details.push(s.noScene + " #__NO_SCENE_NUMBER");
-        if (s.alreadyTaken > 0) details.push(s.alreadyTaken + " #__ALREADY_TAKEN");
-        if (details.length > 0) msg += "\n  (" + details.join(", ") + ")";
+        // Statusmeldung bauen
+        const buildStatusMessage = () => {
+            let msg = "Import complete:\n";
+            msg += "• " + s.created + " review(s) created";
 
-        if (s.duplicateSkipped > 0) msg += "\n• " + s.duplicateSkipped + " duplicate(s) skipped";
-        if (s.notFound > 0)         msg += "\n• " + s.notFound + " not found";
-        if (s.skipped > 0)          msg += "\n• " + s.skipped + " row(s) skipped";
+            let details = [];
+            if (s.moved > 0)        details.push(s.moved + " #__MOVED");
+            if (s.noScene > 0)      details.push(s.noScene + " #__NO_SCENE_NUMBER");
+            if (s.alreadyTaken > 0) details.push(s.alreadyTaken + " #__ALREADY_TAKEN");
+            if (details.length > 0) msg += "\n  (" + details.join(", ") + ")";
 
-        if (imp.failedRows.length > 0 && clipboardCopied) {
-            msg += "\n\n" + imp.failedRows.length +
-                   " unsuccessful row(s) copied to clipboard as CSV.";
-        }
-        Beat.alert(msg);
+            if (s.duplicateSkipped > 0) msg += "\n• " + s.duplicateSkipped + " duplicate(s) skipped";
+            if (s.notFound > 0)         msg += "\n• " + s.notFound + " not found";
+            if (s.skipped > 0)          msg += "\n• " + s.skipped + " row(s) skipped";
 
-        State.pendingImport = null;
-        Beat.log("=== REVIEW IMPORT: Done ===");
-    },
-
-    // ---------- Nicht erzeugte Zeilen als CSV in die Zwischenablage ----------
-    copyFailedRowsToClipboard(rows) {
-        try {
-            const headers = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
-            const escapeCSV = (str) => {
-                if (str === undefined || str === null) return '""';
-                str = String(str).replace(/"/g, '""');
-                return '"' + str + '"';
-            };
-
-            const lines = [headers.join(";")];
-            for (let r = 0; r < rows.length; r++) {
-                const row = rows[r];
-                const out = [];
-                for (let c = 0; c < 7; c++) {
-                    out.push(escapeCSV(row[c] !== undefined ? row[c] : ""));
-                }
-                lines.push(out.join(";"));
+            if (failedCount > 0) {
+                msg += "\n\n" + failedCount + " failed row(s).";
+                msg += "\n\nNext: choose a file to write failed reviews to,";
+                msg += " or click Cancel in the file dialog to skip.";
             }
 
-            const csv = "\uFEFF" + lines.join("\n");
+            return msg;
+        };
 
-            WindowManager.runJS(`
-                try {
-                    navigator.clipboard.writeText(${JSON.stringify(csv)}).catch(function(e){
-                        console.log('clipboard write failed', e);
-                    });
-                } catch(e) {
-                    console.log('clipboard write failed', e);
+        // 1. Refresh (verzögert)
+        Beat.timer(0.2, () => {
+            UI._cachedData = null;
+            UI.refresh("import_complete", undefined, undefined, true);
+
+            // 2. Status-Alert (verzögert)
+            Beat.timer(0.3, () => {
+                Beat.alert(buildStatusMessage());
+
+                State.pendingImport = null;
+                Beat.log("=== REVIEW IMPORT: Done ===");
+
+                // 3. Save-Dialog – nur bei Failed-Rows, nach dem Alert
+                if (failedCount > 0 && failedCSV) {
+                    Beat.timer(0.3, () => {
+                        Beat.saveFile("csv", (filePath) => {
+                            if (!filePath) {
+                                Logger.log("Failed rows save cancelled by user");
+                                return;
+                            }
+                            try {
+                                Beat.writeToFile(filePath, failedCSV);
+                                Logger.log("Failed rows written to: " + filePath);
+                                Beat.timer(0.2, () => {
+                                    Beat.alert(
+                                        failedCount + " failed review(s) written to:\n" + filePath
+                                    );
+                                }, false);
+                            } catch (e) {
+                                Logger.error("Failed rows write error", e);
+                                Beat.alert("Error writing failed reviews: " + e.message);
+                            }
+                        });
+                    }, false);
                 }
-            `);
-            return true;
-        } catch(e) {
-            Logger.error("copyFailedRowsToClipboard error", e);
-            return false;
+            }, false);
+        }, false);
+    },
+
+    // ---------- Failed-Rows CSV bauen (kein Dialog) ----------
+    buildFailedRowsCSV(rows) {
+        const headers = ["ID", "Scene#", "Location", "Length", "Review Text", "Reference Text", "Selected"];
+        const escapeCSV = (str) => {
+            if (str === undefined || str === null) return '""';
+            str = String(str).replace(/"/g, '""');
+            return '"' + str + '"';
+        };
+
+        const lines = [headers.join(";")];
+        for (let r = 0; r < rows.length; r++) {
+            const row = rows[r];
+            const out = [];
+            for (let c = 0; c < 7; c++) {
+                out.push(escapeCSV(row[c] !== undefined ? row[c] : ""));
+            }
+            lines.push(out.join(";"));
         }
+        return "\uFEFF" + lines.join("\n");
     },
 
     // ---------- Helfer ----------
@@ -1492,7 +1544,6 @@ const Import = {
     // Fallback: erste verfügbare Stelle.
     pickClosestScene(availableList, targetSceneInt) {
         if (!availableList || availableList.length === 0) return null;
-
         if (isNaN(targetSceneInt)) return availableList[0];
 
         let best = availableList[0];
